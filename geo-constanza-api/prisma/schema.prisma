@@ -1,0 +1,168 @@
+// geo-constanza-api/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ... tus modelos (Guardia, Turno, etc.)
+
+// ─── 1. USUARIOS (Guardias, Supervisores, Admins) ───
+model Usuario {
+  id                  String     @id @default(uuid())
+  rut                 String     @unique
+  nombre              String
+  email               String     @unique
+  telefono            String?
+  password_hash       String
+  rol                 String     // 'pauta', 'libre', 'supervisor', 'admin'
+  estado              String     @default("activo") // 'activo', 'inactivo'
+  two_factor_secret   String?
+  created_at          DateTime   @default(now())
+  updated_at          DateTime   @updatedAt
+
+  // Relaciones
+  turnos              Turno[]
+  asistencias         Asistencia[]
+  novedades           Novedad[]
+  auditorias          Auditoria[]
+  instalaciones_sup   Supervisor_Instalacion[]
+  solicitudes         Solicitud[] @relation("UsuarioSolicita")
+  solicitudes_rev     Solicitud[] @relation("SupervisorRevisa")
+}
+
+// ─── 2. INSTALACIONES (Recintos a proteger) ───
+model Instalacion {
+  id                  String     @id @default(uuid())
+  nombre              String
+  direccion           String?
+  latitud             Float
+  longitud            Float
+  radio_geofence_m    Int        @default(100) // Metros de tolerancia para GPS
+  tipo_recinto        String?
+  nivel_criticidad    String     @default("Media") // Alta, Media, Baja
+  estado              String     @default("activo")
+  created_at          DateTime   @default(now())
+  updated_at          DateTime   @updatedAt
+
+  // Relaciones
+  turnos              Turno[]
+  asistencias         Asistencia[]
+  novedades           Novedad[]
+  supervisores        Supervisor_Instalacion[]
+}
+
+// ─── 3. TABLA INTERMEDIA: SUPERVISOR - INSTALACIÓN ───
+model Supervisor_Instalacion {
+  id               String      @id @default(uuid())
+  supervisor_id    String
+  instalacion_id   String
+  
+  supervisor       Usuario     @relation(fields: [supervisor_id], references: [id])
+  instalacion      Instalacion @relation(fields: [instalacion_id], references: [id])
+
+  @@unique([supervisor_id, instalacion_id])
+}
+
+// ─── 4. TURNOS (Planificación) ───
+model Turno {
+  id                  String       @id @default(uuid())
+  usuario_id          String
+  instalacion_id      String
+  fecha               DateTime     @db.Date
+  hora_inicio         String       // Ej: "06:00"
+  hora_fin            String       // Ej: "14:00"
+  tipo_turno          String       @default("normal") // normal, extra
+  estado              String       @default("programado") // programado, completado, cancelado
+  motivo_cancelacion  String?
+  creado_por          String?
+  created_at          DateTime     @default(now())
+  updated_at          DateTime     @updatedAt
+
+  usuario             Usuario      @relation(fields: [usuario_id], references: [id])
+  instalacion         Instalacion  @relation(fields: [instalacion_id], references: [id])
+  asistencias         Asistencia[]
+  novedades           Novedad[]
+}
+
+// ─── 5. ASISTENCIA (Marcajes reales) ───
+model Asistencia {
+  id                  String       @id @default(uuid())
+  usuario_id          String
+  turno_id            String
+  instalacion_id      String
+  hora_entrada        DateTime
+  hora_salida         DateTime?
+  metodo_entrada      String       // 'totem', 'fallback_telefono'
+  metodo_salida       String?
+  estado              String       // 'normal', 'tardio'
+  minutos_retraso     Int          @default(0)
+  latitud_entrada     Float?
+  longitud_entrada    Float?
+  es_fallback         Boolean      @default(false)
+  horas_trabajadas    Float?
+  horas_extra         Float?
+  created_at          DateTime     @default(now())
+
+  usuario             Usuario      @relation(fields: [usuario_id], references: [id])
+  turno               Turno        @relation(fields: [turno_id], references: [id])
+  instalacion         Instalacion  @relation(fields: [instalacion_id], references: [id])
+}
+
+// ─── 6. NOVEDADES (Incidentes) ───
+model Novedad {
+  id                  String       @id @default(uuid())
+  usuario_id          String
+  instalacion_id      String
+  turno_id            String
+  tipo                String
+  descripcion         String
+  urgencia            String       // verde, amarillo, rojo
+  foto_url            String?
+  latitud             Float?
+  longitud            Float?
+  estado              String       @default("abierta") // abierta, escalada, resuelta
+  comentario_cierre   String?
+  atendida_por        String?
+  fecha_atencion      DateTime?
+  created_at          DateTime     @default(now())
+
+  usuario             Usuario      @relation(fields: [usuario_id], references: [id])
+  instalacion         Instalacion  @relation(fields: [instalacion_id], references: [id])
+  turno               Turno        @relation(fields: [turno_id], references: [id])
+}
+
+// ─── 7. SOLICITUDES (Vacaciones, Permisos, Traslados) ───
+model Solicitud {
+  id                  String       @id @default(uuid())
+  usuario_id          String
+  tipo                String       // Vacaciones, Traslado, Turno Extra
+  fechas              String       // Ej: "2026-05-10 al 2026-05-25"
+  motivo              String?
+  estado              String       @default("Pendiente") // Pendiente, Aprobada, Rechazada
+  revisada_por        String?
+  comentario_revision String?
+  created_at          DateTime     @default(now())
+
+  usuario             Usuario      @relation("UsuarioSolicita", fields: [usuario_id], references: [id])
+  revisor             Usuario?     @relation("SupervisorRevisa", fields: [revisada_por], references: [id])
+}
+
+// ─── 8. AUDITORÍA (Seguridad Inmutable) ───
+model Auditoria {
+  id                  String       @id @default(uuid())
+  usuario_id          String
+  accion              String       // 'LOGIN', 'CREAR_TURNO', 'APROBAR_SOL'
+  tabla_afectada      String
+  registro_id         String
+  valores_antes       Json?
+  valores_despues     Json?
+  ip_address          String?
+  user_agent          String?
+  created_at          DateTime     @default(now())
+
+  usuario             Usuario      @relation(fields: [usuario_id], references: [id])
+}
