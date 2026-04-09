@@ -1,28 +1,21 @@
-// ─── API CONFIG ───
-export const API_BASE = "https://api.geoconstanza.cl/api/v1"; // Cambiar a tu URL
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
 
-// ─── SIMULATED API SERVICE ───
-// En producción, estas funciones hacen fetch real al backend Express
 export const api = {
   login: async (rut, password) => {
-    // SIMULACIÓN — reemplazar con fetch real:
-    // const res = await fetch(`${API_BASE}/auth/login`, {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ rut, password }),
-    // });
-    // return res.json();
-
-    await new Promise(r => setTimeout(r, 1200));
-    const users = {
-      "20570418-3": { id: "u1", nombre: "Víctor Norambuena", rol: "pauta", token: "jwt_pauta_mock" },
-      "19234567-8": { id: "u2", nombre: "María López", rol: "libre", token: "jwt_libre_mock" },
-      "15678901-2": { id: "u3", nombre: "Andrés Martínez", rol: "supervisor", token: "jwt_sup_mock" },
-      "12812223-0": { id: "u4", nombre: "Christian González", rol: "admin", token: "jwt_admin_mock" },
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rut, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Credenciales inválidas");
+    // El backend devuelve { usuario, accessToken, refreshToken }
+    // Lo normalizamos al formato que espera el frontend
+    return {
+      user: data.usuario,
+      token: data.accessToken,
+      refreshToken: data.refreshToken,
     };
-    const u = users[rut];
-    if (!u || password !== "geo2026") throw new Error("Credenciales inválidas");
-    return { user: u, token: u.token, refreshToken: "refresh_" + u.token };
   },
 
   verify2FA: async (code) => {
@@ -32,7 +25,10 @@ export const api = {
   },
 
   getProfile: async (token) => {
-    await new Promise(r => setTimeout(r, 400));
-    return { lastLogin: "2026-04-09T06:00:00Z", sessionsActive: 1 };
+    const res = await fetch(`${API_BASE}/usuarios/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    return res.json();
   },
 };
