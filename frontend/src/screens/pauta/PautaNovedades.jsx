@@ -3,7 +3,7 @@ import { T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 
-export function PautaNovedades({ user }) {
+export function PautaNovedades() {
   const [novedades] = useState([
     { id: 1, tipo: "Acceso no autorizado", urgencia: "rojo", hora: "06:23", desc: "Persona intentó ingresar por acceso trasero", estado: "abierta" },
     { id: 2, tipo: "Sin novedad", urgencia: "verde", hora: "08:00", desc: "Ronda completada sin incidentes", estado: "resuelta" },

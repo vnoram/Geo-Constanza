@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { T } from "../../theme/theme";
 import { KPI } from "../../components/ui/KPI";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
+import { io } from "socket.io-client";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
 const SOCKET_URL = API_BASE.replace("/api/v1", "");
@@ -16,28 +17,28 @@ export function SupDashboard() {
   const [loading, setLoading] = useState(true);
   const socketRef = useRef(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/dashboard/hoy`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
       if (res.ok) setData(json);
-    } catch {}
-    finally { setLoading(false); }
-  };
+    } catch {
+      // fetch failed, keep existing data
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
     fetchData();
-    try {
-      const { io } = require("socket.io-client");
-      const socket = io(SOCKET_URL, { auth: { token }, transports: ["websocket"] });
-      socketRef.current = socket;
-      socket.on("guardia:entrada", fetchData);
-      socket.on("guardia:atraso", fetchData);
-      return () => socket.disconnect();
-    } catch {}
-  }, [token]);
+    const socket = io(SOCKET_URL, { auth: { token }, transports: ["websocket"] });
+    socketRef.current = socket;
+    socket.on("guardia:entrada", fetchData);
+    socket.on("guardia:atraso", fetchData);
+    return () => socket.disconnect();
+  }, [token, fetchData]);
 
   if (loading) return <div style={{ textAlign: "center", padding: 40, color: T.textMut }}>⏳ Cargando...</div>;
   if (!data) return <div style={{ textAlign: "center", padding: 40, color: T.red }}>Error al cargar datos</div>;

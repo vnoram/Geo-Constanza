@@ -25,7 +25,7 @@ export default function GeoConstanzaApp() {
     // En producción:
     // fetch(`${API_BASE}/auth/logout`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
     // AsyncStorage.removeItem("token");
-  }, [token]);
+  }, []);
 
   if (!user) {
     return <LoginScreen onLogin={handleLogin} />;

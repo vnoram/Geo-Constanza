@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { T, ROLES } from "../../theme/theme";
 import { Placeholder } from "../ui/Placeholder";
 
@@ -69,7 +69,7 @@ function RoleContent({ user, rol, section }) {
   return <Placeholder section={section} />;
 }
 
-export function AppShell({ user, token, onLogout }) {
+export function AppShell({ user, onLogout }) {
   const role = ROLES[user.rol];
   const [activeSection, setActiveSection] = useState(role.sections[0].id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
