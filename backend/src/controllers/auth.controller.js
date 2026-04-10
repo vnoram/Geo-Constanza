@@ -6,6 +6,10 @@ const login = async (req, res, next) => {
     const { rut, password } = req.body;
     const result = await authService.login(rut, password, req.ip, req.get('user-agent'));
 
+    if (result.requires2FA) {
+      return res.json(result);
+    }
+
     await registrarAuditoria({
       usuarioId: result.usuario.id,
       accion: 'login',

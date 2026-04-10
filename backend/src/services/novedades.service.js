@@ -52,7 +52,7 @@ const crear = async (data, file, user) => {
   }
 
   // Calcular urgencia con matriz priorización
-  const urgencia = priorizacion.calcularUrgencia(tipo, turno.instalacion.nivel_criticidad);
+  const urgencia = priorizacion.evaluarUrgencia(tipo, turno.instalacion.nivel_criticidad);
 
   let foto_url = null;
   if (file) {
