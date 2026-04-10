@@ -1,16 +1,24 @@
-# React + Vite
+# Geo Constanza 🛡️
+**Plataforma de Gestión de Guardias de Seguridad (GGSS) y Business Intelligence**
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 📝 Descripción del Proyecto
+Geo Constanza es un sistema integral diseñado para optimizar la gestión, monitoreo y seguridad del personal de guardia (GGSS). La plataforma permite la administración de turnos y la validación de posiciones mediante geocercas, facilitando la toma de decisiones estratégicas a través de su módulo de Business Intelligence.
 
-Currently, two official plugins are available:
+## 🏗️ Arquitectura y Estructura
+El repositorio funciona en una estructura modular, dividiendo la lógica de cliente y servidor:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+* **Frontend (Raíz del proyecto):** Dashboard administrativo y de visualización desarrollado con React y empaquetado con Vite para alta velocidad de despliegue.
+* **Backend (`/geo-constanza-api`):** API RESTful en Node.js encargada de procesar la lógica de negocio, autenticación y comunicación con la base de datos.
 
-## React Compiler
+## 🚀 Stack Tecnológico Principal
+* **Frontend:** React.js, Vite.
+* **Backend:** Node.js, Express.
+* **Base de Datos:** PostgreSQL con extensión espacial **PostGIS** (vital para el cálculo y validación de coordenadas y geocercas).
+* **Despliegue:** Vercel.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## ⚙️ Instalación y Ejecución Local
+1. Clonar el repositorio: `git clone https://github.com/vnoram/Geo-Constanza.git`
+2. Instalar dependencias del cliente: `npm install`
+3. Instalar dependencias de la API: `cd geo-constanza-api && npm install`
+4. Configurar las variables de entorno `.env` con las credenciales de PostgreSQL.
+5. Iniciar en modo desarrollo: `npm run dev`
