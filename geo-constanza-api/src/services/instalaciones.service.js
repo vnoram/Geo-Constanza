@@ -7,7 +7,7 @@ const listar = async (query, user) => {
 
   // Row-level security: supervisor solo ve sus instalaciones asignadas
   if (user.rol === 'supervisor') {
-    const asignaciones = await prisma.supervisor_instalacion.findMany({
+    const asignaciones = await prisma.supervisor_Instalacion.findMany({
       where: { supervisor_id: user.id },
       select: { instalacion_id: true },
     });
