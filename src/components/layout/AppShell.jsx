@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { T, ROLES } from "../../theme/theme";
-import { api } from "../../services/api";
 import { Placeholder } from "../ui/Placeholder";
 
 // ─── Pauta ───
@@ -75,9 +74,6 @@ export function AppShell({ user, token, onLogout }) {
   const [activeSection, setActiveSection] = useState(role.sections[0].id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  useEffect(() => {
-    api.getProfile(token).catch(() => {});
-  }, [token]);
 
   return (
     <div style={{
