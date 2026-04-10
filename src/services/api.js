@@ -24,11 +24,4 @@ export const api = {
     throw new Error("Código 2FA inválido");
   },
 
-  getProfile: async (token) => {
-    const res = await fetch(`${API_BASE}/usuarios/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return null;
-    return res.json();
-  },
 };
