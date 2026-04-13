@@ -7,8 +7,16 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/asistencia', authorize('supervisor', 'admin'), reportesController.asistencia);
-router.get('/incidentes', authorize('supervisor', 'admin'), reportesController.incidentes);
-router.get('/exportar/:tipo', authorize('supervisor', 'admin'), reportesController.exportar);
+// Datos tabulares
+router.get('/asistencia',        authorize('supervisor', 'admin'), reportesController.asistencia);
+router.get('/incidentes',        authorize('supervisor', 'admin'), reportesController.incidentes);
+
+// Agregaciones para gráficos (admin y supervisor)
+router.get('/semana',            authorize('supervisor', 'admin'), reportesController.semana);
+router.get('/estado',            authorize('supervisor', 'admin'), reportesController.estadoHoy);
+router.get('/mensual',           authorize('supervisor', 'admin'), reportesController.mensual);
+
+// Exportación — antes de /:tipo para que no capture rutas con nombre
+router.get('/exportar/:tipo',    authorize('supervisor', 'admin'), reportesController.exportar);
 
 module.exports = router;
