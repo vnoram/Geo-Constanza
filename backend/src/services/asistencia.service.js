@@ -28,15 +28,18 @@ const registrarEntrada = async (data, user) => {
     throw Object.assign(new Error('No tienes un turno asignado hoy en esta instalación'), { statusCode: 400 });
   }
 
-  // Validar geofence si es fallback
-  if (metodo === 'fallback_telefono' && latitud && longitud) {
-    const { esValido } = geovalidacion.validarAsistencia(
+  // Validar geofence: aplica a cualquier método cuando se envían coordenadas
+  if (latitud && longitud) {
+    const { esValido, distanciaMetros } = geovalidacion.validarAsistencia(
       latitud, longitud,
       turno.instalacion.latitud, turno.instalacion.longitud,
-      turno.instalacion.radio_geofence_m
+      turno.instalacion.radio_geofence_m,
     );
     if (!esValido) {
-      throw Object.assign(new Error('Tu ubicación GPS está fuera del rango de la instalación'), { statusCode: 400 });
+      throw Object.assign(
+        new Error(`Fuera de rango: Debe estar en la instalación para marcar (${distanciaMetros}m del límite permitido de ${turno.instalacion.radio_geofence_m}m)`),
+        { statusCode: 400 },
+      );
     }
   }
 
@@ -78,6 +81,17 @@ const registrarEntrada = async (data, user) => {
         guardia: usuario_id,
         instalacion: instalacion_id,
         minutos_retraso: minutosRetraso,
+      });
+    }
+    // Publicar ubicación GPS del guardia para el mapa del admin (solo si hay coords)
+    if (latitud && longitud) {
+      io.emit('guardia:ubicacion', {
+        guardia_id: usuario_id,
+        instalacion_id,
+        latitud,
+        longitud,
+        hora: ahora,
+        estado,
       });
     }
     // Notificar al panel admin global

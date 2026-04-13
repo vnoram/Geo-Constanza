@@ -50,7 +50,7 @@ export function PautaTurno({ user }) {
         )
       );
 
-      // 2. POST entrada
+      // 2. POST entrada con coordenadas
       const res = await fetch(`${API_BASE}/asistencia/entrada`, {
         method: "POST",
         headers: {
@@ -60,7 +60,7 @@ export function PautaTurno({ user }) {
         body: JSON.stringify({
           instalacion_id: turno.instalacion_id,
           metodo: "fallback_telefono",
-          latitud: coords.latitude,
+          latitud:  coords.latitude,
           longitud: coords.longitude,
         }),
       });
