@@ -32,6 +32,11 @@ export const api = {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Credenciales inválidas");
+    // Guardia: si el backend devuelve requires2FA antes de que esté implementado
+    // en el frontend, lanzamos un error claro en lugar de crashear con TypeError.
+    if (data.requires2FA) {
+      throw new Error("2FA requerido por el servidor pero no implementado aún. Contacta al administrador.");
+    }
     // Backend devuelve { usuario, accessToken, refreshToken }
     return {
       user: data.usuario,

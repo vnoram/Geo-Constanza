@@ -127,12 +127,43 @@ async function main() {
     },
   });
   console.log(`✅ Turno test: ${turnoTest.hora_inicio}–${turnoTest.hora_fin}`);
+  // backend/prisma/seed.js
+
+// ... después del supervisor ...
+
+  // 8. GGSS Libre (aparece en el DemoPanel pero faltaba en el seed)
+  const guardiaLibre = await prisma.usuario.create({
+    data: {
+      rut: '19234567-8',
+      nombre: 'M. López',
+      email: 'm.lopez@geoconstanza.cl',
+      password_hash: hashGeo,
+      rol: 'libre',
+      estado: 'activo',
+    },
+  });
+  console.log(`✅ GGSS Libre: ${guardiaLibre.nombre} | ${guardiaLibre.email}`);
+
+  // 9. Administrador
+  const admin = await prisma.usuario.create({
+    data: {
+      rut: '12812223-0',
+      nombre: 'C. González',
+      email: 'admin@geoconstanza.cl',
+      password_hash: hashGeo,
+      rol: 'admin',
+      estado: 'activo',
+    },
+  });
+  console.log(`✅ Admin: ${admin.nombre} | ${admin.email}`);
 
   console.log('\n📋 RESUMEN:');
   console.log(`   Instalación ID : ${instalacion.id}`);
-  console.log(`   Guardia        : ${guardia.email} | geo2026`);
+  console.log(`   Guardia Pauta  : ${guardia.email} | geo2026`);
+  console.log(`   Guardia Libre  : ${guardiaLibre.email} | geo2026`);
   console.log(`   Test           : ${guardiaTest.email} | 123456`);
   console.log(`   Supervisor     : ${supervisor.email} | geo2026`);
+  console.log(`   Admin          : ${admin.email} | geo2026`);
   console.log(`   Turno hoy      : 06:00–14:00 en ${instalacion.nombre}`);
   console.log('\n✅ Seed completado');
 }

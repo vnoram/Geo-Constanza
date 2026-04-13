@@ -35,11 +35,12 @@ const login = async (rut, password, ip, userAgent) => {
   // Reset intentos fallidos
   if (redis) await redis.del(`login_attempts:${usuario.id}`);
 
-  // Si requiere 2FA (supervisor o admin)
-  if (['supervisor', 'admin'].includes(usuario.rol) && usuario.two_factor_secret) {
-    const tempToken = jwt.sign({ id: usuario.id, requires2FA: true }, jwtConfig.accessSecret, { expiresIn: '5m' });
-    return { requires2FA: true, tempToken };
-  }
+  // 2FA — Fase 2: se activará cuando two_factor_secret esté configurado Y el backend lo verifique vía TOTP.
+  // Por ahora se omite para que admin/supervisor puedan iniciar sesión en desarrollo.
+  // if (['supervisor', 'admin'].includes(usuario.rol) && usuario.two_factor_secret) {
+  //   const tempToken = jwt.sign({ id: usuario.id, requires2FA: true }, jwtConfig.accessSecret, { expiresIn: '5m' });
+  //   return { requires2FA: true, tempToken };
+  // }
 
   const tokens = generateTokens(usuario);
   return { usuario: sanitizeUser(usuario), ...tokens };
