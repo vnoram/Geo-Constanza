@@ -1,6 +1,29 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
+const API_BASE    = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
+const TOKEN_KEY   = "gc_token";
 
+// ─── TOKEN HELPER ───────────────────────────────────────────────
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+// ─── AUTHENTICATED FETCH ────────────────────────────────────────
+// Todas las peticiones privadas pasan por aquí; inyecta el Bearer automáticamente.
+async function authFetch(path, options = {}) {
+  const token = getToken();
+  const headers = {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...options.headers,
+  };
+  const res  = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+  return data;
+}
+
+// ─── API ─────────────────────────────────────────────────────────
 export const api = {
+  // ── Auth (sin token) ──────────────────────────────────────────
   login: async (rut, password) => {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
@@ -9,8 +32,7 @@ export const api = {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Credenciales inválidas");
-    // El backend devuelve { usuario, accessToken, refreshToken }
-    // Lo normalizamos al formato que espera el frontend
+    // Backend devuelve { usuario, accessToken, refreshToken }
     return {
       user: data.usuario,
       token: data.accessToken,
@@ -24,4 +46,9 @@ export const api = {
     throw new Error("Código 2FA inválido");
   },
 
+  // ── Peticiones autenticadas (con Bearer token) ────────────────
+  get:  (path)        => authFetch(path),
+  post: (path, body)  => authFetch(path, { method: "POST",   body: JSON.stringify(body) }),
+  put:  (path, body)  => authFetch(path, { method: "PUT",    body: JSON.stringify(body) }),
+  del:  (path)        => authFetch(path, { method: "DELETE" }),
 };

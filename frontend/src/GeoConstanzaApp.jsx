@@ -1,39 +1,30 @@
-import { useState, useCallback } from "react";
-import { AuthCtx } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LoginScreen } from "./screens/auth/LoginScreen";
 import { AppShell } from "./components/layout/AppShell";
 
 // ═══════════════════════════════════════════════════════════════
-// GEO CONSTANZA — FASE 1: AUTENTICACIÓN + PANTALLAS BASE
-// Repo: github.com/geoconstanza
-// Stack: React (frontend) ↔ Express API (backend)
+// GEO CONSTANZA — FASE 1: AUTENTICACIÓN + PERSISTENCIA DE SESIÓN
 // ═══════════════════════════════════════════════════════════════
 
-export default function GeoConstanzaApp() {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+// AppRouter decide qué renderizar según el estado de autenticación.
+// Espera a `ready` para que AuthProvider restaure la sesión desde
+// localStorage antes de mostrar cualquier pantalla.
+function AppRouter() {
+  const { user, token, login, logout, ready } = useAuth();
 
-  const handleLogin = useCallback((u, t) => {
-    setUser(u);
-    setToken(t);
-    // En producción: AsyncStorage.setItem("token", t);
-  }, []);
-
-  const handleLogout = useCallback(() => {
-    setUser(null);
-    setToken(null);
-    // En producción:
-    // fetch(`${API_BASE}/auth/logout`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-    // AsyncStorage.removeItem("token");
-  }, [token]);
+  if (!ready) return null;   // Evita flash de /login durante la hidratación
 
   if (!user) {
-    return <LoginScreen onLogin={handleLogin} />;
+    return <LoginScreen onLogin={login} />;
   }
 
+  return <AppShell user={user} token={token} onLogout={logout} />;
+}
+
+export default function GeoConstanzaApp() {
   return (
-    <AuthCtx.Provider value={{ user, token, logout: handleLogout }}>
-      <AppShell user={user} token={token} onLogout={handleLogout} />
-    </AuthCtx.Provider>
+    <AuthProvider>
+      <AppRouter />
+    </AuthProvider>
   );
 }
