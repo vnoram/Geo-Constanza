@@ -74,9 +74,9 @@ const crear = async (data, file, user) => {
     },
   });
 
-  // Emitir WebSocket
-  const io = getSocketIO();
-  if (io) {
+  // Emitir WebSocket (no crítico)
+  try {
+    const io = getSocketIO();
     io.to(`instalacion:${turno.instalacion_id}`).emit('novedad:nueva', {
       id: novedad.id,
       tipo,
@@ -84,7 +84,9 @@ const crear = async (data, file, user) => {
       guardia: user.id,
       instalacion: turno.instalacion_id,
     });
-  }
+    // Notificar al panel admin global
+    io.emit('admin:dashboard_update', { entity: 'novedad' });
+  } catch (_) {}
 
   return novedad;
 };

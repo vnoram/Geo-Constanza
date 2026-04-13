@@ -59,13 +59,38 @@ const getDashboardHoy = async (user) => {
   const tardios = lista.filter(t => t.estado === 'tardio').length;
   const faltantes = lista.filter(t => t.estado === 'faltante').length;
 
-  return {
-    total: turnos.length,
-    presentes,
-    tardios,
-    faltantes,
-    lista,
-  };
+  const base = { total: turnos.length, presentes, tardios, faltantes, lista };
+
+  // Métricas globales exclusivas para el admin
+  if (user.rol === 'admin') {
+    const inicioMes = new Date();
+    inicioMes.setDate(1);
+    inicioMes.setHours(0, 0, 0, 0);
+
+    const [totalGuardias, totalInstalaciones, turnosMes, asistenciasMes, novedadesAbiertas] =
+      await Promise.all([
+        prisma.usuario.count({ where: { rol: { in: ['pauta', 'libre'] }, estado: 'activo' } }),
+        prisma.instalacion.count({ where: { estado: 'activa' } }),
+        prisma.turno.count({ where: { fecha: { gte: inicioMes }, estado: { not: 'cancelado' } } }),
+        prisma.asistencia.count({ where: { created_at: { gte: inicioMes } } }),
+        prisma.novedad.count({ where: { estado: { notIn: ['resuelta'] } } }),
+      ]);
+
+    const coberturaMensual = turnosMes > 0
+      ? Math.min(100, Math.round((asistenciasMes / turnosMes) * 100))
+      : 0;
+
+    base.adminStats = {
+      totalGuardias,
+      totalInstalaciones,
+      turnosMes,
+      asistenciasMes,
+      coberturaMensual,
+      novedadesAbiertas,
+    };
+  }
+
+  return base;
 };
 
 module.exports = { getDashboardHoy };

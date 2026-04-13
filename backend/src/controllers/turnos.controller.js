@@ -87,4 +87,24 @@ const verificarConflictos = async (req, res, next) => {
   }
 };
 
-module.exports = { listar, obtener, crear, crearLote, editar, cancelar, verificarConflictos };
+const crearPauta4x4 = async (req, res, next) => {
+  try {
+    const result = await turnosService.crearPauta4x4(req.body, req.user.id);
+
+    await registrarAuditoria({
+      usuarioId: req.user.id,
+      accion: 'crear_pauta_4x4',
+      tablaAfectada: 'turnos',
+      registroId: req.body.usuario_id,
+      valoresDespues: req.body,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { listar, obtener, crear, crearLote, crearPauta4x4, editar, cancelar, verificarConflictos };

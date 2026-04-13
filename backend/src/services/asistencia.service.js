@@ -80,6 +80,8 @@ const registrarEntrada = async (data, user) => {
         minutos_retraso: minutosRetraso,
       });
     }
+    // Notificar al panel admin global
+    io.emit('admin:dashboard_update', { entity: 'asistencia' });
   } catch (_) {
     // Socket.IO no disponible — el registro se guarda igual
   }
@@ -101,7 +103,7 @@ const registrarSalida = async (data, user) => {
   finTurno.setHours(horaFin, minFin, 0, 0);
   const horasExtra = Math.max(0, (ahora - finTurno) / 3600000);
 
-  return prisma.asistencia.update({
+  const actualizada = await prisma.asistencia.update({
     where: { id: asistencia_id },
     data: {
       hora_salida: ahora,
@@ -110,6 +112,13 @@ const registrarSalida = async (data, user) => {
       horas_extra: parseFloat(horasExtra.toFixed(2)),
     },
   });
+
+  // Notificar al panel admin global
+  try {
+    getSocketIO().emit('admin:dashboard_update', { entity: 'asistencia' });
+  } catch (_) {}
+
+  return actualizada;
 };
 
 const obtenerHoy = async (instalacionId) => {

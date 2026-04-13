@@ -12,6 +12,7 @@ router.get('/conflictos', authorize('supervisor', 'admin'), turnosController.ver
 router.get('/:id', turnosController.obtener);
 router.post('/', authorize('supervisor', 'admin'), turnosController.crear);
 router.post('/lote', authorize('admin'), turnosController.crearLote);
+router.post('/pauta-4x4', authorize('admin'), turnosController.crearPauta4x4);
 router.put('/:id', authorize('supervisor', 'admin'), turnosController.editar);
 router.patch('/:id/cancelar', authorize('supervisor', 'admin'), turnosController.cancelar);
 
