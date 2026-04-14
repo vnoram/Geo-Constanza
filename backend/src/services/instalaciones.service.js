@@ -18,11 +18,22 @@ const listar = async (query, user) => {
 };
 
 const crear = async (data) => {
-  return prisma.instalacion.create({ data });
+  return prisma.instalacion.create({
+    data: {
+      ...data,
+      latitud:          parseFloat(data.latitud),
+      longitud:         parseFloat(data.longitud),
+      radio_geofence_m: parseInt(data.radio_geofence_m ?? 100, 10),
+    },
+  });
+};
+
+const obtenerPorId = async (id) => {
+  return prisma.instalacion.findUniqueOrThrow({ where: { id } });
 };
 
 const editar = async (id, data) => {
   return prisma.instalacion.update({ where: { id }, data });
 };
 
-module.exports = { listar, crear, editar };
+module.exports = { listar, obtenerPorId, crear, editar };

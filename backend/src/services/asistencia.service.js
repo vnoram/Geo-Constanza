@@ -10,29 +10,51 @@ const registrarEntrada = async (data, user) => {
   const { instalacion_id, metodo, latitud, longitud, qr_code } = data;
   const usuario_id = user?.id || data.usuario_id;
 
-  // Buscar turno del día para este guardia en esta instalación
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  const ahora = new Date();
+
+  // Ventana de búsqueda de 24 h hacia atrás + TOLERANCIA hacia adelante.
+  // Cubre tres casos sin depender del reloj local del servidor:
+  //   1. Turnos diurnos que empezaron "hoy" en UTC.
+  //   2. Turnos nocturnos que empezaron ayer UTC y aún están vigentes (ej. 19:00–07:00).
+  //   3. Turnos del día chileno real cuando ya es "mañana" en UTC (después de las 20:00 CLT).
+  const ventanaInicio = new Date(ahora.getTime() - 24 * 60 * 60 * 1000);
+  const ventanaFin    = new Date(ahora.getTime() + TOLERANCIA_MINUTOS * 60 * 1000);
 
   const turno = await prisma.turno.findFirst({
     where: {
       usuario_id,
       instalacion_id,
-      fecha: hoy,
+      fecha: { gte: ventanaInicio, lte: ventanaFin },
       estado: { not: 'cancelado' },
     },
     include: { instalacion: true },
+    orderBy: { fecha: 'desc' }, // Si hay varios en ventana, tomar el más reciente
   });
 
   if (!turno) {
-    throw Object.assign(new Error('No tienes un turno asignado hoy en esta instalación'), { statusCode: 400 });
+    // Mensaje de debug con timestamp del servidor y rango buscado, para facilitar diagnóstico
+    const fechaUTC   = ahora.toISOString();
+    const fechaChile = ahora.toLocaleString('es-CL', { timeZone: 'America/Santiago', hour12: false });
+    throw Object.assign(
+      new Error(
+        `No tienes un turno asignado en esta instalación. ` +
+        `Hora servidor: ${fechaUTC} (UTC) / ${fechaChile} (CLT). ` +
+        `Rango buscado: ${ventanaInicio.toISOString()} → ${ventanaFin.toISOString()}.`,
+      ),
+      { statusCode: 400 },
+    );
   }
 
-  // Validar geofence: aplica a cualquier método cuando se envían coordenadas
-  if (latitud && longitud) {
+  // Convertir coordenadas a número (pueden llegar como string desde JSON del body)
+  const lat = latitud  != null ? parseFloat(latitud)  : null;
+  const lon = longitud != null ? parseFloat(longitud) : null;
+
+  // Validar geofence: aplica cuando se envían coordenadas válidas
+  if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
+    const instLat = parseFloat(turno.instalacion.latitud);
+    const instLon = parseFloat(turno.instalacion.longitud);
     const { esValido, distanciaMetros } = geovalidacion.validarAsistencia(
-      latitud, longitud,
-      turno.instalacion.latitud, turno.instalacion.longitud,
+      lat, lon, instLat, instLon,
       turno.instalacion.radio_geofence_m,
     );
     if (!esValido) {
@@ -43,11 +65,20 @@ const registrarEntrada = async (data, user) => {
     }
   }
 
-  // Calcular minutos de retraso
-  const ahora = new Date();
+  // Calcular minutos de retraso usando la fecha UTC real almacenada en el turno.
+  // turno.fecha está guardado como mediodía UTC (ej. 2026-04-13T12:00:00Z).
+  // Reconstruimos el instante de inicio del turno en UTC con la hora del turno,
+  // de modo que el diff sea correcto independientemente del TZ del servidor.
+  const fechaTurnoUTC = new Date(turno.fecha);
   const [horaInicio, minInicio] = turno.hora_inicio.split(':').map(Number);
-  const inicioTurno = new Date(hoy);
-  inicioTurno.setHours(horaInicio, minInicio, 0, 0);
+  const inicioTurno = new Date(Date.UTC(
+    fechaTurnoUTC.getUTCFullYear(),
+    fechaTurnoUTC.getUTCMonth(),
+    fechaTurnoUTC.getUTCDate(),
+    horaInicio,
+    minInicio,
+    0,
+  ));
   const diffMin = Math.floor((ahora - inicioTurno) / 60000);
   const minutosRetraso = Math.max(0, diffMin);
   const estado = minutosRetraso > ATRASO_MINUTOS ? 'tardio' : 'normal';
@@ -61,8 +92,8 @@ const registrarEntrada = async (data, user) => {
       metodo_entrada: metodo,
       estado,
       minutos_retraso: minutosRetraso,
-      latitud_entrada: latitud,
-      longitud_entrada: longitud,
+      latitud_entrada:  lat,
+      longitud_entrada: lon,
       es_fallback: metodo === 'fallback_telefono',
     },
   });
@@ -84,12 +115,12 @@ const registrarEntrada = async (data, user) => {
       });
     }
     // Publicar ubicación GPS del guardia para el mapa del admin (solo si hay coords)
-    if (latitud && longitud) {
+    if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
       io.emit('guardia:ubicacion', {
         guardia_id: usuario_id,
         instalacion_id,
-        latitud,
-        longitud,
+        latitud: lat,
+        longitud: lon,
         hora: ahora,
         estado,
       });

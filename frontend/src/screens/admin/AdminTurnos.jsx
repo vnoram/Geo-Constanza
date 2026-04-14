@@ -45,21 +45,26 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
     usuario_id: "",
     instalacion_id: "",
     fecha_inicio: "",
-    hora_inicio: "08:00",
-    hora_fin: "20:00",
+    hora_inicio: "19:00",
+    hora_fin: "07:00",
+    reemplazar: false,
   });
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState("");
 
   const set = (key) => (val) => setForm((f) => ({ ...f, [key]: val }));
+  const setCheck = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.checked }));
+
+  // Detectar turno nocturno para mostrar aviso informativo
+  const esNocturno = form.hora_fin < form.hora_inicio;
 
   const validar = () => {
     if (!form.usuario_id) return "Selecciona un guardia.";
     if (!form.instalacion_id) return "Selecciona una instalación.";
     if (!form.fecha_inicio) return "Indica la fecha de inicio.";
     if (!form.hora_inicio || !form.hora_fin) return "Completa los horarios.";
-    if (form.hora_inicio >= form.hora_fin) return "La hora de entrada debe ser anterior a la de salida.";
+    if (form.hora_inicio === form.hora_fin) return "Hora de entrada y salida no pueden ser iguales.";
     return null;
   };
 
@@ -69,7 +74,14 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
     setError("");
     setLoading(true);
     try {
-      const res = await api.post("/turnos/pauta-4x4", form);
+      const res = await api.post("/turnos/pauta-4x4", {
+        usuario_id:    form.usuario_id,
+        instalacion_id: form.instalacion_id,
+        fecha_inicio:  form.fecha_inicio,
+        hora_inicio:   form.hora_inicio,
+        hora_fin:      form.hora_fin,
+        reemplazar:    form.reemplazar,
+      });
       setResultado(res);
       onSuccess();
     } catch (e) {
@@ -107,11 +119,13 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
         {resultado ? (
           <div>
             <div style={{
-              background: T.accentGhost, border: `1px solid ${T.accent}`,
+              background: resultado.creados > 0 ? T.accentGhost : T.redGhost,
+              border: `1px solid ${resultado.creados > 0 ? T.accent : T.red}`,
               borderRadius: 12, padding: 16, marginBottom: 20,
             }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: T.accent, marginBottom: 8 }}>
-                ✓ Pauta generada correctamente
+              <div style={{ fontWeight: 700, fontSize: 14, color: resultado.creados > 0 ? T.accent : T.red, marginBottom: 8 }}>
+                {resultado.creados > 0 ? "✓ Pauta generada correctamente" : "⚠ Sin turnos creados"}
+                {resultado.esNocturno && <span style={{ fontWeight: 400, fontSize: 12, marginLeft: 8 }}>🌙 nocturno</span>}
               </div>
               <div style={{ fontSize: 13, color: T.text }}>
                 <span style={{ fontWeight: 700 }}>{resultado.creados}</span> turnos creados
@@ -119,6 +133,9 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
                   <span style={{ color: T.yellow }}> · {resultado.omitidos} omitidos por conflicto</span>
                 )}
               </div>
+              {resultado.advertencia && (
+                <div style={{ fontSize: 12, color: T.yellow, marginTop: 8 }}>{resultado.advertencia}</div>
+              )}
             </div>
 
             {resultado.detalles_omitidos?.length > 0 && (
@@ -185,10 +202,22 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
               />
             </div>
 
+            {/* Aviso turno nocturno */}
+            {esNocturno && (
+              <div style={{
+                background: "#1a1230", border: "1px solid #7c5cbf",
+                borderRadius: 8, padding: "8px 12px", marginBottom: 14,
+                fontSize: 12, color: "#c4a8ff", display: "flex", gap: 8, alignItems: "center",
+              }}>
+                <span>🌙</span>
+                <span>Turno nocturno detectado — la salida ({form.hora_fin}) ocurre al día siguiente.</span>
+              </div>
+            )}
+
             {/* Info visual del ciclo */}
             <div style={{
               background: T.bgInput, border: `1px solid ${T.border}`,
-              borderRadius: 10, padding: 12, marginBottom: 18,
+              borderRadius: 10, padding: 12, marginBottom: 14,
               display: "flex", gap: 6, flexWrap: "wrap",
             }}>
               {Array.from({ length: 8 }, (_, i) => (
@@ -204,9 +233,30 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
                 </div>
               ))}
               <div style={{ width: "100%", fontSize: 11, color: T.textMut, marginTop: 4 }}>
-                T = Trabajo · D = Descanso · ciclo × 4 = 32 días
+                T = Trabajo · D = Descanso · ciclo × 4 = 32 días (16 turnos)
               </div>
             </div>
+
+            {/* Checkbox reemplazar */}
+            <label style={{
+              display: "flex", alignItems: "center", gap: 10, marginBottom: 18,
+              cursor: "pointer", userSelect: "none",
+            }}>
+              <input
+                type="checkbox"
+                checked={form.reemplazar}
+                onChange={setCheck("reemplazar")}
+                style={{ width: 16, height: 16, accentColor: T.accent, cursor: "pointer" }}
+              />
+              <div>
+                <div style={{ fontSize: 13, color: T.text, fontWeight: 600 }}>
+                  Reemplazar pautas existentes en este rango
+                </div>
+                <div style={{ fontSize: 11, color: T.textMut }}>
+                  Elimina los turnos previos del guardia en los 32 días antes de crear los nuevos.
+                </div>
+              </div>
+            </label>
 
             {error && (
               <div style={{
@@ -244,11 +294,19 @@ function TurnoCard({ turno }) {
       display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 12,
     }}>
       <div>
-        <div style={{ fontWeight: 700, fontSize: 14, color: T.text }}>
-          {turno.usuario?.nombre || "—"}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>
+            {turno.usuario?.nombre || "—"}
+          </span>
+          {turno.hora_fin < turno.hora_inicio && (
+            <span style={{ fontSize: 10, color: "#c4a8ff", background: "#1a1230", borderRadius: 4, padding: "1px 5px" }}>
+              🌙
+            </span>
+          )}
         </div>
         <div style={{ fontSize: 12, color: T.textMut, marginTop: 2 }}>
           {turno.instalacion?.nombre} · {turno.hora_inicio} – {turno.hora_fin}
+          {turno.hora_fin < turno.hora_inicio && <span style={{ color: "#c4a8ff" }}> (+1d)</span>}
         </div>
         <div style={{ fontSize: 11, color: T.textSec, marginTop: 3 }}>
           {new Date(turno.fecha).toLocaleDateString("es-CL", {

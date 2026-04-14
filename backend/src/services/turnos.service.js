@@ -98,41 +98,72 @@ const verificarConflictos = async (query) => {
 };
 
 const crearPauta4x4 = async (data, creadoPor) => {
-  const { usuario_id, instalacion_id, fecha_inicio, hora_inicio, hora_fin } = data;
+  const { usuario_id, instalacion_id, fecha_inicio, hora_inicio, hora_fin, reemplazar = false } = data;
 
-  // Parsear fecha en UTC para evitar desfases de zona horaria
+  // Parsear la fecha ingresada como fecha local (sin desfase UTC).
+  // Usamos mediodía UTC para que, en cualquier zona horaria de las Américas
+  // (incluido Chile GMT-4), la fecha de calendario siempre sea la correcta.
   const [anio, mes, dia] = fecha_inicio.split('-').map(Number);
-  const inicio = new Date(Date.UTC(anio, mes - 1, dia));
+  const inicio = new Date(Date.UTC(anio, mes - 1, dia, 12, 0, 0));
+
+  // Detectar si es turno nocturno (hora_fin < hora_inicio → termina al día siguiente)
+  const esNocturno = hora_fin < hora_inicio;
+
+  // Calcular las fechas exactas de los 16 días de trabajo (4 bloques × 4 días)
+  const fechasTrabajo = [];
+  for (let i = 0; i < 32; i++) {
+    const diaEnCiclo = (i % 8) + 1; // 1-8
+    if (diaEnCiclo > 4) continue;   // días 5-8 son descanso → exactamente 16 días de trabajo
+    fechasTrabajo.push(new Date(Date.UTC(
+      inicio.getUTCFullYear(),
+      inicio.getUTCMonth(),
+      inicio.getUTCDate() + i,
+      12, 0, 0,
+    )));
+  }
+
+  // Si reemplazar=true, eliminar todos los turnos existentes (no cancelados)
+  // del usuario en el rango completo de 32 días antes de crear los nuevos.
+  if (reemplazar) {
+    const fechaFin32 = new Date(Date.UTC(
+      inicio.getUTCFullYear(),
+      inicio.getUTCMonth(),
+      inicio.getUTCDate() + 31,
+      23, 59, 59,
+    ));
+    await prisma.turno.deleteMany({
+      where: {
+        usuario_id,
+        fecha: { gte: inicio, lte: fechaFin32 },
+        estado: { not: 'cancelado' },
+      },
+    });
+  }
 
   const turnosACrear = [];
   const omitidos = [];
 
-  // 32 días = 4 ciclos completos de 8 días (4 trabajo + 4 descanso)
-  for (let i = 0; i < 32; i++) {
-    const diaEnCiclo = (i % 8) + 1; // 1-8
-    if (diaEnCiclo > 4) continue;   // días 5-8 son descanso
+  for (const fecha of fechasTrabajo) {
+    if (!reemplazar) {
+      // Buscar conflicto en el rango del día (±12h para cubrir mediodía UTC)
+      const diaInicio = new Date(fecha.getTime() - 12 * 60 * 60 * 1000);
+      const diaFin    = new Date(fecha.getTime() + 12 * 60 * 60 * 1000);
 
-    const fecha = new Date(Date.UTC(
-      inicio.getUTCFullYear(),
-      inicio.getUTCMonth(),
-      inicio.getUTCDate() + i,
-    ));
-
-    // Verificar si el guardia ya tiene un turno (no cancelado) ese día
-    const conflicto = await prisma.turno.findFirst({
-      where: {
-        usuario_id,
-        fecha,
-        estado: { not: 'cancelado' },
-      },
-    });
-
-    if (conflicto) {
-      omitidos.push({
-        fecha: fecha.toISOString().split('T')[0],
-        motivo: 'El guardia ya tiene un turno asignado en esa fecha',
+      const conflicto = await prisma.turno.findFirst({
+        where: {
+          usuario_id,
+          fecha: { gte: diaInicio, lte: diaFin },
+          estado: { not: 'cancelado' },
+        },
       });
-      continue;
+
+      if (conflicto) {
+        omitidos.push({
+          fecha: fecha.toISOString().split('T')[0],
+          motivo: `Conflicto con turno existente (${conflicto.hora_inicio}–${conflicto.hora_fin} en instalación ${conflicto.instalacion_id})`,
+        });
+        continue;
+      }
     }
 
     turnosACrear.push({
@@ -141,13 +172,23 @@ const crearPauta4x4 = async (data, creadoPor) => {
       fecha,
       hora_inicio,
       hora_fin,
-      tipo_turno: 'normal',
+      tipo_turno: esNocturno ? 'nocturno' : 'normal',
       estado: 'programado',
       creado_por: creadoPor,
     });
   }
 
-  // Insertar todos los turnos válidos en una única transacción atómica
+  if (turnosACrear.length === 0) {
+    return {
+      creados: 0,
+      omitidos: omitidos.length,
+      detalles_omitidos: omitidos,
+      turnos: [],
+      advertencia: 'No se creó ningún turno. Todos los días presentaron conflictos. Usa "Reemplazar" para sobrescribir.',
+    };
+  }
+
+  // Insertar en una única transacción atómica
   const creados = await prisma.$transaction(
     turnosACrear.map((turno) => prisma.turno.create({ data: turno })),
   );
@@ -159,6 +200,7 @@ const crearPauta4x4 = async (data, creadoPor) => {
     omitidos: omitidos.length,
     detalles_omitidos: omitidos,
     turnos: creados,
+    esNocturno,
   };
 };
 
