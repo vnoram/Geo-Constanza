@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { cacheClearAll } from "../utils/cache";
 
 // ─── STORAGE KEYS ───────────────────────────────────────────────
 const TOKEN_KEY = "gc_token";
@@ -39,6 +40,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(() => {
+    cacheClearAll(); // Purgar todos los datos cacheados antes de limpiar la sesión
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     setToken(null);

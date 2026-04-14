@@ -38,6 +38,16 @@ const obtenerHistorial = async (req, res, next) => {
   }
 };
 
+const obtenerEstadoActual = async (req, res, next) => {
+  try {
+    // El usuarioId lo tomamos del token autenticado para evitar IDOR
+    const result = await asistenciaService.obtenerEstadoActual(req.user.id);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const sincronizarOffline = async (req, res, next) => {
   try {
     const { registros } = req.body;
@@ -48,4 +58,4 @@ const sincronizarOffline = async (req, res, next) => {
   }
 };
 
-module.exports = { registrarEntrada, registrarSalida, obtenerHoy, obtenerHistorial, sincronizarOffline };
+module.exports = { registrarEntrada, registrarSalida, obtenerHoy, obtenerHistorial, obtenerEstadoActual, sincronizarOffline };

@@ -45,6 +45,14 @@ const registrarEntrada = async (data, user) => {
     );
   }
 
+  // Idempotencia: si ya existe una asistencia abierta para este turno, devolverla.
+  // Esto evita registros duplicados cuando el guardia pulsa el botón dos veces
+  // o cuando el componente re-monta tras un F5 justo en el momento del marcaje.
+  const asistenciaAbierta = await prisma.asistencia.findFirst({
+    where: { usuario_id, turno_id: turno.id, hora_salida: null },
+  });
+  if (asistenciaAbierta) return asistenciaAbierta;
+
   // Convertir coordenadas a número (pueden llegar como string desde JSON del body)
   const lat = latitud  != null ? parseFloat(latitud)  : null;
   const lon = longitud != null ? parseFloat(longitud) : null;
@@ -209,6 +217,68 @@ const obtenerHistorial = async (usuarioId, query) => {
   return { data, total, page: +page, totalPages: Math.ceil(total / +limit) };
 };
 
+// Horas máximas que una asistencia puede estar abierta antes de considerarse vencida.
+// Si un guardia olvidó marcar salida, al día siguiente puede volver a entrar.
+const MAX_HORAS_ABIERTA = 14;
+
+/**
+ * Devuelve el estado de asistencia activo del usuario autenticado.
+ *
+ * Respuesta posible:
+ *   { activo: false }                         — sin entrada abierta
+ *   { activo: false, vencido: true }          — había una pero fue auto-cerrada (>14 h)
+ *   { activo: true, asistencia_id, hora_entrada, estado,
+ *     minutos_retraso, turno_id, turno, instalacion }
+ */
+const obtenerEstadoActual = async (usuarioId) => {
+  const abierta = await prisma.asistencia.findFirst({
+    where: { usuario_id: usuarioId, hora_salida: null },
+    include: {
+      turno: {
+        select: {
+          id: true, hora_inicio: true, hora_fin: true,
+          tipo_turno: true, fecha: true, instalacion_id: true,
+          instalacion: { select: { id: true, nombre: true, direccion: true } },
+        },
+      },
+    },
+    orderBy: { hora_entrada: 'desc' },
+  });
+
+  if (!abierta) return { activo: false };
+
+  // Calcular cuántas horas lleva abierta
+  const horasAbiertas = (Date.now() - new Date(abierta.hora_entrada).getTime()) / 3_600_000;
+
+  if (horasAbiertas > MAX_HORAS_ABIERTA) {
+    // Auto-cerrar la asistencia vencida para desbloquear al guardia
+    await prisma.asistencia.update({
+      where: { id: abierta.id },
+      data: {
+        hora_salida:     new Date(),
+        horas_trabajadas: parseFloat(horasAbiertas.toFixed(2)),
+        horas_extra:     0,
+      },
+    });
+
+    try { getSocketIO().emit('admin:dashboard_update', { entity: 'asistencia' }); } catch (_) {}
+
+    return { activo: false, vencido: true };
+  }
+
+  return {
+    activo:          true,
+    asistencia_id:   abierta.id,
+    hora_entrada:    abierta.hora_entrada,
+    estado:          abierta.estado,
+    minutos_retraso: abierta.minutos_retraso,
+    turno_id:        abierta.turno_id,
+    instalacion_id:  abierta.instalacion_id,
+    turno:           abierta.turno,
+    instalacion:     abierta.turno?.instalacion ?? null,
+  };
+};
+
 const sincronizarBatch = async (registros) => {
   const resultados = [];
   for (const registro of registros) {
@@ -222,4 +292,4 @@ const sincronizarBatch = async (registros) => {
   return resultados;
 };
 
-module.exports = { registrarEntrada, registrarSalida, obtenerHoy, obtenerHistorial, sincronizarBatch };
+module.exports = { registrarEntrada, registrarSalida, obtenerHoy, obtenerHistorial, obtenerEstadoActual, sincronizarBatch };

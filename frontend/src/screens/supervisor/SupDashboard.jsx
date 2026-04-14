@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
+import { io } from "socket.io-client";
 import { T } from "../../theme/theme";
 import { KPI } from "../../components/ui/KPI";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
+import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
+const API_BASE   = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
 const SOCKET_URL = API_BASE.replace("/api/v1", "");
 
 const ESTADO_COLOR = { presente: T.accent, tardio: T.yellow, faltante: T.red };
@@ -12,8 +14,11 @@ const ESTADO_LABEL = { presente: "Presente", tardio: "Tardío", faltante: "Falta
 
 export function SupDashboard() {
   const { token } = useAuth();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+
+  // Semilla desde caché: datos visibles de inmediato al cargar la pantalla
+  const [data,    setData]    = useState(() => cacheRead(CACHE_KEYS.supDashboard));
+  // Solo mostramos spinner si no hay absolutamente nada cacheado
+  const [loading, setLoading] = useState(() => cacheRead(CACHE_KEYS.supDashboard) === null);
   const socketRef = useRef(null);
 
   const fetchData = async () => {
@@ -22,25 +27,25 @@ export function SupDashboard() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
-      if (res.ok) setData(json);
-    } catch {}
+      if (res.ok) { setData(json); cacheWrite(CACHE_KEYS.supDashboard, json); }
+    } catch { /* silencioso — mantenemos los datos cacheados */ }
     finally { setLoading(false); }
   };
 
   useEffect(() => {
     fetchData();
     try {
-      const { io } = require("socket.io-client");
       const socket = io(SOCKET_URL, { auth: { token }, transports: ["websocket"] });
       socketRef.current = socket;
       socket.on("guardia:entrada", fetchData);
-      socket.on("guardia:atraso", fetchData);
+      socket.on("guardia:atraso",  fetchData);
       return () => socket.disconnect();
-    } catch {}
-  }, [token]);
+    } catch { /* Socket.IO no disponible — funciona sin tiempo real */ }
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Spinner solo en primera carga sin caché
   if (loading) return <div style={{ textAlign: "center", padding: 40, color: T.textMut }}>⏳ Cargando...</div>;
-  if (!data) return <div style={{ textAlign: "center", padding: 40, color: T.red }}>Error al cargar datos</div>;
+  if (!data)   return <div style={{ textAlign: "center", padding: 40, color: T.red }}>Error al cargar datos</div>;
 
   return (
     <div>

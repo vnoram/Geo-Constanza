@@ -3,6 +3,7 @@ import { T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
+import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 
 // Convierte "19:00"/"07:00" en texto legible indicando si termina al día siguiente
 function formatHorario(inicio, fin) {
@@ -102,31 +103,33 @@ function BloqueCard({ turnos, numeroCiclo }) {
 }
 
 export function LibreTurnos() {
-  const [turnos, setTurnos]   = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError]     = useState("");
+  // Semilla desde caché — turnos visibles de inmediato en F5
+  const [turnos,   setTurnos]   = useState(() => cacheRead(CACHE_KEYS.ggsssTurnos) ?? []);
+  const [cargando, setCargando] = useState(() => cacheRead(CACHE_KEYS.ggsssTurnos) === null);
+  const [error,    setError]    = useState("");
 
   useEffect(() => {
     const cargar = async () => {
-      setCargando(true);
+      // Solo activar el spinner si no hay datos previos
+      if (turnos.length === 0) setCargando(true);
       setError("");
       try {
         const data = await api.get("/turnos");
-        // El backend puede devolver array plano o paginado
         const lista = Array.isArray(data) ? data : (data.data ?? []);
-        // Filtrar sólo los no cancelados y ordenar por fecha
         const vigentes = lista
           .filter((t) => t.estado !== "cancelado")
           .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
         setTurnos(vigentes);
-      } catch (e) {
-        setError("No se pudieron cargar los turnos. Intenta de nuevo.");
+        cacheWrite(CACHE_KEYS.ggsssTurnos, vigentes);
+      } catch {
+        // Si hay datos cacheados, el error es silencioso; si no, lo mostramos
+        if (turnos.length === 0) setError("No se pudieron cargar los turnos. Intenta de nuevo.");
       } finally {
         setCargando(false);
       }
     };
     cargar();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const ciclos = agruparCiclos(turnos);
 

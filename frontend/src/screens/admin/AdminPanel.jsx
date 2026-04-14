@@ -5,6 +5,7 @@ import { KPI } from "../../components/ui/KPI";
 import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
+import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 
 const API_BASE   = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
 const SOCKET_URL = API_BASE.replace("/api/v1", "");
@@ -49,10 +50,12 @@ function useLeafletCDN(onReady) {
 }
 
 // ─── MAPA DE INSTALACIONES ───────────────────────────────────────
-const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicacion }) {
-  const containerRef    = useRef(null);
-  const mapRef          = useRef(null);
-  const guardiasRef     = useRef({});
+const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicacion, guardiasIniciales = {} }) {
+  const containerRef         = useRef(null);
+  const mapRef               = useRef(null);
+  const guardiasRef          = useRef({});
+  // Capturar en ref para no relanzar el efecto de init cuando cambie el prop
+  const guardiasInicialesRef = useRef(guardiasIniciales);
   const [mapReady,  setMapReady]  = useState(false);
   const [cargando,  setCargando]  = useState(true);
 
@@ -93,6 +96,24 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
           }).addTo(map);
         });
         if (pts.length) map.fitBounds(pts, { padding: [40, 40], maxZoom: 14 });
+
+        // Trazar ubicaciones de guardias persistidas en caché (marcadores semitransparentes)
+        Object.values(guardiasInicialesRef.current).forEach((ub) => {
+          const { guardia_id, latitud, longitud, estado, hora } = ub;
+          if (!latitud || !longitud) return;
+          const color = estado === "tardio" ? "#FFBE2E" : "#00E5B0";
+          const icon = L.divIcon({
+            html: `<div style="width:9px;height:9px;background:${color};border:2px solid #060D18;border-radius:50%;opacity:0.55;box-shadow:0 0 6px ${color};"></div>`,
+            className: "", iconSize: [9, 9], iconAnchor: [4, 4],
+          });
+          const t = hora ? new Date(hora).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }) : "—";
+          guardiasRef.current[guardia_id] = L.marker([latitud, longitud], { icon })
+            .addTo(map)
+            .bindPopup(
+              `<b>Última ubicación conocida</b><br>Hora: ${t}<br><span style="color:${color};font-size:10px">${estado === "tardio" ? "⚠️ Tardío" : "✓ A tiempo"} (sesión anterior)</span>`,
+              { className: estado === "tardio" ? "gc-popup-warn" : "gc-popup" },
+            );
+        });
       })
       .catch((e) => console.error("[Mapa] Error cargando instalaciones:", e))
       .finally(() => setCargando(false));
@@ -257,10 +278,18 @@ const ACCIONES = [
 // ─── PANTALLA PRINCIPAL ──────────────────────────────────────────
 export function AdminPanel() {
   const { token } = useAuth();
-  const [stats,           setStats]           = useState(null);
-  const [analytics,       setAnalytics]       = useState(null);
-  const [loading,         setLoading]         = useState(true);
-  const [socketStatus,    setSocketStatus]    = useState("disconnected");
+
+  // ── Estado con semilla desde caché (silent refresh en segundo plano) ──
+  const [stats,              setStats]           = useState(() => cacheRead(CACHE_KEYS.adminStats));
+  const [analytics,          setAnalytics]       = useState(() => cacheRead(CACHE_KEYS.adminAnalytics));
+  // Si había datos cacheados, no mostramos spinner invasivo
+  const [loading,            setLoading]         = useState(() => cacheRead(CACHE_KEYS.adminStats) === null);
+  const [socketStatus,       setSocketStatus]    = useState("disconnected");
+  // Mapa completo de ubicaciones de guardias { [guardia_id]: { latitud, longitud, estado, hora } }
+  const [guardiasUbicacion,  setGuardiasUbicacion] = useState(
+    () => cacheRead(CACHE_KEYS.adminGuardiasMapa) ?? {},
+  );
+  // Última actualización individual (dispara el efecto del marcador en tiempo real)
   const [ultimaUbicacion, setUltimaUbicacion] = useState(null);
   const socketRef = useRef(null);
 
@@ -268,7 +297,7 @@ export function AdminPanel() {
     try {
       const res  = await fetch(`${API_BASE}/dashboard/hoy`, { headers: { Authorization: `Bearer ${token}` } });
       const json = await res.json();
-      if (res.ok) setStats(json);
+      if (res.ok) { setStats(json); cacheWrite(CACHE_KEYS.adminStats, json); }
     } catch (e) {
       console.error("[AdminPanel] fetchStats:", e);
     } finally {
@@ -280,7 +309,7 @@ export function AdminPanel() {
     try {
       const res  = await fetch(`${API_BASE}/reportes/semana`, { headers: { Authorization: `Bearer ${token}` } });
       const json = await res.json();
-      if (res.ok) setAnalytics(json);
+      if (res.ok) { setAnalytics(json); cacheWrite(CACHE_KEYS.adminAnalytics, json); }
     } catch (e) {
       console.error("[AdminPanel] fetchAnalytics:", e);
     }
@@ -306,7 +335,14 @@ export function AdminPanel() {
 
     socket.on("guardia:ubicacion", (p) => {
       console.log("[AdminPanel] Ubicación guardia →", p);
+      // Actualizar el marcador en tiempo real
       setUltimaUbicacion(p);
+      // Persistir la ubicación en el mapa completo y en caché
+      setGuardiasUbicacion((prev) => {
+        const next = { ...prev, [p.guardia_id]: p };
+        cacheWrite(CACHE_KEYS.adminGuardiasMapa, next);
+        return next;
+      });
     });
 
     return () => { socket.disconnect(); };
@@ -319,16 +355,16 @@ export function AdminPanel() {
       <SectionHeader title="Panel Central" sub="Vista general del sistema" />
       <SocketBadge status={socketStatus} />
 
-      {/* KPIs */}
+      {/* KPIs — muestran datos cacheados inmediatamente; "—" solo si aún no hay nada */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-        <KPI label="Guardias"      value={loading ? "—" : (s?.totalGuardias      ?? "—")} sub="activos"     accent="#B98CFF" />
-        <KPI label="Instalaciones" value={loading ? "—" : (s?.totalInstalaciones ?? "—")} sub="operativas"  accent="#B98CFF" />
-        <KPI label="Turnos Hoy"    value={loading ? "—" : (stats?.total          ?? "—")} sub="programados" accent={T.accent} />
-        <KPI label="Cobertura"     value={loading ? "—" : `${s?.coberturaMensual ?? 0}%`} sub="mensual"     accent={T.accent} />
+        <KPI label="Guardias"      value={s?.totalGuardias      ?? (loading ? "…" : "—")} sub="activos"     accent="#B98CFF" />
+        <KPI label="Instalaciones" value={s?.totalInstalaciones ?? (loading ? "…" : "—")} sub="operativas"  accent="#B98CFF" />
+        <KPI label="Turnos Hoy"    value={stats?.total          ?? (loading ? "…" : "—")} sub="programados" accent={T.accent} />
+        <KPI label="Cobertura"     value={s ? `${s.coberturaMensual ?? 0}%` : (loading ? "…" : "—")} sub="mensual" accent={T.accent} />
       </div>
 
-      {/* Mini stats */}
-      {!loading && stats && (
+      {/* Mini stats — visibles aunque haya un refresh en curso */}
+      {stats && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
           <MiniStat value={stats.presentes} label="Presentes" color={T.accent} />
           <MiniStat value={stats.tardios}   label="Tardíos"   color={T.yellow} />
@@ -365,8 +401,8 @@ export function AdminPanel() {
           </div>
         </div>
 
-        {/* Donut: estado guardias hoy */}
-        {!loading && stats && (
+        {/* Donut: estado guardias hoy — visible con datos cacheados */}
+        {stats && (
           <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 12px" }}>
             <div style={{ fontSize: 10, color: T.textSec, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 }}>
               Estado Hoy
@@ -378,7 +414,11 @@ export function AdminPanel() {
 
       {/* Mapa */}
       <SubHeader title="Instalaciones · Mapa en Vivo" />
-      <MapaInstalaciones token={token} ultimaUbicacion={ultimaUbicacion} />
+      <MapaInstalaciones
+        token={token}
+        ultimaUbicacion={ultimaUbicacion}
+        guardiasIniciales={guardiasUbicacion}
+      />
 
       {/* Acciones */}
       <SubHeader title="Acciones Rápidas" />
