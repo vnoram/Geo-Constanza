@@ -20,6 +20,9 @@ import { SupSolicitudes } from "../../screens/supervisor/SupSolicitudes";
 import { SupGuardias } from "../../screens/supervisor/SupGuardias";
 import { SupReportes } from "../../screens/supervisor/SupReportes";
 
+// ─── Central ───
+import { CentralPanel } from "../../screens/central/CentralPanel";
+
 // ─── Admin ───
 import { AdminPanel } from "../../screens/admin/AdminPanel";
 import { AdminUsuarios } from "../../screens/admin/AdminUsuarios";
@@ -59,12 +62,17 @@ function RoleContent({ user, rol, section }) {
     if (section === "guardias") return <SupGuardias />;
     if (section === "reportes") return <SupReportes />;
   }
+  if (rol === "central") {
+    // "panel" reutiliza el dashboard completo con mapa + KPIs de AdminPanel
+    if (section === "panel")      return <AdminPanel />;
+    if (section === "incidentes") return <CentralPanel section="incidentes" />;
+  }
   if (rol === "admin") {
-    if (section === "panel") return <AdminPanel />;
-    if (section === "usuarios") return <AdminUsuarios />;
+    // Admin ya no tiene el panel de monitoreo — solo gestión RRHH/config
+    if (section === "usuarios")      return <AdminUsuarios />;
     if (section === "instalaciones") return <AdminInstalaciones />;
-    if (section === "turnos") return <AdminTurnos />;
-    if (section === "auditoria") return <AdminAuditoria />;
+    if (section === "turnos")        return <AdminTurnos />;
+    if (section === "auditoria")     return <AdminAuditoria />;
   }
   return <Placeholder section={section} />;
 }

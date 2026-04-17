@@ -1,10 +1,11 @@
 import { T } from "../../theme/theme";
 
 const DEMO_USERS = [
-  { rut: "20570418-3", rol: "GGSS Pauta",   name: "V. Norambuena" },
-  { rut: "19234567-8", rol: "GGSS Libre",   name: "M. López"       },
-  { rut: "15678901-2", rol: "Supervisor",   name: "A. Martínez"    },
-  { rut: "12812223-0", rol: "Admin",        name: "C. González"    },
+  { rut: "11111111-1", rol: "CENTRAL (Monitoreo)", name: "Op. Central"    },
+  { rut: "12812223-0", rol: "ADMIN (Gestión)",     name: "C. González"    },
+  { rut: "15678901-2", rol: "Supervisor",          name: "A. Martínez"    },
+  { rut: "20570418-3", rol: "GGSS Pauta",         name: "V. Norambuena"  },
+  { rut: "19234567-8", rol: "GGSS Libre",         name: "M. López"       },
 ];
 
 export function DemoPanel({ onSelect }) {

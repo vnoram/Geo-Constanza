@@ -40,12 +40,13 @@ export function useLoginForm({ onLogin }) {
     setLoading(true);
     try {
       const result = await api.login(rut.trim(), pass);
-      if (result.user.rol === "supervisor" || result.user.rol === "admin") {
-        setPendingUser(result);
-        setStep("2fa");
-      } else {
-        onLogin(result.user, result.token);
-      }
+      // DEV: 2FA desactivado temporalmente — todos los roles pasan directo al sistema
+      // if (result.user.rol === "supervisor" || result.user.rol === "admin") {
+      //   setPendingUser(result);
+      //   setStep("2fa");
+      // } else {
+      onLogin(result.user, result.token);
+      // }
       setAttempts(0);
     } catch (err) {
       const next = attempts + 1;

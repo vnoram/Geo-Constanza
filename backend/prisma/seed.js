@@ -9,163 +9,141 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-// Coordenadas de tu casa
+// Coordenadas de tu casa para pruebas de GPS
 const MI_CASA_LAT = -33.631159950640374;
 const MI_CASA_LON = -70.61026949159188;
 
 async function main() {
-  console.log('🌱 Iniciando seed...');
+  console.log('🌱 Iniciando seed con arquitectura de roles definitiva...');
 
-  // Limpiar datos previos en orden (respetar foreign keys)
+  // 1. Limpiar datos previos en orden correcto
   await prisma.asistencia.deleteMany();
   await prisma.novedad.deleteMany();
   await prisma.solicitud.deleteMany();
   await prisma.auditoria.deleteMany();
   await prisma.turno.deleteMany();
-  await prisma.supervisor_Instalacion.deleteMany();
-  await prisma.instalacion.deleteMany();
+  
+  // Limpieza de tablas de usuario e instalación
   await prisma.usuario.deleteMany();
+  await prisma.instalacion.deleteMany();
 
   console.log('🧹 Base de datos limpia');
 
-  // 1. Instalación
+  // 2. Crear Instalación Principal (Puente Alto)
   const instalacion = await prisma.instalacion.create({
     data: {
-      nombre: 'Casa de Prueba — Geoconstanza',
-      direccion: 'Mi dirección de prueba',
+      nombre: 'CENTRO OPERATIVO PUENTE ALTO',
+      direccion: 'Av. Concha y Toro, Puente Alto',
       latitud: MI_CASA_LAT,
       longitud: MI_CASA_LON,
-      radio_geofence_m: 100,
+      radio_geofence_m: 150, // Radio de 150 metros
       tipo_recinto: 'Residencial',
-      nivel_criticidad: 'Baja',
+      nivel_criticidad: 'Media',
       estado: 'activo',
     },
   });
-  console.log(`✅ Instalación: ${instalacion.nombre} (ID: ${instalacion.id})`);
+  console.log(`✅ Instalación creada: ${instalacion.nombre}`);
 
-  // 12 rounds — igual que BCRYPT_ROUNDS en auth.service.js
-  const hashGeo    = await bcrypt.hash('geo2026', 12);
-  const hashTest   = await bcrypt.hash('123456', 12);
+  const hashGeo = await bcrypt.hash('geo2026', 12);
 
-  // 2. Guardia principal
-  const guardia = await prisma.usuario.create({
-    data: {
-      rut: '20570418-3',
-      nombre: 'Víctor Norambuena',
-      email: 'victor.norambuena@geoconstanza.cl',
-      telefono: '+56912345678',
-      password_hash: hashGeo,
-      rol: 'pauta',
-      estado: 'activo',
-    },
-  });
-  console.log(`✅ Guardia: ${guardia.nombre} | ${guardia.email}`);
+  // 3. Crear los 5 Roles Funcionales
 
-  // 3. Usuario test (el que pediste)
-  const guardiaTest = await prisma.usuario.create({
-    data: {
-      rut: '11111111-1',
-      nombre: 'Usuario Test',
-      email: 'test@test.com',
-      password_hash: hashTest,
-      rol: 'pauta',
-      estado: 'activo',
-    },
-  });
-  console.log(`✅ Test: ${guardiaTest.email} | pass: 123456`);
-
-  // 4. Supervisor
-  const supervisor = await prisma.usuario.create({
-    data: {
-      rut: '15678901-2',
-      nombre: 'Andrés Martínez',
-      email: 'andres.martinez@geoconstanza.cl',
-      password_hash: hashGeo,
-      rol: 'supervisor',
-      estado: 'activo',
-    },
-  });
-  console.log(`✅ Supervisor: ${supervisor.nombre}`);
-
-  // 5. Asignar supervisor a instalación
-  await prisma.supervisor_Instalacion.create({
-    data: {
-      supervisor_id: supervisor.id,
-      instalacion_id: instalacion.id,
-    },
-  });
-
-  // 6. Turno HOY para guardia principal
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-
-  const turno = await prisma.turno.create({
-    data: {
-      usuario_id: guardia.id,
-      instalacion_id: instalacion.id,
-      fecha: hoy,
-      hora_inicio: '06:00',
-      hora_fin: '14:00',
-      tipo_turno: 'normal',
-      estado: 'programado',
-      creado_por: supervisor.id,
-    },
-  });
-  console.log(`✅ Turno guardia: ${turno.hora_inicio}–${turno.hora_fin}`);
-
-  // 7. Turno HOY para usuario test
-  const turnoTest = await prisma.turno.create({
-    data: {
-      usuario_id: guardiaTest.id,
-      instalacion_id: instalacion.id,
-      fecha: hoy,
-      hora_inicio: '06:00',
-      hora_fin: '14:00',
-      tipo_turno: 'normal',
-      estado: 'programado',
-      creado_por: supervisor.id,
-    },
-  });
-  console.log(`✅ Turno test: ${turnoTest.hora_inicio}–${turnoTest.hora_fin}`);
-  // backend/prisma/seed.js
-
-// ... después del supervisor ...
-
-  // 8. GGSS Libre (aparece en el DemoPanel pero faltaba en el seed)
-  const guardiaLibre = await prisma.usuario.create({
-    data: {
-      rut: '19234567-8',
-      nombre: 'M. López',
-      email: 'm.lopez@geoconstanza.cl',
-      password_hash: hashGeo,
-      rol: 'libre',
-      estado: 'activo',
-    },
-  });
-  console.log(`✅ GGSS Libre: ${guardiaLibre.nombre} | ${guardiaLibre.email}`);
-
-  // 9. Administrador
-  const admin = await prisma.usuario.create({
+  // ADMIN (El encargado de RRHH: agrega usuarios, asigna pautas)
+  const adminGestion = await prisma.usuario.create({
     data: {
       rut: '12812223-0',
-      nombre: 'C. González',
-      email: 'admin@geoconstanza.cl',
+      nombre: 'Administrador de Gestión',
+      email: 'gestion@geoconstanza.cl',
       password_hash: hashGeo,
       rol: 'admin',
       estado: 'activo',
     },
   });
-  console.log(`✅ Admin: ${admin.nombre} | ${admin.email}`);
 
-  console.log('\n📋 RESUMEN:');
-  console.log(`   Instalación ID : ${instalacion.id}`);
-  console.log(`   Guardia Pauta  : ${guardia.email} | geo2026`);
-  console.log(`   Guardia Libre  : ${guardiaLibre.email} | geo2026`);
-  console.log(`   Test           : ${guardiaTest.email} | 123456`);
-  console.log(`   Supervisor     : ${supervisor.email} | geo2026`);
-  console.log(`   Admin          : ${admin.email} | geo2026`);
-  console.log(`   Turno hoy      : 06:00–14:00 en ${instalacion.nombre}`);
-  console.log('\n✅ Seed completado');
+  // CENTRAL (Operador de monitoreo: usa el email admin@... como pediste)
+  await prisma.usuario.create({
+    data: {
+      rut: '11111111-1',
+      nombre: 'Operador Central',
+      email: 'admin@geoconstanza.cl',
+      password_hash: hashGeo,
+      rol: 'central',
+      estado: 'activo',
+    },
+  });
+
+  // SUPERVISOR (Control de terreno)
+  const supervisor = await prisma.usuario.create({
+    data: {
+      rut: '15678901-2',
+      nombre: 'Andrés Martínez',
+      email: 'supervisor@geoconstanza.cl',
+      password_hash: hashGeo,
+      rol: 'supervisor',
+      instalacion_asignada_id: instalacion.id,
+      estado: 'activo',
+    },
+  });
+
+  // GGSS PAUTA (Víctor - Marcaje en Tablet)
+  const guardiaPauta = await prisma.usuario.create({
+    data: {
+      rut: '20570418-3',
+      nombre: 'Víctor Norambuena',
+      email: 'pauta@geoconstanza.cl',
+      password_hash: hashGeo,
+      rol: 'pauta',
+      tipo_ggss: 'pauta',
+      instalacion_asignada_id: instalacion.id,
+      imei_dispositivo: 'TABLET_PROV_01',
+      dispositivo_principal: 'tablet_empresa',
+      estado: 'activo',
+    },
+  });
+
+  // GGSS LIBRE (M. López - Marcaje en Móvil Personal)
+  await prisma.usuario.create({
+    data: {
+      rut: '19234567-8',
+      nombre: 'M. López',
+      email: 'libre@geoconstanza.cl',
+      password_hash: hashGeo,
+      rol: 'libre',
+      tipo_ggss: 'libre',
+      instalacion_asignada_id: instalacion.id,
+      dispositivo_principal: 'mobil_personal',
+      estado: 'activo',
+    },
+  });
+
+  console.log('✅ Usuarios y Roles creados con éxito.');
+
+  // 4. Crear un Turno para hoy para Víctor (Pauta)
+  const hoy = new Date();
+  hoy.setHours(12, 0, 0, 0);
+
+  await prisma.turno.create({
+    data: {
+      usuario_id: guardiaPauta.id,
+      instalacion_id: instalacion.id,
+      fecha: hoy,
+      hora_inicio: '08:00',
+      hora_fin: '20:00',
+      tipo_turno: 'normal',
+      estado: 'programado',
+      creado_por: adminGestion.id,
+    },
+  });
+
+  console.log('\n📋 CREDENCIALES FINALES PARA LA DEMO:');
+  console.log('--------------------------------------------------');
+  console.log('ADMIN (Gestión)   : gestion@geoconstanza.cl | geo2026');
+  console.log('CENTRAL (Mapa)    : admin@geoconstanza.cl | geo2026');
+  console.log('SUPERVISOR        : supervisor@geoconstanza.cl | geo2026');
+  console.log('PAUTA (Víctor)    : pauta@geoconstanza.cl | geo2026');
+  console.log('LIBRE             : libre@geoconstanza.cl | geo2026');
+  console.log('--------------------------------------------------');
+  console.log('\n✅ Seed completado.');
 }
 
 main()

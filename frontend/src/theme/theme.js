@@ -58,17 +58,26 @@ export const ROLES = {
       { id: "reportes", icon: "📑", label: "Reportes", badge: null },
     ],
   },
-  admin: {
-    label: "Central / Admin",
-    icon: "⚙️",
+  central: {
+    label: "Central de Monitoreo",
+    icon: "📡",
     color: "#B98CFF",
-    desc: "Gestión completa del sistema",
+    desc: "Monitoreo global de operaciones",
     sections: [
-      { id: "panel", icon: "📊", label: "Panel", badge: null },
-      { id: "usuarios", icon: "👥", label: "Usuarios", badge: null },
+      { id: "panel",      icon: "🗺️", label: "Mapa en Vivo", badge: null },
+      { id: "incidentes", icon: "🚨", label: "Novedades",    badge: null },
+    ],
+  },
+  admin: {
+    label: "Administración / RRHH",
+    icon: "⚙️",
+    color: "#FF6B6B",
+    desc: "Gestión de usuarios, instalaciones y turnos",
+    sections: [
+      { id: "usuarios",      icon: "👥", label: "Usuarios",      badge: null },
       { id: "instalaciones", icon: "🏢", label: "Instalaciones", badge: null },
-      { id: "turnos", icon: "📅", label: "Turnos", badge: null },
-      { id: "auditoria", icon: "🔍", label: "Auditoría", badge: null },
+      { id: "turnos",        icon: "📅", label: "Turnos",        badge: null },
+      { id: "auditoria",     icon: "🔍", label: "Auditoría",     badge: null },
     ],
   },
 };
