@@ -107,4 +107,13 @@ const crearPauta4x4 = async (req, res, next) => {
   }
 };
 
-module.exports = { listar, obtener, crear, crearLote, crearPauta4x4, editar, cancelar, verificarConflictos };
+const listarDisponibles = async (req, res, next) => {
+  try {
+    const result = await turnosService.listarDisponibles(req.user);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { listar, obtener, crear, crearLote, crearPauta4x4, editar, cancelar, verificarConflictos, listarDisponibles };

@@ -7,7 +7,11 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/', authorize('supervisor', 'admin'), usuariosController.listar);
+// ── Perfil propio (cualquier rol autenticado) ──────────────────────────────
+router.get('/me', usuariosController.miInformacion);
+
+// ── CRUD (solo admin, supervisor puede listar) ─────────────────────────────
+router.get('/', authorize('supervisor', 'central', 'admin'), usuariosController.listar);
 router.post('/', authorize('admin'), usuariosController.crear);
 router.put('/:id', authorize('admin'), usuariosController.editar);
 router.patch('/:id/desactivar', authorize('admin'), usuariosController.desactivar);

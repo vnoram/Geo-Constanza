@@ -9,7 +9,10 @@ const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
 const login = async (rut, password, ip, userAgent) => {
-  const usuario = await prisma.usuario.findUnique({ where: { rut } });
+  const usuario = await prisma.usuario.findUnique({
+    where: { rut },
+    include: { instalacion_asignada: { select: { id: true, nombre: true } } },
+  });
   if (!usuario || usuario.estado !== 'activo') {
     throw Object.assign(new Error('Credenciales inválidas'), { statusCode: 401 });
   }
@@ -74,7 +77,12 @@ const requestPasswordReset = async (email) => {
 };
 
 const generateTokens = (usuario) => {
-  const payload = { id: usuario.id, email: usuario.email, rol: usuario.rol };
+  const payload = {
+    id: usuario.id,
+    email: usuario.email,
+    rol: usuario.rol,
+    tipo_ggss: usuario.tipo_ggss || null,
+  };
   const accessToken = jwt.sign(payload, jwtConfig.accessSecret, { expiresIn: jwtConfig.expiresIn[usuario.rol] });
   const refreshToken = jwt.sign({ id: usuario.id }, jwtConfig.refreshSecret, { expiresIn: jwtConfig.refreshExpiresIn });
   return { accessToken, refreshToken };
@@ -85,6 +93,8 @@ const sanitizeUser = (usuario) => ({
   nombre: usuario.nombre,
   email: usuario.email,
   rol: usuario.rol,
+  tipo_ggss: usuario.tipo_ggss || null,
+  instalacion_asignada: usuario.instalacion_asignada || null,
 });
 
 module.exports = { login, verify2FA, refreshToken, logout, requestPasswordReset };

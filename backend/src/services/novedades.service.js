@@ -3,10 +3,9 @@ const { getSocketIO } = require('../socket/socketManager');
 const priorizacion = require('./priorizacion.service');
 
 const listar = async (query, user) => {
-  const { instalacion_id, tipo, urgencia, estado, fecha_inicio, fecha_fin } = query;
+  const { instalacion_id, tipo, urgencia, estado, fecha_inicio, fecha_fin, page = 1, limit = 50 } = query;
   const where = {};
 
-  if (instalacion_id) where.instalacion_id = instalacion_id;
   if (tipo) where.tipo = tipo;
   if (urgencia) where.urgencia = urgencia;
   if (estado) where.estado = estado;
@@ -16,14 +15,35 @@ const listar = async (query, user) => {
     if (fecha_fin) where.created_at.lte = new Date(fecha_fin);
   }
 
-  return prisma.novedad.findMany({
-    where,
-    include: {
-      usuario: { select: { id: true, nombre: true } },
-      instalacion: { select: { id: true, nombre: true } },
-    },
-    orderBy: [{ urgencia: 'asc' }, { created_at: 'desc' }],
-  });
+  // Supervisor: solo ve novedades de su(s) instalación(es)
+  if (user.rol === 'supervisor') {
+    const asignaciones = await prisma.supervisor_Instalacion.findMany({
+      where: { supervisor_id: user.id },
+      select: { instalacion_id: true },
+    });
+    const ids = asignaciones.map(a => a.instalacion_id);
+    where.instalacion_id = instalacion_id ? instalacion_id : { in: ids };
+  } else if (instalacion_id) {
+    // Central/Admin pueden filtrar por instalación explícita
+    where.instalacion_id = instalacion_id;
+  }
+
+  const skip = (+page - 1) * +limit;
+  const [data, total] = await Promise.all([
+    prisma.novedad.findMany({
+      where,
+      include: {
+        usuario: { select: { id: true, nombre: true } },
+        instalacion: { select: { id: true, nombre: true } },
+      },
+      orderBy: [{ urgencia: 'asc' }, { created_at: 'desc' }],
+      skip,
+      take: +limit,
+    }),
+    prisma.novedad.count({ where }),
+  ]);
+
+  return { data, total, page: +page, totalPages: Math.ceil(total / +limit) };
 };
 
 const obtenerPorId = async (id, user) => {
@@ -46,6 +66,18 @@ const crear = async (data, file, user) => {
     where: { usuario_id: user.id, fecha: hoy, estado: { not: 'cancelado' } },
     include: { instalacion: true },
   });
+
+  // GGSS libre: validar que tenga solicitud de turno aprobada para hoy
+  if (!turno && user.rol === 'libre') {
+    const { tieneturnoAprobadoHoy } = require('./solicitudes.service');
+    const tieneAprobado = await tieneturnoAprobadoHoy(user.id);
+    if (!tieneAprobado) {
+      throw Object.assign(
+        new Error('No tienes un turno aprobado para hoy. Solo puedes reportar novedades durante un turno activo.'),
+        { statusCode: 403 },
+      );
+    }
+  }
 
   if (!turno) {
     throw Object.assign(new Error('No tienes un turno activo para reportar novedades'), { statusCode: 400 });

@@ -7,13 +7,21 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/', authorize('pauta', 'libre', 'supervisor', 'admin'), turnosController.listar);
-router.get('/conflictos', authorize('supervisor', 'admin'), turnosController.verificarConflictos);
-router.get('/:id', turnosController.obtener);
-router.post('/', authorize('supervisor', 'admin'), turnosController.crear);
-router.post('/lote', authorize('admin'), turnosController.crearLote);
-router.post('/pauta-4x4', authorize('admin'), turnosController.crearPauta4x4);
-router.put('/:id', authorize('supervisor', 'admin'), turnosController.editar);
-router.patch('/:id/cancelar', authorize('supervisor', 'admin'), turnosController.cancelar);
+// ── GGSS Libre: ver turnos disponibles en su instalación asignada ──────────
+router.get('/disponibles', authorize('libre'), turnosController.listarDisponibles);
+
+// ── Verificar conflictos (antes de /:id para evitar captura) ───────────────
+router.get('/conflictos', authorize('supervisor', 'central', 'admin'), turnosController.verificarConflictos);
+
+// ── Creación de pautas y lotes (antes de /:id) ────────────────────────────
+router.post('/lote',      authorize('central', 'admin'), turnosController.crearLote);
+router.post('/pauta-4x4', authorize('central', 'admin'), turnosController.crearPauta4x4);
+
+// ── CRUD general ──────────────────────────────────────────────────────────
+router.get('/',    authorize('pauta', 'libre', 'supervisor', 'central', 'admin'), turnosController.listar);
+router.get('/:id', authorize('pauta', 'libre', 'supervisor', 'central', 'admin'), turnosController.obtener);
+router.post('/',   authorize('supervisor', 'central', 'admin'), turnosController.crear);
+router.put('/:id', authorize('supervisor', 'central', 'admin'), turnosController.editar);
+router.patch('/:id/cancelar', authorize('supervisor', 'central', 'admin'), turnosController.cancelar);
 
 module.exports = router;

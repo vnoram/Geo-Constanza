@@ -7,9 +7,12 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/', authorize('libre', 'supervisor', 'admin'), solicitudesController.listar);
-router.post('/', authorize('libre'), solicitudesController.crear);
-router.patch('/:id/aprobar', authorize('supervisor'), solicitudesController.aprobar);
-router.patch('/:id/rechazar', authorize('supervisor'), solicitudesController.rechazar);
+// ── GGSS: ver y crear sus propias solicitudes ─────────────────────────────
+router.get('/',  authorize('pauta', 'libre', 'supervisor', 'central', 'admin'), solicitudesController.listar);
+router.post('/', authorize('pauta', 'libre'), solicitudesController.crear);
+
+// ── Supervisor/Admin: aprobar y rechazar ──────────────────────────────────
+router.patch('/:id/aprobar',  authorize('supervisor', 'admin'), solicitudesController.aprobar);
+router.patch('/:id/rechazar', authorize('supervisor', 'admin'), solicitudesController.rechazar);
 
 module.exports = router;

@@ -9,6 +9,34 @@ const registrarEntrada = async (req, res, next) => {
   }
 };
 
+/**
+ * POST /asistencia/entrada-tablet
+ * Entrada principal desde tablet fija (GGSS en pauta).
+ */
+const registrarEntradaTablet = async (req, res, next) => {
+  try {
+    const result = await asistenciaService.registrarEntradaTablet(req.body, req.user);
+    res.status(201).json({ ...result, dispositivo_usado: 'tablet', es_fallback: false });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /asistencia/entrada-fallback
+ * Entrada desde móvil (fallback).
+ * - GGSS pauta: siempre permitido, registra es_fallback=true
+ * - GGSS libre: solo si tiene turno aprobado hoy
+ */
+const registrarEntradaFallback = async (req, res, next) => {
+  try {
+    const result = await asistenciaService.registrarEntradaFallback(req.body, req.user);
+    res.status(201).json({ ...result, dispositivo_usado: 'mobil_empresa', es_fallback: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const registrarSalida = async (req, res, next) => {
   try {
     const result = await asistenciaService.registrarSalida(req.body, req.user);
@@ -58,4 +86,13 @@ const sincronizarOffline = async (req, res, next) => {
   }
 };
 
-module.exports = { registrarEntrada, registrarSalida, obtenerHoy, obtenerHistorial, obtenerEstadoActual, sincronizarOffline };
+module.exports = {
+  registrarEntrada,
+  registrarEntradaTablet,
+  registrarEntradaFallback,
+  registrarSalida,
+  obtenerHoy,
+  obtenerHistorial,
+  obtenerEstadoActual,
+  sincronizarOffline,
+};

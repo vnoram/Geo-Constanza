@@ -7,7 +7,7 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/', authorize('supervisor', 'admin'), instalacionesController.listar);
+router.get('/', authorize('supervisor', 'central', 'admin'), instalacionesController.listar);
 router.post('/', authorize('admin'), instalacionesController.crear);
 router.put('/:id', authorize('admin'), instalacionesController.editar);
 

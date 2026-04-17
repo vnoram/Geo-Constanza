@@ -8,30 +8,41 @@ datasource db {
   provider = "postgresql"
 }
 
-// ... tus modelos (Guardia, Turno, etc.)
-
-// ─── 1. USUARIOS (Guardias, Supervisores, Admins) ───
+// ─── 1. USUARIOS (Guardias, Supervisores, Central, Admins) ───
+// Roles: 'pauta' | 'libre' | 'supervisor' | 'central' | 'admin'
 model Usuario {
-  id                  String     @id @default(uuid())
-  rut                 String     @unique
-  nombre              String
-  email               String     @unique
-  telefono            String?
-  password_hash       String
-  rol                 String     // 'pauta', 'libre', 'supervisor', 'admin'
-  estado              String     @default("activo") // 'activo', 'inactivo'
-  two_factor_secret   String?
-  created_at          DateTime   @default(now())
-  updated_at          DateTime   @updatedAt
+  id                       String     @id @default(uuid())
+  rut                      String     @unique
+  nombre                   String
+  email                    String     @unique
+  telefono                 String?
+  password_hash            String
+  rol                      String     // 'pauta', 'libre', 'supervisor', 'central', 'admin'
+  estado                   String     @default("activo") // 'activo', 'inactivo'
+  two_factor_secret        String?
+
+  // Para GGSS: diferencia en_pauta (pauta fija 4x4) vs libre (eventual)
+  tipo_ggss                String?    // 'pauta' | 'libre' — solo aplica a rol 'pauta' o 'libre'
+
+  // Para GGSS libre: instalación base donde puede trabajar
+  instalacion_asignada_id  String?
+
+  // Dispositivo registrado para validación de acceso
+  dispositivo_principal    String?    // 'tablet_empresa' | 'mobil_empresa' | 'mobil_personal'
+  imei_dispositivo         String?    // IMEI de la tablet/móvil registrada
+
+  created_at               DateTime   @default(now())
+  updated_at               DateTime   @updatedAt
 
   // Relaciones
-  turnos              Turno[]
-  asistencias         Asistencia[]
-  novedades           Novedad[]
-  auditorias          Auditoria[]
-  instalaciones_sup   Supervisor_Instalacion[]
-  solicitudes         Solicitud[] @relation("UsuarioSolicita")
-  solicitudes_rev     Solicitud[] @relation("SupervisorRevisa")
+  turnos                   Turno[]
+  asistencias              Asistencia[]
+  novedades                Novedad[]
+  auditorias               Auditoria[]
+  instalaciones_sup        Supervisor_Instalacion[]
+  solicitudes              Solicitud[] @relation("UsuarioSolicita")
+  solicitudes_rev          Solicitud[] @relation("SupervisorRevisa")
+  instalacion_asignada     Instalacion? @relation("ggss_asignado", fields: [instalacion_asignada_id], references: [id])
 }
 
 // ─── 2. INSTALACIONES (Recintos a proteger) ───
@@ -53,6 +64,7 @@ model Instalacion {
   asistencias         Asistencia[]
   novedades           Novedad[]
   supervisores        Supervisor_Instalacion[]
+  ggss_asignados      Usuario[]    @relation("ggss_asignado")
 }
 
 // ─── 3. TABLA INTERMEDIA: SUPERVISOR - INSTALACIÓN ───
@@ -107,6 +119,8 @@ model Asistencia {
   horas_extra         Float?
   created_at          DateTime     @default(now())
 
+  dispositivo_usado   String?      // 'tablet' | 'mobil_empresa' | 'mobil_personal'
+
   usuario             Usuario      @relation(fields: [usuario_id], references: [id])
   turno               Turno        @relation(fields: [turno_id], references: [id])
   instalacion         Instalacion  @relation(fields: [instalacion_id], references: [id])
@@ -135,17 +149,20 @@ model Novedad {
   turno               Turno        @relation(fields: [turno_id], references: [id])
 }
 
-// ─── 7. SOLICITUDES (Vacaciones, Permisos, Traslados) ───
+// ─── 7. SOLICITUDES (Vacaciones, Permisos, Traslados, Turnos) ───
+// tipos: 'vacaciones' | 'dias_libres' | 'turno_extra' | 'traslado' | 'turno'
 model Solicitud {
   id                  String       @id @default(uuid())
   usuario_id          String
-  tipo                String       // Vacaciones, Traslado, Turno Extra
-  fechas              String       // Ej: "2026-05-10 al 2026-05-25"
+  tipo                String       // 'vacaciones', 'dias_libres', 'turno_extra', 'traslado', 'turno'
+  fecha_desde         DateTime     @db.Date
+  fecha_hasta         DateTime?    @db.Date
   motivo              String?
-  estado              String       @default("Pendiente") // Pendiente, Aprobada, Rechazada
+  estado              String       @default("pendiente") // 'pendiente', 'aprobada', 'rechazada'
   revisada_por        String?
   comentario_revision String?
   created_at          DateTime     @default(now())
+  updated_at          DateTime     @updatedAt
 
   usuario             Usuario      @relation("UsuarioSolicita", fields: [usuario_id], references: [id])
   revisor             Usuario?     @relation("SupervisorRevisa", fields: [revisada_por], references: [id])

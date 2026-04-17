@@ -7,12 +7,28 @@ const router = Router();
 
 router.use(authenticate);
 
-router.post('/entrada',  authorize('pauta', 'libre', 'admin'), asistenciaController.registrarEntrada);
-router.post('/salida',   authorize('pauta', 'libre', 'admin'), asistenciaController.registrarSalida);
-// Ruta sin parámetro — debe estar ANTES de las rutas con /:param para evitar captura accidental
+// ── Rutas sin parámetros → PRIMERO (evitar captura por /:param) ───────────
+
+// Estado actual del usuario autenticado
 router.get('/estado-actual', authorize('pauta', 'libre', 'admin'), asistenciaController.obtenerEstadoActual);
-router.get('/hoy/:instalacionId',    authorize('supervisor', 'admin'), asistenciaController.obtenerHoy);
-router.get('/historial/:usuarioId',  authorize('pauta', 'libre', 'supervisor', 'admin'), asistenciaController.obtenerHistorial);
+
+// Entrada desde TABLET fija (GGSS en pauta — método primario 95% de los casos)
+router.post('/entrada-tablet',   authorize('pauta'), asistenciaController.registrarEntradaTablet);
+
+// Entrada desde MÓVIL (fallback para pauta, o GGSS libre con turno aprobado)
+router.post('/entrada-fallback', authorize('pauta', 'libre'), asistenciaController.registrarEntradaFallback);
+
+// Entrada genérica (mantener compatibilidad con clientes existentes)
+router.post('/entrada',  authorize('pauta', 'libre', 'admin'), asistenciaController.registrarEntrada);
+
+// Salida — GGSS libre solo puede si tiene turno aprobado (validación en service via estado-actual)
+router.post('/salida',   authorize('pauta', 'libre', 'admin'), asistenciaController.registrarSalida);
+
+// Sincronización offline
 router.post('/sync', asistenciaController.sincronizarOffline);
+
+// ── Rutas con parámetros ──────────────────────────────────────────────────
+router.get('/hoy/:instalacionId',   authorize('supervisor', 'central', 'admin'), asistenciaController.obtenerHoy);
+router.get('/historial/:usuarioId', authorize('pauta', 'libre', 'supervisor', 'central', 'admin'), asistenciaController.obtenerHistorial);
 
 module.exports = router;

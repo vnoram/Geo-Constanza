@@ -20,7 +20,8 @@ const crear = async (req, res, next) => {
 
 const aprobar = async (req, res, next) => {
   try {
-    const solicitud = await solicitudesService.aprobar(req.params.id, req.user.id);
+    const { comentario } = req.body;
+    const solicitud = await solicitudesService.aprobar(req.params.id, req.user.id, comentario);
     res.json(solicitud);
   } catch (error) {
     next(error);

@@ -204,4 +204,45 @@ const crearPauta4x4 = async (data, creadoPor) => {
   };
 };
 
-module.exports = { listar, obtenerPorId, crear, crearLote, crearPauta4x4, editar, cancelar, verificarConflictos };
+/**
+ * Devuelve turnos disponibles (sin guardia asignado) en la instalación
+ * asignada al GGSS libre, en los próximos 60 días.
+ * Solo aplica cuando el GGSS libre tiene instalacion_asignada_id en su perfil.
+ */
+const listarDisponibles = async (user) => {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const en60Dias = new Date(hoy);
+  en60Dias.setDate(en60Dias.getDate() + 60);
+
+  // Obtener instalación asignada del guardia
+  const { prisma: db } = require('../config/database');
+  const guardia = await db.usuario.findUniqueOrThrow({
+    where: { id: user.id },
+    select: { instalacion_asignada_id: true },
+  });
+
+  if (!guardia.instalacion_asignada_id) {
+    throw Object.assign(
+      new Error('No tienes instalación asignada. Contacta a tu supervisor.'),
+      { statusCode: 400 },
+    );
+  }
+
+  // Turnos programados en esa instalación sin usuario asignado aún
+  // o turnos de tipo "extra" que requieren cobertura
+  return prisma.turno.findMany({
+    where: {
+      instalacion_id: guardia.instalacion_asignada_id,
+      fecha: { gte: hoy, lte: en60Dias },
+      estado: 'programado',
+      tipo_turno: 'extra', // Turnos extra = disponibles para GGSS libre
+    },
+    include: {
+      instalacion: { select: { id: true, nombre: true, direccion: true } },
+    },
+    orderBy: { fecha: 'asc' },
+  });
+};
+
+module.exports = { listar, obtenerPorId, crear, crearLote, crearPauta4x4, editar, cancelar, verificarConflictos, listarDisponibles };

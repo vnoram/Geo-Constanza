@@ -6,8 +6,35 @@ const notificacion = require('./notificacion.service');
 const TOLERANCIA_MINUTOS = 15;
 const ATRASO_MINUTOS = 10;
 
-const registrarEntrada = async (data, user) => {
-  const { instalacion_id, metodo, latitud, longitud, qr_code } = data;
+/**
+ * Entrada desde TABLET (dispositivo fijo en instalación).
+ * Solo GGSS en pauta. El flag es_fallback = false, dispositivo_usado = 'tablet'.
+ */
+const registrarEntradaTablet = async (data, user) => {
+  return registrarEntrada({ ...data, metodo: 'tablet', dispositivo: 'tablet' }, user, false);
+};
+
+/**
+ * Entrada desde MÓVIL (fallback cuando la tablet no está disponible).
+ * - GGSS en pauta: siempre puede, flag es_fallback = true.
+ * - GGSS libre: SOLO si tiene solicitud de turno aprobada para hoy.
+ */
+const registrarEntradaFallback = async (data, user) => {
+  if (user.rol === 'libre') {
+    const { tieneturnoAprobadoHoy } = require('./solicitudes.service');
+    const tieneAprobado = await tieneturnoAprobadoHoy(user.id);
+    if (!tieneAprobado) {
+      throw Object.assign(
+        new Error('No tienes un turno aprobado para hoy. Solicita un turno a tu supervisor.'),
+        { statusCode: 403 },
+      );
+    }
+  }
+  return registrarEntrada({ ...data, metodo: 'fallback_telefono', dispositivo: 'mobil_empresa' }, user, true);
+};
+
+const registrarEntrada = async (data, user, esFallbackOverride = null) => {
+  const { instalacion_id, metodo, latitud, longitud, qr_code, dispositivo } = data;
   const usuario_id = user?.id || data.usuario_id;
 
   const ahora = new Date();
@@ -91,6 +118,10 @@ const registrarEntrada = async (data, user) => {
   const minutosRetraso = Math.max(0, diffMin);
   const estado = minutosRetraso > ATRASO_MINUTOS ? 'tardio' : 'normal';
 
+  const esFallback = esFallbackOverride !== null
+    ? esFallbackOverride
+    : metodo === 'fallback_telefono';
+
   const asistencia = await prisma.asistencia.create({
     data: {
       usuario_id,
@@ -102,7 +133,8 @@ const registrarEntrada = async (data, user) => {
       minutos_retraso: minutosRetraso,
       latitud_entrada:  lat,
       longitud_entrada: lon,
-      es_fallback: metodo === 'fallback_telefono',
+      es_fallback: esFallback,
+      dispositivo_usado: dispositivo || (metodo === 'fallback_telefono' ? 'mobil_empresa' : 'tablet'),
     },
   });
 
@@ -114,7 +146,17 @@ const registrarEntrada = async (data, user) => {
       instalacion: instalacion_id,
       hora: ahora,
       estado,
+      es_fallback: esFallback,
     });
+    // Alerta al supervisor si fue entrada fallback
+    if (esFallback) {
+      io.to(`instalacion:${instalacion_id}`).emit('guardia:entrada_fallback', {
+        guardia: usuario_id,
+        instalacion: instalacion_id,
+        hora: ahora,
+        mensaje: 'El guardia marcó entrada desde dispositivo móvil (fallback)',
+      });
+    }
     if (estado === 'tardio') {
       io.to(`instalacion:${instalacion_id}`).emit('guardia:atraso', {
         guardia: usuario_id,
@@ -292,4 +334,13 @@ const sincronizarBatch = async (registros) => {
   return resultados;
 };
 
-module.exports = { registrarEntrada, registrarSalida, obtenerHoy, obtenerHistorial, obtenerEstadoActual, sincronizarBatch };
+module.exports = {
+  registrarEntrada,
+  registrarEntradaTablet,
+  registrarEntradaFallback,
+  registrarSalida,
+  obtenerHoy,
+  obtenerHistorial,
+  obtenerEstadoActual,
+  sincronizarBatch,
+};

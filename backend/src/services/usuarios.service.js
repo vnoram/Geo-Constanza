@@ -3,6 +3,31 @@ const { prisma } = require('../config/database');
 
 const BCRYPT_ROUNDS = 12;
 
+/**
+ * Devuelve el perfil completo del usuario autenticado.
+ */
+const miInformacion = async (userId) => {
+  return prisma.usuario.findUniqueOrThrow({
+    where: { id: userId },
+    select: {
+      id: true,
+      rut: true,
+      nombre: true,
+      email: true,
+      telefono: true,
+      rol: true,
+      tipo_ggss: true,
+      estado: true,
+      dispositivo_principal: true,
+      instalacion_asignada_id: true,
+      instalacion_asignada: {
+        select: { id: true, nombre: true, direccion: true, latitud: true, longitud: true },
+      },
+      created_at: true,
+    },
+  });
+};
+
 const listar = async ({ rol, estado, page, limit }) => {
   const where = {};
   if (rol) where.rol = rol;
@@ -57,4 +82,4 @@ const desactivar = async (id) => {
   });
 };
 
-module.exports = { listar, crear, editar, desactivar };
+module.exports = { miInformacion, listar, crear, editar, desactivar };

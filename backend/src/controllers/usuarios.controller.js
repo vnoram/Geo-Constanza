@@ -1,6 +1,18 @@
 const usuariosService = require('../services/usuarios.service');
 const { registrarAuditoria } = require('../middlewares/auditLog');
 
+/**
+ * GET /usuarios/me — perfil del usuario autenticado (cualquier rol)
+ */
+const miInformacion = async (req, res, next) => {
+  try {
+    const usuario = await usuariosService.miInformacion(req.user.id);
+    res.json(usuario);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const listar = async (req, res, next) => {
   try {
     const { rol, estado, page = 1, limit = 20 } = req.query;
@@ -72,4 +84,4 @@ const desactivar = async (req, res, next) => {
   }
 };
 
-module.exports = { listar, crear, editar, desactivar };
+module.exports = { miInformacion, listar, crear, editar, desactivar };
