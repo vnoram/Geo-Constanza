@@ -1,16 +1,12 @@
-# React + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+🛡️ Geo Constanza: Sistema de Gestión de Seguridad CorporativaGeo Constanza es una plataforma integral diseñada para la gestión táctica y administrativa de personal de seguridad. A diferencia de los sistemas tradicionales, incorpora validación geográfica (Geofencing), trazabilidad de hardware por IMEI y una segregación de funciones (SoD) basada en roles críticos de monitoreo y gestión.🚀 Características PrincipalesMonitoreo en Tiempo Real: Central de mando con mapas en vivo y KPIs de asistencia instantáneos mediante WebSockets.Geofencing Inteligente: Validación de entrada y salida dentro de un radio de 150 metros de la instalación asignada.Gestión de Dispositivos (IMEI): Registro de hardware para asegurar que los marcajes solo se realicen desde dispositivos corporativos autorizados.Algoritmo de Turnos 4x4: Automatización de pautas de guardia para garantizar el cumplimiento de descansos legales.Modo Fallback: Plan de contingencia que permite el marcaje desde móviles personales con alerta automática a supervisión.🏗️ Arquitectura de Roles (RBAC)El sistema opera bajo un modelo de Segregación de Funciones para maximizar la seguridad:RolResponsabilidadInterfaz ClaveCentralMonitoreo operativo y respuesta a incidentes.Mapa táctico y alertas en vivo.AdminGestión de RRHH, creación de usuarios y pautas.Paneles de gestión de personal y auditoría.SupervisorControl directo de instalaciones y aprobación de turnos.Dashboard de instalación y reportes.GGSSRegistro de asistencia y reporte de novedades.App móvil/kiosk con geovalidación.🛠️ Stack TecnológicoFrontend: React.js con Vite, Styled Components y Framer Motion para una UI reactiva.Backend: Node.js con Express y arquitectura de servicios.Persistencia: PostgreSQL gestionado mediante Prisma ORM.Tiempo Real: Socket.io para la transmisión de ubicaciones y alertas.Cache & Estado: Redis para el seguimiento de guardias activos en memoria.🔧 Instalación y ConfiguraciónRequisitos previosNode.js (v18+)Docker (para instancias de Redis/Postgres) o bases de datos locales configuradas.PasosClonar el repositorioBashgit clone https://github.com/vnoram/geo-constanza.git
+cd geo-constanza
+Configurar el BackendBashcd backend
+npm install
+# Crea tu archivo .env basado en .env.example
+npx prisma migrate dev
+npx prisma db seed # Genera los 5 perfiles de prueba
+npm run dev
+Configurar el FrontendBashcd ../frontend
+npm install
+npm run dev
+📜 LicenciaEste proyecto es desarrollado como parte del proceso de formación académica en INACAP para la carrera de Ingeniería en Informática.¿Por qué este README es mejor?Cita el contexto de negocio: Explica el porqué (seguridad, cumplimiento legal) además del cómo (código).Usa Badges: Los escudos de colores al inicio dan una sensación de proyecto profesional y bien mantenido.Jerarquía clara: Separa la instalación de la arquitectura, lo que facilita la lectura para desarrolladores y evaluadores.
