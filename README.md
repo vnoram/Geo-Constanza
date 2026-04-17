@@ -407,9 +407,8 @@ Este proyecto está bajo la Licencia MIT. Ver [`LICENSE`](LICENSE) para más det
 
 ## 👨‍💼 Autor
 
-**Desarrollado por:** Tu Nombre / Tu Equipo  
+**Desarrollado por:** Victor Norambuena / Testigos de Washo  
 **Institución:** INACAP - Carrera de Ingeniería en Informática  
-**Asignatura:** Inteligencia de Negocios (TI2071)
 
 ---
 
@@ -418,6 +417,7 @@ Este proyecto está bajo la Licencia MIT. Ver [`LICENSE`](LICENSE) para más det
 - INACAP por el apoyo académico
 - Comunidad de software libre
 - Todos los contribuidores
+- Mi polola Texia Constanza Lefian Aucapan
 
 ---
 
