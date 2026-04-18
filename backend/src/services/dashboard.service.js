@@ -1,8 +1,9 @@
 const { prisma } = require('../config/database');
+const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 
 /**
  * Dashboard principal del día.
- * - supervisor: solo su(s) instalación(es)
+ * - supervisor: solo su(s) instalación(es) asignadas
  * - central: todas las instalaciones + KPIs globales
  * - admin: igual que central + métricas del mes
  */
@@ -15,11 +16,7 @@ const getDashboardHoy = async (user) => {
   // Resolver instalaciones visibles según rol
   let instalacionIds = undefined;
   if (user.rol === 'supervisor') {
-    const asignaciones = await prisma.supervisor_Instalacion.findMany({
-      where: { supervisor_id: user.id },
-      select: { instalacion_id: true },
-    });
-    instalacionIds = asignaciones.map(a => a.instalacion_id);
+    instalacionIds = await resolverInstalacionesSupervisor(user);
   }
   // central y admin ven todo (instalacionIds = undefined → sin filtro)
 
@@ -70,7 +67,40 @@ const getDashboardHoy = async (user) => {
 
   const base = { total: turnos.length, presentes, tardios, faltantes, fallbacks, lista };
 
-  // KPIs globales para Central y Admin
+  // ── KPIs para Supervisor (sus instalaciones asignadas) ─────────────────────
+  if (user.rol === 'supervisor' && instalacionIds) {
+    const whereNov = instalacionIds.length > 0
+      ? { instalacion_id: { in: instalacionIds } }
+      : { id: 'never-match' };
+
+    const [novedadesAbiertas, novedadesEscaladas, instalacionesDetalle] = await Promise.all([
+      prisma.novedad.count({ where: { ...whereNov, estado: 'abierta'  } }),
+      prisma.novedad.count({ where: { ...whereNov, estado: 'escalada' } }),
+      instalacionIds.length > 0
+        ? prisma.instalacion.findMany({
+            where: { id: { in: instalacionIds } },
+            select: {
+              id: true, nombre: true, nivel_criticidad: true, direccion: true,
+              _count: { select: { novedades: { where: { estado: { not: 'resuelta' } } } } },
+            },
+          })
+        : [],
+    ]);
+
+    base.kpis = {
+      novedadesAbiertas,
+      novedadesEscaladas,
+      instalacionesAsignadas: instalacionesDetalle.map((i) => ({
+        id:               i.id,
+        nombre:           i.nombre,
+        criticidad:       i.nivel_criticidad,
+        direccion:        i.direccion,
+        novedadesActivas: i._count.novedades,
+      })),
+    };
+  }
+
+  // ── KPIs globales para Central y Admin ──────────────────────────────────────
   if (['central', 'admin'].includes(user.rol)) {
     const [
       novedadesAbiertas,

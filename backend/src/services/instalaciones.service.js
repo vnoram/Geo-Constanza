@@ -11,7 +11,12 @@ const listar = async (query, user) => {
       where: { supervisor_id: user.id },
       select: { instalacion_id: true },
     });
-    where.id = { in: asignaciones.map((a) => a.instalacion_id) };
+    const ids = asignaciones.map((a) => a.instalacion_id);
+    // Fallback: si no tiene entradas en la tabla intermedia, usar instalacion_asignada_id
+    if (ids.length === 0 && user.instalacion_asignada_id) {
+      ids.push(user.instalacion_asignada_id);
+    }
+    where.id = { in: ids };
   }
 
   return prisma.instalacion.findMany({ where, orderBy: { nombre: 'asc' } });

@@ -1,6 +1,8 @@
 const { prisma } = require('../config/database');
 const { getSocketIO } = require('../socket/socketManager');
 const priorizacion = require('./priorizacion.service');
+const geovalidacion = require('./geovalidacion.service');
+const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 
 const listar = async (query, user) => {
   const { instalacion_id, tipo, urgencia, estado, fecha_inicio, fecha_fin, page = 1, limit = 50 } = query;
@@ -15,13 +17,12 @@ const listar = async (query, user) => {
     if (fecha_fin) where.created_at.lte = new Date(fecha_fin);
   }
 
-  // Supervisor: solo ve novedades de su(s) instalación(es)
-  if (user.rol === 'supervisor') {
-    const asignaciones = await prisma.supervisor_Instalacion.findMany({
-      where: { supervisor_id: user.id },
-      select: { instalacion_id: true },
-    });
-    const ids = asignaciones.map(a => a.instalacion_id);
+  if (user.rol === 'pauta' || user.rol === 'libre') {
+    // Guardias: solo ven sus propias novedades
+    where.usuario_id = user.id;
+  } else if (user.rol === 'supervisor') {
+    // Supervisor: instalaciones directas + comunas de cobertura (ver supervisor.helper.js)
+    const ids = await resolverInstalacionesSupervisor(user);
     where.instalacion_id = instalacion_id ? instalacion_id : { in: ids };
   } else if (instalacion_id) {
     // Central/Admin pueden filtrar por instalación explícita
@@ -83,8 +84,24 @@ const crear = async (data, file, user) => {
     throw Object.assign(new Error('No tienes un turno activo para reportar novedades'), { statusCode: 400 });
   }
 
-  // Calcular urgencia con matriz priorización
-  const urgencia = priorizacion.evaluarUrgencia(tipo, turno.instalacion.nivel_criticidad);
+  // ── Validación geográfica ─────────────────────────────────────
+  // Determina si el guardia está dentro del radio de la instalación al momento del reporte.
+  let gps_dentro_rango = null;
+  const lat = parseFloat(latitud);
+  const lon = parseFloat(longitud);
+  if (!isNaN(lat) && !isNaN(lon)) {
+    const geoResult = geovalidacion.validarAsistencia(
+      lat,
+      lon,
+      turno.instalacion.latitud,
+      turno.instalacion.longitud,
+      turno.instalacion.radio_geofence_m,
+    );
+    gps_dentro_rango = geoResult.esValido;
+  }
+
+  // ── Urgencia ──────────────────────────────────────────────────
+  const urgencia = priorizacion.evaluarUrgencia(tipo);
 
   let foto_url = null;
   if (file) {
@@ -101,23 +118,48 @@ const crear = async (data, file, user) => {
       descripcion,
       urgencia,
       foto_url,
-      latitud: parseFloat(latitud),
-      longitud: parseFloat(longitud),
+      latitud: isNaN(lat) ? null : lat,
+      longitud: isNaN(lon) ? null : lon,
+      gps_dentro_rango,
     },
   });
 
-  // Emitir WebSocket (no crítico)
+  // ── Eventos WebSocket ─────────────────────────────────────────
   try {
     const io = getSocketIO();
+
+    // Notificar a supervisores de la instalación
     io.to(`instalacion:${turno.instalacion_id}`).emit('novedad:nueva', {
       id: novedad.id,
       tipo,
       urgencia,
-      guardia: user.id,
-      instalacion: turno.instalacion_id,
+      gps_dentro_rango,
+      guardia: { id: user.id, nombre: user.nombre },
+      instalacion_id: turno.instalacion_id,
+      instalacion_nombre: turno.instalacion.nombre,
+      created_at: novedad.created_at,
     });
+
     // Notificar al panel admin global
     io.emit('admin:dashboard_update', { entity: 'novedad' });
+
+    // Escalamiento crítico: urgencia roja + instalación de alta criticidad
+    if (urgencia === 'rojo' && turno.instalacion.nivel_criticidad === 'Alta') {
+      io.emit('alerta_critica_central', {
+        id: novedad.id,
+        tipo,
+        urgencia,
+        descripcion,
+        gps_dentro_rango,
+        guardia: { id: user.id, nombre: user.nombre },
+        instalacion: {
+          id: turno.instalacion_id,
+          nombre: turno.instalacion.nombre,
+          nivel_criticidad: turno.instalacion.nivel_criticidad,
+        },
+        created_at: novedad.created_at,
+      });
+    }
   } catch (_) {}
 
   return novedad;
@@ -141,15 +183,15 @@ const escalar = async (id, supervisorId) => {
     data: { estado: 'escalada' },
   });
 
-  const io = getSocketIO();
-  if (io) {
+  try {
+    const io = getSocketIO();
     io.emit('novedad:escalada', {
       id: novedad.id,
       tipo: novedad.tipo,
       urgencia: novedad.urgencia,
       instalacion: novedad.instalacion_id,
     });
-  }
+  } catch (_) {}
 
   return novedad;
 };

@@ -33,7 +33,7 @@ async function main() {
   const instalacion = await prisma.instalacion.create({
     data: {
       nombre: 'CENTRO OPERATIVO PUENTE ALTO',
-      direccion: 'Av. Concha y Toro, Puente Alto',
+      direccion: 'Bajos de Mena',
       latitud: MI_CASA_LAT,
       longitud: MI_CASA_LON,
       radio_geofence_m: 150, // Radio de 150 metros

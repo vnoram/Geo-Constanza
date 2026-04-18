@@ -52,8 +52,9 @@ export const api = {
   },
 
   // ── Peticiones autenticadas (con Bearer token) ────────────────
-  get:  (path)        => authFetch(path),
-  post: (path, body)  => authFetch(path, { method: "POST",   body: JSON.stringify(body) }),
-  put:  (path, body)  => authFetch(path, { method: "PUT",    body: JSON.stringify(body) }),
-  del:  (path)        => authFetch(path, { method: "DELETE" }),
+  get:   (path)        => authFetch(path),
+  post:  (path, body)  => authFetch(path, { method: "POST",   body: JSON.stringify(body) }),
+  put:   (path, body)  => authFetch(path, { method: "PUT",    body: JSON.stringify(body) }),
+  patch: (path, body)  => authFetch(path, { method: "PATCH",  body: JSON.stringify(body) }),
+  del:   (path)        => authFetch(path, { method: "DELETE" }),
 };

@@ -27,6 +27,9 @@ model Usuario {
   // Para GGSS libre: instalación base donde puede trabajar
   instalacion_asignada_id  String?
 
+  // Para Supervisores: comunas bajo su responsabilidad (ej. ["Puente Alto", "La Florida"])
+  comunas_cobertura        Json?
+
   // Dispositivo registrado para validación de acceso
   dispositivo_principal    String?    // 'tablet_empresa' | 'mobil_empresa' | 'mobil_personal'
   imei_dispositivo         String?    // IMEI de la tablet/móvil registrada
@@ -55,6 +58,7 @@ model Instalacion {
   radio_geofence_m    Int        @default(100) // Metros de tolerancia para GPS
   tipo_recinto        String?
   nivel_criticidad    String     @default("Media") // Alta, Media, Baja
+  comuna              String?    // Comuna donde se ubica la instalación (para cobertura de supervisor)
   estado              String     @default("activo")
   created_at          DateTime   @default(now())
   updated_at          DateTime   @updatedAt
@@ -139,6 +143,7 @@ model Novedad {
   latitud             Float?
   longitud            Float?
   estado              String       @default("abierta") // abierta, escalada, resuelta
+  gps_dentro_rango    Boolean?     @default(true)      // false = guardia fuera del radio al reportar
   comentario_cierre   String?
   atendida_por        String?
   fecha_atencion      DateTime?

@@ -12,7 +12,7 @@ router.use(authenticate);
 
 // ── Listado ───────────────────────────────────────────────────────────────
 // Supervisor ve su instalación, central/admin ven todas (filtro en service)
-router.get('/', authorize('supervisor', 'central', 'admin'), novedadesController.listar);
+router.get('/', authorize('pauta', 'libre', 'supervisor', 'central', 'admin'), novedadesController.listar);
 router.get('/:id', authorize('pauta', 'libre', 'supervisor', 'central', 'admin'), novedadesController.obtener);
 
 // ── Creación ──────────────────────────────────────────────────────────────
