@@ -4,11 +4,12 @@ const { PrismaClient } = require('@prisma/client');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 5,                  // máximo de conexiones simultáneas
-  idleTimeoutMillis: 30000, // cierra conexiones idle tras 30s
-  connectionTimeoutMillis: 10000, // timeout al conectar
-  keepAlive: true,          // mantiene la conexión viva
+  max: 5,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+  keepAlive: true,
   keepAliveInitialDelayMillis: 10000,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
 // Reconectar automáticamente si la conexión se cae
