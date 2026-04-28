@@ -22,24 +22,18 @@ const auditoriaRoutes = require('./routes/auditoria.routes');
 
 const app = express();
 
-// Middlewares globales
-app.use(helmet());
-app.use(compression());
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-  : ['http://localhost:5173'];
-
-app.use(cors({
-  origin: (origin, callback) => {
-    // Permitir peticiones sin origin (apps móviles, curl, Postman)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error(`CORS bloqueado para origen: ${origin}`));
-  },
+// CORS debe ir ANTES de helmet para que los headers no sean sobreescritos
+const corsOptions = {
+  origin: true, // refleja el origen del request — permite cualquier origen con credentials
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // responde preflight en todas las rutas
+
+app.use(helmet());
+app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('combined'));
