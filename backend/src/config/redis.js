@@ -27,6 +27,6 @@ const connectRedis = () => {
   return redis;
 };
 
-const getRedis = () => redis;
+const getRedis = () => (redis && redis.status === 'ready' ? redis : null);
 
 module.exports = { connectRedis, getRedis };

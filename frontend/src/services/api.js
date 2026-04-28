@@ -1,4 +1,7 @@
-const API_BASE    = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
+if (!import.meta.env.VITE_API_URL && import.meta.env.PROD) {
+  console.error('[api] VITE_API_URL no está definida en el build de producción. Las peticiones al backend fallarán.');
+}
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
 const TOKEN_KEY   = "gc_token";
 
 // ─── TOKEN HELPER ───────────────────────────────────────────────

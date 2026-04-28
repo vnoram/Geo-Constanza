@@ -10,7 +10,7 @@ router.post('/login', authController.login);
 router.post('/password/reset', authController.resetPassword);
 
 // Autenticados
-router.post('/refresh', authenticate, authController.refreshToken);
+router.post('/refresh', authController.refreshToken);
 router.post('/logout', authenticate, authController.logout);
 
 // 2FA (Supervisor y Admin)

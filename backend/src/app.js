@@ -23,8 +23,12 @@ const auditoriaRoutes = require('./routes/auditoria.routes');
 const app = express();
 
 // CORS debe ir ANTES de helmet para que los headers no sean sobreescritos
+const frontendOrigin = process.env.NODE_ENV === 'production'
+  ? (process.env.FRONTEND_URL || 'https://geo-constanza.vercel.app').replace(/\/$/, '')
+  : true;
+
 const corsOptions = {
-  origin: true, // refleja el origen del request — permite cualquier origen con credentials
+  origin: frontendOrigin,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

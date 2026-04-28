@@ -5,7 +5,7 @@
     "buildCommand": "cd backend && npm install && npx prisma generate"
   },
   "deploy": {
-    "startCommand": "cd backend && npx prisma migrate deploy && node src/server.js",
+    "startCommand": "cd backend && node src/server.js",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   }

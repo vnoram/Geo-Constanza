@@ -19,24 +19,31 @@ const login = async (rut, password, ip, userAgent) => {
 
   // Verificar bloqueo por intentos fallidos
   const redis = getRedis();
-  if (redis) {
-    const attempts = await redis.get(`login_attempts:${usuario.id}`);
-    if (attempts && parseInt(attempts) >= MAX_LOGIN_ATTEMPTS) {
-      throw Object.assign(new Error(`Cuenta bloqueada temporalmente. Intenta en ${LOCKOUT_MINUTES} minutos.`), { statusCode: 429 });
+  try {
+    if (redis) {
+      const attempts = await redis.get(`login_attempts:${usuario.id}`);
+      if (attempts && parseInt(attempts) >= MAX_LOGIN_ATTEMPTS) {
+        throw Object.assign(new Error(`Cuenta bloqueada temporalmente. Intenta en ${LOCKOUT_MINUTES} minutos.`), { statusCode: 429 });
+      }
     }
+  } catch (err) {
+    if (err.statusCode) throw err; // re-lanzar errores de negocio
+    // error de Redis: continuar sin rate limiting
   }
 
   const validPassword = await bcrypt.compare(password, usuario.password_hash);
   if (!validPassword) {
-    if (redis) {
-      await redis.incr(`login_attempts:${usuario.id}`);
-      await redis.expire(`login_attempts:${usuario.id}`, LOCKOUT_MINUTES * 60);
-    }
+    try {
+      if (redis) {
+        await redis.incr(`login_attempts:${usuario.id}`);
+        await redis.expire(`login_attempts:${usuario.id}`, LOCKOUT_MINUTES * 60);
+      }
+    } catch (_) { /* Redis caído — continuar sin rate limiting */ }
     throw Object.assign(new Error('Credenciales inválidas'), { statusCode: 401 });
   }
 
   // Reset intentos fallidos
-  if (redis) await redis.del(`login_attempts:${usuario.id}`);
+  try { if (redis) await redis.del(`login_attempts:${usuario.id}`); } catch (_) { /* ignorar */ }
 
   // 2FA — Fase 2: se activará cuando two_factor_secret esté configurado Y el backend lo verifique vía TOTP.
   // Por ahora se omite para que admin/supervisor puedan iniciar sesión en desarrollo.
@@ -64,12 +71,14 @@ const refreshToken = async (token) => {
 };
 
 const logout = async (token, userId) => {
-  const redis = getRedis();
-  if (redis) {
-    const decoded = jwt.decode(token);
-    const ttl = decoded.exp - Math.floor(Date.now() / 1000);
-    if (ttl > 0) await redis.set(`bl:${token}`, '1', 'EX', ttl);
-  }
+  try {
+    const redis = getRedis();
+    if (redis) {
+      const decoded = jwt.decode(token);
+      const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+      if (ttl > 0) await redis.set(`bl:${token}`, '1', 'EX', ttl);
+    }
+  } catch (_) { /* Redis caído — logout continúa sin blacklist */ }
 };
 
 const requestPasswordReset = async (email) => {
