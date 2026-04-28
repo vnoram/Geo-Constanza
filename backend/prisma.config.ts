@@ -4,7 +4,6 @@ import pg from 'pg'
 import 'dotenv/config'
 
 export default defineConfig({
-  earlyAccess: true,
   migrate: {
     async adapter(env) {
       const pool = new pg.Pool({
