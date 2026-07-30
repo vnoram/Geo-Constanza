@@ -3,6 +3,7 @@ const { getSocketIO } = require('../socket/socketManager');
 const priorizacion = require('./priorizacion.service');
 const geovalidacion = require('./geovalidacion.service');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
+const { uploadFotoToAzure } = require('../utils/azureStorage');
 
 const listar = async (query, user) => {
   const { instalacion_id, tipo, urgencia, estado, fecha_inicio, fecha_fin, page = 1, limit = 50 } = query;
@@ -105,8 +106,8 @@ const crear = async (data, file, user) => {
 
   let foto_url = null;
   if (file) {
-    // TODO: Subir foto a S3 y obtener URL
-    foto_url = `uploads/novedades/${Date.now()}_${file.originalname}`;
+    const nombreArchivo = `novedades-${Date.now()}_${file.originalname}`;
+    foto_url = await uploadFotoToAzure(file.buffer, nombreArchivo);
   }
 
   const novedad = await prisma.novedad.create({

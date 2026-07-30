@@ -7,6 +7,8 @@ import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3005";
+const API_BASE    = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
+const TOKEN_KEY    = "gc_token";
 
 const TIPOS_NOVEDAD = [
   "Robo",
@@ -44,7 +46,22 @@ function ReportarModal({ onClose, onSuccess }) {
   const [loading, setLoading]     = useState(false);
   const [gpsStatus, setGpsStatus] = useState("idle"); // idle | loading | ok | error
   const [error, setError]         = useState(null);
+  const [foto, setFoto]           = useState(null);
+  const [fotoPreview, setFotoPreview] = useState(null);
   const coordsRef                 = useRef(null);
+
+  const handleFoto = (e) => {
+    const file = e.target.files[0];
+    if (!file) { setFoto(null); setFotoPreview(null); return; }
+    if (!file.type.startsWith("image/")) {
+      setError("El archivo seleccionado no es una imagen.");
+      e.target.value = "";
+      return;
+    }
+    setError(null);
+    setFoto(file);
+    setFotoPreview(URL.createObjectURL(file));
+  };
 
   // Obtener GPS al abrir el modal
   useEffect(() => {
@@ -71,12 +88,31 @@ function ReportarModal({ onClose, onSuccess }) {
 
     setLoading(true);
     try {
-      await api.post("/novedades", {
-        tipo,
-        descripcion: descripcion.trim(),
-        latitud:  coordsRef.current?.lat  ?? null,
-        longitud: coordsRef.current?.lng  ?? null,
-      });
+      if (foto) {
+        // Con foto: multipart/form-data directo al mismo endpoint (ya soporta campo "foto")
+        const form = new FormData();
+        form.append("tipo", tipo);
+        form.append("descripcion", descripcion.trim());
+        if (coordsRef.current?.lat != null) form.append("latitud", coordsRef.current.lat);
+        if (coordsRef.current?.lng != null) form.append("longitud", coordsRef.current.lng);
+        form.append("foto", foto);
+
+        const token = localStorage.getItem(TOKEN_KEY);
+        const res = await fetch(`${API_BASE}/novedades`, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: form,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+      } else {
+        await api.post("/novedades", {
+          tipo,
+          descripcion: descripcion.trim(),
+          latitud:  coordsRef.current?.lat  ?? null,
+          longitud: coordsRef.current?.lng  ?? null,
+        });
+      }
       onSuccess();
     } catch (err) {
       setError(err.message || "Error al reportar. Intenta de nuevo.");
@@ -168,6 +204,34 @@ function ReportarModal({ onClose, onSuccess }) {
                 boxSizing: "border-box",
               }}
             />
+          </div>
+
+          {/* Foto (opcional) */}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "block", fontSize: 12, color: T.textSec, marginBottom: 6 }}>
+              Foto (opcional)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFoto}
+              style={{
+                width: "100%", padding: "8px 12px",
+                background: T.bgInput, border: `1px solid ${T.border}`,
+                borderRadius: 8, color: T.text, fontSize: 13,
+                fontFamily: "'Outfit', sans-serif", boxSizing: "border-box",
+              }}
+            />
+            {fotoPreview && (
+              <img
+                src={fotoPreview}
+                alt="Vista previa"
+                style={{
+                  marginTop: 8, maxWidth: "100%", maxHeight: 160,
+                  borderRadius: 8, border: `1px solid ${T.border}`, display: "block",
+                }}
+              />
+            )}
           </div>
 
           {error && (

@@ -5,6 +5,9 @@ const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+
 const { errorHandler } = require('./middlewares/errorHandler');
 const { rateLimiter } = require('./middlewares/rateLimiter');
 
@@ -42,6 +45,50 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('combined'));
 app.use(rateLimiter);
+
+// =========================================================================
+// CONFIGURACIÓN DE SWAGGER DOCUMENTATION
+// =========================================================================
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'API Geo-Constanza',
+      version: '1.0.0',
+      description: 'Documentación interactiva de la API para la gestión y monitoreo de guardias de seguridad.',
+      contact: {
+        name: 'Víctor Norambuena Orellana',
+      },
+    },
+    servers: [
+      {
+        url: 'http://localhost:3005',
+        description: 'Servidor de Desarrollo Local',
+      },
+      {
+        url: 'https://geo-constanza-production.up.railway.app',
+        description: 'Servidor de Producción (Railway)',
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Introduce tu token JWT para consumir rutas protegidas.',
+        },
+      },
+    },
+  },
+  // Escanea la carpeta routes para buscar las anotaciones JSDoc
+  apis: ['./src/routes/*.js', './routes/*.js'],
+};
+
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
+// El panel visual se desplegará en la raíz /api-docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+// =========================================================================
 
 // Health check
 app.get('/api/v1/health', (req, res) => {
