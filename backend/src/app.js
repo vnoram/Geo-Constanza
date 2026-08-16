@@ -24,6 +24,11 @@ const reportesRoutes = require('./routes/reportes.routes');
 const auditoriaRoutes = require('./routes/auditoria.routes');
 
 const app = express();
+// Railway coloca la app detrás de un proxy inverso que agrega el header
+// X-Forwarded-For. Sin esto, Express no confía en ese header y
+// express-rate-limit lanza ERR_ERL_UNEXPECTED_X_FORWARDED_FOR en cada
+// request, sin poder identificar la IP real de cada usuario para el rate limit.
+app.set('trust proxy', 1);
 
 // CORS debe ir ANTES de helmet para que los headers no sean sobreescritos
 const frontendOrigin = process.env.NODE_ENV === 'production'
