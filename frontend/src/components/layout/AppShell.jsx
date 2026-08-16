@@ -2,16 +2,16 @@ import { useState, useEffect } from "react";
 import { T, ROLES } from "../../theme/theme";
 import { Placeholder } from "../ui/Placeholder";
 
-// ─── Pauta ───
-import { PautaTurno } from "../../screens/pauta/PautaTurno";
-import { PautaNovedades } from "../../screens/pauta/PautaNovedades";
-import { PautaHistorial } from "../../screens/pauta/PautaHistorial";
-import { PautaAlertas } from "../../screens/pauta/PautaAlertas";
+// ─── GGSS en pauta ───
+import { PautaTurno } from "../../screens/ggss-en-pauta/PautaTurno";
+import { PautaNovedades } from "../../screens/ggss-en-pauta/PautaNovedades";
+import { PautaHistorial } from "../../screens/ggss-en-pauta/PautaHistorial";
+import { PautaAlertas } from "../../screens/ggss-en-pauta/PautaAlertas";
 
-// ─── Libre ───
-import { LibreTurnos } from "../../screens/libre/LibreTurnos";
-import { LibreSolicitudes } from "../../screens/libre/LibreSolicitudes";
-import { LibreDocs } from "../../screens/libre/LibreDocs";
+// ─── GGSS libre ───
+import { LibreTurnos } from "../../screens/ggss-libre/LibreTurnos";
+import { LibreSolicitudes } from "../../screens/ggss-libre/LibreSolicitudes";
+import { LibreDocs } from "../../screens/ggss-libre/LibreDocs";
 
 // ─── Supervisor ───
 import { SupDashboard } from "../../screens/supervisor/SupDashboard";
@@ -20,15 +20,15 @@ import { SupSolicitudes } from "../../screens/supervisor/SupSolicitudes";
 import { SupGuardias } from "../../screens/supervisor/SupGuardias";
 import { SupReportes } from "../../screens/supervisor/SupReportes";
 
-// ─── Central ───
-import { CentralPanel } from "../../screens/central/CentralPanel";
+// ─── Operador central ───
+import { CentralPanel } from "../../screens/operador-central/CentralPanel";
 
-// ─── Admin ───
-import { AdminPanel } from "../../screens/admin/AdminPanel";
-import { AdminUsuarios } from "../../screens/admin/AdminUsuarios";
-import { AdminInstalaciones } from "../../screens/admin/AdminInstalaciones";
-import { AdminTurnos } from "../../screens/admin/AdminTurnos";
-import { AdminAuditoria } from "../../screens/admin/AdminAuditoria";
+// ─── Administrador ───
+import { AdminPanel } from "../../screens/administrador/AdminPanel";
+import { AdminUsuarios } from "../../screens/administrador/AdminUsuarios";
+import { AdminInstalaciones } from "../../screens/administrador/AdminInstalaciones";
+import { AdminTurnos } from "../../screens/administrador/AdminTurnos";
+import { AdminAuditoria } from "../../screens/administrador/AdminAuditoria";
 
 function RoleContent({ user, rol, section }) {
   const allowed = ROLES[rol]?.sections.map(s => s.id) || [];
