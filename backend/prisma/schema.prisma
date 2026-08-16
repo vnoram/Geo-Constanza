@@ -9,7 +9,9 @@ generator client {
 }
 
 // ─── 1. USUARIOS (Guardias, Supervisores, Central, Admins) ───
-// Roles: 'pauta' | 'libre' | 'supervisor' | 'central' | 'admin'
+// Roles del informe (ver backend/src/constants/roles.js):
+//   'pauta' = GGSS_EN_PAUTA | 'libre' = GGSS_LIBRE | 'supervisor' = SUPERVISOR
+//   'central' = OPERADOR_CENTRAL | 'admin' = ADMINISTRADOR
 model Usuario {
   id                       String     @id @default(uuid())
   rut                      String     @unique
@@ -53,6 +55,10 @@ model Instalacion {
   id                  String     @id @default(uuid())
   nombre              String
   direccion           String?
+  // Geocerca del recinto (ver geovalidacion.service.js). Se mantienen como
+  // Float por compatibilidad con los datos existentes; una futura migración
+  // a un tipo `geometry` (PostGIS) permitiría geocercas no circulares y
+  // consultas espaciales nativas en Postgres.
   latitud             Float
   longitud            Float
   radio_geofence_m    Int        @default(100) // Metros de tolerancia para GPS
@@ -84,6 +90,7 @@ model Supervisor_Instalacion {
 }
 
 // ─── 4. TURNOS (Planificación) ───
+// El algoritmo de turnos 4x4 para GGSS_EN_PAUTA vive en turnos.service.js.
 model Turno {
   id                  String       @id @default(uuid())
   usuario_id          String
@@ -105,6 +112,8 @@ model Turno {
 }
 
 // ─── 5. ASISTENCIA (Marcajes reales) ───
+// Validación geográfica de asistencia contra la geocerca de la instalación
+// (ver geovalidacion.service.js, sección "Validación de geocerca" del informe).
 model Asistencia {
   id                  String       @id @default(uuid())
   usuario_id          String
@@ -130,7 +139,10 @@ model Asistencia {
   instalacion         Instalacion  @relation(fields: [instalacion_id], references: [id])
 }
 
-// ─── 6. NOVEDADES (Incidentes) ───
+// ─── 6. NOVEDADES ───
+// Nombre de dominio del informe: "Novedad" (no usar "incidente"/"alerta" como
+// sinónimos intercambiables). Cubre la escalación de novedades y el registro
+// de si el guardia estaba dentro de la geocerca al reportar.
 model Novedad {
   id                  String       @id @default(uuid())
   usuario_id          String
@@ -138,11 +150,11 @@ model Novedad {
   turno_id            String
   tipo                String
   descripcion         String
-  urgencia            String       // verde, amarillo, rojo
+  urgencia            String       // verde, amarillo, rojo — ver constants/urgencias.js
   foto_url            String?
   latitud             Float?
   longitud            Float?
-  estado              String       @default("abierta") // abierta, escalada, resuelta
+  estado              String       @default("abierta") // ver constants/estados.js -> ESTADO_NOVEDAD
   gps_dentro_rango    Boolean?     @default(true)      // false = guardia fuera del radio al reportar
   comentario_cierre   String?
   atendida_por        String?
