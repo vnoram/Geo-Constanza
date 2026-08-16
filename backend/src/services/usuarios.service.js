@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { prisma } = require('../config/database');
+const { ROLES } = require('../constants/roles');
 
 const BCRYPT_ROUNDS = 12;
 
@@ -74,7 +75,7 @@ const crear = async (data) => {
   const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
   // Guardar comunas de cobertura como JSON si el rol es supervisor
-  if (campos.rol === 'supervisor' && Array.isArray(comunas)) {
+  if (campos.rol === ROLES.SUPERVISOR && Array.isArray(comunas)) {
     campos.comunas_cobertura = comunas.filter((c) => typeof c === 'string' && c.trim());
   }
 
@@ -84,7 +85,7 @@ const crear = async (data) => {
       select: { id: true, nombre: true, email: true, rol: true, estado: true },
     });
 
-    if (campos.rol === 'supervisor' && Array.isArray(instalacionIds) && instalacionIds.length > 0) {
+    if (campos.rol === ROLES.SUPERVISOR && Array.isArray(instalacionIds) && instalacionIds.length > 0) {
       await tx.supervisor_Instalacion.createMany({
         data: instalacionIds.map((instalacion_id) => ({ supervisor_id: nuevo.id, instalacion_id })),
         skipDuplicates: true,
@@ -116,7 +117,7 @@ const editar = async (id, data) => {
 
     // Sincronizar instalaciones directas si el rol final es supervisor y se envió el array
     const rolFinal = campos.rol ?? actualizado.rol;
-    if (rolFinal === 'supervisor' && Array.isArray(instalacionIds)) {
+    if (rolFinal === ROLES.SUPERVISOR && Array.isArray(instalacionIds)) {
       await tx.supervisor_Instalacion.deleteMany({ where: { supervisor_id: id } });
       if (instalacionIds.length > 0) {
         await tx.supervisor_Instalacion.createMany({

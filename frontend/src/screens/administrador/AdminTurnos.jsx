@@ -5,6 +5,7 @@ import { Input } from "../../components/ui/Input";
 import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
+import { ROLES } from "../../constants/roles";
 
 // ─── SELECTOR GENÉRICO ───────────────────────────────────────────
 function Select({ label, value, onChange, options, placeholder }) {
@@ -345,7 +346,7 @@ export function AdminTurnos() {
       setTurnos(listaTurnos);
       // La API de usuarios devuelve { data: [], total, page, totalPages }
       const usuarios = Array.isArray(listaUsuarios) ? listaUsuarios : (listaUsuarios.data ?? []);
-      setGuardias(usuarios.filter((u) => ["pauta", "libre"].includes(u.rol)));
+      setGuardias(usuarios.filter((u) => [ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE].includes(u.rol)));
       setInstalaciones(Array.isArray(listaInstalaciones) ? listaInstalaciones : (listaInstalaciones.data ?? []));
     } catch (e) {
       console.error("Error cargando datos:", e);

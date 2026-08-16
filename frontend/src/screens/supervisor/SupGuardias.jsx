@@ -4,6 +4,7 @@ import { Badge } from "../../components/ui/Badge";
 import { Btn } from "../../components/ui/Btn";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
+import { ROLES } from "../../constants/roles";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
 
@@ -133,7 +134,7 @@ export function SupGuardias() {
         }}>
           <div>
             <div style={{ fontWeight: 700, fontSize: 13 }}>{g.nombre}</div>
-            <div style={{ fontSize: 11, color: T.textMut }}>GGSS {g.rol === "pauta" ? "Pauta" : "Libre"}</div>
+            <div style={{ fontSize: 11, color: T.textMut }}>GGSS {g.rol === ROLES.GGSS_EN_PAUTA ? "Pauta" : "Libre"}</div>
           </div>
           <Badge color={g.estado === "activo" ? "accent" : "red"}>{g.estado}</Badge>
         </div>

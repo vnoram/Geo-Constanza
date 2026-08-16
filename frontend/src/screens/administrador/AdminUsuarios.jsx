@@ -4,13 +4,14 @@ import { Badge } from "../../components/ui/Badge";
 import { Btn } from "../../components/ui/Btn";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
+import { ROLES as ROL } from "../../constants/roles";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
-const ROLES     = ["pauta", "libre", "supervisor", "central", "admin"];
-const ROL_LABEL = { pauta: "GGSS Pauta", libre: "GGSS Libre", supervisor: "Supervisor", central: "Central", admin: "Admin" };
-const ROL_BADGE = { pauta: "accent", libre: "accent", supervisor: "yellow", central: "accent", admin: "red" };
+const ROLES_DISPONIBLES = [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE, ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL, ROL.ADMINISTRADOR];
+const ROL_LABEL = { [ROL.GGSS_EN_PAUTA]: "GGSS Pauta", [ROL.GGSS_LIBRE]: "GGSS Libre", [ROL.SUPERVISOR]: "Supervisor", [ROL.OPERADOR_CENTRAL]: "Central", [ROL.ADMINISTRADOR]: "Admin" };
+const ROL_BADGE = { [ROL.GGSS_EN_PAUTA]: "accent", [ROL.GGSS_LIBRE]: "accent", [ROL.SUPERVISOR]: "yellow", [ROL.OPERADOR_CENTRAL]: "accent", [ROL.ADMINISTRADOR]: "red" };
 
-const VACÍO = { rut: "", nombre: "", email: "", telefono: "", password: "", rol: "pauta", instalacionIds: [], instalacion_asignada_id: "" };
+const VACÍO = { rut: "", nombre: "", email: "", telefono: "", password: "", rol: ROL.GGSS_EN_PAUTA, instalacionIds: [], instalacion_asignada_id: "" };
 
 // ─── Helpers de UI ────────────────────────────────────────────────────────────
 const inputStyle = {
@@ -63,8 +64,8 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
     // Construir payload limpio
     const payload = { ...form };
     if (esEdicion && !payload.password) delete payload.password;
-    if (payload.rol !== "supervisor")           delete payload.instalacionIds;
-    if (!["pauta", "libre"].includes(payload.rol)) delete payload.instalacion_asignada_id;
+    if (payload.rol !== ROL.SUPERVISOR)           delete payload.instalacionIds;
+    if (![ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(payload.rol)) delete payload.instalacion_asignada_id;
 
     setLoading(true);
     try {
@@ -108,7 +109,7 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
             </Field>
             <Field label="Rol" required>
               <select style={{ ...inputStyle, appearance: "none" }} value={form.rol} onChange={(e) => set("rol", e.target.value)}>
-                {ROLES.map((r) => (
+                {ROLES_DISPONIBLES.map((r) => (
                   <option key={r} value={r} style={{ background: T.bgCard }}>{ROL_LABEL[r]}</option>
                 ))}
               </select>
@@ -135,7 +136,7 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
           </div>
 
           {/* Instalación única — solo para GGSS */}
-          {["pauta", "libre"].includes(form.rol) && (
+          {[ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(form.rol) && (
             <Field label="Instalación asignada">
               <select
                 style={{ ...inputStyle, appearance: "none", color: form.instalacion_asignada_id ? T.text : T.textMut }}
@@ -151,7 +152,7 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
           )}
 
           {/* Multi-check de instalaciones — solo para Supervisor */}
-          {form.rol === "supervisor" && (
+          {form.rol === ROL.SUPERVISOR && (
             <Field label="Área de cobertura (instalaciones asignadas)">
               {instalaciones.length === 0 ? (
                 <div style={{ fontSize: 13, color: T.textMut }}>No hay instalaciones creadas aún.</div>
@@ -298,7 +299,7 @@ export function AdminUsuarios() {
                 <div style={{ fontSize: 11, color: T.textMut }}>{u.email} · {u.rut}</div>
 
                 {/* Área del supervisor: chips de instalaciones */}
-                {u.rol === "supervisor" && instSup.length > 0 && (
+                {u.rol === ROL.SUPERVISOR && instSup.length > 0 && (
                   <div style={{ marginTop: 5, display: "flex", gap: 4, flexWrap: "wrap" }}>
                     {instSup.map((s) => {
                       const instId   = s.instalacion_id ?? s.instalacion?.id;
@@ -317,7 +318,7 @@ export function AdminUsuarios() {
                 )}
 
                 {/* Instalación del guardia */}
-                {["pauta", "libre"].includes(u.rol) && u.instalacion_asignada && (
+                {[ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(u.rol) && u.instalacion_asignada && (
                   <div style={{ fontSize: 10, color: T.textMut, marginTop: 3 }}>
                     📍 {u.instalacion_asignada.nombre}
                   </div>

@@ -1,6 +1,6 @@
 /**
  * Middleware de control de acceso basado en roles (RBAC).
- * Roles válidos: 'pauta' | 'libre' | 'supervisor' | 'central' | 'admin'
+ * Roles válidos: ver backend/src/constants/roles.js (ROLES)
  */
 
 const { prisma } = require('../config/database');
@@ -28,7 +28,7 @@ const authorize = (...allowedRoles) => {
 
 /**
  * Verifica que el supervisor tenga asignada la instalación indicada en req.params.instalacionId
- * o en req.body.instalacion_id. Debe usarse después de authenticate + authorize('supervisor').
+ * o en req.body.instalacion_id. Debe usarse después de authenticate + authorize(ROLES.SUPERVISOR).
  */
 const autorizarInstalacionSupervisor = async (req, res, next) => {
   try {

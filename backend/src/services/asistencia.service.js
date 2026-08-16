@@ -2,6 +2,7 @@ const { prisma } = require('../config/database');
 const { getSocketIO } = require('../socket/socketManager');
 const geovalidacion = require('./geovalidacion.service');
 const notificacion = require('./notificacion.service');
+const { ROLES } = require('../constants/roles');
 
 const TOLERANCIA_MINUTOS = 15;
 const ATRASO_MINUTOS = 10;
@@ -20,7 +21,7 @@ const registrarEntradaTablet = async (data, user) => {
  * - GGSS libre: SOLO si tiene solicitud de turno aprobada para hoy.
  */
 const registrarEntradaFallback = async (data, user) => {
-  if (user.rol === 'libre') {
+  if (user.rol === ROLES.GGSS_LIBRE) {
     const { tieneturnoAprobadoHoy } = require('./solicitudes.service');
     const tieneAprobado = await tieneturnoAprobadoHoy(user.id);
     if (!tieneAprobado) {

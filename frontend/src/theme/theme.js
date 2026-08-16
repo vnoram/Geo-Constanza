@@ -1,3 +1,5 @@
+import { ROLES as ROL } from "../constants/roles";
+
 // ─── THEME TOKENS ───
 export const T = {
   bg: "#060D18",
@@ -22,7 +24,7 @@ export const T = {
 
 // ─── ROLE METADATA ───
 export const ROLES = {
-  pauta: {
+  [ROL.GGSS_EN_PAUTA]: {
     label: "GGSS en Pauta",
     icon: "🛡️",
     color: T.accent,
@@ -34,7 +36,7 @@ export const ROLES = {
       { id: "alertas", icon: "🔔", label: "Alertas", badge: "1" },
     ],
   },
-  libre: {
+  [ROL.GGSS_LIBRE]: {
     label: "GGSS Libre",
     icon: "📅",
     color: "#6C9BFF",
@@ -45,7 +47,7 @@ export const ROLES = {
       { id: "docs", icon: "📁", label: "Documentos", badge: null },
     ],
   },
-  supervisor: {
+  [ROL.SUPERVISOR]: {
     label: "Supervisor",
     icon: "📊",
     color: T.yellow,
@@ -58,7 +60,7 @@ export const ROLES = {
       { id: "reportes", icon: "📑", label: "Reportes", badge: null },
     ],
   },
-  central: {
+  [ROL.OPERADOR_CENTRAL]: {
     label: "Central de Monitoreo",
     icon: "📡",
     color: "#B98CFF",
@@ -68,7 +70,7 @@ export const ROLES = {
       { id: "incidentes", icon: "🚨", label: "Novedades",    badge: null },
     ],
   },
-  admin: {
+  [ROL.ADMINISTRADOR]: {
     label: "Administración / RRHH",
     icon: "⚙️",
     color: "#FF6B6B",

@@ -229,6 +229,7 @@ const { Router } = require('express');
 const usuariosController = require('../controllers/usuarios.controller');
 const { authenticate } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/rbac');
+const { ROLES } = require('../constants/roles');
 
 const router = Router();
 
@@ -238,9 +239,9 @@ router.use(authenticate);
 router.get('/me', usuariosController.miInformacion);
 
 // ── CRUD (solo admin, supervisor puede listar) ─────────────────────────────
-router.get('/', authorize('supervisor', 'central', 'admin'), usuariosController.listar);
-router.post('/', authorize('admin'), usuariosController.crear);
-router.put('/:id', authorize('admin'), usuariosController.editar);
-router.patch('/:id/desactivar', authorize('admin'), usuariosController.desactivar);
+router.get('/', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), usuariosController.listar);
+router.post('/', authorize(ROLES.ADMINISTRADOR), usuariosController.crear);
+router.put('/:id', authorize(ROLES.ADMINISTRADOR), usuariosController.editar);
+router.patch('/:id/desactivar', authorize(ROLES.ADMINISTRADOR), usuariosController.desactivar);
 
 module.exports = router;

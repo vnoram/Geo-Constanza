@@ -452,26 +452,27 @@ const { Router } = require('express');
 const turnosController = require('../controllers/turnos.controller');
 const { authenticate } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/rbac');
+const { ROLES } = require('../constants/roles');
 
 const router = Router();
 
 router.use(authenticate);
 
 // ── GGSS Libre: ver turnos disponibles en su instalación asignada ──────────
-router.get('/disponibles', authorize('libre'), turnosController.listarDisponibles);
+router.get('/disponibles', authorize(ROLES.GGSS_LIBRE), turnosController.listarDisponibles);
 
 // ── Verificar conflictos (antes de /:id para evitar captura) ───────────────
-router.get('/conflictos', authorize('supervisor', 'central', 'admin'), turnosController.verificarConflictos);
+router.get('/conflictos', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.verificarConflictos);
 
 // ── Creación de pautas y lotes (antes de /:id) ────────────────────────────
-router.post('/lote',      authorize('central', 'admin'), turnosController.crearLote);
-router.post('/pauta-4x4', authorize('central', 'admin'), turnosController.crearPauta4x4);
+router.post('/lote',      authorize(ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.crearLote);
+router.post('/pauta-4x4', authorize(ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.crearPauta4x4);
 
 // ── CRUD general ──────────────────────────────────────────────────────────
-router.get('/',    authorize('pauta', 'libre', 'supervisor', 'central', 'admin'), turnosController.listar);
-router.get('/:id', authorize('pauta', 'libre', 'supervisor', 'central', 'admin'), turnosController.obtener);
-router.post('/',   authorize('supervisor', 'central', 'admin'), turnosController.crear);
-router.put('/:id', authorize('supervisor', 'central', 'admin'), turnosController.editar);
-router.patch('/:id/cancelar', authorize('supervisor', 'central', 'admin'), turnosController.cancelar);
+router.get('/',    authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.listar);
+router.get('/:id', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.obtener);
+router.post('/',   authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.crear);
+router.put('/:id', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.editar);
+router.patch('/:id/cancelar', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.cancelar);
 
 module.exports = router;

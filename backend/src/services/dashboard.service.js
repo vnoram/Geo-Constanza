@@ -1,5 +1,6 @@
 const { prisma } = require('../config/database');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
+const { ROLES } = require('../constants/roles');
 
 /**
  * Dashboard principal del día.
@@ -15,7 +16,7 @@ const getDashboardHoy = async (user) => {
 
   // Resolver instalaciones visibles según rol
   let instalacionIds = undefined;
-  if (user.rol === 'supervisor') {
+  if (user.rol === ROLES.SUPERVISOR) {
     instalacionIds = await resolverInstalacionesSupervisor(user);
   }
   // central y admin ven todo (instalacionIds = undefined → sin filtro)
@@ -68,7 +69,7 @@ const getDashboardHoy = async (user) => {
   const base = { total: turnos.length, presentes, tardios, faltantes, fallbacks, lista };
 
   // ── KPIs para Supervisor (sus instalaciones asignadas) ─────────────────────
-  if (user.rol === 'supervisor' && instalacionIds) {
+  if (user.rol === ROLES.SUPERVISOR && instalacionIds) {
     const whereNov = instalacionIds.length > 0
       ? { instalacion_id: { in: instalacionIds } }
       : { id: 'never-match' };
@@ -101,7 +102,7 @@ const getDashboardHoy = async (user) => {
   }
 
   // ── KPIs globales para Central y Admin ──────────────────────────────────────
-  if (['central', 'admin'].includes(user.rol)) {
+  if ([ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR].includes(user.rol)) {
     const [
       novedadesAbiertas,
       novedadesEscaladas,
@@ -150,13 +151,13 @@ const getDashboardHoy = async (user) => {
   }
 
   // Métricas mensuales exclusivas para Admin
-  if (user.rol === 'admin') {
+  if (user.rol === ROLES.ADMINISTRADOR) {
     const inicioMes = new Date();
     inicioMes.setDate(1);
     inicioMes.setHours(0, 0, 0, 0);
 
     const [totalGuardias, turnosMes, asistenciasMes] = await Promise.all([
-      prisma.usuario.count({ where: { rol: { in: ['pauta', 'libre'] }, estado: 'activo' } }),
+      prisma.usuario.count({ where: { rol: { in: [ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE] }, estado: 'activo' } }),
       prisma.turno.count({ where: { fecha: { gte: inicioMes }, estado: { not: 'cancelado' } } }),
       prisma.asistencia.count({ where: { created_at: { gte: inicioMes } } }),
     ]);

@@ -1,4 +1,5 @@
 const { prisma } = require('../config/database');
+const { ROLES } = require('../constants/roles');
 
 const listar = async (query, user) => {
   const where = {};
@@ -6,7 +7,7 @@ const listar = async (query, user) => {
   if (query.tipo_recinto) where.tipo_recinto = query.tipo_recinto;
 
   // Row-level security: supervisor solo ve sus instalaciones asignadas
-  if (user.rol === 'supervisor') {
+  if (user.rol === ROLES.SUPERVISOR) {
     const asignaciones = await prisma.supervisor_Instalacion.findMany({
       where: { supervisor_id: user.id },
       select: { instalacion_id: true },

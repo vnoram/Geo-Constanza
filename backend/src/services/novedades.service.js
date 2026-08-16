@@ -10,6 +10,7 @@ const priorizacion = require('./priorizacion.service');
 const geovalidacion = require('./geovalidacion.service');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { uploadFotoToAzure } = require('../utils/azureStorage');
+const { ROLES } = require('../constants/roles');
 
 // ============================================================================
 // CONFIGURACIONES
@@ -53,9 +54,9 @@ const listar = async (query, user) => {
       if (fecha_fin) where.created_at.lte = new Date(fecha_fin);
     }
 
-    if (user.rol === 'pauta' || user.rol === 'libre') {
+    if (user.rol === ROLES.GGSS_EN_PAUTA || user.rol === ROLES.GGSS_LIBRE) {
       where.usuario_id = user.id;
-    } else if (user.rol === 'supervisor') {
+    } else if (user.rol === ROLES.SUPERVISOR) {
       const ids = await resolverInstalacionesSupervisor(user);
       where.instalacion_id = instalacion_id ? instalacion_id : { in: ids };
     } else if (instalacion_id) {
@@ -107,7 +108,7 @@ const obtenerPorId = async (id, user) => {
       },
     });
 
-    if (user.rol === 'pauta' || user.rol === 'libre') {
+    if (user.rol === ROLES.GGSS_EN_PAUTA || user.rol === ROLES.GGSS_LIBRE) {
       if (novedad.usuario_id !== user.id) {
         const error = new Error('No tienes permiso para ver esta novedad');
         error.statusCode = 403;
@@ -154,7 +155,7 @@ const crear = async (data, file, user) => {
     });
 
     // GGSS libre: validar que tenga solicitud de turno aprobada para hoy
-    if (!turno && user.rol === 'libre') {
+    if (!turno && user.rol === ROLES.GGSS_LIBRE) {
       const { tieneturnoAprobadoHoy } = require('./solicitudes.service');
       const tieneAprobado = await tieneturnoAprobadoHoy(user.id);
       if (!tieneAprobado) {

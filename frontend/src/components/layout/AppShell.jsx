@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { T, ROLES } from "../../theme/theme";
+import { ROLES as ROL } from "../../constants/roles";
 import { Placeholder } from "../ui/Placeholder";
 
 // ─── GGSS en pauta ───
@@ -44,30 +45,30 @@ function RoleContent({ user, rol, section }) {
     );
   }
 
-  if (rol === "pauta") {
+  if (rol === ROL.GGSS_EN_PAUTA) {
     if (section === "turno") return <PautaTurno user={user} />;
     if (section === "novedades") return <PautaNovedades user={user} />;
     if (section === "historial") return <PautaHistorial />;
     if (section === "alertas") return <PautaAlertas />;
   }
-  if (rol === "libre") {
+  if (rol === ROL.GGSS_LIBRE) {
     if (section === "turnos") return <LibreTurnos />;
     if (section === "solicitudes") return <LibreSolicitudes />;
     if (section === "docs") return <LibreDocs />;
   }
-  if (rol === "supervisor") {
+  if (rol === ROL.SUPERVISOR) {
     if (section === "dashboard") return <SupDashboard />;
     if (section === "novedades") return <SupNovedades />;
     if (section === "solicitudes") return <SupSolicitudes />;
     if (section === "guardias") return <SupGuardias />;
     if (section === "reportes") return <SupReportes />;
   }
-  if (rol === "central") {
+  if (rol === ROL.OPERADOR_CENTRAL) {
     // "panel" reutiliza el dashboard completo con mapa + KPIs de AdminPanel
     if (section === "panel")      return <AdminPanel />;
     if (section === "incidentes") return <CentralPanel section="incidentes" />;
   }
-  if (rol === "admin") {
+  if (rol === ROL.ADMINISTRADOR) {
     // Admin ya no tiene el panel de monitoreo — solo gestión RRHH/config
     if (section === "usuarios")      return <AdminUsuarios />;
     if (section === "instalaciones") return <AdminInstalaciones />;
@@ -212,10 +213,10 @@ export function AppShell({ user, token, onLogout }) {
                   Sesión Activa
                 </div>
                 <div style={{ fontSize: 11, color: T.textSec, marginBottom: 4 }}>
-                  🔒 Token JWT · {user.rol === "pauta" || user.rol === "libre" ? "30 min" : user.rol === "supervisor" ? "2 hrs" : "4 hrs"}
+                  🔒 Token JWT · {user.rol === ROL.GGSS_EN_PAUTA || user.rol === ROL.GGSS_LIBRE ? "30 min" : user.rol === ROL.SUPERVISOR ? "2 hrs" : "4 hrs"}
                 </div>
                 <div style={{ fontSize: 11, color: T.textSec, marginBottom: 4 }}>
-                  {(user.rol === "supervisor" || user.rol === "admin") ? "✅ 2FA verificado" : "🔑 Auth estándar"}
+                  {(user.rol === ROL.SUPERVISOR || user.rol === ROL.ADMINISTRADOR) ? "✅ 2FA verificado" : "🔑 Auth estándar"}
                 </div>
                 <div style={{ fontSize: 10, color: T.textMut, fontFamily: "'JetBrains Mono', monospace" }}>
                   {new Date().toLocaleTimeString("es-CL")}

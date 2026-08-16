@@ -4,6 +4,7 @@ const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { ROLES } = require('../src/constants/roles');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -55,7 +56,7 @@ async function main() {
       nombre: 'Administrador de Gestión',
       email: 'gestion@geoconstanza.cl',
       password_hash: hashGeo,
-      rol: 'admin',
+      rol: ROLES.ADMINISTRADOR,
       estado: 'activo',
     },
   });
@@ -67,7 +68,7 @@ async function main() {
       nombre: 'Operador Central',
       email: 'admin@geoconstanza.cl',
       password_hash: hashGeo,
-      rol: 'central',
+      rol: ROLES.OPERADOR_CENTRAL,
       estado: 'activo',
     },
   });
@@ -79,7 +80,7 @@ async function main() {
       nombre: 'Andrés Martínez',
       email: 'supervisor@geoconstanza.cl',
       password_hash: hashGeo,
-      rol: 'supervisor',
+      rol: ROLES.SUPERVISOR,
       instalacion_asignada_id: instalacion.id,
       estado: 'activo',
     },
@@ -92,7 +93,7 @@ async function main() {
       nombre: 'Víctor Norambuena',
       email: 'pauta@geoconstanza.cl',
       password_hash: hashGeo,
-      rol: 'pauta',
+      rol: ROLES.GGSS_EN_PAUTA,
       tipo_ggss: 'pauta',
       instalacion_asignada_id: instalacion.id,
       imei_dispositivo: 'TABLET_PROV_01',
@@ -108,7 +109,7 @@ async function main() {
       nombre: 'M. López',
       email: 'libre@geoconstanza.cl',
       password_hash: hashGeo,
-      rol: 'libre',
+      rol: ROLES.GGSS_LIBRE,
       tipo_ggss: 'libre',
       instalacion_asignada_id: instalacion.id,
       dispositivo_principal: 'mobil_personal',

@@ -1,10 +1,11 @@
 // src/services/reportes.service.js
 const { prisma } = require('../config/database');
+const { ROLES } = require('../constants/roles');
 
 // ── Helpers ────────────────────────────────────────────────────────
 /** Devuelve los instalacion_ids accesibles según el rol del usuario */
 async function resolverInstalaciones(instalacion_id, user) {
-  if (user.rol === 'supervisor') {
+  if (user.rol === ROLES.SUPERVISOR) {
     const asignaciones = await prisma.supervisor_Instalacion.findMany({
       where: { supervisor_id: user.id },
       select: { instalacion_id: true },

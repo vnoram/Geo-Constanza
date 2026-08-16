@@ -1,6 +1,7 @@
 // src/services/solicitudes.service.js
 
 const { prisma } = require('../config/database');
+const { ROLES } = require('../constants/roles');
 
 const TIPOS_VALIDOS = ['vacaciones', 'dias_libres', 'turno_extra', 'traslado', 'turno'];
 
@@ -17,10 +18,10 @@ const listar = async (query, user) => {
   if (estado) where.estado = estado;
   if (tipo) where.tipo = tipo;
 
-  if (user.rol === 'pauta' || user.rol === 'libre') {
+  if (user.rol === ROLES.GGSS_EN_PAUTA || user.rol === ROLES.GGSS_LIBRE) {
     // Guardia solo ve sus propias solicitudes
     where.usuario_id = user.id;
-  } else if (user.rol === 'supervisor') {
+  } else if (user.rol === ROLES.SUPERVISOR) {
     // Supervisor ve solicitudes de GGSS de su(s) instalación(es)
     const asignaciones = await prisma.supervisor_Instalacion.findMany({
       where: { supervisor_id: user.id },
@@ -32,7 +33,7 @@ const listar = async (query, user) => {
     const guardias = await prisma.usuario.findMany({
       where: {
         instalacion_asignada_id: { in: instalacionIds },
-        rol: { in: ['pauta', 'libre'] },
+        rol: { in: [ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE] },
       },
       select: { id: true },
     });

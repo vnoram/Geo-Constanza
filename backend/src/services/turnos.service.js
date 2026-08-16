@@ -1,5 +1,6 @@
 const { prisma } = require('../config/database');
 const { getSocketIO } = require('../socket/socketManager');
+const { ROLES } = require('../constants/roles');
 
 const listar = async (query, user) => {
   const where = {};
@@ -8,7 +9,7 @@ const listar = async (query, user) => {
   if (query.usuario_id) where.usuario_id = query.usuario_id;
 
   // GGSS solo ve sus propios turnos
-  if (['pauta', 'libre'].includes(user.rol)) {
+  if ([ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE].includes(user.rol)) {
     where.usuario_id = user.id;
   }
 
