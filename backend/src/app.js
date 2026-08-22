@@ -112,6 +112,12 @@ app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/reportes', reportesRoutes);
 app.use('/api/v1/auditoria', auditoriaRoutes);
 
+// Mantener el contrato JSON también para rutas inexistentes. Así el frontend
+// puede mostrar un error útil si VITE_API_URL quedó mal configurada.
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: `Ruta API no encontrada: ${req.method} ${req.originalUrl}` });
+});
+
 // Manejo de errores
 app.use(errorHandler);
 

@@ -49,6 +49,13 @@ export function useLoginForm({ onLogin }) {
       // }
       setAttempts(0);
     } catch (err) {
+      // Solo una respuesta 401 representa credenciales incorrectas. Los errores
+      // de red, despliegue o configuración no deben bloquear la cuenta localmente.
+      if (err.status !== 401) {
+        setError(err.message);
+        setLoading(false);
+        return;
+      }
       const next = attempts + 1;
       setAttempts(next);
       if (next >= LOCK_ATTEMPTS) {
