@@ -5,8 +5,8 @@ import { Btn } from "../../components/ui/Btn";
 import { Badge } from "../../components/ui/Badge";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
+import { SOCKET_URL } from "../../config/api";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3005";
 
 const URGENCIA_COLOR = {
   rojo:     { border: T.red,    badge: "red" },

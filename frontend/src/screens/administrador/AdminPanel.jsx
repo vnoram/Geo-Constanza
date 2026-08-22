@@ -6,9 +6,7 @@ import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
-
-const API_BASE   = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
-const SOCKET_URL = API_BASE.replace("/api/v1", "");
+import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 
 // ─── ESTILOS POPUP LEAFLET ───────────────────────────────────────
 const LEAFLET_STYLES = `

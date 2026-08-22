@@ -5,9 +5,9 @@ import { Badge } from "../../components/ui/Badge";
 import { KPI } from "../../components/ui/KPI";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
+import { API_URL as API_BASE } from "../../config/api";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 
-const API_BASE   = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
 const TURNO_TTL  = 12 * 60 * 60 * 1000; // 12 h — cubre turno nocturno completo
 const MARCAJE_TTL = 14 * 60 * 60 * 1000; // 14 h — persiste hasta el final del turno
 
@@ -129,7 +129,7 @@ export function PautaTurno({ user }) {
     };
 
     hidratar();
-  }, [token, user.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token, user.id]);
 
   // ── Marcar Entrada ─────────────────────────────────────────────
   const marcarEntrada = useCallback(async () => {

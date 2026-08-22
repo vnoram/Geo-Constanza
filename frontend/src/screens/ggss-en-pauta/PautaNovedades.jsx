@@ -5,9 +5,8 @@ import { Badge } from "../../components/ui/Badge";
 import { Btn } from "../../components/ui/Btn";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
+import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3005";
-const API_BASE    = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
 const TOKEN_KEY    = "gc_token";
 
 const TIPOS_NOVEDAD = [

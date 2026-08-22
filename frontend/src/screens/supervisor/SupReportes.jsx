@@ -5,8 +5,8 @@ import { Input } from "../../components/ui/Input";
 import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
+import { API_URL as API_BASE } from "../../config/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
 
 // ─── CARGA DINÁMICA DE jsPDF + autoTable ─────────────────────────
 async function cargarLibsPDF() {

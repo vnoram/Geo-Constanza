@@ -1,10 +1,5 @@
-if (!import.meta.env.VITE_API_URL && import.meta.env.PROD) {
-  console.error('[api] VITE_API_URL no está definida en el build de producción. Las peticiones al backend fallarán.');
-}
-const configuredApiUrl = import.meta.env.VITE_API_URL?.trim().replace(/\/$/, "");
-const API_BASE = configuredApiUrl
-  ? (configuredApiUrl.endsWith("/api/v1") ? configuredApiUrl : `${configuredApiUrl}/api/v1`)
-  : "http://localhost:3005/api/v1";
+import { API_URL as API_BASE } from "../config/api";
+
 const TOKEN_KEY   = "gc_token";
 
 export class ApiError extends Error {

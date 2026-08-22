@@ -4,9 +4,9 @@ import { Badge } from "../../components/ui/Badge";
 import { Btn } from "../../components/ui/Btn";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
+import { API_URL as API_BASE } from "../../config/api";
 import { ROLES } from "../../constants/roles";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3005/api/v1";
 
 export function SupGuardias() {
   const { token } = useAuth();

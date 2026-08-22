@@ -4,10 +4,9 @@ import { T } from "../../theme/theme";
 import { KPI } from "../../components/ui/KPI";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
+import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 
-const API_BASE   = import.meta.env.VITE_API_URL   || "http://localhost:3005/api/v1";
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || API_BASE.replace("/api/v1", "");
 
 const ESTADO_COLOR    = { presente: T.accent, tardio: T.yellow, faltante: T.red };
 const ESTADO_LABEL    = { presente: "Presente", tardio: "Tardío", faltante: "Faltante" };
