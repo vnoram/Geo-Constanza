@@ -24,13 +24,30 @@ const listar = async (query, user) => {
 };
 
 const crear = async (data) => {
-  return prisma.instalacion.create({
-    data: {
-      ...data,
-      latitud:          parseFloat(data.latitud),
-      longitud:         parseFloat(data.longitud),
-      radio_geofence_m: parseInt(data.radio_geofence_m ?? 100, 10),
-    },
+  const { supervisorIds, ...campos } = data;
+
+  return prisma.$transaction(async (tx) => {
+    const nueva = await tx.instalacion.create({
+      data: {
+        ...campos,
+        latitud:          parseFloat(campos.latitud),
+        longitud:         parseFloat(campos.longitud),
+        radio_geofence_m: parseInt(campos.radio_geofence_m ?? 100, 10),
+      },
+    });
+
+    // Sin esto, la instalación queda invisible para todo supervisor: el
+    // listado de supervisores filtra por Supervisor_Instalacion (o el
+    // fallback instalacion_asignada_id del usuario), y una instalación
+    // recién creada no tiene ninguna fila ahí.
+    if (Array.isArray(supervisorIds) && supervisorIds.length > 0) {
+      await tx.supervisor_Instalacion.createMany({
+        data: supervisorIds.map((supervisor_id) => ({ supervisor_id, instalacion_id: nueva.id })),
+        skipDuplicates: true,
+      });
+    }
+
+    return nueva;
   });
 };
 
@@ -39,7 +56,25 @@ const obtenerPorId = async (id) => {
 };
 
 const editar = async (id, data) => {
-  return prisma.instalacion.update({ where: { id }, data });
+  const { supervisorIds, ...campos } = data;
+
+  return prisma.$transaction(async (tx) => {
+    const actualizada = await tx.instalacion.update({ where: { id }, data: campos });
+
+    // Si se envió el array, sincroniza las asignaciones (reemplaza el set completo,
+    // igual que hace usuarios.service.js al editar un supervisor).
+    if (Array.isArray(supervisorIds)) {
+      await tx.supervisor_Instalacion.deleteMany({ where: { instalacion_id: id } });
+      if (supervisorIds.length > 0) {
+        await tx.supervisor_Instalacion.createMany({
+          data: supervisorIds.map((supervisor_id) => ({ supervisor_id, instalacion_id: id })),
+          skipDuplicates: true,
+        });
+      }
+    }
+
+    return actualizada;
+  });
 };
 
 module.exports = { listar, obtenerPorId, crear, editar };

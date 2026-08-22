@@ -21,6 +21,7 @@ const FORM_INICIAL = {
   radio_geofence_m: "100",
   tipo_recinto:     "",
   nivel_criticidad: "Media",
+  supervisorIds:    [],
 };
 
 // ─── SELECTOR ────────────────────────────────────────────────────
@@ -52,11 +53,34 @@ function Select({ label, value, onChange, options }) {
 
 // ─── MODAL NUEVA INSTALACIÓN ─────────────────────────────────────
 function ModalNuevaInstalacion({ onClose, onCreada }) {
-  const [form,     setForm]     = useState(FORM_INICIAL);
-  const [loading,  setLoading]  = useState(false);
-  const [errores,  setErrores]  = useState({});
+  const [form,        setForm]        = useState(FORM_INICIAL);
+  const [loading,     setLoading]     = useState(false);
+  const [errores,     setErrores]     = useState({});
+  const [supervisores, setSupervisores] = useState([]);
+  const [cargandoSup,  setCargandoSup]  = useState(true);
 
   const set = (campo) => (val) => setForm((f) => ({ ...f, [campo]: val }));
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api.get("/usuarios?rol=supervisor&limit=200");
+        setSupervisores(Array.isArray(data) ? data : (data.data ?? []));
+      } catch {
+        /* si falla, simplemente no se ofrece el selector — la instalación
+           igual se puede crear y asignar después editando */
+      } finally {
+        setCargandoSup(false);
+      }
+    })();
+  }, []);
+
+  const toggleSupervisor = (id) => {
+    setForm((f) => {
+      const ya = f.supervisorIds.includes(id);
+      return { ...f, supervisorIds: ya ? f.supervisorIds.filter((s) => s !== id) : [...f.supervisorIds, id] };
+    });
+  };
 
   // Validación local
   const validar = () => {
@@ -89,6 +113,7 @@ function ModalNuevaInstalacion({ onClose, onCreada }) {
         radio_geofence_m: parseInt(form.radio_geofence_m, 10),
         tipo_recinto:     form.tipo_recinto     || undefined,
         nivel_criticidad: form.nivel_criticidad || "Media",
+        supervisorIds:    form.supervisorIds,
       });
       onCreada(nueva);
     } catch (err) {
@@ -203,6 +228,37 @@ function ModalNuevaInstalacion({ onClose, onCreada }) {
           <div style={{ fontSize: 11, color: T.textMut }}>
             La geocerca de <span style={{ color: T.accent, fontWeight: 700 }}>{form.radio_geofence_m || 100}m</span> define el radio en que los guardias deben estar para registrar asistencia válida.
           </div>
+        </div>
+
+        {/* Selector de supervisores asignados */}
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: T.textSec, marginBottom: 6, letterSpacing: 1.5, textTransform: "uppercase" }}>
+            Supervisores con acceso
+          </label>
+          <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>
+            Solo los supervisores marcados aquí verán esta instalación en sus turnos. Puedes ajustar esto después.
+          </div>
+          {cargandoSup ? (
+            <div style={{ fontSize: 12, color: T.textMut }}>Cargando supervisores...</div>
+          ) : supervisores.length === 0 ? (
+            <div style={{ fontSize: 12, color: T.textMut }}>No hay supervisores registrados todavía.</div>
+          ) : (
+            <div style={{
+              border: `1.5px solid ${T.border}`, borderRadius: 12, padding: "8px 12px",
+              maxHeight: 160, overflowY: "auto", background: T.bgInput,
+            }}>
+              {supervisores.map((s) => (
+                <label key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", fontSize: 13, color: T.text, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={form.supervisorIds.includes(s.id)}
+                    onChange={() => toggleSupervisor(s.id)}
+                  />
+                  {s.nombre}
+                </label>
+              ))}
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
