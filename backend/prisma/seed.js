@@ -86,6 +86,14 @@ async function main() {
     },
   });
 
+  // Asignación relacional en tabla intermedia
+  await prisma.supervisor_Instalacion.create({
+    data: {
+      supervisor_id: supervisor.id,
+      instalacion_id: instalacion.id,
+    },
+  });
+
   // GGSS PAUTA (Víctor - Marcaje en Tablet)
   const guardiaPauta = await prisma.usuario.create({
     data: {

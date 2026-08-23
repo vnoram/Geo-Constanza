@@ -1,23 +1,18 @@
 const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
+const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 
 const listar = async (query, user) => {
   const where = {};
   if (query.estado) where.estado = query.estado;
   if (query.tipo_recinto) where.tipo_recinto = query.tipo_recinto;
 
-  // Row-level security: supervisor solo ve sus instalaciones asignadas
-  if (user.rol === ROLES.SUPERVISOR) {
-    const asignaciones = await prisma.supervisor_Instalacion.findMany({
-      where: { supervisor_id: user.id },
-      select: { instalacion_id: true },
-    });
-    const ids = asignaciones.map((a) => a.instalacion_id);
-    // Fallback: si no tiene entradas en la tabla intermedia, usar instalacion_asignada_id
-    if (ids.length === 0 && user.instalacion_asignada_id) {
-      ids.push(user.instalacion_asignada_id);
+  // Row-level security: supervisor ve sus instalaciones asignadas (o todas las activas si aún no tiene asignación)
+  if (user && user.rol === ROLES.SUPERVISOR) {
+    const ids = await resolverInstalacionesSupervisor(user);
+    if (ids.length > 0) {
+      where.id = { in: ids };
     }
-    where.id = { in: ids };
   }
 
   return prisma.instalacion.findMany({ where, orderBy: { nombre: 'asc' } });
