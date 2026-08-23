@@ -15,7 +15,15 @@ const listar = async (query, user) => {
     }
   }
 
-  return prisma.instalacion.findMany({ where, orderBy: { nombre: 'asc' } });
+  return prisma.instalacion.findMany({
+    where,
+    include: {
+      supervisores: {
+        select: { supervisor_id: true },
+      },
+    },
+    orderBy: { nombre: 'asc' },
+  });
 };
 
 const crear = async (data) => {
@@ -28,6 +36,11 @@ const crear = async (data) => {
         latitud:          parseFloat(campos.latitud),
         longitud:         parseFloat(campos.longitud),
         radio_geofence_m: parseInt(campos.radio_geofence_m ?? 100, 10),
+      },
+      include: {
+        supervisores: {
+          select: { supervisor_id: true },
+        },
       },
     });
 
@@ -47,14 +60,40 @@ const crear = async (data) => {
 };
 
 const obtenerPorId = async (id) => {
-  return prisma.instalacion.findUniqueOrThrow({ where: { id } });
+  return prisma.instalacion.findUniqueOrThrow({
+    where: { id },
+    include: {
+      supervisores: {
+        select: { supervisor_id: true },
+      },
+    },
+  });
 };
 
 const editar = async (id, data) => {
   const { supervisorIds, ...campos } = data;
 
+  const dataToUpdate = { ...campos };
+  if (campos.latitud !== undefined) {
+    dataToUpdate.latitud = parseFloat(campos.latitud);
+  }
+  if (campos.longitud !== undefined) {
+    dataToUpdate.longitud = parseFloat(campos.longitud);
+  }
+  if (campos.radio_geofence_m !== undefined) {
+    dataToUpdate.radio_geofence_m = parseInt(campos.radio_geofence_m, 10);
+  }
+
   return prisma.$transaction(async (tx) => {
-    const actualizada = await tx.instalacion.update({ where: { id }, data: campos });
+    const actualizada = await tx.instalacion.update({
+      where: { id },
+      data: dataToUpdate,
+      include: {
+        supervisores: {
+          select: { supervisor_id: true },
+        },
+      },
+    });
 
     // Si se envió el array, sincroniza las asignaciones (reemplaza el set completo,
     // igual que hace usuarios.service.js al editar un supervisor).
