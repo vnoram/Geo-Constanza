@@ -20,12 +20,15 @@ const formatearFecha = (iso) => {
   return new Date(a, m - 1, d).toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" });
 };
 
+// Misma regla de solapamiento que usa el backend al crear/editar
+const haySolape = (a, b) => a.hora_inicio <= b.hora_fin && a.hora_fin >= b.hora_inicio;
+
 const ESTADO_COLOR = { programado: "accent", completado: "yellow", cancelado: "red" };
 
 const etiquetaStyle = { fontSize: 11, color: T.textMut, marginBottom: 4, fontWeight: 600 };
 
 // ─── MODAL EDITAR TURNO ──────────────────────────────────────────
-function ModalEditarTurno({ turno, guardias, instalaciones, inputStyle, onClose, onGuardado }) {
+function ModalEditarTurno({ turno, turnos, guardias, instalaciones, inputStyle, onClose, onGuardado }) {
   const [form, setForm] = useState({
     usuario_id: turno.usuario_id,
     instalacion_id: turno.instalacion_id,
@@ -42,10 +45,31 @@ function ModalEditarTurno({ turno, guardias, instalaciones, inputStyle, onClose,
       setError("Completa todos los campos.");
       return;
     }
+    // Validación previa en el navegador (el backend también la hace)
+    const choque = turnos.find(
+      (t) =>
+        t.id !== turno.id &&
+        t.estado !== "cancelado" &&
+        t.usuario_id === form.usuario_id &&
+        fechaDeTurno(t) === form.fecha &&
+        haySolape(t, form),
+    );
+    if (choque) {
+      setError(
+        `Conflicto de turno: el guardia ya tiene un turno de ${choque.hora_inicio} a ${choque.hora_fin} ese día` +
+          (choque.instalacion?.nombre ? ` en ${choque.instalacion.nombre}` : ""),
+      );
+      return;
+    }
+
     setGuardando(true);
     setError("");
     try {
-      const actualizado = await api.put(`/turnos/${turno.id}`, form);
+      // Fecha en ISO completo: compatible con cualquier versión del backend
+      const actualizado = await api.put(`/turnos/${turno.id}`, {
+        ...form,
+        fecha: `${form.fecha}T00:00:00.000Z`,
+      });
       onGuardado(actualizado);
     } catch (e) {
       setError(e.message || "Error al guardar el turno");
@@ -211,8 +235,13 @@ export function SupGuardias() {
     cargarTurnos();
   };
 
+  const hoy = hoyLocal();
+  const idsInstalaciones = new Set(instalaciones.map((i) => i.id));
   const turnosVisibles = turnos
     .filter((t) => t.estado !== "cancelado")
+    .filter((t) => fechaDeTurno(t) >= hoy)
+    // Solo turnos de las instalaciones del supervisor (/instalaciones ya viene filtrado)
+    .filter((t) => idsInstalaciones.has(t.instalacion_id))
     .filter((t) => !filtroGuardia || t.usuario_id === filtroGuardia);
 
   // Agrupar por fecha manteniendo el orden (el backend ya ordena por fecha)
@@ -455,6 +484,7 @@ export function SupGuardias() {
       {turnoEditando && (
         <ModalEditarTurno
           turno={turnoEditando}
+          turnos={turnos}
           guardias={guardias}
           instalaciones={instalaciones}
           inputStyle={inputStyle}
