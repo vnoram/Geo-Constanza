@@ -6,6 +6,139 @@ import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 import { ROLES } from "../../constants/roles";
 
+// Fecha local YYYY-MM-DD (toISOString usa UTC y en Chile desfasa la fecha de noche)
+const hoyLocal = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
+// `fecha` llega como "2026-09-26T00:00:00.000Z": se usa la parte de fecha tal cual
+const fechaDeTurno = (t) => String(t.fecha).slice(0, 10);
+
+const formatearFecha = (iso) => {
+  const [a, m, d] = iso.split("-").map(Number);
+  return new Date(a, m - 1, d).toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" });
+};
+
+const ESTADO_COLOR = { programado: "accent", completado: "yellow", cancelado: "red" };
+
+const etiquetaStyle = { fontSize: 11, color: T.textMut, marginBottom: 4, fontWeight: 600 };
+
+// ─── MODAL EDITAR TURNO ──────────────────────────────────────────
+function ModalEditarTurno({ turno, guardias, instalaciones, inputStyle, onClose, onGuardado }) {
+  const [form, setForm] = useState({
+    usuario_id: turno.usuario_id,
+    instalacion_id: turno.instalacion_id,
+    fecha: fechaDeTurno(turno),
+    hora_inicio: turno.hora_inicio,
+    hora_fin: turno.hora_fin,
+  });
+  const [error, setError] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const set = (campo) => (e) => setForm((f) => ({ ...f, [campo]: e.target.value }));
+
+  const guardar = async () => {
+    if (!form.usuario_id || !form.instalacion_id || !form.fecha || !form.hora_inicio || !form.hora_fin) {
+      setError("Completa todos los campos.");
+      return;
+    }
+    setGuardando(true);
+    setError("");
+    try {
+      const actualizado = await api.put(`/turnos/${turno.id}`, form);
+      onGuardado(actualizado);
+    } catch (e) {
+      setError(e.message || "Error al guardar el turno");
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, background: "rgba(6,13,24,0.88)", backdropFilter: "blur(6px)",
+        display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16,
+      }}
+    >
+      <div
+        style={{
+          background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 16, padding: 22,
+          width: "100%", maxWidth: 440, maxHeight: "90vh", overflowY: "auto",
+          boxShadow: "0 16px 40px rgba(0,0,0,0.6)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 16, color: T.text }}>Editar Turno</div>
+            <div style={{ fontSize: 11, color: T.textMut, marginTop: 2 }}>
+              {turno.usuario?.nombre} · {formatearFecha(fechaDeTurno(turno))}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ background: "none", border: "none", color: T.textMut, fontSize: 18, cursor: "pointer" }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div style={etiquetaStyle}>GUARDIA *</div>
+        <select style={inputStyle} value={form.usuario_id} onChange={set("usuario_id")}>
+          {!guardias.some((g) => g.id === turno.usuario_id) && (
+            <option value={turno.usuario_id}>{turno.usuario?.nombre || "Guardia actual"}</option>
+          )}
+          {guardias.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.nombre} ({g.rol === ROLES.GGSS_EN_PAUTA ? "Pauta" : "Libre"})
+            </option>
+          ))}
+        </select>
+
+        <div style={etiquetaStyle}>INSTALACIÓN *</div>
+        <select style={inputStyle} value={form.instalacion_id} onChange={set("instalacion_id")}>
+          {!instalaciones.some((i) => i.id === turno.instalacion_id) && (
+            <option value={turno.instalacion_id}>{turno.instalacion?.nombre || "Instalación actual"}</option>
+          )}
+          {instalaciones.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.nombre} {i.comuna ? `(${i.comuna})` : ""}
+            </option>
+          ))}
+        </select>
+
+        <div style={etiquetaStyle}>FECHA *</div>
+        <input type="date" style={inputStyle} value={form.fecha} onChange={set("fecha")} />
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div>
+            <div style={etiquetaStyle}>HORA INICIO</div>
+            <input type="time" style={inputStyle} value={form.hora_inicio} onChange={set("hora_inicio")} />
+          </div>
+          <div>
+            <div style={etiquetaStyle}>HORA FIN</div>
+            <input type="time" style={inputStyle} value={form.hora_fin} onChange={set("hora_fin")} />
+          </div>
+        </div>
+
+        {error && (
+          <div style={{
+            fontSize: 12, padding: "8px 12px", borderRadius: 8, marginBottom: 12,
+            background: "rgba(239, 68, 68, 0.15)", color: T.red, border: `1px solid ${T.red}`,
+          }}>
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <Btn variant="outline" onClick={onClose} disabled={guardando}>Cancelar</Btn>
+          <Btn full onClick={guardar} loading={guardando}>Guardar Cambios</Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SupGuardias() {
   const [guardias, setGuardias] = useState([]);
   const [instalaciones, setInstalaciones] = useState([]);
@@ -20,6 +153,23 @@ export function SupGuardias() {
   });
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [turnos, setTurnos] = useState([]);
+  const [cargandoTurnos, setCargandoTurnos] = useState(true);
+  const [filtroGuardia, setFiltroGuardia] = useState("");
+  const [turnoEditando, setTurnoEditando] = useState(null);
+  const [aviso, setAviso] = useState("");
+
+  const cargarTurnos = async () => {
+    setCargandoTurnos(true);
+    try {
+      const data = await api.get(`/turnos?desde=${hoyLocal()}`);
+      setTurnos(Array.isArray(data) ? data : (data.data || []));
+    } catch (err) {
+      console.error("Error al cargar turnos:", err);
+    } finally {
+      setCargandoTurnos(false);
+    }
+  };
 
   const cargarRecursos = async () => {
     setCargandoDatos(true);
@@ -51,7 +201,26 @@ export function SupGuardias() {
 
   useEffect(() => {
     cargarRecursos();
+    cargarTurnos();
   }, []);
+
+  const onTurnoGuardado = () => {
+    setTurnoEditando(null);
+    setAviso("✅ Turno actualizado correctamente");
+    setTimeout(() => setAviso(""), 4000);
+    cargarTurnos();
+  };
+
+  const turnosVisibles = turnos
+    .filter((t) => t.estado !== "cancelado")
+    .filter((t) => !filtroGuardia || t.usuario_id === filtroGuardia);
+
+  // Agrupar por fecha manteniendo el orden (el backend ya ordena por fecha)
+  const turnosPorFecha = turnosVisibles.reduce((acc, t) => {
+    const f = fechaDeTurno(t);
+    (acc[f] ||= []).push(t);
+    return acc;
+  }, {});
 
   const crearTurno = async () => {
     if (!form.usuario_id || !form.instalacion_id || !form.fecha) {
@@ -64,6 +233,7 @@ export function SupGuardias() {
       await api.post("/turnos", form);
       setMsg("Turno creado exitosamente");
       setMostrarForm(false);
+      cargarTurnos();
       setForm({
         usuario_id: "",
         instalacion_id: instalaciones.length === 1 ? instalaciones[0].id : "",
@@ -104,7 +274,7 @@ export function SupGuardias() {
             Nuevo Turno
           </div>
 
-          <div style={{ fontSize: 11, color: T.textMut, marginBottom: 4, fontWeight: 600 }}>GUARDIA *</div>
+          <div style={etiquetaStyle}>GUARDIA *</div>
           <select
             style={inputStyle}
             value={form.usuario_id}
@@ -118,7 +288,7 @@ export function SupGuardias() {
             ))}
           </select>
 
-          <div style={{ fontSize: 11, color: T.textMut, marginBottom: 4, fontWeight: 600 }}>INSTALACIÓN *</div>
+          <div style={etiquetaStyle}>INSTALACIÓN *</div>
           <select
             style={inputStyle}
             value={form.instalacion_id}
@@ -132,7 +302,7 @@ export function SupGuardias() {
             ))}
           </select>
 
-          <div style={{ fontSize: 11, color: T.textMut, marginBottom: 4, fontWeight: 600 }}>FECHA *</div>
+          <div style={etiquetaStyle}>FECHA *</div>
           <input
             type="date"
             style={inputStyle}
@@ -142,7 +312,7 @@ export function SupGuardias() {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
-              <div style={{ fontSize: 11, color: T.textMut, marginBottom: 4, fontWeight: 600 }}>HORA INICIO</div>
+              <div style={etiquetaStyle}>HORA INICIO</div>
               <input
                 type="time"
                 style={inputStyle}
@@ -151,7 +321,7 @@ export function SupGuardias() {
               />
             </div>
             <div>
-              <div style={{ fontSize: 11, color: T.textMut, marginBottom: 4, fontWeight: 600 }}>HORA FIN</div>
+              <div style={etiquetaStyle}>HORA FIN</div>
               <input
                 type="time"
                 style={inputStyle}
@@ -181,6 +351,79 @@ export function SupGuardias() {
         </div>
       )}
 
+      {/* ── Próximos turnos ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, margin: "4px 0 10px" }}>
+        <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>Próximos turnos</div>
+        <select
+          value={filtroGuardia}
+          onChange={(e) => setFiltroGuardia(e.target.value)}
+          style={{ ...inputStyle, width: "auto", maxWidth: 220, marginBottom: 0, padding: "6px 10px", fontSize: 12 }}
+        >
+          <option value="">Todos los guardias</option>
+          {guardias.map((g) => (
+            <option key={g.id} value={g.id}>{g.nombre}</option>
+          ))}
+        </select>
+      </div>
+
+      {aviso && (
+        <div style={{
+          fontSize: 12, padding: "8px 12px", borderRadius: 8, marginBottom: 10,
+          background: T.accentGhost, color: T.accent, border: `1px solid ${T.accent}`, fontWeight: 600,
+        }}>
+          {aviso}
+        </div>
+      )}
+
+      {cargandoTurnos ? (
+        <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 16 }}>Cargando turnos...</div>
+      ) : turnosVisibles.length === 0 ? (
+        <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 16 }}>
+          No hay turnos programados desde hoy.
+        </div>
+      ) : (
+        Object.entries(turnosPorFecha).map(([fecha, lista]) => (
+          <div key={fecha} style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: T.textSec, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
+              {formatearFecha(fecha)}
+            </div>
+            {lista.map((t) => (
+              <div
+                key={t.id}
+                style={{
+                  background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
+                  padding: 12, marginBottom: 6, display: "flex", alignItems: "center", gap: 10,
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>
+                    {t.hora_inicio} – {t.hora_fin} · {t.usuario?.nombre || "Sin guardia"}
+                  </div>
+                  <div style={{ fontSize: 11, color: T.textMut, marginTop: 2 }}>
+                    🏢 {t.instalacion?.nombre || "—"}
+                  </div>
+                </div>
+                <Badge color={ESTADO_COLOR[t.estado] || "accent"}>{t.estado}</Badge>
+                {t.estado === "programado" && (
+                  <button
+                    onClick={() => setTurnoEditando(t)}
+                    style={{
+                      background: "rgba(56, 189, 248, 0.1)", border: "1px solid rgba(56, 189, 248, 0.3)",
+                      color: "#38BDF8", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700,
+                      fontFamily: "'Outfit', sans-serif", cursor: "pointer", whiteSpace: "nowrap",
+                    }}
+                  >
+                    ✏️ Editar
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        ))
+      )}
+
+      <div style={{ fontWeight: 800, fontSize: 14, color: T.text, margin: "18px 0 10px" }}>Personal</div>
+
       {cargandoDatos ? (
         <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 20 }}>
           Cargando personal e instalaciones...
@@ -207,6 +450,17 @@ export function SupGuardias() {
             <Badge color={g.estado === "activo" ? "accent" : "red"}>{g.estado}</Badge>
           </div>
         ))
+      )}
+
+      {turnoEditando && (
+        <ModalEditarTurno
+          turno={turnoEditando}
+          guardias={guardias}
+          instalaciones={instalaciones}
+          inputStyle={inputStyle}
+          onClose={() => setTurnoEditando(null)}
+          onGuardado={onTurnoGuardado}
+        />
       )}
     </div>
   );

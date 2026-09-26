@@ -50,14 +50,15 @@ const crearLote = async (req, res, next) => {
 
 const editar = async (req, res, next) => {
   try {
-    const turno = await turnosService.editar(req.params.id, req.body, req.user.id);
+    const { turno, anterior, cambios } = await turnosService.editar(req.params.id, req.body, req.user);
 
     await registrarAuditoria({
       usuarioId: req.user.id,
       accion: 'editar',
       tablaAfectada: 'turnos',
       registroId: req.params.id,
-      valoresDespues: req.body,
+      valoresAntes: anterior,
+      valoresDespues: cambios,
       ip: req.ip,
       userAgent: req.get('user-agent'),
     });
