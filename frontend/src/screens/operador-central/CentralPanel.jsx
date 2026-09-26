@@ -31,6 +31,9 @@ const LEAFLET_STYLES = `
     background:#0D1A2D !important;border-color:#1A2D4A !important;color:#7B8FA8 !important;
   }
   .leaflet-control-zoom a:hover { background:#122240 !important;color:#4FC3F7 !important; }
+  .gc-dark-tile, .leaflet-tile-pane .leaflet-tile {
+    filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%) !important;
+  }
 `;
 
 // ─── LEAFLET CDN ──────────────────────────────────────────────────

@@ -1,9 +1,13 @@
-const CARTO_API_KEY = import.meta.env.VITE_CARTO_API_KEY || "cb1_3yse_1_0c334a4ba6e46f0dc7c9e6a6";
+// OpenStreetMap oficial sin API keys ni marcas de agua
+export const MAP_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
-export const CARTO_TILE_URL = `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?api_key=${CARTO_API_KEY}`;
-
-export const CARTO_TILE_OPTIONS = {
+export const MAP_TILE_OPTIONS = {
   maxZoom: 19,
-  subdomains: "abcd",
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  subdomains: ["a", "b", "c"],
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  className: "gc-dark-tile",
 };
+
+// Aliases para retrocompatibilidad
+export const CARTO_TILE_URL = MAP_TILE_URL;
+export const CARTO_TILE_OPTIONS = MAP_TILE_OPTIONS;
