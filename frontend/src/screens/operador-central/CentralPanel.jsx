@@ -7,6 +7,7 @@ import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
+import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
 
 // Color de marca para el rol Central
 const C_COLOR = "#4FC3F7"; // Azul cian — diferente al verde (admin) y amarillo (supervisor)
@@ -71,9 +72,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
     }
     const L   = window.L;
     const map = L.map(containerRef.current, { center: [-33.45, -70.65], zoom: 12, attributionControl: false });
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      maxZoom: 19, subdomains: "abcd",
-    }).addTo(map);
+    L.tileLayer(CARTO_TILE_URL, CARTO_TILE_OPTIONS).addTo(map);
     mapRef.current = map;
 
     fetch(`${API_BASE}/instalaciones`, { headers: { Authorization: `Bearer ${token}` } })

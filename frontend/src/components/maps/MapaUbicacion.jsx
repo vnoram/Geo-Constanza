@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { T } from "../../theme/theme";
 import { useLeaflet } from "../../hooks/useLeaflet";
+import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
 
 const CENTRO_POR_DEFECTO = [-33.4489, -70.6693]; // Santiago
 const ZOOM_PUNTO = 17;
@@ -62,10 +63,7 @@ export function MapaUbicacion({ latitud, longitud, radio, onCambio, alto = 420, 
       zoom: hayPunto ? ZOOM_PUNTO : 12,
       attributionControl: false,
     });
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      maxZoom: 19,
-      subdomains: "abcd",
-    }).addTo(mapa);
+    L.tileLayer(CARTO_TILE_URL, CARTO_TILE_OPTIONS).addTo(mapa);
 
     const emitir = (latlng) => {
       const nLat = +latlng.lat.toFixed(6);
