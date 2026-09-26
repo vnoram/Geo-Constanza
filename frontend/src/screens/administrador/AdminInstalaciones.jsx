@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
 import { Input } from "../../components/ui/Input";
@@ -6,6 +6,9 @@ import { Badge } from "../../components/ui/Badge";
 import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
+import { direccionDesdeCoordenadas } from "../../services/geocoding";
+import { MapaUbicacion } from "../../components/maps/MapaUbicacion";
+import { DireccionAutocomplete } from "../../components/maps/DireccionAutocomplete";
 
 // ─── HELPERS ─────────────────────────────────────────────────────
 const CRITICIDAD_COLOR = { Alta: "red", Media: "yellow", Baja: "accent" };
@@ -38,6 +41,26 @@ const FORM_INICIAL = {
   estado: "activo",
   supervisorIds: [],
 };
+
+// Layout responsivo del modal: formulario | mapa (apilado en pantallas angostas)
+const ESTILOS_MODAL = `
+  .gc-inst-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 28px;
+    align-items: start;
+  }
+  .gc-inst-mapa { position: sticky; top: 0; }
+  @media (max-width: 900px) {
+    .gc-inst-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+    .gc-inst-mapa { position: static; }
+    .gc-inst-mapa-box { height: 320px !important; }
+    .gc-inst-modal { padding: 18px !important; }
+  }
+  @media (max-width: 520px) {
+    .gc-inst-2col { grid-template-columns: minmax(0, 1fr) !important; gap: 0 !important; }
+  }
+`;
 
 // ─── SELECTOR GENÉRICO ───────────────────────────────────────────
 function Select({ label, value, onChange, options }) {
@@ -126,6 +149,67 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
 
   const set = (campo) => (val) => setForm((f) => ({ ...f, [campo]: val }));
 
+  // ── Sincronización dirección ⇄ mapa ──
+  const [sugerenciaPin, setSugerenciaPin] = useState(null); // dirección detectada al mover el pin
+  const direccionRef = useRef(form.direccion);
+  const reverseCtrlRef = useRef(null);
+
+  useEffect(() => {
+    direccionRef.current = form.direccion;
+  }, [form.direccion]);
+
+  useEffect(() => () => reverseCtrlRef.current?.abort(), []);
+
+  const limpiarErroresCoords = () =>
+    setErrores((e) => ({ ...e, latitud: undefined, longitud: undefined }));
+
+  // Autocompletado → mueve el pin a la dirección elegida
+  const seleccionarDireccion = (s) => {
+    reverseCtrlRef.current?.abort();
+    setSugerenciaPin(null);
+    limpiarErroresCoords();
+    setForm((f) => ({
+      ...f,
+      direccion: s.direccion || f.direccion,
+      comuna: s.comuna || f.comuna,
+      latitud: String(+s.latitud.toFixed(6)),
+      longitud: String(+s.longitud.toFixed(6)),
+    }));
+  };
+
+  // Pin arrastrado / click en el mapa → actualiza lat/lng y busca la dirección del punto
+  const moverPin = async (lat, lng) => {
+    limpiarErroresCoords();
+    setForm((f) => ({ ...f, latitud: String(lat), longitud: String(lng) }));
+
+    reverseCtrlRef.current?.abort();
+    const ctrl = new AbortController();
+    reverseCtrlRef.current = ctrl;
+    try {
+      const r = await direccionDesdeCoordenadas(lat, lng, { signal: ctrl.signal });
+      if (!r || !r.direccion || ctrl.signal.aborted) return;
+      if (!direccionRef.current.trim()) {
+        // Sin dirección escrita todavía: completarla automáticamente
+        setForm((f) => ({ ...f, direccion: r.direccion, comuna: f.comuna || r.comuna }));
+        setSugerenciaPin(null);
+      } else {
+        // Ya hay una dirección: ofrecerla sin sobrescribir lo que escribió el usuario
+        setSugerenciaPin(r);
+      }
+    } catch {
+      /* geocoding inverso es opcional */
+    }
+  };
+
+  const usarSugerenciaPin = () => {
+    setForm((f) => ({
+      ...f,
+      direccion: sugerenciaPin.direccion,
+      comuna: sugerenciaPin.comuna || f.comuna,
+    }));
+    setSugerenciaPin(null);
+  };
+
   useEffect(() => {
     (async () => {
       try {
@@ -156,7 +240,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
     
     // Coordenadas
     if (!form.latitud || form.latitud.trim() === "") {
-      e.latitud = "La latitud es obligatoria";
+      e.latitud = "Busca la dirección o marca el punto en el mapa";
     } else if (isNaN(parseFloat(form.latitud))) {
       e.latitud = "Debe ser un número válido";
     } else {
@@ -165,7 +249,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
     }
 
     if (!form.longitud || form.longitud.trim() === "") {
-      e.longitud = "La longitud es obligatoria";
+      e.longitud = "Busca la dirección o marca el punto en el mapa";
     } else if (isNaN(parseFloat(form.longitud))) {
       e.longitud = "Debe ser un número válido";
     } else {
@@ -230,15 +314,17 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
         padding: 16,
       }}
     >
+      <style>{ESTILOS_MODAL}</style>
       <div
+        className="gc-inst-modal"
         style={{
           background: T.bgCard,
           border: `1px solid ${T.border}`,
           borderRadius: 18,
           padding: 28,
           width: "100%",
-          maxWidth: 520,
-          maxHeight: "90vh",
+          maxWidth: 1180,
+          maxHeight: "92vh",
           overflowY: "auto",
           boxShadow: "0 16px 40px rgba(0,0,0,0.6)",
         }}
@@ -285,176 +371,258 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
           </div>
         )}
 
-        <Input
-          label="Nombre de la Instalación *"
-          value={form.nombre}
-          onChange={set("nombre")}
-          placeholder="Ej: Centro Comercial Arauco"
-          error={errores.nombre}
-          icon="🏢"
-        />
+        <div className="gc-inst-grid">
+          {/* ── Columna izquierda: formulario ── */}
+          <div>
+            <Input
+              label="Nombre de la Instalación *"
+              value={form.nombre}
+              onChange={set("nombre")}
+              placeholder="Ej: Centro Comercial Arauco"
+              error={errores.nombre}
+              icon="🏢"
+            />
 
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: 12 }}>
-          <Input
-            label="Dirección"
-            value={form.direccion}
-            onChange={set("direccion")}
-            placeholder="Ej: Av. Libertador Bernardo O'Higgins 123"
-            icon="📍"
-          />
-          <Input
-            label="Comuna"
-            value={form.comuna}
-            onChange={set("comuna")}
-            placeholder="Ej: Santiago"
-            icon="🗺️"
-          />
-        </div>
+            <div className="gc-inst-2col" style={{ display: "grid", gridTemplateColumns: "1.3fr 0.7fr", gap: 12 }}>
+              <DireccionAutocomplete
+                label="Dirección"
+                value={form.direccion}
+                onChange={set("direccion")}
+                comuna={form.comuna}
+                onSeleccion={seleccionarDireccion}
+                placeholder="Escribe calle y número…"
+              />
+              <Input
+                label="Comuna"
+                value={form.comuna}
+                onChange={set("comuna")}
+                placeholder="Ej: Santiago"
+                icon="🗺️"
+              />
+            </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Input
-            label="Latitud *"
-            type="number"
-            step="any"
-            value={form.latitud}
-            onChange={set("latitud")}
-            placeholder="-33.4489"
-            error={errores.latitud}
-          />
-          <Input
-            label="Longitud *"
-            type="number"
-            step="any"
-            value={form.longitud}
-            onChange={set("longitud")}
-            placeholder="-70.6693"
-            error={errores.longitud}
-          />
-        </div>
+            <div className="gc-inst-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Input
+                label="Latitud *"
+                type="number"
+                value={form.latitud}
+                onChange={set("latitud")}
+                placeholder="Se completa desde el mapa"
+                error={errores.latitud}
+              />
+              <Input
+                label="Longitud *"
+                type="number"
+                value={form.longitud}
+                onChange={set("longitud")}
+                placeholder="Se completa desde el mapa"
+                error={errores.longitud}
+              />
+            </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Input
-            label="Radio Geocerca (m) *"
-            type="number"
-            value={form.radio_geofence_m}
-            onChange={set("radio_geofence_m")}
-            placeholder="100"
-            error={errores.radio_geofence_m}
-            icon="📡"
-          />
-          <Select
-            label="Estado"
-            value={form.estado}
-            onChange={set("estado")}
-            options={ESTADOS}
-          />
-        </div>
+            <div className="gc-inst-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Input
+                label="Radio Geocerca (m) *"
+                type="number"
+                value={form.radio_geofence_m}
+                onChange={set("radio_geofence_m")}
+                placeholder="100"
+                error={errores.radio_geofence_m}
+                icon="📡"
+              />
+              <Select
+                label="Estado"
+                value={form.estado}
+                onChange={set("estado")}
+                options={ESTADOS}
+              />
+            </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <Select
-            label="Tipo de Recinto"
-            value={form.tipo_recinto}
-            onChange={set("tipo_recinto")}
-            options={TIPOS_RECINTO}
-          />
-          <Select
-            label="Nivel de Criticidad"
-            value={form.nivel_criticidad}
-            onChange={set("nivel_criticidad")}
-            options={NIVELES_CRITICIDAD}
-          />
-        </div>
+            <div className="gc-inst-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Select
+                label="Tipo de Recinto"
+                value={form.tipo_recinto}
+                onChange={set("tipo_recinto")}
+                options={TIPOS_RECINTO}
+              />
+              <Select
+                label="Nivel de Criticidad"
+                value={form.nivel_criticidad}
+                onChange={set("nivel_criticidad")}
+                options={NIVELES_CRITICIDAD}
+              />
+            </div>
 
-        {/* Info visual geocerca */}
-        <div
-          style={{
-            background: T.bgInput,
-            border: `1px solid ${T.border}`,
-            borderRadius: 10,
-            padding: "10px 14px",
-            marginBottom: 20,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-          }}
-        >
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: "50%",
-              border: `2px dashed ${T.accent}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 16,
-              flexShrink: 0,
-            }}
-          >
-            📡
-          </div>
-          <div style={{ fontSize: 11, color: T.textMut }}>
-            Geocerca de <span style={{ color: T.accent, fontWeight: 700 }}>{form.radio_geofence_m || 100}m</span> de tolerancia para marcajes de asistencia y reporte de novedades.
-          </div>
-        </div>
-
-        {/* Selector de supervisores asignados */}
-        <div style={{ marginBottom: 22 }}>
-          <label
-            style={{
-              display: "block",
-              fontSize: 11,
-              fontWeight: 700,
-              color: T.textSec,
-              marginBottom: 6,
-              letterSpacing: 1.5,
-              textTransform: "uppercase",
-            }}
-          >
-            Supervisores con acceso
-          </label>
-          <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>
-            Los supervisores marcados verán esta instalación en sus dashboards y turnos.
-          </div>
-          {cargandoSup ? (
-            <div style={{ fontSize: 12, color: T.textMut }}>Cargando supervisores...</div>
-          ) : supervisores.length === 0 ? (
-            <div style={{ fontSize: 12, color: T.textMut }}>No hay supervisores registrados todavía.</div>
-          ) : (
-            <div
-              style={{
-                border: `1.5px solid ${T.border}`,
-                borderRadius: 12,
-                padding: "8px 12px",
-                maxHeight: 140,
-                overflowY: "auto",
-                background: T.bgInput,
-              }}
-            >
-              {supervisores.map((s) => (
-                <label
-                  key={s.id}
+            {/* Selector de supervisores asignados */}
+            <div style={{ marginBottom: 22 }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: T.textSec,
+                  marginBottom: 6,
+                  letterSpacing: 1.5,
+                  textTransform: "uppercase",
+                }}
+              >
+                Supervisores con acceso
+              </label>
+              <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>
+                Los supervisores marcados verán esta instalación en sus dashboards y turnos.
+              </div>
+              {cargandoSup ? (
+                <div style={{ fontSize: 12, color: T.textMut }}>Cargando supervisores...</div>
+              ) : supervisores.length === 0 ? (
+                <div style={{ fontSize: 12, color: T.textMut }}>No hay supervisores registrados todavía.</div>
+              ) : (
+                <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "6px 0",
-                    fontSize: 13,
-                    color: T.text,
-                    cursor: "pointer",
+                    border: `1.5px solid ${T.border}`,
+                    borderRadius: 12,
+                    padding: "8px 12px",
+                    maxHeight: 140,
+                    overflowY: "auto",
+                    background: T.bgInput,
                   }}
                 >
-                  <input
-                    type="checkbox"
-                    checked={form.supervisorIds.includes(s.id)}
-                    onChange={() => toggleSupervisor(s.id)}
-                    style={{ accentColor: T.accent, cursor: "pointer" }}
-                  />
-                  {s.nombre} {s.email ? `(${s.email})` : ""}
-                </label>
-              ))}
+                  {supervisores.map((s) => (
+                    <label
+                      key={s.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "6px 0",
+                        fontSize: 13,
+                        color: T.text,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={form.supervisorIds.includes(s.id)}
+                        onChange={() => toggleSupervisor(s.id)}
+                        style={{ accentColor: T.accent, cursor: "pointer" }}
+                      />
+                      {s.nombre} {s.email ? `(${s.email})` : ""}
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* ── Columna derecha: mapa ── */}
+          <div className="gc-inst-mapa">
+            <label
+              style={{
+                display: "block",
+                fontSize: 11,
+                fontWeight: 700,
+                color: T.textSec,
+                marginBottom: 6,
+                letterSpacing: 1.5,
+                textTransform: "uppercase",
+              }}
+            >
+              Ubicación en el mapa
+            </label>
+            <MapaUbicacion
+              className="gc-inst-mapa-box"
+              latitud={form.latitud}
+              longitud={form.longitud}
+              radio={form.radio_geofence_m}
+              onCambio={moverPin}
+              alto={460}
+            />
+
+            {/* Dirección detectada al mover el pin */}
+            {sugerenciaPin && (
+              <div
+                style={{
+                  marginTop: 10,
+                  background: T.bgInput,
+                  border: `1px solid ${T.border}`,
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  fontSize: 12,
+                  color: T.textSec,
+                }}
+              >
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  Dirección en este punto:{" "}
+                  <b style={{ color: T.text }}>
+                    {sugerenciaPin.direccion}
+                    {sugerenciaPin.comuna ? `, ${sugerenciaPin.comuna}` : ""}
+                  </b>
+                </span>
+                <button
+                  type="button"
+                  onClick={usarSugerenciaPin}
+                  style={{
+                    background: T.accentGhost,
+                    border: `1px solid ${T.accent}`,
+                    color: T.accent,
+                    borderRadius: 8,
+                    padding: "5px 10px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    fontFamily: "'Outfit', sans-serif",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Usar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSugerenciaPin(null)}
+                  style={{ background: "none", border: "none", color: T.textMut, cursor: "pointer", fontSize: 14 }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            <div style={{ height: 12 }} />
+
+            {/* Info visual geocerca */}
+            <div
+              style={{
+                background: T.bgInput,
+                border: `1px solid ${T.border}`,
+                borderRadius: 10,
+                padding: "10px 14px",
+                marginBottom: 20,
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
+                  border: `2px dashed ${T.accent}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 16,
+                  flexShrink: 0,
+                }}
+              >
+                📡
+              </div>
+              <div style={{ fontSize: 11, color: T.textMut }}>
+                Geocerca de <span style={{ color: T.accent, fontWeight: 700 }}>{form.radio_geofence_m || 100}m</span> de tolerancia para marcajes de asistencia y reporte de novedades.
+              </div>
+            </div>
+          </div>
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
