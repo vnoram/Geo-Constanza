@@ -97,6 +97,76 @@ function ResolverModal({ novedad, onClose, onSuccess }) {
   );
 }
 
+// ─── Foto de la novedad (miniatura + vista ampliada) ─────────────────
+// `foto_url_firmada` es un link temporal generado por el backend; si vence,
+// basta con recargar la lista para obtener uno nuevo.
+function FotoNovedad({ url }) {
+  const [abierta, setAbierta] = useState(false);
+  const [error, setError] = useState(false);
+
+  if (error) {
+    return (
+      <div style={{ fontSize: 11, color: T.textMut, marginBottom: 10 }}>
+        📷 Foto no disponible (recarga la página para renovar el enlace)
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setAbierta(true)}
+        title="Ver foto"
+        style={{
+          display: "block", padding: 0, marginBottom: 10, cursor: "zoom-in",
+          border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", background: T.bgInput,
+        }}
+      >
+        <img
+          src={url}
+          alt="Foto adjunta a la novedad"
+          loading="lazy"
+          onError={() => setError(true)}
+          style={{ display: "block", width: 160, height: 110, objectFit: "cover" }}
+        />
+      </button>
+
+      {abierta && (
+        <div
+          onClick={() => setAbierta(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 1100, background: "rgba(6,13,24,0.92)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 16, cursor: "zoom-out",
+          }}
+        >
+          <img
+            src={url}
+            alt="Foto adjunta a la novedad"
+            style={{ maxWidth: "100%", maxHeight: "85vh", borderRadius: 12, boxShadow: "0 16px 40px rgba(0,0,0,0.6)" }}
+          />
+          <div style={{ position: "absolute", top: 16, right: 20, display: "flex", gap: 12, alignItems: "center" }}>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              style={{ color: T.accent, fontSize: 13, fontWeight: 700, textDecoration: "none" }}
+            >
+              Abrir original ↗
+            </a>
+            <button
+              onClick={() => setAbierta(false)}
+              style={{ background: "none", border: "none", color: T.text, fontSize: 22, cursor: "pointer" }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── Pantalla principal ───────────────────────────────────────────────
 export function SupNovedades({ user }) {
   const [novedades, setNovedades]     = useState([]);
@@ -132,7 +202,12 @@ export function SupNovedades({ user }) {
       setNovedades(prev => {
         // Evitar duplicados; insertar al inicio
         if (prev.find(n => n.id === data.id)) return prev;
-        return [data, ...prev];
+        const nueva = {
+          ...data,
+          usuario: data.usuario ?? data.guardia,
+          instalacion: data.instalacion ?? { id: data.instalacion_id, nombre: data.instalacion_nombre },
+        };
+        return [nueva, ...prev];
       });
     });
 
@@ -247,6 +322,8 @@ export function SupNovedades({ user }) {
             <div style={{ fontSize: 12, color: T.textSec, marginBottom: 8 }}>
               {n.descripcion}
             </div>
+
+            {n.foto_url_firmada && <FotoNovedad url={n.foto_url_firmada} />}
 
             {/* Badges de estado + GPS */}
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>

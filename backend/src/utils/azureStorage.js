@@ -12,7 +12,7 @@
  * @module utils/azureStorage
  */
 
-const { BlobServiceClient } = require('@azure/storage-blob');
+const { BlobServiceClient, BlobSASPermissions } = require('@azure/storage-blob');
 const { logger } = require('../config/logger');
 
 // Configuraciones
@@ -21,6 +21,7 @@ const CONFIG = {
   MAX_RETRIES: 3,
   TIMEOUT_MS: 30000,
   ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'],
+  SAS_MINUTOS: 60, // Vigencia de los links temporales de lectura
 };
 
 /**
@@ -266,8 +267,47 @@ async function eliminarBlob(nombreArchivo) {
   }
 }
 
+/**
+ * Genera un link temporal de solo lectura (SAS) para un blob del contenedor.
+ * El contenedor puede seguir privado: el link deja de funcionar al vencer.
+ *
+ * @param {string} blobUrl - URL guardada en la base de datos (ej. foto_url)
+ * @param {number} minutos - Vigencia del link
+ * @returns {Promise<string|null>} URL firmada, o null si no aplica o falla
+ */
+async function generarUrlLectura(blobUrl, minutos = CONFIG.SAS_MINUTOS) {
+  if (!blobUrl) return null;
+  try {
+    validarConfiguracion();
+    const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME;
+    const url = new URL(blobUrl);
+    const prefijo = `/${containerName}/`;
+    if (!url.pathname.startsWith(prefijo)) return null;
+
+    const nombreBlob = decodeURIComponent(url.pathname.slice(prefijo.length));
+    const blobClient = BlobServiceClient
+      .fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING)
+      .getContainerClient(containerName)
+      .getBlobClient(nombreBlob);
+
+    // Solo firmar blobs de nuestra propia cuenta
+    if (new URL(blobClient.url).host !== url.host) return null;
+
+    const ahora = Date.now();
+    return await blobClient.generateSasUrl({
+      permissions: BlobSASPermissions.parse('r'),
+      startsOn: new Date(ahora - 5 * 60 * 1000), // tolerancia por desfase de reloj
+      expiresOn: new Date(ahora + minutos * 60 * 1000),
+    });
+  } catch (error) {
+    logger.warn('⚠️ No se pudo generar link temporal de lectura', { error: error.message });
+    return null;
+  }
+}
+
 module.exports = {
   uploadFotoToAzure,
+  generarUrlLectura,
   obtenerPropiedadesBlob,
   eliminarBlob,
   CONFIG,

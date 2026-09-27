@@ -9,7 +9,7 @@ const { logger } = require('../config/logger');
 const priorizacion = require('./priorizacion.service');
 const geovalidacion = require('./geovalidacion.service');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
-const { uploadFotoToAzure } = require('../utils/azureStorage');
+const { uploadFotoToAzure, generarUrlLectura } = require('../utils/azureStorage');
 const { ROLES } = require('../constants/roles');
 
 // ============================================================================
@@ -21,6 +21,12 @@ const FILE_CONFIG = {
   MAX_SIZE_MB: 5,
   MAX_SIZE_BYTES: 5 * 1024 * 1024,
 };
+
+// Agrega `foto_url_firmada`: link temporal para ver la foto con el contenedor privado
+const conFotoFirmada = async (novedad) => ({
+  ...novedad,
+  foto_url_firmada: await generarUrlLectura(novedad.foto_url),
+});
 
 // ============================================================================
 // FUNCIONES PÚBLICAS
@@ -81,7 +87,7 @@ const listar = async (query, user) => {
     ]);
 
     return {
-      data,
+      data: await Promise.all(data.map(conFotoFirmada)),
       total,
       page: parseInt(page),
       totalPages: Math.ceil(total / take),
@@ -116,7 +122,7 @@ const obtenerPorId = async (id, user) => {
       }
     }
 
-    return novedad;
+    return conFotoFirmada(novedad);
   } catch (error) {
     logger.error('❌ Error obteniendo novedad', {
       novedadId: id,
@@ -245,8 +251,11 @@ const crear = async (data, file, user) => {
     try {
       const io = getSocketIO();
 
+      const foto_url_firmada = await generarUrlLectura(foto_url);
+
       io.to(`instalacion:${turno.instalacion_id}`).emit('novedad:nueva', {
         id: novedad.id,
+        foto_url_firmada,
         tipo,
         urgencia,
         gps_dentro_rango,
