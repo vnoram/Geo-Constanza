@@ -3,23 +3,30 @@ const { getSocketIO } = require('../socket/socketManager');
 const { ROLES } = require('../constants/roles');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 
+const { aFechaDB, sumarDias, intervaloTurno, seSolapan } = require('../utils/fechaChile');
+
 const CAMPOS_EDITABLES = ['usuario_id', 'instalacion_id', 'fecha', 'hora_inicio', 'hora_fin'];
 const HORA_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 // Busca un turno no cancelado del guardia que se solape con el horario indicado.
 // `excluirId` permite ignorar el propio turno al editar.
-const buscarConflicto = ({ usuario_id, fecha, hora_inicio, hora_fin, excluirId }) =>
-  prisma.turno.findFirst({
+const buscarConflicto = async ({ usuario_id, fecha, hora_inicio, hora_fin, excluirId }) => {
+  const dia = new Date(fecha).toISOString().slice(0, 10);
+  const intervalo = intervaloTurno({ fecha, hora_inicio, hora_fin });
+  const candidatos = await prisma.turno.findMany({
     where: {
       usuario_id,
-      fecha: new Date(fecha),
+      fecha: { gte: aFechaDB(sumarDias(dia, -1)), lte: aFechaDB(sumarDias(dia, 1)) },
       estado: { not: 'cancelado' },
       ...(excluirId && { id: { not: excluirId } }),
-      OR: [
-        { hora_inicio: { lte: hora_fin }, hora_fin: { gte: hora_inicio } },
-      ],
     },
+    include: { instalacion: { select: { nombre: true } } },
+    orderBy: [{ fecha: 'asc' }, { hora_inicio: 'asc' }],
   });
+  return candidatos.find((t) => seSolapan(intervalo, intervaloTurno(t)));
+};
+
+const mensajeConflicto = (t) => `Conflicto con turno ${t.id}: ${new Date(t.fecha).toISOString().slice(0, 10)} ${t.hora_inicio}–${t.hora_fin} en ${t.instalacion?.nombre || t.instalacion_id}`;
 
 const listar = async (query, user) => {
   const where = {};
@@ -66,7 +73,7 @@ const crear = async (data, creadoPor) => {
   const conflicto = await buscarConflicto(data);
 
   if (conflicto) {
-    throw Object.assign(new Error('Conflicto de turno: el guardia ya tiene un turno asignado en ese horario'), { statusCode: 409 });
+    throw Object.assign(new Error(mensajeConflicto(conflicto)), { statusCode: 409 });
   }
 
   const turno = await prisma.turno.create({
@@ -120,7 +127,7 @@ const editar = async (id, data, user) => {
   const final = { ...actual, ...cambios };
   const conflicto = await buscarConflicto({ ...final, excluirId: id });
   if (conflicto) {
-    throw Object.assign(new Error('Conflicto de turno: el guardia ya tiene un turno asignado en ese horario'), { statusCode: 409 });
+    throw Object.assign(new Error(mensajeConflicto(conflicto)), { statusCode: 409 });
   }
 
   if (cambios.fecha) cambios.fecha = new Date(cambios.fecha);
@@ -168,11 +175,7 @@ const verificarConflictos = async (query) => {
 const crearPauta4x4 = async (data, creadoPor) => {
   const { usuario_id, instalacion_id, fecha_inicio, hora_inicio, hora_fin, reemplazar = false } = data;
 
-  // Parsear la fecha ingresada como fecha local (sin desfase UTC).
-  // Usamos mediodía UTC para que, en cualquier zona horaria de las Américas
-  // (incluido Chile GMT-4), la fecha de calendario siempre sea la correcta.
-  const [anio, mes, dia] = fecha_inicio.split('-').map(Number);
-  const inicio = new Date(Date.UTC(anio, mes - 1, dia, 12, 0, 0));
+  const inicio = aFechaDB(fecha_inicio);
 
   // Detectar si es turno nocturno (hora_fin < hora_inicio → termina al día siguiente)
   const esNocturno = hora_fin < hora_inicio;
@@ -186,7 +189,7 @@ const crearPauta4x4 = async (data, creadoPor) => {
       inicio.getUTCFullYear(),
       inicio.getUTCMonth(),
       inicio.getUTCDate() + i,
-      12, 0, 0,
+      0, 0, 0,
     )));
   }
 
@@ -213,22 +216,12 @@ const crearPauta4x4 = async (data, creadoPor) => {
 
   for (const fecha of fechasTrabajo) {
     if (!reemplazar) {
-      // Buscar conflicto en el rango del día (±12h para cubrir mediodía UTC)
-      const diaInicio = new Date(fecha.getTime() - 12 * 60 * 60 * 1000);
-      const diaFin    = new Date(fecha.getTime() + 12 * 60 * 60 * 1000);
-
-      const conflicto = await prisma.turno.findFirst({
-        where: {
-          usuario_id,
-          fecha: { gte: diaInicio, lte: diaFin },
-          estado: { not: 'cancelado' },
-        },
-      });
+      const conflicto = await buscarConflicto({ usuario_id, fecha, hora_inicio, hora_fin });
 
       if (conflicto) {
         omitidos.push({
           fecha: fecha.toISOString().split('T')[0],
-          motivo: `Conflicto con turno existente (${conflicto.hora_inicio}–${conflicto.hora_fin} en instalación ${conflicto.instalacion_id})`,
+          motivo: mensajeConflicto(conflicto),
         });
         continue;
       }
