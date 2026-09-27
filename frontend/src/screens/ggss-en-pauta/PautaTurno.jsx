@@ -13,11 +13,10 @@ const MARCAJE_TTL = 14 * 60 * 60 * 1000; // 14 h — persiste hasta el final del
 
 // ─── HELPERS ─────────────────────────────────────────────────────
 
-/** Lee el turno cacheado validando que sea de las últimas 24 h. */
+/** La vigencia la resuelve el servidor; el caché solo sirve como respaldo sin red. */
 function leerTurnoCacheado() {
   const t = cacheRead(CACHE_KEYS.pautaTurnoHoy, TURNO_TTL);
   if (!t) return null;
-  if (Date.now() - new Date(t.fecha).getTime() > 24 * 60 * 60 * 1000) return null;
   return t;
 }
 
@@ -64,6 +63,7 @@ export function PautaTurno({ user }) {
           headers: { Authorization: `Bearer ${token}` },
         });
         const estado = await resEstado.json();
+        if (!resEstado.ok) throw new Error(estado.error || "No se pudo consultar el turno");
 
         if (estado.activo) {
           // El guardia YA marcó entrada — reconstruir estado desde servidor
@@ -80,15 +80,7 @@ export function PautaTurno({ user }) {
 
           // El turno viene embebido en la respuesta del servidor
           if (estado.turno) {
-            const turnoDesdeServidor = {
-              id:             estado.turno.id,
-              hora_inicio:    estado.turno.hora_inicio,
-              hora_fin:       estado.turno.hora_fin,
-              tipo_turno:     estado.turno.tipo_turno,
-              fecha:          estado.turno.fecha,
-              instalacion_id: estado.turno.instalacion_id,
-              instalacion:    estado.instalacion ?? null,
-            };
+            const turnoDesdeServidor = estado.turno;
             setTurno(turnoDesdeServidor);
             cacheWrite(CACHE_KEYS.pautaTurnoHoy, turnoDesdeServidor);
           }
@@ -97,28 +89,18 @@ export function PautaTurno({ user }) {
           return;
         }
 
-        // Si había una asistencia vencida, el servidor ya la cerró.
-        // Limpiar el caché local de marcaje para no mostrar datos obsoletos.
-        if (estado.vencido) {
-          setMarcaje(null);
-          cacheWrite(CACHE_KEYS.pautaMarcajeHoy, null);
-        }
-
-        // ── PASO 2: sin entrada activa → buscar turno del día ───
-        // (para mostrar el botón "Marcar Entrada")
-        const resTurnos = await fetch(`${API_BASE}/turnos`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const dataTurnos = await resTurnos.json();
-        const lista = Array.isArray(dataTurnos) ? dataTurnos : (dataTurnos.data ?? []);
-        const ahora = Date.now();
-        const turnoActivo = lista
-          .filter((t) => t.estado !== "cancelado" && ahora - new Date(t.fecha).getTime() <= 24 * 60 * 60 * 1000)
-          .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))[0] ?? null;
-
+        // El backend aplica intervalos chilenos y tolerancia; también devuelve
+        // el próximo turno de hoy cuando aún no hay uno vigente.
+        const turnoActivo = estado.turno ?? null;
         setTurno(turnoActivo);
-        if (turnoActivo) cacheWrite(CACHE_KEYS.pautaTurnoHoy, turnoActivo);
-        else setMarcaje(null); // sin turno → limpiar marcaje cacheado obsoleto
+        cacheWrite(CACHE_KEYS.pautaTurnoHoy, turnoActivo);
+        // Conservar un marcaje cerrado solo si corresponde al turno mostrado.
+        setMarcaje((anterior) => {
+          const vigente = anterior?.turno_id === turnoActivo?.id && anterior?.hora_salida
+            ? anterior : null;
+          cacheWrite(CACHE_KEYS.pautaMarcajeHoy, vigente);
+          return vigente;
+        });
 
       } catch (e) {
         // Red no disponible — los datos cacheados ya fueron cargados en useState
@@ -152,7 +134,7 @@ export function PautaTurno({ user }) {
 
       const m = {
         asistencia_id:   data.id,
-        turno_id:        turno.id,
+        turno_id:        data.turno_id,
         hora_entrada:    horaChile(data.hora_entrada),
         hora_salida:     null,
         estado:          data.estado,

@@ -1,11 +1,47 @@
 const { prisma } = require('../config/database');
 const { getSocketIO } = require('../socket/socketManager');
 const geovalidacion = require('./geovalidacion.service');
-const notificacion = require('./notificacion.service');
 const { ROLES } = require('../constants/roles');
+
+const { ahoraChile, sumarDias, aFechaDB, intervaloTurno, turnoVigente, instanteChile } = require('../utils/fechaChile');
 
 const TOLERANCIA_MINUTOS = 15;
 const ATRASO_MINUTOS = 10;
+
+// La misma selección alimenta el marcaje y la pantalla del guardia.
+const ordenarTurnos = (a, b) => intervaloTurno(a).inicio - intervaloTurno(b).inicio
+  || String(a.id).localeCompare(String(b.id));
+
+const buscarTurnos = (db, usuario_id, ahora, instalacion_id) => {
+  const { fecha } = ahoraChile(ahora);
+  return db.turno.findMany({
+    where: {
+      usuario_id,
+      ...(instalacion_id && { instalacion_id }),
+      fecha: { gte: aFechaDB(sumarDias(fecha, -1)), lte: aFechaDB(sumarDias(fecha, 1)) },
+      estado: { not: 'cancelado' },
+    },
+    include: { instalacion: true },
+  });
+};
+
+const seleccionarVigente = (turnos, abiertas, ahora) => {
+  const vigentes = turnos.filter((t) => turnoVigente(t, ahora, TOLERANCIA_MINUTOS));
+  if (vigentes.length > 1) console.warn('[Asistencia] Varios turnos elegibles:', vigentes.map((t) => t.id));
+  return vigentes.sort((a, b) =>
+    Number(abiertas.some((x) => x.turno_id === b.id)) - Number(abiertas.some((x) => x.turno_id === a.id))
+    || ordenarTurnos(a, b))[0];
+};
+
+const buscarAbiertas = (db, usuario_id) => db.asistencia.findMany({
+  where: { usuario_id, hora_salida: null },
+  include: { turno: { include: { instalacion: true } } },
+  orderBy: [{ hora_entrada: 'asc' }, { id: 'asc' }],
+});
+
+const advertirDuplicadas = (abiertas) => {
+  if (abiertas.length > 1) console.warn('[Asistencia] Asistencias abiertas duplicadas:', abiertas.map((a) => a.id));
+};
 
 /**
  * Entrada desde TABLET (dispositivo fijo en instalación).
@@ -35,109 +71,77 @@ const registrarEntradaFallback = async (data, user) => {
 };
 
 const registrarEntrada = async (data, user, esFallbackOverride = null) => {
-  const { instalacion_id, metodo, latitud, longitud, qr_code, dispositivo } = data;
+  const { instalacion_id, metodo, latitud, longitud, dispositivo } = data;
   const usuario_id = user?.id || data.usuario_id;
 
-  const ahora = new Date();
-
-  // Ventana de búsqueda de 24 h hacia atrás + TOLERANCIA hacia adelante.
-  // Cubre tres casos sin depender del reloj local del servidor:
-  //   1. Turnos diurnos que empezaron "hoy" en UTC.
-  //   2. Turnos nocturnos que empezaron ayer UTC y aún están vigentes (ej. 19:00–07:00).
-  //   3. Turnos del día chileno real cuando ya es "mañana" en UTC (después de las 20:00 CLT).
-  const ventanaInicio = new Date(ahora.getTime() - 24 * 60 * 60 * 1000);
-  const ventanaFin    = new Date(ahora.getTime() + TOLERANCIA_MINUTOS * 60 * 1000);
-
-  const turno = await prisma.turno.findFirst({
-    where: {
-      usuario_id,
-      instalacion_id,
-      fecha: { gte: ventanaInicio, lte: ventanaFin },
-      estado: { not: 'cancelado' },
-    },
-    include: { instalacion: true },
-    orderBy: { fecha: 'desc' }, // Si hay varios en ventana, tomar el más reciente
-  });
-
-  if (!turno) {
-    // Mensaje de debug con timestamp del servidor y rango buscado, para facilitar diagnóstico
-    const fechaUTC   = ahora.toISOString();
-    const fechaChile = ahora.toLocaleString('es-CL', { timeZone: 'America/Santiago', hour12: false });
-    throw Object.assign(
-      new Error(
-        `No tienes un turno asignado en esta instalación. ` +
-        `Hora servidor: ${fechaUTC} (UTC) / ${fechaChile} (CLT). ` +
-        `Rango buscado: ${ventanaInicio.toISOString()} → ${ventanaFin.toISOString()}.`,
-      ),
-      { statusCode: 400 },
-    );
-  }
-
-  // Idempotencia: si ya existe una asistencia abierta para este turno, devolverla.
-  // Esto evita registros duplicados cuando el guardia pulsa el botón dos veces
-  // o cuando el componente re-monta tras un F5 justo en el momento del marcaje.
-  const asistenciaAbierta = await prisma.asistencia.findFirst({
-    where: { usuario_id, turno_id: turno.id, hora_salida: null },
-  });
-  if (asistenciaAbierta) return asistenciaAbierta;
-
-  // Convertir coordenadas a número (pueden llegar como string desde JSON del body)
-  const lat = latitud  != null ? parseFloat(latitud)  : null;
-  const lon = longitud != null ? parseFloat(longitud) : null;
-
-  // Validar geofence: aplica cuando se envían coordenadas válidas
-  if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
-    const instLat = parseFloat(turno.instalacion.latitud);
-    const instLon = parseFloat(turno.instalacion.longitud);
-    const { esValido, distanciaMetros } = geovalidacion.validarAsistencia(
-      lat, lon, instLat, instLon,
-      turno.instalacion.radio_geofence_m,
-    );
-    if (!esValido) {
-      throw Object.assign(
-        new Error(`Fuera de rango: Debe estar en la instalación para marcar (${distanciaMetros}m del límite permitido de ${turno.instalacion.radio_geofence_m}m)`),
-        { statusCode: 400 },
-      );
+  const resultado = await prisma.$transaction(async (db) => {
+    // Bloqueo por guardia compartido entre procesos; evita dos entradas simultáneas.
+    // ReadCommitted permite ver la entrada que confirmó quien tenía el bloqueo.
+    await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${usuario_id}))`;
+    const ahora = new Date();
+    const abiertas = await buscarAbiertas(db, usuario_id);
+    advertirDuplicadas(abiertas);
+    const turnos = await buscarTurnos(db, usuario_id, ahora, instalacion_id);
+    const turno = seleccionarVigente(turnos, abiertas, ahora);
+    const otraAbierta = abiertas.find((a) => a.turno_id !== turno?.id);
+    if (otraAbierta) {
+      throw Object.assign(new Error(`Ya tienes una entrada abierta en el turno ${otraAbierta.turno_id}; marca salida antes de iniciar otro`), { statusCode: 409 });
     }
-  }
+    const mismaAbierta = abiertas.find((a) => a.turno_id === turno?.id);
+    if (mismaAbierta) return { asistencia: mismaAbierta };
+    if (!turno) {
+      throw Object.assign(new Error('No tienes un turno vigente en esta instalación (entrada permitida desde 15 minutos antes).'), { statusCode: 400 });
+    }
 
-  // Calcular minutos de retraso usando la fecha UTC real almacenada en el turno.
-  // turno.fecha está guardado como mediodía UTC (ej. 2026-04-13T12:00:00Z).
-  // Reconstruimos el instante de inicio del turno en UTC con la hora del turno,
-  // de modo que el diff sea correcto independientemente del TZ del servidor.
-  const fechaTurnoUTC = new Date(turno.fecha);
-  const [horaInicio, minInicio] = turno.hora_inicio.split(':').map(Number);
-  const inicioTurno = new Date(Date.UTC(
-    fechaTurnoUTC.getUTCFullYear(),
-    fechaTurnoUTC.getUTCMonth(),
-    fechaTurnoUTC.getUTCDate(),
-    horaInicio,
-    minInicio,
-    0,
-  ));
-  const diffMin = Math.floor((ahora - inicioTurno) / 60000);
-  const minutosRetraso = Math.max(0, diffMin);
-  const estado = minutosRetraso > ATRASO_MINUTOS ? 'tardio' : 'normal';
+    // Convertir coordenadas a número (pueden llegar como string desde JSON del body)
+    const lat = latitud  != null ? parseFloat(latitud)  : null;
+    const lon = longitud != null ? parseFloat(longitud) : null;
 
-  const esFallback = esFallbackOverride !== null
-    ? esFallbackOverride
-    : metodo === 'fallback_telefono';
+    // Validar geofence: aplica cuando se envían coordenadas válidas
+    if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
+      const instLat = parseFloat(turno.instalacion.latitud);
+      const instLon = parseFloat(turno.instalacion.longitud);
+      const { esValido, distanciaMetros } = geovalidacion.validarAsistencia(
+        lat, lon, instLat, instLon,
+        turno.instalacion.radio_geofence_m,
+      );
+      if (!esValido) {
+        throw Object.assign(
+          new Error(`Fuera de rango: Debe estar en la instalación para marcar (${distanciaMetros}m del límite permitido de ${turno.instalacion.radio_geofence_m}m)`),
+          { statusCode: 400 },
+        );
+      }
+    }
 
-  const asistencia = await prisma.asistencia.create({
-    data: {
-      usuario_id,
-      turno_id: turno.id,
-      instalacion_id,
-      hora_entrada: ahora,
-      metodo_entrada: metodo,
-      estado,
-      minutos_retraso: minutosRetraso,
-      latitud_entrada:  lat,
-      longitud_entrada: lon,
-      es_fallback: esFallback,
-      dispositivo_usado: dispositivo || (metodo === 'fallback_telefono' ? 'mobil_empresa' : 'tablet'),
-    },
-  });
+    const { inicio: inicioTurno } = intervaloTurno(turno);
+    const diffMin = Math.floor((ahora - inicioTurno) / 60000);
+    const minutosRetraso = Math.max(0, diffMin);
+    const estado = minutosRetraso > ATRASO_MINUTOS ? 'tardio' : 'normal';
+
+    const esFallback = esFallbackOverride !== null
+      ? esFallbackOverride
+      : metodo === 'fallback_telefono';
+
+    const asistencia = await db.asistencia.create({
+      data: {
+        usuario_id,
+        turno_id: turno.id,
+        instalacion_id,
+        hora_entrada: ahora,
+        metodo_entrada: metodo,
+        estado,
+        minutos_retraso: minutosRetraso,
+        latitud_entrada:  lat,
+        longitud_entrada: lon,
+        es_fallback: esFallback,
+        dispositivo_usado: dispositivo || (metodo === 'fallback_telefono' ? 'mobil_empresa' : 'tablet'),
+      },
+    });
+
+    return { asistencia, ahora, estado, esFallback, lat, lon };
+  }, { isolationLevel: 'ReadCommitted' });
+  const { asistencia, ahora, estado, esFallback, lat, lon } = resultado;
+  if (!ahora) return asistencia; // Reintento idempotente, sin repetir notificaciones.
 
   // Emitir evento WebSocket (no crítico — no bloquea el registro si falla)
   try {
@@ -162,7 +166,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
       io.to(`instalacion:${instalacion_id}`).emit('guardia:atraso', {
         guardia: usuario_id,
         instalacion: instalacion_id,
-        minutos_retraso: minutosRetraso,
+        minutos_retraso: asistencia.minutos_retraso,
       });
     }
     // Publicar ubicación GPS del guardia para el mapa del admin (solo si hay coords)
@@ -194,9 +198,7 @@ const registrarSalida = async (data, user) => {
   const horasTrabajadas = (ahora - new Date(asistencia.hora_entrada)) / 3600000;
 
   // Calcular horas extra
-  const [horaFin, minFin] = asistencia.turno.hora_fin.split(':').map(Number);
-  const finTurno = new Date(asistencia.hora_entrada);
-  finTurno.setHours(horaFin, minFin, 0, 0);
+  const { fin: finTurno } = intervaloTurno(asistencia.turno);
   const horasExtra = Math.max(0, (ahora - finTurno) / 3600000);
 
   const actualizada = await prisma.asistencia.update({
@@ -218,10 +220,9 @@ const registrarSalida = async (data, user) => {
 };
 
 const obtenerHoy = async (instalacionId) => {
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  const manana = new Date(hoy);
-  manana.setDate(manana.getDate() + 1);
+  const { fecha } = ahoraChile();
+  const hoy = instanteChile(fecha, '00:00');
+  const manana = instanteChile(sumarDias(fecha, 1), '00:00');
 
   return prisma.asistencia.findMany({
     where: {
@@ -260,73 +261,52 @@ const obtenerHistorial = async (usuarioId, query) => {
   return { data, total, page: +page, totalPages: Math.ceil(total / +limit) };
 };
 
-// Horas máximas que una asistencia puede estar abierta antes de considerarse vencida.
-// Si un guardia olvidó marcar salida, al día siguiente puede volver a entrar.
-const MAX_HORAS_ABIERTA = 14;
-
-/**
- * Devuelve el estado de asistencia activo del usuario autenticado.
- *
- * Respuesta posible:
- *   { activo: false }                         — sin entrada abierta
- *   { activo: false, vencido: true }          — había una pero fue auto-cerrada (>14 h)
- *   { activo: true, asistencia_id, hora_entrada, estado,
- *     minutos_retraso, turno_id, turno, instalacion }
- */
+// Las lecturas no inventan una salida: incluso una asistencia antigua se
+// conserva hasta que el guardia marque salida o se revise administrativamente.
 const obtenerEstadoActual = async (usuarioId) => {
-  const abierta = await prisma.asistencia.findFirst({
-    where: { usuario_id: usuarioId, hora_salida: null },
-    include: {
-      turno: {
-        select: {
-          id: true, hora_inicio: true, hora_fin: true,
-          tipo_turno: true, fecha: true, instalacion_id: true,
-          instalacion: { select: { id: true, nombre: true, direccion: true } },
-        },
-      },
-    },
-    orderBy: { hora_entrada: 'desc' },
-  });
-
-  if (!abierta) return { activo: false };
-
-  // Calcular cuántas horas lleva abierta
-  const horasAbiertas = (Date.now() - new Date(abierta.hora_entrada).getTime()) / 3_600_000;
-
-  if (horasAbiertas > MAX_HORAS_ABIERTA) {
-    // Auto-cerrar la asistencia vencida para desbloquear al guardia
-    await prisma.asistencia.update({
-      where: { id: abierta.id },
-      data: {
-        hora_salida:     new Date(),
-        horas_trabajadas: parseFloat(horasAbiertas.toFixed(2)),
-        horas_extra:     0,
-      },
-    });
-
-    try { getSocketIO().emit('admin:dashboard_update', { entity: 'asistencia' }); } catch (_) {}
-
-    return { activo: false, vencido: true };
+  const ahora = new Date();
+  const abiertas = await buscarAbiertas(prisma, usuarioId);
+  advertirDuplicadas(abiertas);
+  const abierta = [...abiertas].sort((a, b) =>
+    Number(turnoVigente(b.turno, ahora)) - Number(turnoVigente(a.turno, ahora))
+    || ordenarTurnos(a.turno, b.turno))[0];
+  if (abierta) {
+    return {
+      activo: true,
+      asistencia_id: abierta.id,
+      hora_entrada: abierta.hora_entrada,
+      estado: abierta.estado,
+      minutos_retraso: abierta.minutos_retraso,
+      turno_id: abierta.turno_id,
+      instalacion_id: abierta.instalacion_id,
+      turno: abierta.turno,
+      instalacion: abierta.turno.instalacion,
+    };
   }
-
-  return {
-    activo:          true,
-    asistencia_id:   abierta.id,
-    hora_entrada:    abierta.hora_entrada,
-    estado:          abierta.estado,
-    minutos_retraso: abierta.minutos_retraso,
-    turno_id:        abierta.turno_id,
-    instalacion_id:  abierta.instalacion_id,
-    turno:           abierta.turno,
-    instalacion:     abierta.turno?.instalacion ?? null,
-  };
+  const turnos = await buscarTurnos(prisma, usuarioId, ahora);
+  const hoy = ahoraChile(ahora).fecha;
+  const turno = seleccionarVigente(turnos, [], ahora) || turnos
+    .filter((t) => new Date(t.fecha).toISOString().slice(0, 10) === hoy && intervaloTurno(t).inicio > ahora)
+    .sort(ordenarTurnos)[0] || null;
+  return { activo: false, turno, instalacion: turno?.instalacion || null };
 };
 
 const sincronizarBatch = async (registros) => {
   const resultados = [];
   for (const registro of registros) {
     try {
-      const result = await prisma.asistencia.create({ data: registro });
+      // La sincronización también puede abrir entradas: respeta el mismo bloqueo.
+      const result = await prisma.$transaction(async (db) => {
+        await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${registro.usuario_id}))`;
+        if (registro.hora_salida == null) {
+          const abiertas = await buscarAbiertas(db, registro.usuario_id);
+          if (abiertas.some((a) => a.turno_id !== registro.turno_id)) {
+            throw Object.assign(new Error('Ya tienes una entrada abierta en otro turno; marca salida antes de sincronizar otra entrada'), { statusCode: 409 });
+          }
+          if (abiertas.length) return abiertas[0];
+        }
+        return db.asistencia.create({ data: registro });
+      }, { isolationLevel: 'ReadCommitted' });
       resultados.push({ success: true, id: result.id });
     } catch (error) {
       resultados.push({ success: false, error: error.message });
