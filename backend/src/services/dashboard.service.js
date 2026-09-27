@@ -1,6 +1,7 @@
 const { prisma } = require('../config/database');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { ROLES } = require('../constants/roles');
+const { turnosDeHoy } = require('../utils/fechaChile');
 
 /**
  * Dashboard principal del día.
@@ -9,11 +10,6 @@ const { ROLES } = require('../constants/roles');
  * - admin: igual que central + métricas del mes
  */
 const getDashboardHoy = async (user) => {
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  const manana = new Date(hoy);
-  manana.setDate(manana.getDate() + 1);
-
   // Resolver instalaciones visibles según rol
   let instalacionIds = undefined;
   if (user.rol === ROLES.SUPERVISOR) {
@@ -23,24 +19,26 @@ const getDashboardHoy = async (user) => {
 
   const whereInstalacion = instalacionIds ? { instalacion_id: { in: instalacionIds } } : {};
 
-  // Turnos de hoy
-  const turnos = await prisma.turno.findMany({
+  // Turnos de hoy (hora Chile): los que comienzan hoy + nocturnos de ayer aún en curso
+  const ventana = turnosDeHoy();
+  const turnos = (await prisma.turno.findMany({
     where: {
-      fecha: { gte: hoy, lt: manana },
+      ...ventana.where,
       estado: { not: 'cancelado' },
       ...whereInstalacion,
     },
     include: {
       usuario: { select: { id: true, nombre: true, rol: true } },
       instalacion: { select: { id: true, nombre: true } },
+      // La asistencia ya pertenece al turno: no filtrar por fecha, porque en un
+      // turno nocturno la entrada se marca el día anterior
       asistencias: {
-        where: { hora_entrada: { gte: hoy } },
         orderBy: { hora_entrada: 'desc' },
         take: 1,
       },
     },
-    orderBy: { hora_inicio: 'asc' },
-  });
+    orderBy: [{ fecha: 'asc' }, { hora_inicio: 'asc' }],
+  })).filter(ventana.incluir);
 
   const lista = turnos.map(t => {
     const asistencia = t.asistencias[0] || null;

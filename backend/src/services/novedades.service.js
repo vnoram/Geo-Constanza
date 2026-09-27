@@ -11,6 +11,7 @@ const geovalidacion = require('./geovalidacion.service');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { uploadFotoToAzure, generarUrlLectura } = require('../utils/azureStorage');
 const { ROLES } = require('../constants/roles');
+const { turnosDeHoy } = require('../utils/fechaChile');
 
 // ============================================================================
 // CONFIGURACIONES
@@ -153,12 +154,14 @@ const crear = async (data, file, user) => {
     }
 
     // Obtener turno activo del guardia
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const turno = await prisma.turno.findFirst({
-      where: { usuario_id: user.id, fecha: hoy, estado: { not: 'cancelado' } },
+    // Hora Chile; incluye un turno nocturno de ayer que sigue en curso (tiene prioridad)
+    const ventana = turnosDeHoy();
+    const candidatos = await prisma.turno.findMany({
+      where: { usuario_id: user.id, ...ventana.where, estado: { not: 'cancelado' } },
       include: { instalacion: true },
+      orderBy: [{ fecha: 'asc' }, { hora_inicio: 'asc' }],
     });
+    const turno = candidatos.find(ventana.incluir) ?? null;
 
     // GGSS libre: validar que tenga solicitud de turno aprobada para hoy
     if (!turno && user.rol === ROLES.GGSS_LIBRE) {

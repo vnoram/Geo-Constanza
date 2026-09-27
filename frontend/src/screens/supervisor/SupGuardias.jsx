@@ -20,6 +20,27 @@ const formatearFecha = (iso) => {
   return new Date(a, m - 1, d).toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" });
 };
 
+const esNocturno = (t) => t.hora_inicio && t.hora_fin && t.hora_fin < t.hora_inicio;
+
+const diaSiguiente = (iso) => {
+  const [a, m, d] = iso.split("-").map(Number);
+  return new Date(a, m - 1, d + 1).toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" });
+};
+
+// Aviso bajo las horas: deja claro que un turno nocturno termina al día siguiente
+function AvisoNocturno({ form }) {
+  if (!esNocturno(form) || !form.fecha) return null;
+  return (
+    <div style={{
+      fontSize: 11, color: "#c4a8ff", background: "rgba(196,168,255,0.08)",
+      border: "1px solid rgba(196,168,255,0.3)", borderRadius: 8, padding: "8px 10px", marginBottom: 12,
+    }}>
+      🌙 Turno nocturno: comienza el {formatearFecha(form.fecha)} a las {form.hora_inicio} y
+      termina el {diaSiguiente(form.fecha)} a las {form.hora_fin}.
+    </div>
+  );
+}
+
 // Misma regla de solapamiento que usa el backend al crear/editar
 const haySolape = (a, b) => a.hora_inicio <= b.hora_fin && a.hora_fin >= b.hora_inicio;
 
@@ -131,7 +152,7 @@ function ModalEditarTurno({ turno, turnos, guardias, instalaciones, inputStyle, 
           ))}
         </select>
 
-        <div style={etiquetaStyle}>FECHA *</div>
+        <div style={etiquetaStyle}>FECHA DE INICIO *</div>
         <input type="date" style={inputStyle} value={form.fecha} onChange={set("fecha")} />
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -144,6 +165,8 @@ function ModalEditarTurno({ turno, turnos, guardias, instalaciones, inputStyle, 
             <input type="time" style={inputStyle} value={form.hora_fin} onChange={set("hora_fin")} />
           </div>
         </div>
+
+        <AvisoNocturno form={form} />
 
         {error && (
           <div style={{
@@ -171,7 +194,7 @@ export function SupGuardias() {
   const [form, setForm] = useState({
     usuario_id: "",
     instalacion_id: "",
-    fecha: new Date().toISOString().split("T")[0],
+    fecha: hoyLocal(),
     hora_inicio: "06:00",
     hora_fin: "14:00",
   });
@@ -236,10 +259,15 @@ export function SupGuardias() {
   };
 
   const hoy = hoyLocal();
+  const ayerFecha = new Date();
+  ayerFecha.setDate(ayerFecha.getDate() - 1);
+  const ayer = `${ayerFecha.getFullYear()}-${String(ayerFecha.getMonth() + 1).padStart(2, "0")}-${String(ayerFecha.getDate()).padStart(2, "0")}`;
+  const horaActual = new Date().toTimeString().slice(0, 5);
   const idsInstalaciones = new Set(instalaciones.map((i) => i.id));
   const turnosVisibles = turnos
     .filter((t) => t.estado !== "cancelado")
-    .filter((t) => fechaDeTurno(t) >= hoy)
+    // Desde hoy, más el turno nocturno de ayer si todavía no termina
+    .filter((t) => fechaDeTurno(t) >= hoy || (fechaDeTurno(t) === ayer && esNocturno(t) && horaActual < t.hora_fin))
     // Solo turnos de las instalaciones del supervisor (/instalaciones ya viene filtrado)
     .filter((t) => idsInstalaciones.has(t.instalacion_id))
     .filter((t) => !filtroGuardia || t.usuario_id === filtroGuardia);
@@ -266,7 +294,7 @@ export function SupGuardias() {
       setForm({
         usuario_id: "",
         instalacion_id: instalaciones.length === 1 ? instalaciones[0].id : "",
-        fecha: new Date().toISOString().split("T")[0],
+        fecha: hoyLocal(),
         hora_inicio: "06:00",
         hora_fin: "14:00",
       });
@@ -331,7 +359,7 @@ export function SupGuardias() {
             ))}
           </select>
 
-          <div style={etiquetaStyle}>FECHA *</div>
+          <div style={etiquetaStyle}>FECHA DE INICIO *</div>
           <input
             type="date"
             style={inputStyle}
@@ -359,6 +387,8 @@ export function SupGuardias() {
               />
             </div>
           </div>
+
+          <AvisoNocturno form={form} />
 
           {msg && (
             <div style={{
@@ -426,7 +456,9 @@ export function SupGuardias() {
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>
-                    {t.hora_inicio} – {t.hora_fin} · {t.usuario?.nombre || "Sin guardia"}
+                    {t.hora_inicio} – {t.hora_fin}
+                    {esNocturno(t) && <span style={{ color: "#c4a8ff", fontSize: 11 }}> (+1) 🌙</span>}
+                    {" · "}{t.usuario?.nombre || "Sin guardia"}
                   </div>
                   <div style={{ fontSize: 11, color: T.textMut, marginTop: 2 }}>
                     🏢 {t.instalacion?.nombre || "—"}
