@@ -51,6 +51,7 @@ export function PautaTurno({ user }) {
   const [cargando,       setCargando]       = useState(() => leerTurnoCacheado() === null);
   const [loadingMarcaje, setLoadingMarcaje] = useState(false);
   const [error,          setError]          = useState("");
+  const [cierresAuto,    setCierresAuto]    = useState([]); // entradas olvidadas cerradas por el sistema
 
   // ── Hidratación — servidor es la fuente de verdad ─────────────
   useEffect(() => {
@@ -64,6 +65,7 @@ export function PautaTurno({ user }) {
         });
         const estado = await resEstado.json();
         if (!resEstado.ok) throw new Error(estado.error || "No se pudo consultar el turno");
+        setCierresAuto(estado.cerradas_automaticamente ?? []);
 
         if (estado.activo) {
           // El guardia YA marcó entrada — reconstruir estado desde servidor
@@ -186,6 +188,21 @@ export function PautaTurno({ user }) {
   return (
     <div>
       <SectionHeader title="Mi Turno Actual" sub="Información de tu turno en curso" />
+
+      {cierresAuto.length > 0 && (
+        <div style={{
+          background: T.yellowGhost, border: `1px solid ${T.yellow}`, borderRadius: 12,
+          padding: "10px 14px", marginBottom: 12, fontSize: 12, color: T.yellow,
+        }}>
+          {cierresAuto.map((c) => (
+            <div key={c.asistencia_id}>
+              ⚠️ No marcaste salida del turno del {c.fecha.split("-").reverse().join("/")} ({c.hora_inicio}–{c.hora_fin}
+              {c.instalacion ? ` en ${c.instalacion}` : ""}). Se cerró automáticamente a las {c.hora_fin} y
+              quedó marcado para revisión de tu supervisor.
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Spinner solo en primera carga sin caché */}
       {cargando && (

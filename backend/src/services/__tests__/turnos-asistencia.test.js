@@ -107,12 +107,31 @@ test('entrada en otra instalación con asistencia A abierta devuelve 409', async
   await expect(entrada()).rejects.toMatchObject({ statusCode: 409 });
   expect(prisma.asistencia.create).not.toHaveBeenCalled();
 });
-test('asistencia antigua no se cierra ni se duplica automáticamente', async () => {
+test('entrada olvidada de un turno terminado se cierra a la hora de término y permite la nueva entrada', async () => {
   prisma.turno.findMany.mockResolvedValue([b]);
   prisma.asistencia.findMany.mockResolvedValue([abierta(turno('vieja', '2026-09-25', '20:00', '08:00'))]);
+  await expect(entrada()).resolves.toMatchObject({ turno_id: 'B', minutos_retraso: 21 });
+  expect(prisma.asistencia.update).toHaveBeenCalledWith({ where: { id: 'as-vieja' }, data: {
+    hora_salida: instanteChile('2026-09-26', '08:00'), metodo_salida: 'cierre_automatico',
+    horas_trabajadas: 12, horas_extra: 0 } });
+  expect(prisma.asistencia.create).toHaveBeenCalledTimes(1);
+});
+test('dentro del margen de 2 h la entrada anterior no se cierra sola: 409', async () => {
+  jest.setSystemTime(instanteChile('2026-09-27', '09:30'));
+  const c = turno('C', '2026-09-27', '09:00', '17:00');
+  prisma.turno.findMany.mockResolvedValue([c]);
+  prisma.asistencia.findMany.mockResolvedValue([abierta(a)]);
   await expect(entrada()).rejects.toMatchObject({ statusCode: 409 });
   expect(prisma.asistencia.update).not.toHaveBeenCalled();
-  expect(prisma.asistencia.create).not.toHaveBeenCalled();
+});
+test('pasado el margen de 2 h se cierra la entrada anterior y se abre la nueva', async () => {
+  jest.setSystemTime(instanteChile('2026-09-27', '10:01'));
+  const c = turno('C', '2026-09-27', '10:00', '18:00');
+  prisma.turno.findMany.mockResolvedValue([c]);
+  prisma.asistencia.findMany.mockResolvedValue([abierta(a)]);
+  await expect(entrada()).resolves.toMatchObject({ turno_id: 'C' });
+  expect(prisma.asistencia.update.mock.calls[0][0].data).toMatchObject({
+    hora_salida: instanteChile('2026-09-27', '08:00'), metodo_salida: 'cierre_automatico' });
 });
 test('dos solicitudes concurrentes solo crean una asistencia bajo el bloqueo transaccional', async () => {
   const guardadas = [];
@@ -148,12 +167,26 @@ test('salida nocturna a 08:30 suma media hora extra', async () => {
   prisma.asistencia.findUniqueOrThrow.mockResolvedValue(abierta(a));
   await expect(asistencia.registrarSalida({ asistencia_id: 'as-A', metodo: 'tablet' }, { id: 'u' })).resolves.toMatchObject({ horas_extra: 0.5, horas_trabajadas: 12.5 });
 });
-test('estado con duplicados prefiere turno vigente aunque otra entrada sea reciente', async () => {
+test('estado cierra la entrada olvidada, informa el cierre y devuelve el turno vigente', async () => {
   const vieja = turno('vieja', '2026-09-25', '20:00', '08:00');
   prisma.asistencia.findMany.mockResolvedValue([abierta(vieja), abierta(a)]);
-  await expect(asistencia.obtenerEstadoActual('u')).resolves.toMatchObject({ activo: true, turno_id: 'A', turno: { estado: 'programado' } });
-  expect(console.warn).toHaveBeenCalled();
+  await expect(asistencia.obtenerEstadoActual('u')).resolves.toMatchObject({
+    activo: true, turno_id: 'A', turno: { estado: 'programado' },
+    cerradas_automaticamente: [{ asistencia_id: 'as-vieja', fecha: '2026-09-25', hora_inicio: '20:00', hora_fin: '08:00' }] });
+  expect(prisma.asistencia.update).toHaveBeenCalledTimes(1);
+  expect(prisma.asistencia.update.mock.calls[0][0].where).toEqual({ id: 'as-vieja' });
+});
+test('salida de la asistencia de otro guardia: 403', async () => {
+  prisma.asistencia.findUniqueOrThrow.mockResolvedValue(abierta(a));
+  await expect(asistencia.registrarSalida({ asistencia_id: 'as-A' }, { id: 'otro', rol: 'pauta' }))
+    .rejects.toMatchObject({ statusCode: 403 });
   expect(prisma.asistencia.update).not.toHaveBeenCalled();
+});
+test('salida de una asistencia ya cerrada automáticamente: 409', async () => {
+  prisma.asistencia.findUniqueOrThrow.mockResolvedValue({ ...abierta(a),
+    hora_salida: instanteChile('2026-09-27', '08:00'), metodo_salida: 'cierre_automatico' });
+  await expect(asistencia.registrarSalida({ asistencia_id: 'as-A' }, { id: 'u' }))
+    .rejects.toMatchObject({ statusCode: 409, message: expect.stringContaining('automáticamente') });
 });
 test('estado con dos turnos vigentes prefiere el que empezó antes', async () => {
   prisma.asistencia.findMany.mockResolvedValue([abierta(b), abierta(a)]);
@@ -172,7 +205,7 @@ test('estado sin vigente devuelve próximo de hoy, no mañana', async () => {
 test('estado vacío cuando solo hay turnos terminados o de mañana', async () => {
   jest.setSystemTime(instanteChile('2026-09-27', '15:00'));
   prisma.turno.findMany.mockResolvedValue([b, turno('D', '2026-09-28', '06:00', '14:00')]);
-  await expect(asistencia.obtenerEstadoActual('u')).resolves.toEqual({ activo: false, turno: null, instalacion: null });
+  await expect(asistencia.obtenerEstadoActual('u')).resolves.toEqual({ activo: false, turno: null, instalacion: null, cerradas_automaticamente: [] });
 });
 test('dashboard conserva una fila del nocturno con su asistencia correcta', async () => {
   prisma.turno.findMany.mockResolvedValue([{ ...a, usuario: { nombre: 'Víctor' }, asistencias: [{ ...abierta(a), estado: 'tardio' }] }]);

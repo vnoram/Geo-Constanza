@@ -39,6 +39,48 @@ const buscarAbiertas = (db, usuario_id) => db.asistencia.findMany({
   orderBy: [{ hora_entrada: 'asc' }, { id: 'asc' }],
 });
 
+// Entradas olvidadas: si el turno terminó hace más de GRACIA_CIERRE_HORAS, la
+// asistencia se cierra a la hora de término del turno (no a la hora actual) y
+// se marca 'cierre_automatico' para revisión del supervisor. El margen evita
+// cortar a quien se quedó haciendo horas extra.
+const GRACIA_CIERRE_HORAS = 2;
+const METODO_CIERRE_AUTOMATICO = 'cierre_automatico';
+
+const cerrarVencidas = async (db, abiertas, ahora) => {
+  const vigentes = [];
+  const cerradas = [];
+  for (const a of abiertas) {
+    if (!a.turno) { vigentes.push(a); continue; } // sin turno cargado no se puede evaluar
+    const { fin } = intervaloTurno(a.turno);
+    if (ahora.getTime() - fin.getTime() <= GRACIA_CIERRE_HORAS * 3600000) {
+      vigentes.push(a);
+      continue;
+    }
+    const entrada = new Date(a.hora_entrada);
+    const salida = entrada > fin ? entrada : fin;
+    await db.asistencia.update({
+      where: { id: a.id },
+      data: {
+        hora_salida: salida,
+        metodo_salida: METODO_CIERRE_AUTOMATICO,
+        horas_trabajadas: parseFloat(((salida - entrada) / 3600000).toFixed(2)),
+        horas_extra: 0,
+      },
+    });
+    console.warn('[Asistencia] Cierre automático de entrada olvidada:', a.id, 'turno', a.turno_id);
+    cerradas.push({ ...a, hora_salida: salida, metodo_salida: METODO_CIERRE_AUTOMATICO });
+  }
+  return { vigentes, cerradas };
+};
+
+const resumenCierre = (c) => ({
+  asistencia_id: c.id,
+  fecha: new Date(c.turno.fecha).toISOString().slice(0, 10),
+  hora_inicio: c.turno.hora_inicio,
+  hora_fin: c.turno.hora_fin,
+  instalacion: c.turno.instalacion?.nombre || null,
+});
+
 const advertirDuplicadas = (abiertas) => {
   if (abiertas.length > 1) console.warn('[Asistencia] Asistencias abiertas duplicadas:', abiertas.map((a) => a.id));
 };
@@ -79,7 +121,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
     // ReadCommitted permite ver la entrada que confirmó quien tenía el bloqueo.
     await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${usuario_id}))`;
     const ahora = new Date();
-    const abiertas = await buscarAbiertas(db, usuario_id);
+    const { vigentes: abiertas } = await cerrarVencidas(db, await buscarAbiertas(db, usuario_id), ahora);
     advertirDuplicadas(abiertas);
     const turnos = await buscarTurnos(db, usuario_id, ahora, instalacion_id);
     const turno = seleccionarVigente(turnos, abiertas, ahora);
@@ -194,6 +236,15 @@ const registrarSalida = async (data, user) => {
 
   const asistencia = await prisma.asistencia.findUniqueOrThrow({ where: { id: asistencia_id }, include: { turno: true } });
 
+  // Un guardia solo puede cerrar su propia asistencia (el administrador, cualquiera)
+  if (user?.rol !== ROLES.ADMINISTRADOR && asistencia.usuario_id !== user?.id) {
+    throw Object.assign(new Error('No puedes registrar la salida de otro guardia'), { statusCode: 403 });
+  }
+  if (asistencia.hora_salida) {
+    const detalle = asistencia.metodo_salida === METODO_CIERRE_AUTOMATICO ? ' (cerrada automáticamente)' : '';
+    throw Object.assign(new Error(`Esta asistencia ya tiene salida registrada${detalle}`), { statusCode: 409 });
+  }
+
   const ahora = new Date();
   const horasTrabajadas = (ahora - new Date(asistencia.hora_entrada)) / 3600000;
 
@@ -261,12 +312,13 @@ const obtenerHistorial = async (usuarioId, query) => {
   return { data, total, page: +page, totalPages: Math.ceil(total / +limit) };
 };
 
-// Las lecturas no inventan una salida: incluso una asistencia antigua se
-// conserva hasta que el guardia marque salida o se revise administrativamente.
+// Antes de responder se cierran las entradas olvidadas (ver cerrarVencidas),
+// para que el guardia vea su turno actual y no uno ya terminado.
 const obtenerEstadoActual = async (usuarioId) => {
   const ahora = new Date();
-  const abiertas = await buscarAbiertas(prisma, usuarioId);
+  const { vigentes: abiertas, cerradas } = await cerrarVencidas(prisma, await buscarAbiertas(prisma, usuarioId), ahora);
   advertirDuplicadas(abiertas);
+  const cerradas_automaticamente = cerradas.map(resumenCierre);
   const abierta = [...abiertas].sort((a, b) =>
     Number(turnoVigente(b.turno, ahora)) - Number(turnoVigente(a.turno, ahora))
     || ordenarTurnos(a.turno, b.turno))[0];
@@ -281,6 +333,7 @@ const obtenerEstadoActual = async (usuarioId) => {
       instalacion_id: abierta.instalacion_id,
       turno: abierta.turno,
       instalacion: abierta.turno.instalacion,
+      cerradas_automaticamente,
     };
   }
   const turnos = await buscarTurnos(prisma, usuarioId, ahora);
@@ -288,7 +341,7 @@ const obtenerEstadoActual = async (usuarioId) => {
   const turno = seleccionarVigente(turnos, [], ahora) || turnos
     .filter((t) => new Date(t.fecha).toISOString().slice(0, 10) === hoy && intervaloTurno(t).inicio > ahora)
     .sort(ordenarTurnos)[0] || null;
-  return { activo: false, turno, instalacion: turno?.instalacion || null };
+  return { activo: false, turno, instalacion: turno?.instalacion || null, cerradas_automaticamente };
 };
 
 const sincronizarBatch = async (registros) => {
@@ -299,7 +352,7 @@ const sincronizarBatch = async (registros) => {
       const result = await prisma.$transaction(async (db) => {
         await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${registro.usuario_id}))`;
         if (registro.hora_salida == null) {
-          const abiertas = await buscarAbiertas(db, registro.usuario_id);
+          const { vigentes: abiertas } = await cerrarVencidas(db, await buscarAbiertas(db, registro.usuario_id), new Date());
           if (abiertas.some((a) => a.turno_id !== registro.turno_id)) {
             throw Object.assign(new Error('Ya tienes una entrada abierta en otro turno; marca salida antes de sincronizar otra entrada'), { statusCode: 409 });
           }
@@ -316,6 +369,8 @@ const sincronizarBatch = async (registros) => {
 };
 
 module.exports = {
+  GRACIA_CIERRE_HORAS,
+  METODO_CIERRE_AUTOMATICO,
   registrarEntrada,
   registrarEntradaTablet,
   registrarEntradaFallback,
