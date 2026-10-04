@@ -39,14 +39,24 @@ export function LoginScreen({ onLogin }) {
 
       <main className="login__panel">
         <div className="login__form">
-          <div className="login__mobile-mark"><Wordmark /></div>
-
-          <h1 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 600, color: T.text, letterSpacing: "-0.01em", fontFamily: FONT.ui }}>
-            {step === "login" ? "Iniciar sesión" : "Verificación de seguridad"}
-          </h1>
-          <p style={{ margin: "0 0 22px", fontSize: 13, color: T.textSec }}>
-            {step === "login" ? "Ingresa con tu RUT" : "Segundo paso de autenticación"}
-          </p>
+          <div className="login__head">
+            <div className="login__head-text">
+              <div className="login__mobile-mark"><Wordmark /></div>
+              <div>
+                <h1 className="login__title" style={{ fontSize: 22, fontWeight: 600, color: T.text, letterSpacing: "-0.01em", fontFamily: FONT.ui }}>
+                  {step === "login" ? "Iniciar sesión" : "Verificación de seguridad"}
+                </h1>
+                <p className="login__sub" style={{ fontSize: 13, color: T.textSec }}>
+                  {step === "login" ? "Ingresa con tu RUT" : "Segundo paso de autenticación"}
+                </p>
+              </div>
+            </div>
+            {/* Solo celular y tablet: en pantallas anchas la ilustración va en el panel lateral */}
+            <div className="login__thumb" aria-hidden="true">
+              <img className="login__thumb-img" src={arteLogin} alt="" />
+              <div className="login__art-tint" />
+            </div>
+          </div>
 
           {step === "login" && (
             <div>

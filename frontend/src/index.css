@@ -677,3 +677,50 @@ span[style*='text-transform: uppercase'] { display: inline-block; }
   position: relative;
   z-index: 1;
 }
+
+/* ─── LOGIN en celular: texto a la izquierda e ilustración a la derecha ───
+   El recuadro de la imagen es vertical (3:4). La marca queda arriba y el título
+   abajo, ambos dentro de la altura de la imagen. Desde 900 px la ilustración pasa
+   al panel lateral y este bloque vuelve a ser una sola columna. */
+.login__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(104px, 44%);
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 22px;
+}
+.login__head-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  min-width: 0;
+}
+.login__title { margin: 0 0 4px; }
+.login__sub { margin: 0; }
+.login__mobile-mark { margin-bottom: 0; }
+.login__thumb {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--gc-radius);
+  overflow: hidden;
+  border: 1px solid var(--gc-line);
+  background: var(--gc-surface);
+}
+.login__thumb-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 47% 38%;
+}
+@media (min-width: 900px) {
+  .login__head { grid-template-columns: minmax(0, 1fr); margin-bottom: 0; }
+  .login__head-text { display: block; }
+  .login__sub { margin: 0 0 22px; }
+  .login__thumb { display: none; }
+}
+
+/* En el recuadro del celular no hay texto encima: velo casi nulo para respetar el color original */
+.login__thumb .login__art-tint { background: rgba(14, 23, 20, 0.15); }
