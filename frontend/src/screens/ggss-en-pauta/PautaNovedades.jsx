@@ -138,19 +138,19 @@ function ReportarModal({ onClose, onSuccess }) {
   const gpsStyle = gpsColors[gpsStatus];
 
   return (
-    <div style={{
+    <div className="guard-modal-overlay" style={{
       position: "fixed", inset: 0, zIndex: 100,
       background: "rgba(6,13,24,0.85)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: 16,
     }}>
-      <div style={{
+      <div className="responsive-modal guard-report-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`,
         borderRadius: 16, padding: 24, width: "100%", maxWidth: 420,
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div className="guard-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <span style={{ fontWeight: 700, fontSize: 16, color: T.text }}>Reportar Novedad</span>
-          <button onClick={onClose} style={{
+          <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{
             background: "none", border: "none", color: T.textMut,
             fontSize: 20, cursor: "pointer", lineHeight: 1,
           }}>✕</button>
@@ -187,6 +187,7 @@ function ReportarModal({ onClose, onSuccess }) {
               Tipo de Novedad *
             </label>
             <select
+              className="touch-target"
               value={tipo}
               onChange={e => setTipo(e.target.value)}
               style={{
@@ -210,6 +211,7 @@ function ReportarModal({ onClose, onSuccess }) {
               Descripción *
             </label>
             <textarea
+              className="touch-target"
               value={descripcion}
               onChange={e => setDesc(e.target.value)}
               placeholder="Describe brevemente lo ocurrido..."
@@ -230,6 +232,7 @@ function ReportarModal({ onClose, onSuccess }) {
               Foto (opcional)
             </label>
             <input
+              className="touch-target"
               type="file"
               accept="image/*"
               onChange={handleFoto}
@@ -261,7 +264,7 @@ function ReportarModal({ onClose, onSuccess }) {
             </div>
           )}
 
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <div className="guard-modal-actions" style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <Btn variant="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn>
             <Btn loading={loading}>Enviar Reporte</Btn>
           </div>
@@ -311,7 +314,7 @@ export function PautaNovedades({ user }) {
   };
 
   return (
-    <div>
+    <div className="guard-screen">
       <SectionHeader
         title="Novedades"
         sub="Reporta incidencias durante tu turno"
@@ -337,12 +340,12 @@ export function PautaNovedades({ user }) {
         const urgencia = n.urgencia ?? "verde";
         const colors   = URGENCIA_COLOR[urgencia] ?? URGENCIA_COLOR.verde;
         return (
-          <div key={n.id} style={{
+          <div className="guard-card" key={n.id} style={{
             background: T.bgCard, border: `1px solid ${T.border}`,
             borderLeft: `4px solid ${colors.border}`,
             borderRadius: 12, padding: 14, marginBottom: 8,
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <div className="guard-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>
               <Badge color={colors.badge}>{urgencia}</Badge>
             </div>

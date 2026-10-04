@@ -51,13 +51,13 @@ function TurnoRow({ turno }) {
   const nocturno = turno.hora_fin < turno.hora_inicio;
 
   return (
-    <div style={{
+    <div className="guard-list-row" style={{
       background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
       padding: "12px 16px", marginBottom: 6,
       display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
     }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+      <div className="guard-list-row__main" style={{ flex: 1 }}>
+        <div className="guard-card-header" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
           <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{fechaStr}</span>
           {nocturno && (
             <span style={{ fontSize: 10, color: "#c4a8ff", background: "#1a1230", borderRadius: 4, padding: "1px 5px" }}>
@@ -86,7 +86,7 @@ function BloqueCard({ turnos, numeroCiclo }) {
 
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{
+      <div className="guard-block-header" style={{
         display: "flex", alignItems: "center", gap: 8, marginBottom: 8,
       }}>
         <div style={{
@@ -134,7 +134,7 @@ export function LibreTurnos() {
   const ciclos = agruparCiclos(turnos);
 
   return (
-    <div>
+    <div className="guard-screen">
       <SectionHeader
         title="Mis Turnos"
         sub={turnos.length > 0 ? `${turnos.length} turno${turnos.length !== 1 ? "s" : ""} programado${turnos.length !== 1 ? "s" : ""}` : "Próximos 60 días"}

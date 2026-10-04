@@ -2,9 +2,9 @@ import { T } from "../../theme/theme";
 
 export function SectionHeader({ title, sub, action }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 16 }}>
-      <div>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: T.text, letterSpacing: -0.3 }}>{title}</h2>
+    <div className="responsive-section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 16 }}>
+      <div style={{ minWidth: 0 }}>
+        <h2 className="fluid-title" style={{ margin: 0, fontSize: 20, fontWeight: 800, color: T.text, letterSpacing: -0.3 }}>{title}</h2>
         {sub && <div style={{ fontSize: 12, color: T.textMut, marginTop: 3 }}>{sub}</div>}
       </div>
       {action && (

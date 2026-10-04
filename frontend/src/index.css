@@ -119,6 +119,51 @@ canvas {
   overscroll-behavior: contain;
 }
 
+.responsive-section-header {
+  gap: 12px;
+  min-width: 0;
+}
+
+/* ─── PANTALLAS DE GUARDIAS ─── */
+.guard-screen,
+.guard-card,
+.guard-list-row,
+.guard-list-row__main {
+  min-width: 0;
+}
+
+.guard-screen {
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.guard-kpi-grid,
+.guard-action-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.guard-card-header,
+.guard-block-header,
+.guard-list-row {
+  min-width: 0;
+}
+
+.guard-list-row__main {
+  overflow-wrap: anywhere;
+}
+
+.guard-modal-overlay {
+  overflow-y: auto;
+  padding-top: max(16px, env(safe-area-inset-top)) !important;
+  padding-right: max(16px, env(safe-area-inset-right)) !important;
+  padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+  padding-left: max(16px, env(safe-area-inset-left)) !important;
+}
+
+.guard-report-modal {
+  flex: 0 1 auto;
+}
+
 /* ─── APP SHELL ─── */
 .app-shell {
   width: 100%;
@@ -201,6 +246,52 @@ canvas {
   .responsive-grid,
   .responsive-grid--compact {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-shell__tabs {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-shell__tabs > button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .responsive-section-header,
+  .guard-card-header,
+  .guard-block-header,
+  .guard-list-row {
+    flex-wrap: wrap;
+  }
+
+  .responsive-section-header > .touch-target {
+    width: 100%;
+  }
+
+  .guard-kpi-grid,
+  .guard-action-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .guard-list-row {
+    align-items: flex-start !important;
+  }
+
+  .guard-modal-overlay {
+    align-items: flex-start !important;
+  }
+
+  .guard-report-modal {
+    padding: 18px !important;
+  }
+
+  .guard-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .guard-modal-actions > .touch-target {
+    width: 100% !important;
   }
 }
 
