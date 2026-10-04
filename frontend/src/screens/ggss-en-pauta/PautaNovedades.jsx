@@ -140,13 +140,13 @@ function ReportarModal({ onClose, onSuccess }) {
   return (
     <div className="guard-modal-overlay" style={{
       position: "fixed", inset: 0, zIndex: 100,
-      background: "rgba(6,13,24,0.85)", backdropFilter: "blur(4px)",
+      background: "rgba(14,23,20,0.85)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: 16,
     }}>
       <div className="responsive-modal guard-report-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`,
-        borderRadius: 16, padding: 24, width: "100%", maxWidth: 420,
+        borderRadius: 8, padding: 24, width: "100%", maxWidth: 420,
       }}>
         <div className="guard-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <span style={{ fontWeight: 700, fontSize: 16, color: T.text }}>Reportar Novedad</span>
@@ -194,7 +194,7 @@ function ReportarModal({ onClose, onSuccess }) {
                 width: "100%", padding: "10px 12px",
                 background: T.bgInput, border: `1px solid ${T.border}`,
                 borderRadius: 8, color: tipo ? T.text : T.textMut,
-                fontSize: 14, outline: "none", fontFamily: "'Outfit', sans-serif",
+                fontSize: 14, outline: "none", fontFamily: "var(--font-ui)",
                 appearance: "none", boxSizing: "border-box",
               }}
             >
@@ -220,7 +220,7 @@ function ReportarModal({ onClose, onSuccess }) {
                 width: "100%", padding: "10px 12px", resize: "vertical",
                 background: T.bgInput, border: `1px solid ${T.border}`,
                 borderRadius: 8, color: T.text, fontSize: 14,
-                outline: "none", fontFamily: "'Outfit', sans-serif",
+                outline: "none", fontFamily: "var(--font-ui)",
                 boxSizing: "border-box",
               }}
             />
@@ -240,7 +240,7 @@ function ReportarModal({ onClose, onSuccess }) {
                 width: "100%", padding: "8px 12px",
                 background: T.bgInput, border: `1px solid ${T.border}`,
                 borderRadius: 8, color: T.text, fontSize: 13,
-                fontFamily: "'Outfit', sans-serif", boxSizing: "border-box",
+                fontFamily: "var(--font-ui)", boxSizing: "border-box",
               }}
             />
             {fotoPreview && (
@@ -330,7 +330,7 @@ export function PautaNovedades({ user }) {
       {!loading && novedades.length === 0 && (
         <div style={{
           textAlign: "center", color: T.textMut, padding: 32, fontSize: 14,
-          background: T.bgCard, borderRadius: 12, border: `1px solid ${T.border}`,
+          background: T.bgCard, borderRadius: 8, border: `1px solid ${T.border}`,
         }}>
           No hay novedades registradas en este turno.
         </div>
@@ -343,7 +343,7 @@ export function PautaNovedades({ user }) {
           <div className="guard-card" key={n.id} style={{
             background: T.bgCard, border: `1px solid ${T.border}`,
             borderLeft: `4px solid ${colors.border}`,
-            borderRadius: 12, padding: 14, marginBottom: 8,
+            borderRadius: 8, padding: 14, marginBottom: 8,
           }}>
             <div className="guard-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>

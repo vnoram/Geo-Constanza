@@ -42,13 +42,13 @@ function ResolverModal({ novedad, onClose, onSuccess }) {
   return (
     <div className="responsive-modal-overlay" style={{
       position: "fixed", inset: 0, zIndex: 100,
-      background: "rgba(6,13,24,0.85)", backdropFilter: "blur(4px)",
+      background: "rgba(14,23,20,0.85)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: 16,
     }}>
       <div className="responsive-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`,
-        borderRadius: 16, padding: 24, width: "100%", maxWidth: 400,
+        borderRadius: 8, padding: 24, width: "100%", maxWidth: 400,
       }}>
         <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <span style={{ fontWeight: 700, fontSize: 15, color: T.text }}>Resolver Novedad</span>
@@ -75,7 +75,7 @@ function ResolverModal({ novedad, onClose, onSuccess }) {
                 width: "100%", padding: "10px 12px", resize: "vertical",
                 background: T.bgInput, border: `1px solid ${T.border}`,
                 borderRadius: 8, color: T.text, fontSize: 14,
-                outline: "none", fontFamily: "'Outfit', sans-serif",
+                outline: "none", fontFamily: "var(--font-ui)",
                 boxSizing: "border-box",
               }}
             />
@@ -121,7 +121,7 @@ function FotoNovedad({ url }) {
         title="Ver foto"
         style={{
           display: "block", padding: 0, marginBottom: 10, cursor: "zoom-in",
-          border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden", background: T.bgInput,
+          border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden", background: T.bgInput,
         }}
       >
         <img
@@ -138,14 +138,14 @@ function FotoNovedad({ url }) {
             className="responsive-modal-overlay"
           onClick={() => setAbierta(false)}
           style={{
-            position: "fixed", inset: 0, zIndex: 1100, background: "rgba(6,13,24,0.92)",
+            position: "fixed", inset: 0, zIndex: 1100, background: "rgba(14,23,20,0.92)",
             display: "flex", alignItems: "center", justifyContent: "center", padding: 16, cursor: "zoom-out",
           }}
         >
           <img
             src={url}
             alt="Foto adjunta a la novedad"
-            style={{ maxWidth: "100%", maxHeight: "85vh", borderRadius: 12, boxShadow: "0 16px 40px rgba(0,0,0,0.6)" }}
+            style={{ maxWidth: "100%", maxHeight: "85vh", borderRadius: 8, boxShadow: "0 16px 40px rgba(0,0,0,0.6)" }}
           />
           <div style={{ position: "absolute", top: 16, right: 20, display: "flex", gap: 12, alignItems: "center" }}>
             <a
@@ -264,7 +264,7 @@ export function SupNovedades({ user }) {
       {alertaCritica && (
         <div className="responsive-list-row" style={{
           background: T.redGhost, border: `1px solid ${T.red}`,
-          borderRadius: 12, padding: 14, marginBottom: 12,
+          borderRadius: 8, padding: 14, marginBottom: 12,
           display: "flex", justifyContent: "space-between", alignItems: "flex-start",
         }}>
           <div className="responsive-list-row__main">
@@ -294,7 +294,7 @@ export function SupNovedades({ user }) {
       {!loading && novedades.length === 0 && (
         <div style={{
           textAlign: "center", color: T.textMut, padding: 32, fontSize: 14,
-          background: T.bgCard, borderRadius: 12, border: `1px solid ${T.border}`,
+          background: T.bgCard, borderRadius: 8, border: `1px solid ${T.border}`,
         }}>
           No hay novedades registradas.
         </div>
@@ -310,7 +310,7 @@ export function SupNovedades({ user }) {
 
         return (
           <div className="responsive-card" key={n.id} style={{
-            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
+            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
             borderLeft: `4px solid ${colors.border}`,
             padding: 14, marginBottom: 8,
             opacity: resuelta ? 0.6 : 1,

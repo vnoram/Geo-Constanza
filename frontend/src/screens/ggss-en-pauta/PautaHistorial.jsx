@@ -14,7 +14,7 @@ export function PautaHistorial() {
       <SectionHeader title="Historial" sub="Tu registro de asistencia" />
       {data.map((h, i) => (
         <div className="guard-list-row" key={i} style={{
-          background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
+          background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
           padding: 14, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center",
         }}>
           <div className="guard-list-row__main">

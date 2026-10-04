@@ -52,7 +52,7 @@ function TurnoRow({ turno }) {
 
   return (
     <div className="guard-list-row" style={{
-      background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
+      background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
       padding: "12px 16px", marginBottom: 6,
       display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
     }}>
@@ -60,7 +60,7 @@ function TurnoRow({ turno }) {
         <div className="guard-card-header" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
           <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{fechaStr}</span>
           {nocturno && (
-            <span style={{ fontSize: 10, color: "#c4a8ff", background: "#1a1230", borderRadius: 4, padding: "1px 5px" }}>
+            <span style={{ fontSize: 10, color: "#B39BE0", background: "#1C2E28", borderRadius: 4, padding: "1px 5px" }}>
               🌙 nocturno
             </span>
           )}
@@ -149,7 +149,7 @@ export function LibreTurnos() {
       {!cargando && error && (
         <div style={{
           background: T.redGhost, border: `1px solid ${T.red}`,
-          borderRadius: 10, padding: "10px 14px", fontSize: 13, color: T.red, marginBottom: 16,
+          borderRadius: 8, padding: "10px 14px", fontSize: 13, color: T.red, marginBottom: 16,
         }}>
           {error}
         </div>

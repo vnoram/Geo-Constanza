@@ -351,7 +351,7 @@ function Select({ label, value, onChange, options, placeholder }) {
         className="touch-target"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", background: T.bgInput, border: `1.5px solid ${T.border}`, borderRadius: 12, padding: "12px 14px", color: value ? T.text : T.textMut, fontSize: 14, fontFamily: "'Outfit', sans-serif", outline: "none" }}
+        style={{ width: "100%", background: T.bgInput, border: `1.5px solid ${T.border}`, borderRadius: 8, padding: "12px 14px", color: value ? T.text : T.textMut, fontSize: 14, fontFamily: "var(--font-ui)", outline: "none" }}
       >
         <option value="">{placeholder || "Seleccionar..."}</option>
         {options.map((o) => <option key={o.value} value={o.value} style={{ background: T.bgCard }}>{o.label}</option>)}
@@ -455,7 +455,7 @@ export function SupReportes() {
       <SectionHeader title="Reportes OS-10" sub="Informes operacionales para fiscalización" />
 
       {/* Filtros */}
-      <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 14, padding: 18, marginBottom: 16 }}>
+      <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 18, marginBottom: 16 }}>
         <SubHeader title="Parámetros del Reporte" />
 
         <Select
@@ -478,8 +478,8 @@ export function SupReportes() {
             { id: "novedades",  label: "🚨 Novedades"  },
           ].map((tab) => (
             <button className="touch-target" key={tab.id} onClick={() => setVistaActiva(tab.id)} style={{
-              padding: "8px 16px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer",
-              fontFamily: "'Outfit', sans-serif",
+              padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
+              fontFamily: "var(--font-ui)",
               background: vistaActiva === tab.id ? T.accent : T.bgInput,
               color:      vistaActiva === tab.id ? T.bg     : T.textMut,
               border:     vistaActiva === tab.id ? "none"   : `1px solid ${T.border}`,
@@ -496,7 +496,7 @@ export function SupReportes() {
 
       {/* Error */}
       {error && (
-        <div style={{ background: T.redGhost, border: `1px solid ${T.red}`, borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: T.red }}>
+        <div style={{ background: T.redGhost, border: `1px solid ${T.red}`, borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: T.red }}>
           {error}
         </div>
       )}
@@ -505,7 +505,7 @@ export function SupReportes() {
       {datos !== null && (
         <>
           {/* Resumen rápido */}
-          <div className="responsive-list-row" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 16px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="responsive-list-row" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: "12px 16px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div className="responsive-list-row__main">
               <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>
                 {datos.length} registro{datos.length !== 1 ? "s" : ""} encontrado{datos.length !== 1 ? "s" : ""}
@@ -518,14 +518,14 @@ export function SupReportes() {
               <button className="touch-target" onClick={exportarCSV} style={{
                 background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: 8,
                 padding: "7px 12px", color: T.textSec, fontSize: 11, fontWeight: 700,
-                cursor: "pointer", fontFamily: "'Outfit', sans-serif",
+                cursor: "pointer", fontFamily: "var(--font-ui)",
               }}>
                 📊 Excel
               </button>
               <button className="touch-target" onClick={exportarPDF} disabled={exportando} style={{
                 background: exportando ? T.textMut : T.accent, border: "none", borderRadius: 8,
                 padding: "7px 14px", color: T.bg, fontSize: 11, fontWeight: 700,
-                cursor: exportando ? "not-allowed" : "pointer", fontFamily: "'Outfit', sans-serif",
+                cursor: exportando ? "not-allowed" : "pointer", fontFamily: "var(--font-ui)",
                 boxShadow: exportando ? "none" : `0 2px 12px rgba(0,229,176,.3)`,
               }}>
                 {exportando ? "⏳ Generando..." : "📑 PDF OS-10"}
@@ -534,7 +534,7 @@ export function SupReportes() {
           </div>
 
           {/* Tabla preview */}
-          <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
+          <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
             <TablaPreview datos={datos} tipo={vistaActiva} />
           </div>
         </>
