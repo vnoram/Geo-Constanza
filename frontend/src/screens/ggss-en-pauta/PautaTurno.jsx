@@ -203,7 +203,7 @@ export function PautaTurno({ user }) {
     : 100;
 
   return (
-    <div>
+    <div className="guard-screen">
       <SectionHeader title="Mi Turno Actual" sub="Información de tu turno en curso" />
 
       {cierresAuto.length > 0 && (
@@ -250,8 +250,8 @@ export function PautaTurno({ user }) {
             background: `linear-gradient(135deg, ${T.accentGhost}, transparent)`,
             border: `1px solid ${T.accent}33`, borderRadius: 16, padding: 20, marginBottom: 16,
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-              <div>
+            <div className="guard-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+              <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 11, color: T.accentDim, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>
                   EN TURNO
                 </div>
@@ -284,7 +284,7 @@ export function PautaTurno({ user }) {
           </div>
 
           {/* KPIs entrada / salida */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+          <div className="guard-kpi-grid" style={{ display: "grid", gap: 10, marginBottom: 16 }}>
             <KPI
               label="Entrada"
               value={marcaje?.hora_entrada || "—"}
@@ -374,6 +374,7 @@ export function PautaTurno({ user }) {
               ) : (
                 /* Botón naranja para salida — usa button nativo porque Btn no admite color custom */
                 <button
+                  className="touch-target"
                   onClick={marcarSalida}
                   disabled={loadingMarcaje}
                   style={{

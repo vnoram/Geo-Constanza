@@ -10,14 +10,14 @@ export function PautaHistorial() {
     { fecha: "06 Abr", entrada: "05:58", salida: "14:05", estado: "Normal", horas: "8h 07m" },
   ];
   return (
-    <div>
+    <div className="guard-screen">
       <SectionHeader title="Historial" sub="Tu registro de asistencia" />
       {data.map((h, i) => (
-        <div key={i} style={{
+        <div className="guard-list-row" key={i} style={{
           background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
           padding: 14, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center",
         }}>
-          <div>
+          <div className="guard-list-row__main">
             <div style={{ fontWeight: 700, fontSize: 14 }}>{h.fecha}</div>
             <div style={{ fontSize: 11, color: T.textMut }}>{h.entrada} → {h.salida}</div>
           </div>

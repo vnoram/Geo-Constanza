@@ -296,7 +296,7 @@ export function AdminUsuarios() {
                   <Badge color={ROL_BADGE[u.rol] ?? "accent"}>{ROL_LABEL[u.rol] ?? u.rol}</Badge>
                   <Badge color={u.estado === "activo" ? "accent" : "red"}>{u.estado}</Badge>
                 </div>
-                <div style={{ fontSize: 11, color: T.textMut }}>{u.email} · {u.rut}</div>
+                <div style={{ fontSize: 11, color: T.textMut, overflowWrap: "anywhere", minWidth: 0 }}>{u.email} · {u.rut}</div>
 
                 {/* Área del supervisor: chips de instalaciones */}
                 {u.rol === ROL.SUPERVISOR && instSup.length > 0 && (

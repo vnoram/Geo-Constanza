@@ -56,11 +56,11 @@ export function SupDashboard() {
   const instAsignadas = data.kpis?.instalacionesAsignadas ?? [];
 
   return (
-    <div>
+    <div className="operations-screen">
       <SectionHeader title="Dashboard en Vivo" sub="Estado operacional en tiempo real" />
 
       {/* ── KPIs de asistencia ───────────────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+      <div className="metrics-grid" style={{ display: "grid", gap: 10, marginBottom: 16 }}>
         <KPI label="Total Turnos" value={data.total}     sub="hoy"         accent={T.textSec} />
         <KPI label="Presentes"    value={data.presentes} sub="en turno"    accent={T.accent}  />
         <KPI label="Tardíos"      value={data.tardios}   sub="con retraso" accent={T.yellow}  />
@@ -69,7 +69,7 @@ export function SupDashboard() {
 
       {/* ── KPIs de novedades del área ────────────────────────────── */}
       {data.kpis && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+        <div className="metrics-grid" style={{ display: "grid", gap: 10, marginBottom: 20 }}>
           <KPI label="Nov. Abiertas"  value={data.kpis.novedadesAbiertas}  sub="activas"  accent={T.yellow} />
           <KPI label="Nov. Escaladas" value={data.kpis.novedadesEscaladas} sub="urgentes" accent={T.red}    />
         </div>
@@ -83,13 +83,13 @@ export function SupDashboard() {
           </div>
           <div style={{ marginBottom: 20 }}>
             {instAsignadas.map((inst) => (
-              <div key={inst.id} style={{
+              <div className="responsive-list-row" key={inst.id} style={{
                 background: T.bgCard, border: `1px solid ${T.border}`,
                 borderLeft: `3px solid ${CRITICIDAD_COLOR[inst.criticidad] ?? T.accent}`,
                 borderRadius: 10, padding: "10px 14px", marginBottom: 6,
                 display: "flex", justifyContent: "space-between", alignItems: "center",
               }}>
-                <div>
+                <div className="responsive-list-row__main">
                   <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{inst.nombre}</div>
                   {inst.direccion && (
                     <div style={{ fontSize: 10, color: T.textMut, marginTop: 2 }}>{inst.direccion}</div>
@@ -131,13 +131,13 @@ export function SupDashboard() {
           No hay turnos asignados para hoy
         </div>
       ) : data.lista.map((g, i) => (
-        <div key={i} style={{
+        <div className="responsive-list-row" key={i} style={{
           background: T.bgCard, border: `1px solid ${T.border}`,
           borderLeft: `3px solid ${ESTADO_COLOR[g.estado]}`,
           borderRadius: 12, padding: 12, marginBottom: 6,
           display: "flex", justifyContent: "space-between", alignItems: "center",
         }}>
-          <div>
+          <div className="responsive-list-row__main">
             <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{g.guardia}</div>
             <div style={{ fontSize: 11, color: T.textMut }}>
               {g.instalacion} · {g.hora_inicio}–{g.hora_fin}

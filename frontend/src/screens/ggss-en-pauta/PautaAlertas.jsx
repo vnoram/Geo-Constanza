@@ -3,7 +3,7 @@ import { SectionHeader } from "../../components/ui/SectionHeader";
 
 export function PautaAlertas() {
   return (
-    <div>
+    <div className="guard-screen">
       <SectionHeader title="Alertas" sub="Notificaciones de tu turno" />
       <div style={{ background: T.yellowGhost, border: `1px solid ${T.yellow}22`, borderRadius: 12, padding: 14, marginBottom: 8 }}>
         <div style={{ fontSize: 13, color: T.yellow, fontWeight: 600 }}>⚠️ Turno mañana: 06:00 — 14:00</div>
