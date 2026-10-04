@@ -90,6 +90,21 @@ test('entrada nocturna 21:41 elige A y calcula 101 minutos', async () => {
   prisma.turno.findMany.mockResolvedValue([b, a]);
   await expect(entrada()).resolves.toMatchObject({ turno_id: 'A', minutos_retraso: 101, estado: 'tardio' });
 });
+test('entrada a las 22:00 Chile elige el turno del 3-oct y marca atraso', async () => {
+  const turnoCorrecto = turno('noche-3', '2026-10-03', '19:00', '07:00');
+  const turnoManana = turno('noche-4', '2026-10-04', '19:00', '07:00');
+  jest.setSystemTime(new Date('2026-10-04T01:00:00.000Z'));
+  prisma.turno.findMany.mockResolvedValue([turnoManana, turnoCorrecto]);
+  await expect(entrada()).resolves.toMatchObject({
+    turno_id: 'noche-3', minutos_retraso: 180, estado: 'tardio',
+  });
+});
+test('entrada a las 22:00 Chile no acepta el turno que comienza el 4-oct', async () => {
+  const turnoManana = turno('noche-4', '2026-10-04', '19:00', '07:00');
+  jest.setSystemTime(new Date('2026-10-04T01:00:00.000Z'));
+  prisma.turno.findMany.mockResolvedValue([turnoManana]);
+  await expect(entrada()).rejects.toMatchObject({ statusCode: 400 });
+});
 test('sin asistencia prefiere el turno que empezó antes y advierte el solapamiento', async () => {
   prisma.turno.findMany.mockResolvedValue([b, a]);
   await expect(entrada()).resolves.toMatchObject({ turno_id: 'A' });

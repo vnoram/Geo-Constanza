@@ -1,4 +1,4 @@
-const { instanteChile, intervaloTurno, seSolapan, turnoVigente, turnosDeHoy } = require('../fechaChile');
+const { ahoraChile, instanteChile, intervaloTurno, seSolapan, turnoVigente, turnosDeHoy } = require('../fechaChile');
 
 const turno = (fecha, hora_inicio, hora_fin) => ({ fecha, hora_inicio, hora_fin });
 
@@ -41,4 +41,25 @@ test('dashboard incluye nocturno de ayer hasta su fin real', () => {
   const t = turno('2026-09-26', '20:00', '08:00');
   expect(turnosDeHoy(instanteChile('2026-09-27', '00:21')).incluir(t)).toBe(true);
   expect(turnosDeHoy(instanteChile('2026-09-27', '08:00')).incluir(t)).toBe(false);
+});
+
+describe('turno nocturno del 3 de octubre en hora Chile', () => {
+  const nocturno = turno('2026-10-03', '19:00', '07:00');
+  const diaSiguiente = turno('2026-10-04', '19:00', '07:00');
+
+  test('a las 22:00 del 3 de octubre sigue siendo día 3 en Chile', () => {
+    const ahora = new Date('2026-10-04T01:00:00.000Z');
+    expect(ahoraChile(ahora)).toEqual({ fecha: '2026-10-03', hora: '22:00' });
+    expect(turnoVigente(nocturno, ahora, 15)).toBe(true);
+    expect(turnoVigente(diaSiguiente, ahora, 15)).toBe(false);
+  });
+
+  test.each([
+    ['2026-10-03', '18:45', true],
+    ['2026-10-03', '18:44', false],
+    ['2026-10-04', '06:59', true],
+    ['2026-10-04', '07:00', false],
+  ])('%s %s respeta tolerancia y fin exclusivo', (fecha, hora, esperado) => {
+    expect(turnoVigente(nocturno, instanteChile(fecha, hora), 15)).toBe(esperado);
+  });
 });
