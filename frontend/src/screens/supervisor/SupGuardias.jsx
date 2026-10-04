@@ -5,12 +5,9 @@ import { Btn } from "../../components/ui/Btn";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 import { ROLES } from "../../constants/roles";
+import { ahoraChile, sumarDias } from "../../utils/fechaChile";
 
-// Fecha local YYYY-MM-DD (toISOString usa UTC y en Chile desfasa la fecha de noche)
-const hoyLocal = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
+const hoyLocal = () => ahoraChile().fecha;
 
 // `fecha` llega como "2026-09-26T00:00:00.000Z": se usa la parte de fecha tal cual
 const fechaDeTurno = (t) => String(t.fecha).slice(0, 10);
@@ -258,11 +255,8 @@ export function SupGuardias() {
     cargarTurnos();
   };
 
-  const hoy = hoyLocal();
-  const ayerFecha = new Date();
-  ayerFecha.setDate(ayerFecha.getDate() - 1);
-  const ayer = `${ayerFecha.getFullYear()}-${String(ayerFecha.getMonth() + 1).padStart(2, "0")}-${String(ayerFecha.getDate()).padStart(2, "0")}`;
-  const horaActual = new Date().toTimeString().slice(0, 5);
+  const { fecha: hoy, hora: horaActual } = ahoraChile();
+  const ayer = sumarDias(hoy, -1);
   const idsInstalaciones = new Set(instalaciones.map((i) => i.id));
   const turnosVisibles = turnos
     .filter((t) => t.estado !== "cancelado")

@@ -16,7 +16,7 @@ const URGENCIA_COLOR = {
 
 function formatHora(dateStr) {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+  return new Date(dateStr).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" });
 }
 
 // ─── Modal: Resolver con comentario ──────────────────────────────────

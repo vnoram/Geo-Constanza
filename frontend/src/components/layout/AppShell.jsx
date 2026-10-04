@@ -219,7 +219,7 @@ export function AppShell({ user, token, onLogout }) {
                   {(user.rol === ROL.SUPERVISOR || user.rol === ROL.ADMINISTRADOR) ? "✅ 2FA verificado" : "🔑 Auth estándar"}
                 </div>
                 <div style={{ fontSize: 10, color: T.textMut, fontFamily: "'JetBrains Mono', monospace" }}>
-                  {new Date().toLocaleTimeString("es-CL")}
+                  {new Date().toLocaleTimeString("es-CL", { timeZone: "America/Santiago" })}
                 </div>
               </div>
               <button onClick={onLogout} style={{

@@ -106,7 +106,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
             html: `<div style="width:9px;height:9px;background:${color};border:2px solid #060D18;border-radius:50%;opacity:0.55;box-shadow:0 0 6px ${color};"></div>`,
             className: "", iconSize: [9, 9], iconAnchor: [4, 4],
           });
-          const t = hora ? new Date(hora).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }) : "—";
+          const t = hora ? new Date(hora).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" }) : "—";
           guardiasRef.current[guardia_id] = L.marker([latitud, longitud], { icon })
             .addTo(map)
             .bindPopup(
@@ -131,7 +131,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
       html: `<div style="width:10px;height:10px;background:${color};border:2px solid #060D18;border-radius:50%;box-shadow:0 0 8px ${color};"></div>`,
       className: "", iconSize: [10, 10], iconAnchor: [5, 5],
     });
-    const t = new Date(hora).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+    const t = new Date(hora).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" });
     guardiasRef.current[guardia_id] = L.marker([latitud, longitud], { icon })
       .addTo(mapRef.current)
       .bindPopup(`<b>Guardia detectado</b><br>Entrada: ${t}<br><span style="color:${color}">${estado === "tardio" ? "⚠️ Tardío" : "✓ A tiempo"}</span>`,

@@ -144,7 +144,7 @@ export function SupDashboard() {
             </div>
             {g.hora_entrada && (
               <div style={{ fontSize: 10, color: T.textMut, marginTop: 2 }}>
-                Entrada: {new Date(g.hora_entrada).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}
+                Entrada: {new Date(g.hora_entrada).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" })}
                 {g.es_fallback && " · 📱 fallback móvil"}
               </div>
             )}

@@ -6,6 +6,7 @@ import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
 import { API_URL as API_BASE } from "../../config/api";
+import { ahoraChile, ZONA_CHILE } from "../../utils/fechaChile";
 
 
 // ─── CARGA DINÁMICA DE jsPDF + autoTable ─────────────────────────
@@ -61,7 +62,7 @@ async function generarPDFOS10({ asistencias, novedades, instNombre, fechaInicio,
   doc.text("REPORTE OS-10  ·  REGISTRO DE OPERACIONES Y ASISTENCIA", 14, 49);
 
   // ── Metadatos del reporte ─────────────────────────────────────
-  const hoy = new Date().toLocaleString("es-CL", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const hoy = new Date().toLocaleString("es-CL", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: ZONA_CHILE });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(80, 100, 130);
@@ -96,13 +97,13 @@ async function generarPDFOS10({ asistencias, novedades, instNombre, fechaInicio,
     y += 10;
   } else {
     const filas = asistencias.map((a) => [
-      new Date(a.hora_entrada).toLocaleDateString("es-CL"),
+      new Date(a.hora_entrada).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE }),
       a.usuario?.rut  || "—",
       a.usuario?.nombre || "—",
       a.instalacion?.nombre || "—",
       `${a.turno?.hora_inicio || "—"} – ${a.turno?.hora_fin || "—"}`,
-      new Date(a.hora_entrada).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }),
-      a.hora_salida ? new Date(a.hora_salida).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }) : "Activo",
+      new Date(a.hora_entrada).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_CHILE }),
+      a.hora_salida ? new Date(a.hora_salida).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_CHILE }) : "Activo",
       a.estado === "tardio" ? "Tardío" : "Normal",
       a.minutos_retraso > 0 ? `${a.minutos_retraso} min` : "—",
     ]);
@@ -146,7 +147,7 @@ async function generarPDFOS10({ asistencias, novedades, instNombre, fechaInicio,
     y += 10;
   } else {
     const filas = novedades.map((n) => [
-      new Date(n.created_at).toLocaleDateString("es-CL"),
+      new Date(n.created_at).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE }),
       n.tipo || "—",
       URGENCIA_LABEL[n.urgencia] || n.urgencia || "—",
       n.descripcion?.substring(0, 60) + (n.descripcion?.length > 60 ? "…" : "") || "—",
@@ -226,12 +227,12 @@ function TablaPreview({ datos, tipo }) {
           <tbody>
             {datos.slice(0, 50).map((a, i) => (
               <tr key={i} style={{ borderBottom: `1px solid ${T.border}22` }}>
-                <td style={tdStyle}>{new Date(a.hora_entrada).toLocaleDateString("es-CL")}</td>
+                <td style={tdStyle}>{new Date(a.hora_entrada).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE })}</td>
                 <td style={tdStyle}>{a.usuario?.rut || "—"}</td>
                 <td style={tdStyle}>{a.usuario?.nombre || "—"}</td>
                 <td style={tdStyle}>{a.instalacion?.nombre || "—"}</td>
-                <td style={tdStyle}>{new Date(a.hora_entrada).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}</td>
-                <td style={tdStyle}>{a.hora_salida ? new Date(a.hora_salida).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }) : <span style={{ color: T.accent, fontSize: 10 }}>Activo</span>}</td>
+                <td style={tdStyle}>{new Date(a.hora_entrada).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_CHILE })}</td>
+                <td style={tdStyle}>{a.hora_salida ? new Date(a.hora_salida).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_CHILE }) : <span style={{ color: T.accent, fontSize: 10 }}>Activo</span>}</td>
                 <td style={tdStyle}>
                   <span style={{ color: a.estado === "tardio" ? T.yellow : T.accent, fontWeight: 700, fontSize: 10 }}>
                     {a.estado === "tardio" ? "Tardío" : "Normal"}
@@ -270,7 +271,7 @@ function TablaPreview({ datos, tipo }) {
             const u = URGENCIA[n.urgencia] || { label: n.urgencia, color: T.textMut };
             return (
               <tr key={i} style={{ borderBottom: `1px solid ${T.border}22` }}>
-                <td style={tdStyle}>{new Date(n.created_at).toLocaleDateString("es-CL")}</td>
+                <td style={tdStyle}>{new Date(n.created_at).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE })}</td>
                 <td style={tdStyle}>{n.tipo || "—"}</td>
                 <td style={tdStyle}><span style={{ color: u.color, fontWeight: 700, fontSize: 10 }}>{u.label}</span></td>
                 <td style={{ ...tdStyle, maxWidth: 180 }}>{n.descripcion?.substring(0, 60)}{n.descripcion?.length > 60 ? "…" : ""}</td>
@@ -314,11 +315,8 @@ export function SupReportes() {
   const { token, user } = useAuth();
   const [instalaciones,  setInstalaciones]  = useState([]);
   const [instalacionId,  setInstalacionId]  = useState("");
-  const [fechaInicio,    setFechaInicio]    = useState(() => {
-    const d = new Date(); d.setDate(1);
-    return d.toISOString().split("T")[0];
-  });
-  const [fechaFin, setFechaFin] = useState(new Date().toISOString().split("T")[0]);
+  const [fechaInicio, setFechaInicio] = useState(() => `${ahoraChile().fecha.slice(0, 7)}-01`);
+  const [fechaFin, setFechaFin] = useState(() => ahoraChile().fecha);
   const [vistaActiva,    setVistaActiva]    = useState("asistencia"); // "asistencia" | "novedades"
   const [datos,          setDatos]          = useState(null);
   const [cargando,       setCargando]       = useState(false);
