@@ -24,8 +24,8 @@ function Select({ label, value, onChange, options, placeholder }) {
         onChange={(e) => onChange(e.target.value)}
         style={{
           width: "100%", background: T.bgInput, border: `1.5px solid ${T.border}`,
-          borderRadius: 12, padding: "12px 14px", color: value ? T.text : T.textMut,
-          fontSize: 14, fontFamily: "'Outfit', sans-serif", outline: "none",
+          borderRadius: 8, padding: "12px 14px", color: value ? T.text : T.textMut,
+          fontSize: 14, fontFamily: "var(--font-ui)", outline: "none",
           cursor: "pointer",
         }}
       >
@@ -94,12 +94,12 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
 
   return (
     <div style={{
-      position: "fixed", inset: 0, background: "rgba(6,13,24,0.85)",
+      position: "fixed", inset: 0, background: "rgba(14,23,20,0.85)",
       display: "flex", alignItems: "center", justifyContent: "center",
       zIndex: 1000, padding: 16,
     }}>
       <div style={{
-        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 18,
+        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
         padding: 28, width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto",
       }}>
         {/* Header */}
@@ -122,7 +122,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
             <div style={{
               background: resultado.creados > 0 ? T.accentGhost : T.redGhost,
               border: `1px solid ${resultado.creados > 0 ? T.accent : T.red}`,
-              borderRadius: 12, padding: 16, marginBottom: 20,
+              borderRadius: 8, padding: 16, marginBottom: 20,
             }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: resultado.creados > 0 ? T.accent : T.red, marginBottom: 8 }}>
                 {resultado.creados > 0 ? "✓ Pauta generada correctamente" : "⚠ Sin turnos creados"}
@@ -206,9 +206,9 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
             {/* Aviso turno nocturno */}
             {esNocturno && (
               <div style={{
-                background: "#1a1230", border: "1px solid #7c5cbf",
+                background: "#1C2E28", border: "1px solid #7A4EBF",
                 borderRadius: 8, padding: "8px 12px", marginBottom: 14,
-                fontSize: 12, color: "#c4a8ff", display: "flex", gap: 8, alignItems: "center",
+                fontSize: 12, color: "#B39BE0", display: "flex", gap: 8, alignItems: "center",
               }}>
                 <span>🌙</span>
                 <span>Turno nocturno detectado — la salida ({form.hora_fin}) ocurre al día siguiente.</span>
@@ -218,7 +218,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
             {/* Info visual del ciclo */}
             <div style={{
               background: T.bgInput, border: `1px solid ${T.border}`,
-              borderRadius: 10, padding: 12, marginBottom: 14,
+              borderRadius: 8, padding: 12, marginBottom: 14,
               display: "flex", gap: 6, flexWrap: "wrap",
             }}>
               {Array.from({ length: 8 }, (_, i) => (
@@ -262,7 +262,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
             {error && (
               <div style={{
                 background: T.redGhost, border: `1px solid ${T.red}`,
-                borderRadius: 10, padding: "10px 14px", marginBottom: 14,
+                borderRadius: 8, padding: "10px 14px", marginBottom: 14,
                 fontSize: 13, color: T.red,
               }}>
                 {error}
@@ -284,13 +284,13 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
 function TurnoCard({ turno }) {
   const estadoColor = {
     programado: T.accent,
-    completado: "#6C9BFF",
+    completado: "#7A4EBF",
     cancelado: T.red,
   }[turno.estado] || T.textMut;
 
   return (
     <div style={{
-      background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
+      background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
       padding: "12px 16px", marginBottom: 8,
       display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 12,
     }}>
@@ -300,14 +300,14 @@ function TurnoCard({ turno }) {
             {turno.usuario?.nombre || "—"}
           </span>
           {turno.hora_fin < turno.hora_inicio && (
-            <span style={{ fontSize: 10, color: "#c4a8ff", background: "#1a1230", borderRadius: 4, padding: "1px 5px" }}>
+            <span style={{ fontSize: 10, color: "#B39BE0", background: "#1C2E28", borderRadius: 4, padding: "1px 5px" }}>
               🌙
             </span>
           )}
         </div>
         <div style={{ fontSize: 12, color: T.textMut, marginTop: 2 }}>
           {turno.instalacion?.nombre} · {turno.hora_inicio} – {turno.hora_fin}
-          {turno.hora_fin < turno.hora_inicio && <span style={{ color: "#c4a8ff" }}> (+1d)</span>}
+          {turno.hora_fin < turno.hora_inicio && <span style={{ color: "#B39BE0" }}> (+1d)</span>}
         </div>
         <div style={{ fontSize: 11, color: T.textSec, marginTop: 3 }}>
           {new Date(turno.fecha).toLocaleDateString("es-CL", {
@@ -369,7 +369,7 @@ export function AdminTurnos() {
 
       {/* Tarjeta de importación CSV */}
       <div style={{
-        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 14,
+        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
         padding: 20, textAlign: "center", marginBottom: 20,
       }}>
         <div style={{ fontSize: 40, marginBottom: 10 }}>📥</div>

@@ -100,7 +100,7 @@ export function DireccionAutocomplete({ label, value, onChange, comuna, onSelecc
           gap: 10,
           background: T.bgInput,
           border: `1.5px solid ${error ? T.red : focused ? T.borderFocus : T.border}`,
-          borderRadius: 12,
+          borderRadius: 8,
           padding: "12px 14px",
           transition: "all 0.25s",
           boxShadow: focused ? `0 0 0 3px ${T.accentGhost}` : "none",
@@ -130,7 +130,7 @@ export function DireccionAutocomplete({ label, value, onChange, comuna, onSelecc
             outline: "none",
             color: T.text,
             fontSize: 15,
-            fontFamily: "'Outfit', sans-serif",
+            fontFamily: "var(--font-ui)",
           }}
         />
         {buscando && <span style={{ fontSize: 11, color: T.textMut, whiteSpace: "nowrap" }}>Buscando…</span>}
@@ -148,7 +148,7 @@ export function DireccionAutocomplete({ label, value, onChange, comuna, onSelecc
             zIndex: 20,
             background: T.bgCard,
             border: `1.5px solid ${T.border}`,
-            borderRadius: 12,
+            borderRadius: 8,
             boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
             overflow: "hidden",
           }}
@@ -174,7 +174,7 @@ export function DireccionAutocomplete({ label, value, onChange, comuna, onSelecc
                   borderBottom: i < sugerencias.length - 1 ? `1px solid ${T.border}` : "none",
                   padding: "10px 14px",
                   cursor: "pointer",
-                  fontFamily: "'Outfit', sans-serif",
+                  fontFamily: "var(--font-ui)",
                 }}
               >
                 <div style={{ fontSize: 13, color: T.text, fontWeight: 600 }}>

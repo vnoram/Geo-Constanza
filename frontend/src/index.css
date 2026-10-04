@@ -1,53 +1,42 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Paleta (mar de noche). Verde: sistema en calma. Naranja: alerta y acción principal. Morado: foco y selección. */
+  --gc-bg: #0E1714;
+  --gc-surface: #162420;
+  --gc-card: #1C2E28;
+  --gc-line: #2C4038;
+  --gc-text: #F3EFE6;
+  --gc-text-2: #A8B7AE;
+  --gc-text-3: #7C8F85;
+  --gc-ok: #3E9A72;
+  --gc-focus: #7A4EBF;
+  --gc-alert: #E86A2A;
+  --gc-radius: 8px;
+  --topbar-h: 52px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --font-ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  /* Nombres heredados de la plantilla, apuntando a la paleta nueva */
+  --text: var(--gc-text-2);
+  --text-h: var(--gc-text);
+  --bg: var(--gc-bg);
+  --border: var(--gc-line);
+  --code-bg: var(--gc-card);
+  --accent: var(--gc-ok);
+  --accent-bg: rgba(62, 154, 114, 0.12);
+  --accent-border: var(--gc-ok);
+  --sans: var(--font-ui);
+  --heading: var(--font-ui);
+  --mono: var(--font-mono);
+
+  font: 15px/1.5 var(--font-ui);
+  color-scheme: dark;
+  color: var(--gc-text);
+  background: var(--gc-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
 }
 
 body {
@@ -474,12 +463,12 @@ canvas {
   .app-shell__sidebar-layer.is-open {
     position: sticky;
     inset: auto;
-    top: 56px;
+    top: var(--topbar-h);
     z-index: 20;
     display: flex;
     flex: 0 0 280px;
     width: 280px;
-    height: calc(100dvh - 56px);
+    height: calc(100dvh - var(--topbar-h));
   }
 
   .app-shell__sidebar-backdrop {
@@ -488,7 +477,7 @@ canvas {
 
   .app-shell__sidebar {
     width: 280px;
-    height: calc(100dvh - 56px);
+    height: calc(100dvh - var(--topbar-h));
     padding-top: 20px;
   }
 
@@ -558,3 +547,109 @@ code {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* ─── REDISEÑO: reglas globales ─── */
+button, input, select, textarea { font-family: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--gc-focus);
+  outline-offset: 2px;
+}
+
+/* Separación por borde de 1 px y contraste de superficie: sin sombras blandas ni
+   vidrio. Red de seguridad para estilos en línea que aún los declaran. */
+[style*="box-shadow"] { box-shadow: none !important; }
+[style*="backdrop-filter"] { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* ─── LOGIN (dividido) ─── */
+.login {
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  background: var(--gc-bg);
+}
+.login__brand {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 32px 40px;
+  background: var(--gc-surface);
+  border-right: 1px solid var(--gc-line);
+}
+.login__panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+}
+.login__form { width: 100%; max-width: 360px; }
+.login__mobile-mark { margin-bottom: 28px; }
+.login__footer {
+  margin-top: 28px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gc-text-3);
+}
+.login__demo-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 6px 0;
+  color: var(--gc-text-3);
+  font-size: 12px;
+  cursor: pointer;
+}
+.login__demo-toggle:hover { color: var(--gc-text-2); }
+.demo-row:hover { background: var(--gc-card) !important; }
+
+@media (min-width: 900px) {
+  .login { grid-template-columns: minmax(300px, 40%) minmax(0, 1fr); }
+  .login__brand { display: flex; }
+  .login__mobile-mark { display: none; }
+  .login__panel { justify-content: flex-start; padding-left: clamp(48px, 8vw, 120px); }
+}
+
+/* ─── CENTRAL: el mapa es la pieza principal ─── */
+.central-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.central-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.central-map { height: clamp(320px, 52dvh, 620px); }
+@media (min-width: 1100px) {
+  .central-grid { grid-template-columns: minmax(0, 1fr) 320px; }
+  .central-map { height: clamp(480px, 64dvh, 780px); }
+}
+
+/* ─── BARRA SUPERIOR en pantallas angostas ─── */
+.app-shell__role { max-width: 46vw; }
+@media (max-width: 639px) {
+  .app-shell__user { display: none !important; }
+}
+@media (max-width: 399px) {
+  .app-shell__role { display: none !important; }
+}
+
+/* ─── Etiquetas en minúscula normal (sentence case) ───
+   Las pantallas aún no migradas declaran text-transform: uppercase en línea.
+   Se anula y se capitaliza solo la primera letra. */
+[style*='text-transform: uppercase'] {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  display: block;
+}
+[style*='text-transform: uppercase']::first-letter { text-transform: uppercase; }
+span[style*='text-transform: uppercase'] { display: inline-block; }
+.sentence { display: inline-block; }
+.sentence::first-letter { text-transform: uppercase; }

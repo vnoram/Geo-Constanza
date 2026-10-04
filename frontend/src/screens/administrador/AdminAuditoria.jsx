@@ -14,12 +14,12 @@ export function AdminAuditoria() {
       <SectionHeader title="Auditoría" sub="Log de cambios del sistema" />
       {logs.map((l, i) => (
         <div key={i} style={{
-          background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
+          background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
           padding: 12, marginBottom: 5,
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
             <Badge color="accent">{l.accion}</Badge>
-            <span style={{ fontSize: 10, color: T.textMut, fontFamily: "'JetBrains Mono', monospace" }}>{l.hora}</span>
+            <span style={{ fontSize: 10, color: T.textMut, fontFamily: "var(--font-mono)" }}>{l.hora}</span>
           </div>
           <div style={{ fontSize: 13, fontWeight: 600 }}>{l.usuario}</div>
           <div style={{ fontSize: 11, color: T.textMut }}>{l.detalle} · IP: {l.ip}</div>

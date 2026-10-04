@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, memo } from "react";
 import { io } from "socket.io-client";
-import { T } from "../../theme/theme";
+import { T, FONT } from "../../theme/theme";
+import { Icon } from "../../components/ui/Icon";
 import { KPI } from "../../components/ui/KPI";
 import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
@@ -9,28 +10,28 @@ import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
 
-// Color de marca para el rol Central
-const C_COLOR = "#4FC3F7"; // Azul cian — diferente al verde (admin) y amarillo (supervisor)
+// Morado: selección y foco en las vistas de Central
+const C_COLOR = "#7A4EBF";
 
 // ─── ESTILOS POPUP LEAFLET ────────────────────────────────────────
 const LEAFLET_STYLES = `
   .gc-popup .leaflet-popup-content-wrapper {
-    background:#0D1A2D;border:1px solid #1A2D4A;color:#E4EAF2;
+    background:#1C2E28;border:1px solid #2C4038;color:#F3EFE6;
     border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,.6);
-    font-family:'Outfit',sans-serif;font-size:13px;
+    font-family:var(--font-ui);font-size:13px;
   }
-  .gc-popup .leaflet-popup-tip { background:#0D1A2D; }
-  .gc-popup .leaflet-popup-close-button { color:#4A5E78 !important; }
+  .gc-popup .leaflet-popup-tip { background:#1C2E28; }
+  .gc-popup .leaflet-popup-close-button { color:#7C8F85 !important; }
   .gc-popup-warn .leaflet-popup-content-wrapper {
-    background:#1a1200;border:1px solid #FFBE2E44;color:#FFBE2E;
-    border-radius:10px;font-family:'Outfit',sans-serif;font-size:12px;
+    background:#0E1714;border:1px solid #FFBE2E44;color:#F0A35E;
+    border-radius:10px;font-family:var(--font-ui);font-size:12px;
   }
-  .gc-popup-warn .leaflet-popup-tip { background:#1a1200; }
+  .gc-popup-warn .leaflet-popup-tip { background:#0E1714; }
   .leaflet-control-attribution { display:none !important; }
   .leaflet-control-zoom a {
-    background:#0D1A2D !important;border-color:#1A2D4A !important;color:#7B8FA8 !important;
+    background:#1C2E28 !important;border-color:#2C4038 !important;color:#A8B7AE !important;
   }
-  .leaflet-control-zoom a:hover { background:#122240 !important;color:#4FC3F7 !important; }
+  .leaflet-control-zoom a:hover { background:#22372F !important;color:#7A4EBF !important; }
   .gc-dark-tile, .leaflet-tile-pane .leaflet-tile {
     filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%) !important;
   }
@@ -87,14 +88,14 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
           if (!inst.latitud || !inst.longitud) return;
           pts.push([inst.latitud, inst.longitud]);
           const icon = L.divIcon({
-            html: `<div style="width:14px;height:14px;background:${C_COLOR};border:2.5px solid #060D18;border-radius:50%;box-shadow:0 0 10px ${C_COLOR},0 0 20px ${C_COLOR}22;"></div>`,
+            html: `<div style="width:14px;height:14px;background:${C_COLOR};border:2.5px solid #0E1714;border-radius:50%;box-shadow:0 0 10px ${C_COLOR},0 0 20px ${C_COLOR}22;"></div>`,
             className: "", iconSize: [14, 14], iconAnchor: [7, 7],
           });
           L.marker([inst.latitud, inst.longitud], { icon })
             .addTo(map)
             .bindPopup(
               `<b>${inst.nombre}</b><br>` +
-              `<span style="color:#7B8FA8;font-size:11px">${inst.direccion || "—"}</span><br>` +
+              `<span style="color:#A8B7AE;font-size:11px">${inst.direccion || "—"}</span><br>` +
               `<span style="color:${C_COLOR};font-size:11px">Radio: ${inst.radio_geofence_m ?? 100}m · ${inst.nivel_criticidad ?? "Media"}</span>`,
               { className: "gc-popup" },
             );
@@ -109,9 +110,9 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
         Object.values(guardiasInicialesRef.current).forEach((ub) => {
           const { guardia_id, latitud, longitud, estado, hora } = ub;
           if (!latitud || !longitud) return;
-          const color = estado === "tardio" ? "#FFBE2E" : C_COLOR;
+          const color = estado === "tardio" ? "#F0A35E" : C_COLOR;
           const icon = L.divIcon({
-            html: `<div style="width:9px;height:9px;background:${color};border:2px solid #060D18;border-radius:50%;opacity:0.55;box-shadow:0 0 6px ${color};"></div>`,
+            html: `<div style="width:9px;height:9px;background:${color};border:2px solid #0E1714;border-radius:50%;opacity:0.55;box-shadow:0 0 6px ${color};"></div>`,
             className: "", iconSize: [9, 9], iconAnchor: [4, 4],
           });
           const t = hora ? new Date(hora).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" }) : "—";
@@ -119,7 +120,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
             .addTo(map)
             .bindPopup(
               `<b>Última ubicación conocida</b><br>Hora: ${t}<br>` +
-              `<span style="color:${color};font-size:10px">${estado === "tardio" ? "⚠️ Tardío" : "✓ A tiempo"} (sesión anterior)</span>`,
+              `<span style="color:${color};font-size:10px">${estado === "tardio" ? "Tardío" : "A tiempo"} (sesión anterior)</span>`,
               { className: estado === "tardio" ? "gc-popup-warn" : "gc-popup" },
             );
         });
@@ -136,9 +137,9 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
     const L = window.L;
     const { guardia_id, latitud, longitud, estado, hora } = ultimaUbicacion;
     guardiasRef.current[guardia_id]?.remove();
-    const color = estado === "tardio" ? "#FFBE2E" : C_COLOR;
+    const color = estado === "tardio" ? "#F0A35E" : C_COLOR;
     const icon = L.divIcon({
-      html: `<div style="width:10px;height:10px;background:${color};border:2px solid #060D18;border-radius:50%;box-shadow:0 0 8px ${color};"></div>`,
+      html: `<div style="width:10px;height:10px;background:${color};border:2px solid #0E1714;border-radius:50%;box-shadow:0 0 8px ${color};"></div>`,
       className: "", iconSize: [10, 10], iconAnchor: [5, 5],
     });
     const t = new Date(hora).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" });
@@ -146,7 +147,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
       .addTo(mapRef.current)
       .bindPopup(
         `<b>Guardia detectado</b><br>Entrada: ${t}<br>` +
-        `<span style="color:${color}">${estado === "tardio" ? "⚠️ Tardío" : "✓ A tiempo"}</span>`,
+        `<span style="color:${color}">${estado === "tardio" ? "Tardío" : "A tiempo"}</span>`,
         { className: estado === "tardio" ? "gc-popup-warn" : "gc-popup" },
       )
       .openPopup();
@@ -158,7 +159,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
         <div style={{
           position: "absolute", inset: 0, zIndex: 10,
           display: "flex", alignItems: "center", justifyContent: "center",
-          background: T.bgCard, borderRadius: 14, fontSize: 12, color: T.textMut,
+          background: T.bgCard, borderRadius: 8, fontSize: 12, color: T.textMut,
         }}>
           Cargando mapa...
         </div>
@@ -166,7 +167,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
       <div
         className="central-map"
         ref={containerRef}
-        style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${T.border}`, background: "#060D18" }}
+        style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }}
       />
       <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: T.textMut }}>
         <span><span style={{ color: C_COLOR }}>●</span> Instalación</span>
@@ -181,8 +182,8 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
 function GraficoDonut({ presentes = 0, tardios = 0, faltantes = 0 }) {
   const segmentos = [
     { label: "Presentes", value: presentes,  color: C_COLOR },
-    { label: "Tardíos",   value: tardios,    color: "#FFBE2E" },
-    { label: "Ausentes",  value: faltantes,  color: "#FF5270" },
+    { label: "Tardíos",   value: tardios,    color: "#F0A35E" },
+    { label: "Ausentes",  value: faltantes,  color: "#E86A2A" },
   ].filter((s) => s.value > 0);
 
   const total = segmentos.reduce((s, d) => s + d.value, 0);
@@ -214,9 +215,9 @@ function GraficoDonut({ presentes = 0, tardios = 0, faltantes = 0 }) {
     <div>
       <svg width={110} height={110} viewBox="0 0 110 110">
         {paths.map((p, i) => <path key={i} d={p.d} fill={p.color} opacity={0.9} />)}
-        <circle cx={CX} cy={CY} r={r - 2} fill="#060D18" />
-        <text x={CX} y={CY - 5} textAnchor="middle" fontSize="15" fontWeight="800" fill="#E4EAF2">{total}</text>
-        <text x={CX} y={CY + 9} textAnchor="middle" fontSize="7" fill="#4A5E78">TURNOS</text>
+        <circle cx={CX} cy={CY} r={r - 2} fill="#0E1714" />
+        <text x={CX} y={CY - 5} textAnchor="middle" fontSize="15" fontWeight="800" fill="#F3EFE6">{total}</text>
+        <text x={CX} y={CY + 9} textAnchor="middle" fontSize="7" fill="#7C8F85">TURNOS</text>
       </svg>
       <div style={{ marginTop: 6 }}>
         {segmentos.map((s) => (
@@ -250,7 +251,7 @@ function SocketBadge({ status }) {
 
 function MiniStat({ value, label, color }) {
   return (
-    <div style={{ background: T.bgCard, border: `1px solid ${color}22`, borderRadius: 10, padding: "10px 12px", textAlign: "center" }}>
+    <div style={{ background: T.bgCard, border: `1px solid ${color}22`, borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
       <div style={{ fontSize: 22, fontWeight: 800, color }}>{value ?? "—"}</div>
       <div style={{ fontSize: 10, color: T.textMut, marginTop: 2 }}>{label}</div>
     </div>
@@ -303,7 +304,7 @@ function IncidentesPanel({ token }) {
             background: filtro === f.id ? `${C_COLOR}15` : "transparent",
             color: filtro === f.id ? C_COLOR : T.textMut,
             fontSize: 12, fontWeight: filtro === f.id ? 700 : 500,
-            cursor: "pointer", fontFamily: "'Outfit', sans-serif",
+            cursor: "pointer", fontFamily: "var(--font-ui)",
           }}>
             {f.label}
           </button>
@@ -312,7 +313,7 @@ function IncidentesPanel({ token }) {
           marginLeft: "auto", padding: "6px 12px", borderRadius: 8,
           border: `1px solid ${T.border}`, background: "transparent",
           color: T.textMut, fontSize: 11, cursor: "pointer",
-          fontFamily: "'Outfit', sans-serif",
+          fontFamily: "var(--font-ui)",
         }}>
           ↻ Actualizar
         </button>
@@ -328,9 +329,9 @@ function IncidentesPanel({ token }) {
         <div style={{
           textAlign: "center", color: T.textMut, fontSize: 13,
           background: T.bgCard, border: `1px solid ${T.border}`,
-          borderRadius: 12, padding: "32px 16px",
+          borderRadius: 8, padding: "32px 16px",
         }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
+          <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}><Icon name="check" size={28} color={T.accent} /></div>
           Sin incidentes {filtro !== "todas" ? `en estado "${filtro}"` : "registrados"}
         </div>
       )}
@@ -345,7 +346,7 @@ function IncidentesPanel({ token }) {
           <div className="responsive-card" key={n.id} style={{
             background: T.bgCard, border: `1px solid ${urgColor}22`,
             borderLeft: `3px solid ${urgColor}`,
-            borderRadius: 12, padding: "12px 14px", marginBottom: 8,
+            borderRadius: 8, padding: "12px 14px", marginBottom: 8,
           }}>
             <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
               <span style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{n.tipo}</span>
@@ -368,8 +369,8 @@ function IncidentesPanel({ token }) {
             </div>
             <div style={{ fontSize: 12, color: T.textSec, marginBottom: 4 }}>{n.descripcion}</div>
             <div className="incident-meta" style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.textMut }}>
-              <span>🏢 {n.instalacion?.nombre ?? "—"}</span>
-              <span>👤 {n.usuario?.nombre ?? "—"}</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="building-2" size={13} /> {n.instalacion?.nombre ?? "—"}</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="user-round" size={13} /> {n.usuario?.nombre ?? "—"}</span>
               <span>{hora}</span>
             </div>
           </div>
@@ -475,11 +476,11 @@ function MonitoreoPanel({ token }) {
       {/* Alerta novedades escaladas */}
       {kpis?.novedadesEscaladas > 0 && (
         <div style={{
-          background: T.redGhost, border: `1px solid ${T.red}`, borderRadius: 10,
+          background: T.redGhost, border: `1px solid ${T.red}`, borderRadius: 8,
           padding: "10px 14px", marginBottom: 14, fontSize: 13, color: T.red,
           display: "flex", alignItems: "center", gap: 8,
         }}>
-          🚨 {kpis.novedadesEscaladas} incidente{kpis.novedadesEscaladas !== 1 ? "s" : ""} escalado{kpis.novedadesEscaladas !== 1 ? "s" : ""} requieren atención
+          <Icon name="triangle-alert" size={17} /> {kpis.novedadesEscaladas} incidente{kpis.novedadesEscaladas !== 1 ? "s" : ""} escalado{kpis.novedadesEscaladas !== 1 ? "s" : ""} requieren atención
         </div>
       )}
 
@@ -488,7 +489,7 @@ function MonitoreoPanel({ token }) {
         <div className="central-summary-grid" style={{ display: "grid", gap: 10, marginBottom: 20, alignItems: "start" }}>
           {/* Resumen por instalación */}
           {kpis?.resumenPorInstalacion?.length > 0 && (
-            <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 14px 10px" }}>
+            <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: "14px 14px 10px" }}>
               <div style={{ fontSize: 10, color: T.textSec, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 }}>
                 Estado por Instalación
               </div>
@@ -508,8 +509,8 @@ function MonitoreoPanel({ token }) {
                       {inst.criticidad}
                     </span>
                     {inst.novedadesActivas > 0 && (
-                      <span style={{ fontSize: 10, color: T.red, fontWeight: 700 }}>
-                        ⚠ {inst.novedadesActivas}
+                      <span style={{ fontSize: 11, color: T.alert, fontWeight: 500, fontFamily: FONT.mono, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        <Icon name="triangle-alert" size={12} /> {inst.novedadesActivas}
                       </span>
                     )}
                   </div>
@@ -518,7 +519,7 @@ function MonitoreoPanel({ token }) {
             </div>
           )}
 
-          <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 12px" }}>
+          <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: "14px 12px" }}>
             <div style={{ fontSize: 10, color: T.textSec, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 }}>
               Estado Hoy
             </div>
@@ -537,8 +538,8 @@ function MonitoreoPanel({ token }) {
 
       <div style={{ fontSize: 10, color: T.textMut, textAlign: "center", marginTop: 14 }}>
         {socketStatus === "connected"
-          ? "🔵 Sincronización automática activa"
-          : "⚪ Actualización manual requerida"}
+          ? "Sincronización automática activa"
+          : "Actualización manual requerida"}
       </div>
     </div>
   );

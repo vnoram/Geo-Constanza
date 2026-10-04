@@ -18,7 +18,7 @@ const inputStyle = {
   width: "100%", padding: "10px 12px", boxSizing: "border-box",
   background: T.bgInput, border: `1px solid ${T.border}`,
   borderRadius: 8, color: T.text, fontSize: 14, outline: "none",
-  fontFamily: "'Outfit', sans-serif",
+  fontFamily: "var(--font-ui)",
 };
 
 function Field({ label, required, children }) {
@@ -85,13 +85,13 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 100,
-      background: "rgba(6,13,24,0.88)", backdropFilter: "blur(4px)",
+      background: "rgba(14,23,20,0.88)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: 16,
     }}>
       <div style={{
         background: T.bgCard, border: `1px solid ${T.border}`,
-        borderRadius: 16, padding: 24, width: "100%", maxWidth: 480,
+        borderRadius: 8, padding: 24, width: "100%", maxWidth: 480,
         maxHeight: "90vh", overflowY: "auto",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
@@ -285,7 +285,7 @@ export function AdminUsuarios() {
         const instSup = u.instalaciones_sup ?? [];
         return (
           <div key={u.id} style={{
-            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
+            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
             padding: "12px 14px", marginBottom: 6,
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -332,7 +332,7 @@ export function AdminUsuarios() {
                   style={{
                     background: T.accentGhost, border: `1px solid ${T.accent}44`,
                     color: T.accent, fontSize: 11, fontWeight: 700, padding: "5px 10px",
-                    borderRadius: 7, cursor: "pointer", fontFamily: "'Outfit', sans-serif",
+                    borderRadius: 7, cursor: "pointer", fontFamily: "var(--font-ui)",
                   }}
                 >
                   Editar
@@ -344,7 +344,7 @@ export function AdminUsuarios() {
                     style={{
                       background: T.redGhost, border: `1px solid ${T.red}44`,
                       color: T.red, fontSize: 11, fontWeight: 700, padding: "5px 10px",
-                      borderRadius: 7, cursor: "pointer", fontFamily: "'Outfit', sans-serif",
+                      borderRadius: 7, cursor: "pointer", fontFamily: "var(--font-ui)",
                       opacity: desactivando === u.id ? 0.5 : 1,
                     }}
                   >

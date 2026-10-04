@@ -13,7 +13,7 @@ export function SupSolicitudes() {
       <SectionHeader title="Solicitudes" sub="Pendientes de aprobación" />
       {sols.map((s, i) => (
         <div className="responsive-card" key={i} style={{
-          background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
+          background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
           padding: 14, marginBottom: 8,
         }}>
           <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
