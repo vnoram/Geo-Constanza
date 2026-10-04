@@ -3,7 +3,7 @@ const { getSocketIO } = require('../socket/socketManager');
 const { ROLES } = require('../constants/roles');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 
-const { aFechaDB, sumarDias, intervaloTurno, seSolapan } = require('../utils/fechaChile');
+const { ahoraChile, aFechaDB, sumarDias, intervaloTurno, seSolapan } = require('../utils/fechaChile');
 
 const CAMPOS_EDITABLES = ['usuario_id', 'instalacion_id', 'fecha', 'hora_inicio', 'hora_fin'];
 const HORA_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -271,10 +271,9 @@ const crearPauta4x4 = async (data, creadoPor) => {
  * Solo aplica cuando el GGSS libre tiene instalacion_asignada_id en su perfil.
  */
 const listarDisponibles = async (user) => {
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-  const en60Dias = new Date(hoy);
-  en60Dias.setDate(en60Dias.getDate() + 60);
+  const fechaHoy = ahoraChile().fecha;
+  const hoy = aFechaDB(fechaHoy);
+  const en60Dias = aFechaDB(sumarDias(fechaHoy, 60));
 
   // Obtener instalación asignada del guardia
   const { prisma: db } = require('../config/database');

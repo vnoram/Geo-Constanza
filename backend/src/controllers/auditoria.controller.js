@@ -1,4 +1,5 @@
 const { prisma } = require('../config/database');
+const { inicioDiaChile, finDiaChile } = require('../utils/fechaChile');
 
 const listar = async (req, res, next) => {
   try {
@@ -9,8 +10,8 @@ const listar = async (req, res, next) => {
     if (accion) where.accion = accion;
     if (fecha_inicio || fecha_fin) {
       where.created_at = {};
-      if (fecha_inicio) where.created_at.gte = new Date(fecha_inicio);
-      if (fecha_fin) where.created_at.lte = new Date(fecha_fin);
+      if (fecha_inicio) where.created_at.gte = inicioDiaChile(fecha_inicio);
+      if (fecha_fin) where.created_at.lte = finDiaChile(fecha_fin);
     }
 
     const [registros, total] = await Promise.all([

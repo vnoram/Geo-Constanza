@@ -52,6 +52,10 @@ const instanteChile = (fechaISO, hora) => {
     : Math.max(...candidatos.map(Number)));
 };
 
+/** Límites de un día civil chileno para filtrar columnas timestamp. */
+const inicioDiaChile = (fechaISO) => instanteChile(fechaISO, '00:00');
+const finDiaChile = (fechaISO) => new Date(inicioDiaChile(sumarDias(fechaISO, 1)).getTime() - 1);
+
 const intervaloTurno = (turno) => {
   const fecha = new Date(turno.fecha).toISOString().slice(0, 10);
   return {
@@ -90,4 +94,4 @@ const turnosDeHoy = (d = new Date()) => {
 };
 
 module.exports = { ahoraChile, sumarDias, aFechaDB, esNocturno, turnosDeHoy,
-  instanteChile, intervaloTurno, seSolapan, turnoVigente };
+  instanteChile, inicioDiaChile, finDiaChile, intervaloTurno, seSolapan, turnoVigente };

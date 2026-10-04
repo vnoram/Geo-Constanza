@@ -1,7 +1,7 @@
 const { prisma } = require('../config/database');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { ROLES } = require('../constants/roles');
-const { turnosDeHoy } = require('../utils/fechaChile');
+const { ahoraChile, aFechaDB, instanteChile, turnosDeHoy } = require('../utils/fechaChile');
 
 /**
  * Dashboard principal del día.
@@ -150,14 +150,15 @@ const getDashboardHoy = async (user) => {
 
   // Métricas mensuales exclusivas para Admin
   if (user.rol === ROLES.ADMINISTRADOR) {
-    const inicioMes = new Date();
-    inicioMes.setDate(1);
-    inicioMes.setHours(0, 0, 0, 0);
+    const { fecha: hoy } = ahoraChile();
+    const inicioMesISO = `${hoy.slice(0, 7)}-01`;
+    const inicioMesTurnos = aFechaDB(inicioMesISO);
+    const inicioMesInstantes = instanteChile(inicioMesISO, '00:00');
 
     const [totalGuardias, turnosMes, asistenciasMes] = await Promise.all([
       prisma.usuario.count({ where: { rol: { in: [ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE] }, estado: 'activo' } }),
-      prisma.turno.count({ where: { fecha: { gte: inicioMes }, estado: { not: 'cancelado' } } }),
-      prisma.asistencia.count({ where: { created_at: { gte: inicioMes } } }),
+      prisma.turno.count({ where: { fecha: { gte: inicioMesTurnos }, estado: { not: 'cancelado' } } }),
+      prisma.asistencia.count({ where: { created_at: { gte: inicioMesInstantes } } }),
     ]);
 
     const coberturaMensual = turnosMes > 0

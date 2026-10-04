@@ -1,4 +1,5 @@
 const reportesService = require('../services/reportes.service');
+const { ahoraChile } = require('../utils/fechaChile');
 
 const asistencia = async (req, res, next) => {
   try {
@@ -38,8 +39,9 @@ const estadoHoy = async (req, res, next) => {
 
 const mensual = async (req, res, next) => {
   try {
-    const mes  = parseInt(req.query.mes,  10) || (new Date().getMonth() + 1);
-    const anio = parseInt(req.query.anio, 10) || new Date().getFullYear();
+    const [anioChile, mesChile] = ahoraChile().fecha.split('-').map(Number);
+    const mes  = parseInt(req.query.mes,  10) || mesChile;
+    const anio = parseInt(req.query.anio, 10) || anioChile;
     const result = await reportesService.resumenMensual(mes, anio);
     res.json(result);
   } catch (error) {

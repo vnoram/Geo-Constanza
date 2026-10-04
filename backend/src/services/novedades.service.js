@@ -11,7 +11,7 @@ const geovalidacion = require('./geovalidacion.service');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { uploadFotoToAzure, generarUrlLectura } = require('../utils/azureStorage');
 const { ROLES } = require('../constants/roles');
-const { turnosDeHoy } = require('../utils/fechaChile');
+const { inicioDiaChile, finDiaChile, turnosDeHoy } = require('../utils/fechaChile');
 
 // ============================================================================
 // CONFIGURACIONES
@@ -57,8 +57,8 @@ const listar = async (query, user) => {
 
     if (fecha_inicio || fecha_fin) {
       where.created_at = {};
-      if (fecha_inicio) where.created_at.gte = new Date(fecha_inicio);
-      if (fecha_fin) where.created_at.lte = new Date(fecha_fin);
+      if (fecha_inicio) where.created_at.gte = inicioDiaChile(fecha_inicio);
+      if (fecha_fin) where.created_at.lte = finDiaChile(fecha_fin);
     }
 
     if (user.rol === ROLES.GGSS_EN_PAUTA || user.rol === ROLES.GGSS_LIBRE) {

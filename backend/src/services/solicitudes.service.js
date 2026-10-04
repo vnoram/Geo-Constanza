@@ -2,6 +2,7 @@
 
 const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
+const { ahoraChile, aFechaDB } = require('../utils/fechaChile');
 
 const TIPOS_VALIDOS = ['vacaciones', 'dias_libres', 'turno_extra', 'traslado', 'turno'];
 
@@ -144,8 +145,7 @@ const rechazar = async (id, motivo, supervisorId) => {
  * Usado por novedades y asistencia para validar acceso.
  */
 const tieneturnoAprobadoHoy = async (usuarioId) => {
-  const hoy = new Date();
-  const fechaHoy = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()));
+  const fechaHoy = aFechaDB(ahoraChile().fecha);
 
   const solicitud = await prisma.solicitud.findFirst({
     where: {

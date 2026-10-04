@@ -1,6 +1,7 @@
 jest.mock('../../config/database', () => ({ prisma: {
   turno: { findMany: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn(), update: jest.fn() },
   asistencia: { findMany: jest.fn(), create: jest.fn(), findUniqueOrThrow: jest.fn(), update: jest.fn() },
+  solicitud: { findFirst: jest.fn() },
   $transaction: jest.fn(), $executeRaw: jest.fn(),
 } }));
 jest.mock('../../socket/socketManager', () => ({ getSocketIO: jest.fn() }));
@@ -9,6 +10,7 @@ const { prisma } = require('../../config/database');
 const { instanteChile } = require('../../utils/fechaChile');
 const turnos = require('../turnos.service');
 const asistencia = require('../asistencia.service');
+const solicitudes = require('../solicitudes.service');
 const { getDashboardHoy } = require('../dashboard.service');
 const { getSocketIO } = require('../../socket/socketManager');
 
@@ -31,6 +33,7 @@ beforeEach(() => {
   prisma.$executeRaw.mockResolvedValue(1);
   prisma.turno.findMany.mockResolvedValue([]);
   prisma.asistencia.findMany.mockResolvedValue([]);
+  prisma.solicitud.findFirst.mockResolvedValue(null);
   prisma.asistencia.create.mockImplementation(async ({ data }) => ({ id: 'nueva', ...data }));
   prisma.asistencia.update.mockImplementation(async ({ data }) => data);
   prisma.turno.create.mockImplementation(async ({ data }) => data);
@@ -104,6 +107,16 @@ test('entrada a las 22:00 Chile no acepta el turno que comienza el 4-oct', async
   jest.setSystemTime(new Date('2026-10-04T01:00:00.000Z'));
   prisma.turno.findMany.mockResolvedValue([turnoManana]);
   await expect(entrada()).rejects.toMatchObject({ statusCode: 400 });
+});
+test('solicitud aprobada consulta el 3-oct a las 22:00 Chile, no el día UTC siguiente', async () => {
+  jest.setSystemTime(new Date('2026-10-04T01:00:00.000Z'));
+  prisma.solicitud.findFirst.mockResolvedValue({ id: 'solicitud' });
+  await expect(solicitudes.tieneturnoAprobadoHoy('u')).resolves.toBe(true);
+  expect(prisma.solicitud.findFirst).toHaveBeenCalledWith({ where: {
+    usuario_id: 'u', tipo: { in: ['turno', 'turno_extra'] }, estado: 'aprobada',
+    fecha_desde: { lte: new Date('2026-10-03T00:00:00.000Z') },
+    OR: [{ fecha_hasta: null }, { fecha_hasta: { gte: new Date('2026-10-03T00:00:00.000Z') } }],
+  } });
 });
 test('sin asistencia prefiere el turno que empezó antes y advierte el solapamiento', async () => {
   prisma.turno.findMany.mockResolvedValue([b, a]);

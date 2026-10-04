@@ -1,4 +1,4 @@
-const { ahoraChile, instanteChile, intervaloTurno, seSolapan, turnoVigente, turnosDeHoy } = require('../fechaChile');
+const { ahoraChile, instanteChile, inicioDiaChile, finDiaChile, intervaloTurno, seSolapan, turnoVigente, turnosDeHoy } = require('../fechaChile');
 
 const turno = (fecha, hora_inicio, hora_fin) => ({ fecha, hora_inicio, hora_fin });
 
@@ -62,4 +62,9 @@ describe('turno nocturno del 3 de octubre en hora Chile', () => {
   ])('%s %s respeta tolerancia y fin exclusivo', (fecha, hora, esperado) => {
     expect(turnoVigente(nocturno, instanteChile(fecha, hora), 15)).toBe(esperado);
   });
+});
+
+test('límites diarios siguen el día civil de Chile aunque el proceso esté en UTC', () => {
+  expect(inicioDiaChile('2026-10-03').toISOString()).toBe('2026-10-03T03:00:00.000Z');
+  expect(finDiaChile('2026-10-03').toISOString()).toBe('2026-10-04T02:59:59.999Z');
 });

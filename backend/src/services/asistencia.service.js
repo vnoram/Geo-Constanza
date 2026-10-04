@@ -3,7 +3,7 @@ const { getSocketIO } = require('../socket/socketManager');
 const geovalidacion = require('./geovalidacion.service');
 const { ROLES } = require('../constants/roles');
 
-const { ahoraChile, sumarDias, aFechaDB, intervaloTurno, turnoVigente, instanteChile } = require('../utils/fechaChile');
+const { ahoraChile, sumarDias, aFechaDB, inicioDiaChile, finDiaChile, intervaloTurno, turnoVigente, instanteChile } = require('../utils/fechaChile');
 
 const TOLERANCIA_MINUTOS = 15;
 const ATRASO_MINUTOS = 10;
@@ -294,8 +294,8 @@ const obtenerHistorial = async (usuarioId, query) => {
 
   if (fecha_inicio || fecha_fin) {
     where.created_at = {};
-    if (fecha_inicio) where.created_at.gte = new Date(fecha_inicio);
-    if (fecha_fin) where.created_at.lte = new Date(fecha_fin);
+    if (fecha_inicio) where.created_at.gte = inicioDiaChile(fecha_inicio);
+    if (fecha_fin) where.created_at.lte = finDiaChile(fecha_fin);
   }
 
   const [data, total] = await Promise.all([
