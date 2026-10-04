@@ -1,9 +1,10 @@
 import { T } from "../../theme/theme";
 
-export function Btn({ children, onClick, loading, variant = "primary", disabled, full }) {
+export function Btn({ children, onClick, loading, variant = "primary", disabled, full, className = "" }) {
   const isPrimary = variant === "primary";
   return (
     <button
+      className={`touch-target ${className}`.trim()}
       onClick={onClick}
       disabled={loading || disabled}
       style={{

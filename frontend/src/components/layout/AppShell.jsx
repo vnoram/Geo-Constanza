@@ -99,7 +99,7 @@ export function AppShell({ user, onLogout }) {
         position: "sticky", top: 0, zIndex: 50,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button className="app-shell__menu-button" onClick={() => setSidebarOpen(!sidebarOpen)} style={{
+          <button className="app-shell__menu-button touch-target" onClick={() => setSidebarOpen(!sidebarOpen)} style={{
             background: "none", border: "none", color: T.textSec,
             fontSize: 20, cursor: "pointer", padding: 4,
           }}>☰</button>
@@ -129,7 +129,7 @@ export function AppShell({ user, onLogout }) {
         WebkitOverflowScrolling: "touch",
       }}>
         {role.sections.map(s => (
-          <button key={s.id} onClick={() => setActiveSection(s.id)} style={{
+          <button className="touch-target" key={s.id} onClick={() => setActiveSection(s.id)} style={{
             background: activeSection === s.id ? `${role.color}15` : "transparent",
             border: `1px solid ${activeSection === s.id ? `${role.color}33` : "transparent"}`,
             borderRadius: 10, padding: "7px 14px",
@@ -180,7 +180,7 @@ export function AppShell({ user, onLogout }) {
               Navegación
             </div>
             {role.sections.map(s => (
-              <button key={s.id} onClick={() => { setActiveSection(s.id); setSidebarOpen(false); }} style={{
+              <button className="touch-target" key={s.id} onClick={() => { setActiveSection(s.id); setSidebarOpen(false); }} style={{
                 display: "flex", alignItems: "center", gap: 10,
                 padding: "10px 12px", borderRadius: 10, border: "none",
                 background: activeSection === s.id ? `${role.color}15` : "transparent",
@@ -217,7 +217,7 @@ export function AppShell({ user, onLogout }) {
                   {new Date().toLocaleTimeString("es-CL", { timeZone: "America/Santiago" })}
                 </div>
               </div>
-              <button onClick={onLogout} style={{
+              <button className="touch-target" onClick={onLogout} style={{
                 width: "100%", padding: "10px 16px",
                 background: T.redGhost, border: `1px solid ${T.red}33`,
                 borderRadius: 10, color: T.red, fontSize: 13,
