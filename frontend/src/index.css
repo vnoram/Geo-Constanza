@@ -571,6 +571,8 @@ button, input, select, textarea { font-family: inherit; }
   background: var(--gc-bg);
 }
 .login__brand {
+  position: relative;
+  overflow: hidden;
   display: none;
   flex-direction: column;
   justify-content: space-between;
@@ -653,3 +655,25 @@ button, input, select, textarea { font-family: inherit; }
 span[style*='text-transform: uppercase'] { display: inline-block; }
 .sentence { display: inline-block; }
 .sentence::first-letter { text-transform: uppercase; }
+
+/* ─── LOGIN: ilustración en el panel de marca ───
+   object-fit: cover llena el panel y recorta lo que sobra; object-position
+   decide qué parte se conserva. El velo es un color liso (sin degradado) que
+   acerca los azules de la imagen al verde de la paleta y mantiene legible el texto. */
+.login__art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 45%;
+}
+.login__art-tint {
+  position: absolute;
+  inset: 0;
+  background: rgba(14, 23, 20, 0.5);
+}
+.login__brand > :not(.login__art):not(.login__art-tint) {
+  position: relative;
+  z-index: 1;
+}
