@@ -7,6 +7,7 @@ import { Wordmark } from "../../components/ui/Wordmark";
 import { DemoPanel } from "../../components/auth/DemoPanel";
 import { TwoFactorStep } from "../../components/auth/TwoFactorStep";
 import { useLoginForm } from "../../hooks/useLoginForm";
+import arteLogin from "../../assets/login-ilustracion.webp";
 
 export function LoginScreen({ onLogin }) {
   const [showDemo, setShowDemo] = useState(false);
@@ -22,6 +23,9 @@ export function LoginScreen({ onLogin }) {
     <div className="login">
       {/* Marca: panel lateral callado, solo en pantallas anchas */}
       <aside className="login__brand">
+        {/* Ilustración decorativa: la imagen se recorta (cover) para llenar el panel */}
+        <img className="login__art" src={arteLogin} alt="" aria-hidden="true" />
+        <div className="login__art-tint" aria-hidden="true" />
         <Wordmark size={18} markSize={28} />
         <div>
           <p style={{ margin: 0, fontSize: 14, color: T.textSec, maxWidth: 280 }}>
