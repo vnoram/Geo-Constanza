@@ -1,4 +1,4 @@
-import { T } from "../../theme/theme";
+import { T, FONT } from "../../theme/theme";
 
 const DEMO_USERS = [
   { rut: "11111111-1", rol: "CENTRAL (Monitoreo)", name: "Op. Central"    },
@@ -11,30 +11,28 @@ const DEMO_USERS = [
 export function DemoPanel({ onSelect }) {
   return (
     <div style={{
-      marginTop: 12, background: T.accentGhost, border: `1px solid ${T.accent}22`,
-      borderRadius: 12, padding: 14, fontSize: 11, fontFamily: "'JetBrains Mono', monospace",
+      marginTop: 10, border: `1px solid ${T.border}`, borderRadius: T.radius,
+      background: T.bgInput, fontFamily: FONT.mono, fontSize: 12,
     }}>
-      <div style={{
-        color: T.textSec, marginBottom: 8, fontFamily: "'Outfit', sans-serif",
-        fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5,
-      }}>
-        Contraseña para todos: geo2026
+      <div style={{ padding: "8px 12px", color: T.textMut, borderBottom: `1px solid ${T.border}`, fontFamily: FONT.ui, fontSize: 11 }}>
+        Contraseña común: geo2026
       </div>
       {DEMO_USERS.map((d, i) => (
-        <div
+        <button
           key={d.rut}
+          type="button"
           onClick={() => onSelect(d.rut, "geo2026")}
+          className="demo-row"
           style={{
-            display: "flex", justifyContent: "space-between", alignItems: "center",
-            padding: "6px 8px", borderRadius: 6, cursor: "pointer",
-            marginBottom: i < DEMO_USERS.length - 1 ? 4 : 0, transition: "background 0.15s",
+            display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
+            width: "100%", minHeight: 38, padding: "0 12px", background: "transparent", border: "none",
+            borderBottom: i < DEMO_USERS.length - 1 ? `1px solid ${T.border}` : "none",
+            color: T.text, cursor: "pointer", textAlign: "left", fontFamily: FONT.mono, fontSize: 12,
           }}
-          onMouseEnter={e => e.currentTarget.style.background = T.accentGhost}
-          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
         >
-          <span style={{ color: T.accent }}>{d.rut}</span>
-          <span style={{ color: T.textMut, fontSize: 10 }}>{d.rol}</span>
-        </div>
+          <span>{d.rut}</span>
+          <span style={{ color: T.textSec, fontFamily: FONT.ui, fontSize: 11 }}>{d.rol}</span>
+        </button>
       ))}
     </div>
   );

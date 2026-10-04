@@ -1,21 +1,18 @@
-import { T, ROLES } from "../../theme/theme";
+import { T, FONT, ROLES } from "../../theme/theme";
 import { Input } from "../ui/Input";
 import { Btn } from "../ui/Btn";
+import { Icon } from "../ui/Icon";
 
 export function TwoFactorStep({ code2fa, setCode2fa, error, loading, pendingUser, onVerify, onBack }) {
   return (
-    <div style={{
-      background: `${T.bgCard}CC`, backdropFilter: "blur(20px)",
-      border: `1px solid ${T.border}`, borderRadius: 20, padding: 28,
-    }}>
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <div style={{ fontSize: 40, marginBottom: 8 }}>🔐</div>
-        <div style={{ fontSize: 14, color: T.textSec }}>
+    <div>
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 14, color: T.text }}>
           Ingresa el código de tu app authenticator
         </div>
-        <div style={{ fontSize: 11, color: T.textMut, marginTop: 4 }}>
+        <div style={{ fontSize: 12, color: T.textSec, marginTop: 4 }}>
           Requerido para{" "}
-          <span style={{ color: ROLES[pendingUser?.user?.rol]?.color }}>
+          <span style={{ color: T.focusText }}>
             {ROLES[pendingUser?.user?.rol]?.label}
           </span>
         </div>
@@ -23,7 +20,8 @@ export function TwoFactorStep({ code2fa, setCode2fa, error, loading, pendingUser
 
       <Input
         label="Código 2FA"
-        icon="🔑"
+        icon="key-round"
+        mono
         value={code2fa}
         onChange={v => setCode2fa(v.replace(/\D/g, ""))}
         placeholder="123456"
@@ -31,25 +29,27 @@ export function TwoFactorStep({ code2fa, setCode2fa, error, loading, pendingUser
       />
 
       {error && (
-        <div style={{
-          background: T.redGhost, borderRadius: 10, padding: "10px 14px",
-          marginBottom: 16, fontSize: 12, color: T.red,
+        <div role="alert" style={{
+          display: "flex", gap: 10, alignItems: "flex-start",
+          background: T.alertGhost, border: `1px solid ${T.alert}`, borderRadius: T.radius,
+          padding: "10px 12px", marginBottom: 16, fontSize: 13, color: T.text,
         }}>
-          ⚠️ {error}
+          <Icon name="circle-alert" size={17} color={T.alert} style={{ marginTop: 1 }} />
+          <div>{error}</div>
         </div>
       )}
 
       <div style={{ display: "flex", gap: 10 }}>
-        <Btn variant="ghost" onClick={onBack}>← Volver</Btn>
+        <Btn variant="outline" onClick={onBack}>Volver</Btn>
         <Btn onClick={onVerify} loading={loading} full>Verificar</Btn>
       </div>
 
       <div style={{
-        marginTop: 16, background: T.yellowGhost, borderRadius: 10,
-        padding: 12, fontSize: 11, color: T.yellow,
+        marginTop: 16, border: `1px solid ${T.border}`, borderRadius: T.radius,
+        padding: "10px 12px", fontSize: 12, color: T.textSec, display: "flex", gap: 8, alignItems: "center",
       }}>
-        💡 Demo: usa el código{" "}
-        <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>123456</span>
+        <Icon name="info" size={15} />
+        <span>Demo: usa el código <span style={{ fontFamily: FONT.mono, color: T.text }}>123456</span></span>
       </div>
     </div>
   );
