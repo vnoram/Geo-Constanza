@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { T, ROLES } from "../../theme/theme";
 import { ROLES as ROL } from "../../constants/roles";
 import { Placeholder } from "../ui/Placeholder";
@@ -78,20 +78,20 @@ function RoleContent({ user, rol, section }) {
   return <Placeholder section={section} />;
 }
 
-export function AppShell({ user, token, onLogout }) {
+export function AppShell({ user, onLogout }) {
   const role = ROLES[user.rol];
   const [activeSection, setActiveSection] = useState(role.sections[0].id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
 
   return (
-    <div style={{
+    <div className="app-shell" style={{
       minHeight: "100vh", background: T.bg,
       fontFamily: "'Outfit', sans-serif", color: T.text,
       display: "flex", flexDirection: "column",
     }}>
       {/* ─── TOP BAR ─── */}
-      <header style={{
+      <header className="app-shell__header" style={{
         background: `${T.bgCard}EE`, backdropFilter: "blur(12px)",
         borderBottom: `1px solid ${T.border}`,
         padding: "0 16px", height: 56, display: "flex",
@@ -99,7 +99,7 @@ export function AppShell({ user, token, onLogout }) {
         position: "sticky", top: 0, zIndex: 50,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{
+          <button className="app-shell__menu-button" onClick={() => setSidebarOpen(!sidebarOpen)} style={{
             background: "none", border: "none", color: T.textSec,
             fontSize: 20, cursor: "pointer", padding: 4,
           }}>☰</button>
@@ -122,7 +122,7 @@ export function AppShell({ user, token, onLogout }) {
       </header>
 
       {/* ─── NAV TABS ─── */}
-      <nav style={{
+      <nav className="app-shell__tabs" style={{
         display: "flex", gap: 2, padding: "8px 10px",
         overflowX: "auto", background: T.bgCard,
         borderBottom: `1px solid ${T.border}`,
@@ -152,17 +152,12 @@ export function AppShell({ user, token, onLogout }) {
         ))}
       </nav>
 
-      {/* ─── SIDEBAR OVERLAY ─── */}
-      {sidebarOpen && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex" }}>
-          <div onClick={() => setSidebarOpen(false)} style={{
-            position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)",
-          }} />
-          <div style={{
-            position: "relative", width: 280, background: T.bgCard,
-            borderRight: `1px solid ${T.border}`, padding: 20,
-            display: "flex", flexDirection: "column", height: "100%",
-            overflowY: "auto",
+      <div className="app-shell__body">
+        {/* ─── SIDEBAR: drawer móvil y navegación fija en escritorio ─── */}
+        <div className={`app-shell__sidebar-layer${sidebarOpen ? " is-open" : ""}`}>
+          <div className="app-shell__sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+          <aside className="app-shell__sidebar" style={{
+            background: T.bgCard, borderRight: `1px solid ${T.border}`,
           }}>
             <div style={{
               background: `${role.color}0D`, border: `1px solid ${role.color}22`,
@@ -232,14 +227,18 @@ export function AppShell({ user, token, onLogout }) {
                 Cerrar Sesión
               </button>
             </div>
-          </div>
+          </aside>
         </div>
-      )}
 
-      {/* ─── MAIN CONTENT ─── */}
-      <main style={{ flex: 1, padding: 16, maxWidth: 540, margin: "0 auto", width: "100%" }}>
-        <RoleContent user={user} rol={user.rol} section={activeSection} />
-      </main>
+        {/* ─── MAIN CONTENT ─── */}
+        <main className={`app-shell__main ${
+          user.rol === ROL.GGSS_EN_PAUTA || user.rol === ROL.GGSS_LIBRE
+            ? "app-shell__main--guardia"
+            : "app-shell__main--operativo"
+        }`}>
+          <RoleContent user={user} rol={user.rol} section={activeSection} />
+        </main>
+      </div>
     </div>
   );
 }

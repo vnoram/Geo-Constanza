@@ -52,18 +52,198 @@
 
 body {
   margin: 0;
+  min-width: 320px;
+  overflow-x: clip;
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
+  width: 100%;
   min-height: 100svh;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+/* ─── BASE RESPONSIVA REUTILIZABLE ─── */
+.responsive-container {
+  width: min(100%, 1200px);
+  margin-inline: auto;
+  min-width: 0;
+}
+
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: clamp(10px, 1.5vw, 18px);
+  min-width: 0;
+}
+
+.responsive-grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+}
+
+.table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll > table {
+  min-width: 680px;
+}
+
+.fluid-title {
+  font-size: clamp(1.25rem, 1rem + 1.2vw, 2rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.responsive-modal {
+  width: min(calc(100vw - 32px), 720px);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ─── APP SHELL ─── */
+.app-shell {
+  width: 100%;
+  min-width: 0;
+}
+
+.app-shell__header {
+  padding-left: max(16px, env(safe-area-inset-left)) !important;
+  padding-right: max(16px, env(safe-area-inset-right)) !important;
+}
+
+.app-shell__tabs {
+  padding-left: max(10px, env(safe-area-inset-left)) !important;
+  padding-right: max(10px, env(safe-area-inset-right)) !important;
+  scrollbar-width: thin;
+}
+
+.app-shell__body {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+.app-shell__sidebar-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+}
+
+.app-shell__sidebar-layer.is-open {
+  display: flex;
+}
+
+.app-shell__sidebar-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.app-shell__sidebar {
+  position: relative;
+  width: min(280px, calc(100vw - 40px));
+  height: 100dvh;
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.app-shell__main {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+  padding: clamp(12px, 2vw, 24px) max(clamp(12px, 2vw, 24px), env(safe-area-inset-right));
+  padding-left: max(clamp(12px, 2vw, 24px), env(safe-area-inset-left));
+}
+
+.app-shell__main--guardia {
+  max-width: 640px;
+}
+
+.app-shell__main--operativo {
+  max-width: 1200px;
+}
+
+@media (max-width: 639px) {
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
+
+  .responsive-grid,
+  .responsive-grid--compact {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell__menu-button,
+  .app-shell__tabs {
+    display: none !important;
+  }
+
+  .app-shell__sidebar-layer,
+  .app-shell__sidebar-layer.is-open {
+    position: sticky;
+    inset: auto;
+    top: 56px;
+    z-index: 20;
+    display: flex;
+    flex: 0 0 280px;
+    width: 280px;
+    height: calc(100dvh - 56px);
+  }
+
+  .app-shell__sidebar-backdrop {
+    display: none;
+  }
+
+  .app-shell__sidebar {
+    width: 280px;
+    height: calc(100dvh - 56px);
+    padding-top: 20px;
+  }
+
+  .app-shell__main--guardia {
+    max-width: 640px;
+  }
+
+  .app-shell__main--operativo {
+    max-width: 1200px;
+  }
 }
 
 h1,
