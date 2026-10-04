@@ -381,7 +381,7 @@ export function AdminPanel() {
 
       {/* ── Gráficos de Gestión ── */}
       <SubHeader title="Gráficos de Gestión" />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, marginBottom: 20, alignItems: "start" }}>
+      <div className="admin-charts-row" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, marginBottom: 20, alignItems: "start" }}>
         {/* Barras: novedades últimos 7 días */}
         <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 14px 10px" }}>
           <div style={{ fontSize: 10, color: T.textSec, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 }}>

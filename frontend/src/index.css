@@ -551,3 +551,10 @@ code {
   filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%) !important;
 }
 
+
+/* ─── PANEL: gráficos lado a lado, apilados en pantallas muy angostas ─── */
+@media (max-width: 400px) {
+  .admin-charts-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
