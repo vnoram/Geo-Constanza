@@ -242,18 +242,18 @@ function TablaPreview({ datos, tipo }) {
           <tbody>
             {datos.slice(0, 50).map((a, i) => (
               <tr key={i} style={{ borderBottom: `1px solid ${T.border}22` }}>
-                <td style={tdStyle}>{new Date(a.hora_entrada).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE })}</td>
-                <td style={tdStyle}>{a.usuario?.rut || "—"}</td>
+                <td style={{ ...tdStyle, ...tdNoWrap, minWidth: 82 }}>{new Date(a.hora_entrada).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE })}</td>
+                <td style={{ ...tdStyle, ...tdNoWrap, minWidth: 96 }}>{a.usuario?.rut || "—"}</td>
                 <td style={tdStyle}>{a.usuario?.nombre || "—"}</td>
                 <td style={tdStyle}>{a.instalacion?.nombre || "—"}</td>
-                <td style={tdStyle}>{new Date(a.hora_entrada).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_CHILE })}</td>
-                <td style={tdStyle}>{a.hora_salida ? new Date(a.hora_salida).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_CHILE }) : <span style={{ color: T.accent, fontSize: 10 }}>Activo</span>}</td>
-                <td style={tdStyle}>
+                <td style={{ ...tdStyle, ...tdNoWrap, minWidth: 74 }}>{new Date(a.hora_entrada).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_CHILE })}</td>
+                <td style={{ ...tdStyle, ...tdNoWrap, minWidth: 74 }}>{a.hora_salida ? new Date(a.hora_salida).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_CHILE }) : <span style={{ color: T.accent, fontSize: 10 }}>Activo</span>}</td>
+                <td style={{ ...tdStyle, ...tdNoWrap, minWidth: 68 }}>
                   <span style={{ color: a.estado === "tardio" ? T.yellow : T.accent, fontWeight: 700, fontSize: 10 }}>
                     {a.estado === "tardio" ? "Tardío" : "Normal"}
                   </span>
                 </td>
-                <td style={tdStyle}>{a.minutos_retraso > 0 ? `${a.minutos_retraso} min` : "—"}</td>
+                <td style={{ ...tdStyle, ...tdNoWrap, minWidth: 64 }}>{a.minutos_retraso > 0 ? `${a.minutos_retraso} min` : "—"}</td>
               </tr>
             ))}
           </tbody>
@@ -304,13 +304,13 @@ function TablaPreview({ datos, tipo }) {
             const u = URGENCIA[n.urgencia] || { label: n.urgencia, color: T.textMut };
             return (
               <tr key={i} style={{ borderBottom: `1px solid ${T.border}22` }}>
-                <td style={tdStyle}>{new Date(n.created_at).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE })}</td>
+                <td style={{ ...tdStyle, ...tdNoWrap, minWidth: 82 }}>{new Date(n.created_at).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE })}</td>
                 <td style={tdStyle}>{n.tipo || "—"}</td>
-                <td style={tdStyle}><span style={{ color: u.color, fontWeight: 700, fontSize: 10 }}>{u.label}</span></td>
+                <td style={{ ...tdStyle, ...tdNoWrap, minWidth: 72 }}><span style={{ color: u.color, fontWeight: 700, fontSize: 10 }}>{u.label}</span></td>
                 <td style={{ ...tdStyle, maxWidth: 180 }}>{n.descripcion?.substring(0, 60)}{n.descripcion?.length > 60 ? "…" : ""}</td>
                 <td style={tdStyle}>{n.usuario?.nombre || "—"}</td>
                 <td style={tdStyle}>{n.instalacion?.nombre || "—"}</td>
-                <td style={tdStyle}>
+                <td style={{ ...tdStyle, ...tdNoWrap, minWidth: 72 }}>
                   <span style={{ fontSize: 10, color: n.estado === "resuelta" ? T.accent : n.estado === "escalada" ? T.red : T.yellow, fontWeight: 700 }}>
                     {n.estado === "resuelta" ? "Resuelta" : n.estado === "escalada" ? "Escalada" : "Abierta"}
                   </span>
@@ -340,6 +340,7 @@ function CampoReporte({ etiqueta, children }) {
 }
 
 const tdStyle = { padding: "7px 10px", color: T.text, verticalAlign: "middle" };
+const tdNoWrap = { whiteSpace: "nowrap" };
 
 // ─── SELECTOR GENÉRICO ────────────────────────────────────────────
 function Select({ label, value, onChange, options, placeholder }) {
