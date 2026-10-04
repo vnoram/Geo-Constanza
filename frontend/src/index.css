@@ -164,6 +164,115 @@ canvas {
   flex: 0 1 auto;
 }
 
+.operations-screen,
+.responsive-card,
+.responsive-list-row,
+.responsive-list-row__main {
+  min-width: 0;
+}
+
+.operations-screen {
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.metrics-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+}
+
+.metrics-grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+}
+
+.form-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.responsive-list-row,
+.action-wrap,
+.filter-bar,
+.incident-meta {
+  flex-wrap: wrap;
+}
+
+.responsive-list-row__main {
+  overflow-wrap: anywhere;
+}
+
+.filter-control {
+  min-width: min(100%, 220px);
+}
+
+.filter-bar__end {
+  margin-left: auto;
+}
+
+.central-summary-grid {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.central-map {
+  height: clamp(240px, 38dvh, 420px);
+  min-height: 240px;
+}
+
+.responsive-modal-overlay {
+  overflow-y: auto;
+  padding-top: max(12px, env(safe-area-inset-top)) !important;
+  padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+}
+
+.responsive-modal {
+  max-width: min(560px, calc(100vw - 24px)) !important;
+  max-height: calc(100dvh - 24px) !important;
+  overflow-y: auto;
+}
+
+.report-cards {
+  display: none;
+}
+
+.report-card {
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #0a1628;
+}
+
+.report-card__field {
+  display: grid;
+  grid-template-columns: minmax(82px, 0.38fr) minmax(0, 1fr);
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-card__field:last-child {
+  border-bottom: 0;
+}
+
+.report-card__field dt,
+.report-card__field dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.report-card__field dt {
+  color: #4a5e78;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+.report-card__field dd {
+  color: var(--text);
+  font-size: 12px;
+}
+
 /* ─── APP SHELL ─── */
 .app-shell {
   width: 100%;
@@ -292,6 +401,60 @@ canvas {
 
   .guard-modal-actions > .touch-target {
     width: 100% !important;
+  }
+
+  .metrics-grid,
+  .metrics-grid--compact,
+  .form-grid-2,
+  .central-summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .responsive-list-row {
+    align-items: flex-start !important;
+  }
+
+  .filter-bar > *,
+  .filter-control {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .filter-bar__end {
+    margin-left: 0 !important;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .modal-actions > .touch-target,
+  .action-wrap > .touch-target {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .responsive-modal-overlay {
+    align-items: flex-start !important;
+  }
+
+  .responsive-modal {
+    padding: 18px !important;
+  }
+
+  .incident-meta {
+    flex-direction: column;
+    gap: 4px !important;
+  }
+
+  .report-table {
+    display: none;
+  }
+
+  .report-cards {
+    display: grid;
+    gap: 10px;
+    padding: 10px;
   }
 }
 

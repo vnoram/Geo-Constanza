@@ -98,26 +98,30 @@ function ModalEditarTurno({ turno, turnos, guardias, instalaciones, inputStyle, 
 
   return (
     <div
+      className="responsive-modal-overlay"
       style={{
         position: "fixed", inset: 0, background: "rgba(6,13,24,0.88)", backdropFilter: "blur(6px)",
         display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16,
       }}
     >
       <div
+        className="responsive-modal"
         style={{
           background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 16, padding: 22,
           width: "100%", maxWidth: 440, maxHeight: "90vh", overflowY: "auto",
           boxShadow: "0 16px 40px rgba(0,0,0,0.6)",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div>
+        <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div className="responsive-list-row__main">
             <div style={{ fontWeight: 800, fontSize: 16, color: T.text }}>Editar Turno</div>
             <div style={{ fontSize: 11, color: T.textMut, marginTop: 2 }}>
               {turno.usuario?.nombre} · {formatearFecha(fechaDeTurno(turno))}
             </div>
           </div>
           <button
+            className="touch-target"
+            aria-label="Cerrar"
             onClick={onClose}
             style={{ background: "none", border: "none", color: T.textMut, fontSize: 18, cursor: "pointer" }}
           >
@@ -126,7 +130,7 @@ function ModalEditarTurno({ turno, turnos, guardias, instalaciones, inputStyle, 
         </div>
 
         <div style={etiquetaStyle}>GUARDIA *</div>
-        <select style={inputStyle} value={form.usuario_id} onChange={set("usuario_id")}>
+        <select className="touch-target" style={inputStyle} value={form.usuario_id} onChange={set("usuario_id")}>
           {!guardias.some((g) => g.id === turno.usuario_id) && (
             <option value={turno.usuario_id}>{turno.usuario?.nombre || "Guardia actual"}</option>
           )}
@@ -138,7 +142,7 @@ function ModalEditarTurno({ turno, turnos, guardias, instalaciones, inputStyle, 
         </select>
 
         <div style={etiquetaStyle}>INSTALACIÓN *</div>
-        <select style={inputStyle} value={form.instalacion_id} onChange={set("instalacion_id")}>
+        <select className="touch-target" style={inputStyle} value={form.instalacion_id} onChange={set("instalacion_id")}>
           {!instalaciones.some((i) => i.id === turno.instalacion_id) && (
             <option value={turno.instalacion_id}>{turno.instalacion?.nombre || "Instalación actual"}</option>
           )}
@@ -150,16 +154,16 @@ function ModalEditarTurno({ turno, turnos, guardias, instalaciones, inputStyle, 
         </select>
 
         <div style={etiquetaStyle}>FECHA DE INICIO *</div>
-        <input type="date" style={inputStyle} value={form.fecha} onChange={set("fecha")} />
+        <input className="touch-target" type="date" style={inputStyle} value={form.fecha} onChange={set("fecha")} />
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div className="form-grid-2" style={{ display: "grid", gap: 10 }}>
           <div>
             <div style={etiquetaStyle}>HORA INICIO</div>
-            <input type="time" style={inputStyle} value={form.hora_inicio} onChange={set("hora_inicio")} />
+            <input className="touch-target" type="time" style={inputStyle} value={form.hora_inicio} onChange={set("hora_inicio")} />
           </div>
           <div>
             <div style={etiquetaStyle}>HORA FIN</div>
-            <input type="time" style={inputStyle} value={form.hora_fin} onChange={set("hora_fin")} />
+            <input className="touch-target" type="time" style={inputStyle} value={form.hora_fin} onChange={set("hora_fin")} />
           </div>
         </div>
 
@@ -174,7 +178,7 @@ function ModalEditarTurno({ turno, turnos, guardias, instalaciones, inputStyle, 
           </div>
         )}
 
-        <div style={{ display: "flex", gap: 10 }}>
+        <div className="action-wrap modal-actions" style={{ display: "flex", gap: 10 }}>
           <Btn variant="outline" onClick={onClose} disabled={guardando}>Cancelar</Btn>
           <Btn full onClick={guardar} loading={guardando}>Guardar Cambios</Btn>
         </div>
@@ -306,7 +310,7 @@ export function SupGuardias() {
   };
 
   return (
-    <div>
+    <div className="operations-screen">
       <SectionHeader
         title="Guardias"
         sub="Personal asignado a tus instalaciones"
@@ -327,6 +331,7 @@ export function SupGuardias() {
 
           <div style={etiquetaStyle}>GUARDIA *</div>
           <select
+            className="touch-target"
             style={inputStyle}
             value={form.usuario_id}
             onChange={(e) => setForm((f) => ({ ...f, usuario_id: e.target.value }))}
@@ -341,6 +346,7 @@ export function SupGuardias() {
 
           <div style={etiquetaStyle}>INSTALACIÓN *</div>
           <select
+            className="touch-target"
             style={inputStyle}
             value={form.instalacion_id}
             onChange={(e) => setForm((f) => ({ ...f, instalacion_id: e.target.value }))}
@@ -355,16 +361,18 @@ export function SupGuardias() {
 
           <div style={etiquetaStyle}>FECHA DE INICIO *</div>
           <input
+            className="touch-target"
             type="date"
             style={inputStyle}
             value={form.fecha}
             onChange={(e) => setForm((f) => ({ ...f, fecha: e.target.value }))}
           />
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div className="form-grid-2" style={{ display: "grid", gap: 10 }}>
             <div>
               <div style={etiquetaStyle}>HORA INICIO</div>
               <input
+                className="touch-target"
                 type="time"
                 style={inputStyle}
                 value={form.hora_inicio}
@@ -374,6 +382,7 @@ export function SupGuardias() {
             <div>
               <div style={etiquetaStyle}>HORA FIN</div>
               <input
+                className="touch-target"
                 type="time"
                 style={inputStyle}
                 value={form.hora_fin}
@@ -405,9 +414,10 @@ export function SupGuardias() {
       )}
 
       {/* ── Próximos turnos ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, margin: "4px 0 10px" }}>
+      <div className="filter-bar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, margin: "4px 0 10px" }}>
         <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>Próximos turnos</div>
         <select
+          className="touch-target filter-control"
           value={filtroGuardia}
           onChange={(e) => setFiltroGuardia(e.target.value)}
           style={{ ...inputStyle, width: "auto", maxWidth: 220, marginBottom: 0, padding: "6px 10px", fontSize: 12 }}
@@ -442,6 +452,7 @@ export function SupGuardias() {
             </div>
             {lista.map((t) => (
               <div
+                className="responsive-list-row"
                 key={t.id}
                 style={{
                   background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
@@ -461,6 +472,7 @@ export function SupGuardias() {
                 <Badge color={ESTADO_COLOR[t.estado] || "accent"}>{t.estado}</Badge>
                 {t.estado === "programado" && (
                   <button
+                    className="touch-target"
                     onClick={() => setTurnoEditando(t)}
                     style={{
                       background: "rgba(56, 189, 248, 0.1)", border: "1px solid rgba(56, 189, 248, 0.3)",
@@ -490,13 +502,14 @@ export function SupGuardias() {
       ) : (
         guardias.map((g, i) => (
           <div
+            className="responsive-list-row"
             key={g.id || i}
             style={{
               background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
               padding: 12, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center",
             }}
           >
-            <div>
+            <div className="responsive-list-row__main">
               <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{g.nombre}</div>
               <div style={{ fontSize: 11, color: T.textMut }}>
                 GGSS {g.rol === ROLES.GGSS_EN_PAUTA ? "Pauta" : "Libre"} {g.rut ? `· ${g.rut}` : ""}

@@ -40,19 +40,19 @@ function ResolverModal({ novedad, onClose, onSuccess }) {
   };
 
   return (
-    <div style={{
+    <div className="responsive-modal-overlay" style={{
       position: "fixed", inset: 0, zIndex: 100,
       background: "rgba(6,13,24,0.85)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: 16,
     }}>
-      <div style={{
+      <div className="responsive-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`,
         borderRadius: 16, padding: 24, width: "100%", maxWidth: 400,
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <span style={{ fontWeight: 700, fontSize: 15, color: T.text }}>Resolver Novedad</span>
-          <button onClick={onClose} style={{
+          <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{
             background: "none", border: "none", color: T.textMut, fontSize: 20, cursor: "pointer",
           }}>✕</button>
         </div>
@@ -66,6 +66,7 @@ function ResolverModal({ novedad, onClose, onSuccess }) {
               Comentario de cierre (opcional)
             </label>
             <textarea
+              className="touch-target"
               value={comentario}
               onChange={e => setComentario(e.target.value)}
               placeholder="Describe cómo se resolvió..."
@@ -87,7 +88,7 @@ function ResolverModal({ novedad, onClose, onSuccess }) {
               {error}
             </div>
           )}
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <div className="action-wrap modal-actions" style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <Btn variant="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn>
             <Btn loading={loading}>Marcar como resuelta</Btn>
           </div>
@@ -115,6 +116,7 @@ function FotoNovedad({ url }) {
   return (
     <>
       <button
+        className="touch-target"
         onClick={() => setAbierta(true)}
         title="Ver foto"
         style={{
@@ -132,7 +134,8 @@ function FotoNovedad({ url }) {
       </button>
 
       {abierta && (
-        <div
+          <div
+            className="responsive-modal-overlay"
           onClick={() => setAbierta(false)}
           style={{
             position: "fixed", inset: 0, zIndex: 1100, background: "rgba(6,13,24,0.92)",
@@ -155,6 +158,8 @@ function FotoNovedad({ url }) {
               Abrir original ↗
             </a>
             <button
+              className="touch-target"
+              aria-label="Cerrar foto"
               onClick={() => setAbierta(false)}
               style={{ background: "none", border: "none", color: T.text, fontSize: 22, cursor: "pointer" }}
             >
@@ -252,17 +257,17 @@ export function SupNovedades({ user }) {
   };
 
   return (
-    <div>
+    <div className="operations-screen">
       <SectionHeader title="Novedades" sub="Ordenadas por prioridad" />
 
       {/* Banner alerta crítica */}
       {alertaCritica && (
-        <div style={{
+        <div className="responsive-list-row" style={{
           background: T.redGhost, border: `1px solid ${T.red}`,
           borderRadius: 12, padding: 14, marginBottom: 12,
           display: "flex", justifyContent: "space-between", alignItems: "flex-start",
         }}>
-          <div>
+          <div className="responsive-list-row__main">
             <div style={{ color: T.red, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
               🚨 ALERTA CRÍTICA — {alertaCritica.instalacion?.nombre}
             </div>
@@ -274,7 +279,7 @@ export function SupNovedades({ user }) {
               {alertaCritica.gps_dentro_rango === false && " · ⚠️ GPS fuera de rango"}
             </div>
           </div>
-          <button onClick={() => setAlertaCritica(null)} style={{
+          <button className="touch-target" aria-label="Cerrar alerta" onClick={() => setAlertaCritica(null)} style={{
             background: "none", border: "none", color: T.textMut, fontSize: 18, cursor: "pointer",
           }}>✕</button>
         </div>
@@ -304,13 +309,13 @@ export function SupNovedades({ user }) {
         const instNombre   = n.instalacion?.nombre ?? "—";
 
         return (
-          <div key={n.id} style={{
+          <div className="responsive-card" key={n.id} style={{
             background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
             borderLeft: `4px solid ${colors.border}`,
             padding: 14, marginBottom: 8,
             opacity: resuelta ? 0.6 : 1,
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>
               <Badge color={colors.badge}>{urgencia}</Badge>
             </div>
@@ -337,7 +342,7 @@ export function SupNovedades({ user }) {
 
             {/* Acciones (sólo si no está resuelta) */}
             {!resuelta && (
-              <div style={{ display: "flex", gap: 8 }}>
+              <div className="action-wrap" style={{ display: "flex", gap: 8 }}>
                 <Btn
                   variant="ghost"
                   onClick={() => setResolver(n)}

@@ -164,8 +164,9 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
         </div>
       )}
       <div
+        className="central-map"
         ref={containerRef}
-        style={{ height: 280, borderRadius: 14, overflow: "hidden", border: `1px solid ${T.border}`, background: "#060D18" }}
+        style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${T.border}`, background: "#060D18" }}
       />
       <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: T.textMut }}>
         <span><span style={{ color: C_COLOR }}>●</span> Instalación</span>
@@ -291,13 +292,13 @@ function IncidentesPanel({ token }) {
   ];
 
   return (
-    <div>
+    <div className="operations-screen">
       <SectionHeader title="Incidentes" sub="Todas las instalaciones" />
 
       {/* Filtros */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+      <div className="filter-bar" style={{ display: "flex", gap: 6, marginBottom: 14 }}>
         {FILTROS.map(f => (
-          <button key={f.id} onClick={() => setFiltro(f.id)} style={{
+          <button className="touch-target" key={f.id} onClick={() => setFiltro(f.id)} style={{
             padding: "6px 14px", borderRadius: 8, border: `1px solid ${filtro === f.id ? C_COLOR + "66" : T.border}`,
             background: filtro === f.id ? `${C_COLOR}15` : "transparent",
             color: filtro === f.id ? C_COLOR : T.textMut,
@@ -307,7 +308,7 @@ function IncidentesPanel({ token }) {
             {f.label}
           </button>
         ))}
-        <button onClick={cargar} style={{
+        <button className="touch-target filter-bar__end" onClick={cargar} style={{
           marginLeft: "auto", padding: "6px 12px", borderRadius: 8,
           border: `1px solid ${T.border}`, background: "transparent",
           color: T.textMut, fontSize: 11, cursor: "pointer",
@@ -341,12 +342,12 @@ function IncidentesPanel({ token }) {
           day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago",
         });
         return (
-          <div key={n.id} style={{
+          <div className="responsive-card" key={n.id} style={{
             background: T.bgCard, border: `1px solid ${urgColor}22`,
             borderLeft: `3px solid ${urgColor}`,
             borderRadius: 12, padding: "12px 14px", marginBottom: 8,
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+            <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
               <span style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{n.tipo}</span>
               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                 <span style={{
@@ -366,7 +367,7 @@ function IncidentesPanel({ token }) {
               </div>
             </div>
             <div style={{ fontSize: 12, color: T.textSec, marginBottom: 4 }}>{n.descripcion}</div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.textMut }}>
+            <div className="incident-meta" style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.textMut }}>
               <span>🏢 {n.instalacion?.nombre ?? "—"}</span>
               <span>👤 {n.usuario?.nombre ?? "—"}</span>
               <span>{hora}</span>
@@ -430,12 +431,12 @@ function MonitoreoPanel({ token }) {
   const kpis = stats?.kpis;
 
   return (
-    <div>
+    <div className="operations-screen">
       <SectionHeader title="Monitoreo Central" sub="Vista global de todas las instalaciones" />
       <SocketBadge status={socketStatus} />
 
       {/* KPIs de cobertura */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+      <div className="metrics-grid" style={{ display: "grid", gap: 10, marginBottom: 12 }}>
         <KPI
           label="Turnos Hoy"
           value={stats?.total ?? (loading ? "…" : "—")}
@@ -464,7 +465,7 @@ function MonitoreoPanel({ token }) {
 
       {/* Mini stats de asistencia */}
       {stats && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+        <div className="metrics-grid metrics-grid--compact" style={{ display: "grid", gap: 8, marginBottom: 14 }}>
           <MiniStat value={stats.presentes} label="Presentes"  color={C_COLOR}  />
           <MiniStat value={stats.tardios}   label="Tardíos"    color={T.yellow} />
           <MiniStat value={stats.faltantes} label="Faltantes"  color={T.red}    />
@@ -484,7 +485,7 @@ function MonitoreoPanel({ token }) {
 
       {/* Donut de estado de guardias + instalaciones */}
       {stats && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, marginBottom: 20, alignItems: "start" }}>
+        <div className="central-summary-grid" style={{ display: "grid", gap: 10, marginBottom: 20, alignItems: "start" }}>
           {/* Resumen por instalación */}
           {kpis?.resumenPorInstalacion?.length > 0 && (
             <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 14px 10px" }}>
@@ -492,7 +493,7 @@ function MonitoreoPanel({ token }) {
                 Estado por Instalación
               </div>
               {kpis.resumenPorInstalacion.map((inst) => (
-                <div key={inst.id} style={{
+                <div className="responsive-list-row" key={inst.id} style={{
                   display: "flex", justifyContent: "space-between", alignItems: "center",
                   padding: "6px 0", borderBottom: `1px solid ${T.border}`,
                   fontSize: 12,

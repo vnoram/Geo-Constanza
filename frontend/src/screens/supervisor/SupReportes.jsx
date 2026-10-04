@@ -213,7 +213,22 @@ function TablaPreview({ datos, tipo }) {
 
   if (tipo === "asistencia") {
     return (
-      <div style={{ overflowX: "auto" }}>
+      <>
+        <div className="report-cards">
+          {datos.slice(0, 50).map((a, i) => (
+            <dl className="report-card" key={i}>
+              <CampoReporte etiqueta="Fecha">{new Date(a.hora_entrada).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE })}</CampoReporte>
+              <CampoReporte etiqueta="RUT">{a.usuario?.rut || "—"}</CampoReporte>
+              <CampoReporte etiqueta="Nombre">{a.usuario?.nombre || "—"}</CampoReporte>
+              <CampoReporte etiqueta="Instalación">{a.instalacion?.nombre || "—"}</CampoReporte>
+              <CampoReporte etiqueta="Entrada">{new Date(a.hora_entrada).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_CHILE })}</CampoReporte>
+              <CampoReporte etiqueta="Salida">{a.hora_salida ? new Date(a.hora_salida).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_CHILE }) : <span style={{ color: T.accent }}>Activo</span>}</CampoReporte>
+              <CampoReporte etiqueta="Estado"><span style={{ color: a.estado === "tardio" ? T.yellow : T.accent, fontWeight: 700 }}>{a.estado === "tardio" ? "Tardío" : "Normal"}</span></CampoReporte>
+              <CampoReporte etiqueta="Retraso">{a.minutos_retraso > 0 ? `${a.minutos_retraso} min` : "—"}</CampoReporte>
+            </dl>
+          ))}
+        </div>
+        <div className="table-scroll report-table">
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
           <thead>
             <tr style={{ background: T.bgInput }}>
@@ -243,19 +258,37 @@ function TablaPreview({ datos, tipo }) {
             ))}
           </tbody>
         </table>
+        </div>
         {datos.length > 50 && (
           <div style={{ textAlign: "center", padding: 10, fontSize: 11, color: T.textMut }}>
             Mostrando 50 de {datos.length} registros. El PDF incluirá todos.
           </div>
         )}
-      </div>
+      </>
     );
   }
 
   // Novedades
   const URGENCIA = { rojo: { label: "Crítico", color: T.red }, amarillo: { label: "Medio", color: T.yellow }, verde: { label: "Bajo", color: T.accent } };
   return (
-    <div style={{ overflowX: "auto" }}>
+    <>
+      <div className="report-cards">
+        {datos.slice(0, 50).map((n, i) => {
+          const u = URGENCIA[n.urgencia] || { label: n.urgencia, color: T.textMut };
+          return (
+            <dl className="report-card" key={i}>
+              <CampoReporte etiqueta="Fecha">{new Date(n.created_at).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE })}</CampoReporte>
+              <CampoReporte etiqueta="Tipo">{n.tipo || "—"}</CampoReporte>
+              <CampoReporte etiqueta="Urgencia"><span style={{ color: u.color, fontWeight: 700 }}>{u.label}</span></CampoReporte>
+              <CampoReporte etiqueta="Descripción">{n.descripcion || "—"}</CampoReporte>
+              <CampoReporte etiqueta="Guardia">{n.usuario?.nombre || "—"}</CampoReporte>
+              <CampoReporte etiqueta="Instalación">{n.instalacion?.nombre || "—"}</CampoReporte>
+              <CampoReporte etiqueta="Estado"><span style={{ color: n.estado === "resuelta" ? T.accent : n.estado === "escalada" ? T.red : T.yellow, fontWeight: 700 }}>{n.estado === "resuelta" ? "Resuelta" : n.estado === "escalada" ? "Escalada" : "Abierta"}</span></CampoReporte>
+            </dl>
+          );
+        })}
+      </div>
+      <div className="table-scroll report-table">
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
         <thead>
           <tr style={{ background: T.bgInput }}>
@@ -287,6 +320,21 @@ function TablaPreview({ datos, tipo }) {
           })}
         </tbody>
       </table>
+      </div>
+      {datos.length > 50 && (
+        <div style={{ textAlign: "center", padding: 10, fontSize: 11, color: T.textMut }}>
+          Mostrando 50 de {datos.length} registros. El PDF incluirá todos.
+        </div>
+      )}
+    </>
+  );
+}
+
+function CampoReporte({ etiqueta, children }) {
+  return (
+    <div className="report-card__field">
+      <dt>{etiqueta}</dt>
+      <dd>{children}</dd>
     </div>
   );
 }
@@ -299,6 +347,7 @@ function Select({ label, value, onChange, options, placeholder }) {
     <div style={{ marginBottom: 18 }}>
       {label && <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: T.textSec, marginBottom: 6, letterSpacing: 1.5, textTransform: "uppercase" }}>{label}</label>}
       <select
+        className="touch-target"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         style={{ width: "100%", background: T.bgInput, border: `1.5px solid ${T.border}`, borderRadius: 12, padding: "12px 14px", color: value ? T.text : T.textMut, fontSize: 14, fontFamily: "'Outfit', sans-serif", outline: "none" }}
@@ -401,7 +450,7 @@ export function SupReportes() {
   const instNombreActual = instalaciones.find((i) => i.id === instalacionId)?.nombre || "Todas";
 
   return (
-    <div>
+    <div className="operations-screen">
       <SectionHeader title="Reportes OS-10" sub="Informes operacionales para fiscalización" />
 
       {/* Filtros */}
@@ -416,18 +465,18 @@ export function SupReportes() {
           options={instalaciones.map((i) => ({ value: i.id, label: i.nombre }))}
         />
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="form-grid-2" style={{ display: "grid", gap: 12 }}>
           <Input label="Fecha Inicio" type="date" value={fechaInicio} onChange={setFechaInicio} />
           <Input label="Fecha Fin"    type="date" value={fechaFin}    onChange={setFechaFin}    />
         </div>
 
         {/* Tabs: Asistencia / Novedades */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <div className="action-wrap" style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           {[
             { id: "asistencia", label: "📋 Asistencia" },
             { id: "novedades",  label: "🚨 Novedades"  },
           ].map((tab) => (
-            <button key={tab.id} onClick={() => setVistaActiva(tab.id)} style={{
+            <button className="touch-target" key={tab.id} onClick={() => setVistaActiva(tab.id)} style={{
               padding: "8px 16px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer",
               fontFamily: "'Outfit', sans-serif",
               background: vistaActiva === tab.id ? T.accent : T.bgInput,
@@ -455,8 +504,8 @@ export function SupReportes() {
       {datos !== null && (
         <>
           {/* Resumen rápido */}
-          <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 16px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
+          <div className="responsive-list-row" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 16px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div className="responsive-list-row__main">
               <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>
                 {datos.length} registro{datos.length !== 1 ? "s" : ""} encontrado{datos.length !== 1 ? "s" : ""}
               </div>
@@ -464,15 +513,15 @@ export function SupReportes() {
                 {instNombreActual} · {fechaInicio} al {fechaFin}
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={exportarCSV} style={{
+            <div className="action-wrap" style={{ display: "flex", gap: 8 }}>
+              <button className="touch-target" onClick={exportarCSV} style={{
                 background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: 8,
                 padding: "7px 12px", color: T.textSec, fontSize: 11, fontWeight: 700,
                 cursor: "pointer", fontFamily: "'Outfit', sans-serif",
               }}>
                 📊 Excel
               </button>
-              <button onClick={exportarPDF} disabled={exportando} style={{
+              <button className="touch-target" onClick={exportarPDF} disabled={exportando} style={{
                 background: exportando ? T.textMut : T.accent, border: "none", borderRadius: 8,
                 padding: "7px 14px", color: T.bg, fontSize: 11, fontWeight: 700,
                 cursor: exportando ? "not-allowed" : "pointer", fontFamily: "'Outfit', sans-serif",
