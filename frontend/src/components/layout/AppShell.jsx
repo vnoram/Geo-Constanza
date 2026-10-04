@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { T, ROLES } from "../../theme/theme";
+import { T, FONT, ROLES } from "../../theme/theme";
+import { Icon } from "../ui/Icon";
+import { Wordmark } from "../ui/Wordmark";
 import { ROLES as ROL } from "../../constants/roles";
 import { Placeholder } from "../ui/Placeholder";
 
@@ -83,154 +85,154 @@ export function AppShell({ user, onLogout }) {
   const [activeSection, setActiveSection] = useState(role.sections[0].id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const duracionToken = user.rol === ROL.GGSS_EN_PAUTA || user.rol === ROL.GGSS_LIBRE ? "30 min" : user.rol === ROL.SUPERVISOR ? "2 h" : "4 h";
+  const conSegundoFactor = user.rol === ROL.SUPERVISOR || user.rol === ROL.ADMINISTRADOR;
 
   return (
     <div className="app-shell" style={{
       minHeight: "100vh", background: T.bg,
-      fontFamily: "'Outfit', sans-serif", color: T.text,
+      fontFamily: FONT.ui, color: T.text,
       display: "flex", flexDirection: "column",
     }}>
-      {/* ─── TOP BAR ─── */}
+      {/* ─── BARRA SUPERIOR ─── */}
       <header className="app-shell__header" style={{
-        background: `${T.bgCard}EE`, backdropFilter: "blur(12px)",
-        borderBottom: `1px solid ${T.border}`,
-        padding: "0 16px", height: 56, display: "flex",
+        background: T.surface, borderBottom: `1px solid ${T.border}`,
+        padding: "0 16px", height: "var(--topbar-h)", display: "flex",
         alignItems: "center", justifyContent: "space-between",
         position: "sticky", top: 0, zIndex: 50,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button className="app-shell__menu-button touch-target" onClick={() => setSidebarOpen(!sidebarOpen)} style={{
-            background: "none", border: "none", color: T.textSec,
-            fontSize: 20, cursor: "pointer", padding: 4,
-          }}>☰</button>
-          <div style={{
-            width: 32, height: 32, borderRadius: 10,
-            background: `linear-gradient(135deg, ${role.color}33, ${role.color}11)`,
-            border: `1px solid ${role.color}44`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 16,
-          }}>{role.icon}</div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: T.text, lineHeight: 1.2 }}>Geo Constanza</div>
-            <div style={{ fontSize: 10, color: role.color, fontWeight: 600 }}>{role.label}</div>
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <button className="app-shell__menu-button touch-target" onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Abrir menú" style={{
+            background: "none", border: "none", color: T.textSec, cursor: "pointer",
+            padding: 4, display: "inline-flex", alignItems: "center",
+          }}><Icon name="menu" size={20} /></button>
+          <Wordmark />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 7, height: 7, borderRadius: "50%", background: T.accent, boxShadow: `0 0 8px ${T.accent}` }} />
-          <span style={{ fontSize: 11, color: T.textMut, fontWeight: 500 }}>{user.nombre.split(" ")[0]}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+          <span className="app-shell__role" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textSec, whiteSpace: "nowrap", minWidth: 0 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: T.focus, flex: "none" }} />
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{role.label}</span>
+          </span>
+          <span className="app-shell__user" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textMut, whiteSpace: "nowrap" }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.accent, flex: "none" }} />
+            {user.nombre.split(" ")[0]}
+          </span>
         </div>
       </header>
 
-      {/* ─── NAV TABS ─── */}
+      {/* ─── PESTAÑAS (celular y tablet) ─── */}
       <nav className="app-shell__tabs" style={{
-        display: "flex", gap: 2, padding: "8px 10px",
-        overflowX: "auto", background: T.bgCard,
+        display: "flex", gap: 0, padding: "0 10px",
+        overflowX: "auto", background: T.surface,
         borderBottom: `1px solid ${T.border}`,
         WebkitOverflowScrolling: "touch",
       }}>
-        {role.sections.map(s => (
-          <button className="touch-target" key={s.id} onClick={() => setActiveSection(s.id)} style={{
-            background: activeSection === s.id ? `${role.color}15` : "transparent",
-            border: `1px solid ${activeSection === s.id ? `${role.color}33` : "transparent"}`,
-            borderRadius: 10, padding: "7px 14px",
-            color: activeSection === s.id ? role.color : T.textMut,
-            fontSize: 12, fontWeight: activeSection === s.id ? 700 : 500,
-            cursor: "pointer", whiteSpace: "nowrap", position: "relative",
-            fontFamily: "'Outfit', sans-serif", transition: "all 0.2s",
-          }}>
-            <span style={{ marginRight: 5 }}>{s.icon}</span>{s.label}
-            {s.badge && (
-              <span style={{
-                position: "absolute", top: 1, right: 1,
-                background: T.red, color: T.white,
-                fontSize: 8, fontWeight: 800,
-                width: 15, height: 15, borderRadius: "50%",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>{s.badge}</span>
-            )}
-          </button>
-        ))}
+        {role.sections.map(s => {
+          const activa = activeSection === s.id;
+          return (
+            <button className="touch-target" key={s.id} onClick={() => setActiveSection(s.id)}
+              aria-current={activa ? "page" : undefined} style={{
+              background: "transparent", border: "none",
+              borderBottom: `2px solid ${activa ? T.focus : "transparent"}`,
+              padding: "0 14px", minHeight: 44,
+              color: activa ? T.text : T.textSec,
+              fontSize: 13, fontWeight: activa ? 600 : 500,
+              cursor: "pointer", whiteSpace: "nowrap", position: "relative",
+              fontFamily: FONT.ui, display: "inline-flex", alignItems: "center", gap: 8,
+            }}>
+              <Icon name={s.icon} size={17} color={activa ? T.focusText : T.textMut} />
+              {s.label}
+              {s.badge && (
+                <span style={{
+                  background: T.alertGhost, color: T.alert, border: `1px solid ${T.alert}`,
+                  fontSize: 11, fontWeight: 500, fontFamily: FONT.mono, lineHeight: "16px",
+                  minWidth: 18, padding: "0 5px", borderRadius: 8, textAlign: "center",
+                }}>{s.badge}</span>
+              )}
+            </button>
+          );
+        })}
       </nav>
 
       <div className="app-shell__body">
-        {/* ─── SIDEBAR: drawer móvil y navegación fija en escritorio ─── */}
+        {/* ─── MENÚ LATERAL: cajón en celular, fijo en escritorio ─── */}
         <div className={`app-shell__sidebar-layer${sidebarOpen ? " is-open" : ""}`}>
           <div className="app-shell__sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
           <aside className="app-shell__sidebar" style={{
-            background: T.bgCard, borderRight: `1px solid ${T.border}`,
+            background: T.surface, borderRight: `1px solid ${T.border}`,
           }}>
-            <div style={{
-              background: `${role.color}0D`, border: `1px solid ${role.color}22`,
-              borderRadius: 14, padding: 16, marginBottom: 20,
-            }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 12,
-                background: `linear-gradient(135deg, ${role.color}44, ${role.color}11)`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 22, marginBottom: 10,
-              }}>{role.icon}</div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: T.text }}>{user.nombre}</div>
-              <div style={{ fontSize: 12, color: role.color, fontWeight: 600, marginTop: 2 }}>{role.label}</div>
-              <div style={{ fontSize: 10, color: T.textMut, marginTop: 6, fontFamily: "'JetBrains Mono', monospace" }}>
-                ID: {user.id} · RUT: •••••{user.id.slice(-2)}
+            <div style={{ borderBottom: `1px solid ${T.border}`, paddingBottom: 16, marginBottom: 16 }}>
+              <div style={{ fontWeight: 600, fontSize: 15, color: T.text }}>{user.nombre}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textSec, marginTop: 4 }}>
+                <Icon name={role.icon} size={15} color={T.focusText} />
+                {role.label}
+              </div>
+              <div style={{ fontSize: 11, color: T.textMut, marginTop: 8, fontFamily: FONT.mono }}>
+                ID {user.id} · RUT •••••{user.id.slice(-2)}
               </div>
             </div>
 
-            <div style={{ fontSize: 10, color: T.textMut, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8, fontWeight: 700 }}>
+            <div style={{ fontSize: 11, color: T.textMut, marginBottom: 6, fontWeight: 500 }}>
               Navegación
             </div>
-            {role.sections.map(s => (
-              <button className="touch-target" key={s.id} onClick={() => { setActiveSection(s.id); setSidebarOpen(false); }} style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "10px 12px", borderRadius: 10, border: "none",
-                background: activeSection === s.id ? `${role.color}15` : "transparent",
-                color: activeSection === s.id ? role.color : T.textSec,
-                fontSize: 13, fontWeight: activeSection === s.id ? 700 : 500,
-                cursor: "pointer", width: "100%", textAlign: "left",
-                fontFamily: "'Outfit', sans-serif", marginBottom: 2,
-                transition: "all 0.15s",
-              }}>
-                <span style={{ fontSize: 16 }}>{s.icon}</span>
-                {s.label}
-                {s.badge && <span style={{
-                  marginLeft: "auto", background: T.red, color: T.white,
-                  fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 10,
-                }}>{s.badge}</span>}
-              </button>
-            ))}
+            {role.sections.map(s => {
+              const activa = activeSection === s.id;
+              return (
+                <button className="touch-target" key={s.id}
+                  onClick={() => { setActiveSection(s.id); setSidebarOpen(false); }}
+                  aria-current={activa ? "page" : undefined} style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "0 12px", minHeight: 40, borderRadius: T.radius,
+                  border: "none", borderLeft: `2px solid ${activa ? T.focus : "transparent"}`,
+                  background: activa ? T.focusGhost : "transparent",
+                  color: activa ? T.text : T.textSec,
+                  fontSize: 14, fontWeight: activa ? 600 : 500,
+                  cursor: "pointer", width: "100%", textAlign: "left",
+                  fontFamily: FONT.ui, marginBottom: 2,
+                }}>
+                  <Icon name={s.icon} size={18} color={activa ? T.focusText : T.textMut} />
+                  {s.label}
+                  {s.badge && <span style={{
+                    marginLeft: "auto", background: T.alertGhost, color: T.alert,
+                    border: `1px solid ${T.alert}`, fontSize: 11, fontFamily: FONT.mono,
+                    lineHeight: "16px", minWidth: 18, padding: "0 5px", borderRadius: 8, textAlign: "center",
+                  }}>{s.badge}</span>}
+                </button>
+              );
+            })}
 
             <div style={{ marginTop: "auto", paddingTop: 20 }}>
               <div style={{
-                background: T.bg, borderRadius: 12, padding: 14,
-                border: `1px solid ${T.border}`, marginBottom: 12,
+                border: `1px solid ${T.border}`, borderRadius: T.radius,
+                padding: 12, marginBottom: 10, fontSize: 12, color: T.textSec,
               }}>
-                <div style={{ fontSize: 10, color: T.textMut, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 8, fontWeight: 700 }}>
-                  Sesión Activa
+                <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8, fontWeight: 500 }}>Sesión</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <Icon name="clock" size={14} /> Token JWT · <span style={{ fontFamily: FONT.mono }}>{duracionToken}</span>
                 </div>
-                <div style={{ fontSize: 11, color: T.textSec, marginBottom: 4 }}>
-                  🔒 Token JWT · {user.rol === ROL.GGSS_EN_PAUTA || user.rol === ROL.GGSS_LIBRE ? "30 min" : user.rol === ROL.SUPERVISOR ? "2 hrs" : "4 hrs"}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <Icon name={conSegundoFactor ? "check" : "key-round"} size={14} color={conSegundoFactor ? T.accent : "currentColor"} />
+                  {conSegundoFactor ? "2FA verificado" : "Autenticación estándar"}
                 </div>
-                <div style={{ fontSize: 11, color: T.textSec, marginBottom: 4 }}>
-                  {(user.rol === ROL.SUPERVISOR || user.rol === ROL.ADMINISTRADOR) ? "✅ 2FA verificado" : "🔑 Auth estándar"}
-                </div>
-                <div style={{ fontSize: 10, color: T.textMut, fontFamily: "'JetBrains Mono', monospace" }}>
+                <div style={{ fontSize: 11, color: T.textMut, fontFamily: FONT.mono }}>
                   {new Date().toLocaleTimeString("es-CL", { timeZone: "America/Santiago" })}
                 </div>
               </div>
               <button className="touch-target" onClick={onLogout} style={{
-                width: "100%", padding: "10px 16px",
-                background: T.redGhost, border: `1px solid ${T.red}33`,
-                borderRadius: 10, color: T.red, fontSize: 13,
-                fontWeight: 600, cursor: "pointer",
-                fontFamily: "'Outfit', sans-serif",
+                width: "100%", minHeight: 40, padding: "0 14px",
+                background: "transparent", border: `1px solid ${T.border}`,
+                borderRadius: T.radius, color: T.text, fontSize: 13, fontWeight: 500,
+                cursor: "pointer", fontFamily: FONT.ui,
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
               }}>
-                Cerrar Sesión
+                <Icon name="log-out" size={16} /> Cerrar sesión
               </button>
             </div>
           </aside>
         </div>
 
-        {/* ─── MAIN CONTENT ─── */}
+        {/* ─── CONTENIDO ─── */}
         <main className={`app-shell__main ${
           user.rol === ROL.GGSS_EN_PAUTA || user.rol === ROL.GGSS_LIBRE
             ? "app-shell__main--guardia"
