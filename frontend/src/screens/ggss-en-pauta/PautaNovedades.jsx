@@ -8,6 +8,7 @@ import { api } from "../../services/api";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 
 const TOKEN_KEY    = "gc_token";
+const UMBRAL_PRECISION_NOVEDAD_M = 100;
 
 const TIPOS_NOVEDAD = [
   "Robo",
@@ -44,6 +45,7 @@ function ReportarModal({ onClose, onSuccess }) {
   const [descripcion, setDesc]    = useState("");
   const [loading, setLoading]     = useState(false);
   const [gpsStatus, setGpsStatus] = useState("idle"); // idle | loading | ok | error
+  const [precisionGps, setPrecisionGps] = useState(null);
   const [error, setError]         = useState(null);
   const [foto, setFoto]           = useState(null);
   const [fotoPreview, setFotoPreview] = useState(null);
@@ -71,11 +73,16 @@ function ReportarModal({ onClose, onSuccess }) {
     setGpsStatus("loading");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        coordsRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        coordsRef.current = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+        };
+        setPrecisionGps(Math.round(pos.coords.accuracy));
         setGpsStatus("ok");
       },
       () => setGpsStatus("error"),
-      { timeout: 8000, maximumAge: 30000 },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
   }, []);
 
@@ -94,6 +101,7 @@ function ReportarModal({ onClose, onSuccess }) {
         form.append("descripcion", descripcion.trim());
         if (coordsRef.current?.lat != null) form.append("latitud", coordsRef.current.lat);
         if (coordsRef.current?.lng != null) form.append("longitud", coordsRef.current.lng);
+        if (coordsRef.current?.accuracy != null) form.append("precision_m", coordsRef.current.accuracy);
         form.append("foto", foto);
 
         const token = localStorage.getItem(TOKEN_KEY);
@@ -110,6 +118,7 @@ function ReportarModal({ onClose, onSuccess }) {
           descripcion: descripcion.trim(),
           latitud:  coordsRef.current?.lat  ?? null,
           longitud: coordsRef.current?.lng  ?? null,
+          precision_m: coordsRef.current?.accuracy ?? null,
         });
       }
       onSuccess();
@@ -155,11 +164,21 @@ function ReportarModal({ onClose, onSuccess }) {
         }}>
           <span style={{ fontSize: 13, color: gpsStyle.text }}>
             {gpsStatus === "loading" && "📡 Obteniendo ubicación..."}
-            {gpsStatus === "ok"      && "📍 Ubicación capturada correctamente"}
+            {gpsStatus === "ok"      && `📍 Precisión de tu ubicación: ±${precisionGps} m`}
             {gpsStatus === "error"   && "⚠️ GPS no disponible — se reportará sin coordenadas"}
             {gpsStatus === "idle"    && "📡 Iniciando GPS..."}
           </span>
         </div>
+
+        {gpsStatus === "ok" && precisionGps > UMBRAL_PRECISION_NOVEDAD_M && (
+          <div style={{
+            background: T.yellowGhost, border: `1px solid ${T.yellow}44`,
+            borderRadius: 8, padding: "8px 12px", marginBottom: 16,
+            fontSize: 12, color: T.yellow,
+          }}>
+            ⚠️ Tu ubicación en este equipo es imprecisa. Usa tu celular o tablet en la instalación.
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           {/* Tipo */}

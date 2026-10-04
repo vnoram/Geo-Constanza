@@ -26,7 +26,7 @@ function capturarGPS() {
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve(pos.coords),
       (err) => reject(new Error("GPS no disponible: " + err.message)),
-      { enableHighAccuracy: true, timeout: 10000 },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     ),
   );
 }
@@ -52,6 +52,7 @@ export function PautaTurno({ user }) {
   const [loadingMarcaje, setLoadingMarcaje] = useState(false);
   const [error,          setError]          = useState("");
   const [cierresAuto,    setCierresAuto]    = useState([]); // entradas olvidadas cerradas por el sistema
+  const [precisionGps,   setPrecisionGps]   = useState(null);
 
   // ── Hidratación — servidor es la fuente de verdad ─────────────
   useEffect(() => {
@@ -115,12 +116,21 @@ export function PautaTurno({ user }) {
     hidratar();
   }, [token, user.id]);
 
+  // Adelanta una lectura para que el guardia vea su precisión antes de marcar.
+  useEffect(() => {
+    if (!turno || marcaje?.hora_salida || !navigator.geolocation) return;
+    capturarGPS()
+      .then((coords) => setPrecisionGps(Math.round(coords.accuracy)))
+      .catch(() => setPrecisionGps(null));
+  }, [turno, marcaje?.hora_salida]);
+
   // ── Marcar Entrada ─────────────────────────────────────────────
   const marcarEntrada = useCallback(async () => {
     setError("");
     setLoadingMarcaje(true);
     try {
       const coords = await capturarGPS();
+      setPrecisionGps(Math.round(coords.accuracy));
       const res = await fetch(`${API_BASE}/asistencia/entrada`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -129,6 +139,7 @@ export function PautaTurno({ user }) {
           metodo:   "fallback_telefono",
           latitud:  coords.latitude,
           longitud: coords.longitude,
+          precision_m: coords.accuracy,
         }),
       });
       const data = await res.json();
@@ -157,6 +168,7 @@ export function PautaTurno({ user }) {
     setLoadingMarcaje(true);
     try {
       const coords = await capturarGPS();
+      setPrecisionGps(Math.round(coords.accuracy));
       const res = await fetch(`${API_BASE}/asistencia/salida`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -165,6 +177,7 @@ export function PautaTurno({ user }) {
           metodo:   "fallback_telefono",
           latitud:  coords.latitude,
           longitud: coords.longitude,
+          precision_m: coords.accuracy,
         }),
       });
       const data = await res.json();
@@ -184,6 +197,10 @@ export function PautaTurno({ user }) {
   const yaEntro = !!marcaje?.hora_entrada;
   const yaSalio = !!marcaje?.hora_salida;
   const pulseColor = yaSalio ? T.accent : yaEntro ? T.yellow : T.accent;
+  const radioInstalacion = Number(turno?.instalacion?.radio_geofence_m);
+  const umbralPrecision = Number.isFinite(radioInstalacion) && radioInstalacion > 0
+    ? radioInstalacion
+    : 100;
 
   return (
     <div>
@@ -334,6 +351,21 @@ export function PautaTurno({ user }) {
                   ? "Captura tu GPS y registra la entrada"
                   : "Turno en curso — registra tu salida al finalizar"}
               </div>
+
+              {precisionGps !== null && (
+                <div style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>
+                  Precisión de tu ubicación: ±{precisionGps} m
+                </div>
+              )}
+              {precisionGps > umbralPrecision && (
+                <div style={{
+                  background: T.yellowGhost, border: `1px solid ${T.yellow}44`,
+                  borderRadius: 10, padding: 10, marginBottom: 10,
+                  fontSize: 12, color: T.yellow,
+                }}>
+                  ⚠️ Tu ubicación en este equipo es imprecisa. Usa tu celular o tablet en la instalación.
+                </div>
+              )}
 
               {!yaEntro ? (
                 <Btn onClick={marcarEntrada} loading={loadingMarcaje} full>
