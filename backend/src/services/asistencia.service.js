@@ -113,7 +113,7 @@ const registrarEntradaFallback = async (data, user) => {
 };
 
 const registrarEntrada = async (data, user, esFallbackOverride = null) => {
-  const { instalacion_id, metodo, latitud, longitud, dispositivo } = data;
+  const { instalacion_id, metodo, latitud, longitud, precision_m, dispositivo } = data;
   const usuario_id = user?.id || data.usuario_id;
 
   const resultado = await prisma.$transaction(async (db) => {
@@ -143,13 +143,14 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
     if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
       const instLat = parseFloat(turno.instalacion.latitud);
       const instLon = parseFloat(turno.instalacion.longitud);
-      const { esValido, distanciaMetros } = geovalidacion.validarAsistencia(
+      const { esValido, mensaje } = geovalidacion.validarAsistencia(
         lat, lon, instLat, instLon,
         turno.instalacion.radio_geofence_m,
+        precision_m,
       );
       if (!esValido) {
         throw Object.assign(
-          new Error(`Fuera de rango: Debe estar en la instalación para marcar (${distanciaMetros}m del límite permitido de ${turno.instalacion.radio_geofence_m}m)`),
+          new Error(mensaje),
           { statusCode: 400 },
         );
       }

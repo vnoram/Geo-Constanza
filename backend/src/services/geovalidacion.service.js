@@ -32,15 +32,27 @@ function calcularDistancia(lat1, lon1, lat2, lon2) {
  * @param {number} radioPermitido - Metros de holgura (por defecto 50 metros)
  * @returns {object} Objeto con el resultado de la validación
  */
-function validarAsistencia(latGuardia, lonGuardia, latInstalacion, lonInstalacion, radioPermitido = 50) {
+function validarAsistencia(latGuardia, lonGuardia, latInstalacion, lonInstalacion, radioPermitido = 50, precisionM = null) {
   const distancia = calcularDistancia(latGuardia, lonGuardia, latInstalacion, lonInstalacion);
-  
+  const distanciaMetros = Math.round(distancia);
+  const precision = precisionM === null || precisionM === '' ? NaN : Number(precisionM);
+  const precisionValida = Number.isFinite(precision) && precision >= 0
+    ? Math.round(precision)
+    : null;
+  const esValido = distancia <= radioPermitido;
+  const detallePrecision = precisionValida === null
+    ? ''
+    : ` La precisión de tu ubicación es de ±${precisionValida} m.`;
+  const advertenciaPrecision = precisionValida !== null && precisionValida > radioPermitido
+    ? ' Tu ubicación es imprecisa; usa un dispositivo con GPS.'
+    : '';
+
   return {
-    esValido: distancia <= radioPermitido,
-    distanciaMetros: Math.round(distancia),
-    mensaje: distancia <= radioPermitido 
-      ? `Marcaje válido. Guardia a ${Math.round(distancia)}m (Límite: ${radioPermitido}m).`
-      : `Marcaje rechazado. Guardia muy lejos: a ${Math.round(distancia)}m (Límite: ${radioPermitido}m).`
+    esValido,
+    distanciaMetros,
+    mensaje: esValido
+      ? `Marcaje válido. Estás a ${distanciaMetros} m de la instalación (máximo permitido: ${radioPermitido} m).${detallePrecision}${advertenciaPrecision}`
+      : `Estás a ${distanciaMetros} m de la instalación (máximo permitido: ${radioPermitido} m).${detallePrecision}${advertenciaPrecision}`,
   };
 }
 

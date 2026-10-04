@@ -138,7 +138,7 @@ const obtenerPorId = async (id, user) => {
  * Crea una novedad (con validaciones de archivo, geolocalización y urgencia)
  */
 const crear = async (data, file, user) => {
-  const { tipo, descripcion, latitud, longitud } = data;
+  const { tipo, descripcion, latitud, longitud, precision_m } = data;
 
   try {
     if (!tipo) {
@@ -190,6 +190,7 @@ const crear = async (data, file, user) => {
         turno.instalacion.latitud,
         turno.instalacion.longitud,
         turno.instalacion.radio_geofence_m,
+        precision_m,
       );
       gps_dentro_rango = geoResult.esValido;
     }
