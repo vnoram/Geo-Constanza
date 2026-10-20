@@ -12,11 +12,9 @@
 const { prisma } = require('../config/database');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { ROLES } = require('../constants/roles');
-
-const ZONA = 'America/Santiago';
-const MIN_MS = 60 * 1000;
-const HORA_MS = 60 * MIN_MS;
-const DIA_MS = 24 * HORA_MS;
+const {
+  ZONA, MIN_MS, HORA_MS, DIA_MS, instanteChile, inicioTurno, finTurno, diaChile, diaUTC,
+} = require('../utils/tiempo');
 
 // Umbrales de las reglas. Están juntos y a la vista para poder explicarlos y
 // ajustarlos con la empresa piloto (se devuelven también en la respuesta).
@@ -45,55 +43,6 @@ const REGLAS = [
 
 const PRIORIDAD_ORDEN = { alta: 0, media: 1, baja: 2 };
 const CRITICIDAD_ORDEN = { Alta: 0, Media: 1, Baja: 2 };
-
-// ─── Utilidades de tiempo (zona America/Santiago) ───────────────────────────
-// Los turnos guardan la hora como texto "HH:MM" (hora de Chile) y la fecha como
-// día de calendario. El servidor corre en UTC, así que se convierte con la zona.
-
-const partesEnZona = (instante) => {
-  const partes = new Intl.DateTimeFormat('en-US', {
-    timeZone: ZONA, hourCycle: 'h23',
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-  }).formatToParts(instante);
-  const v = {};
-  partes.forEach((p) => { v[p.type] = Number(p.value); });
-  return v;
-};
-
-const offsetZonaMin = (instante) => {
-  const p = partesEnZona(instante);
-  const comoUTC = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
-  const base = Math.floor(instante.getTime() / 1000) * 1000;
-  return Math.round((comoUTC - base) / MIN_MS);
-};
-
-/** Instante UTC en que ocurre `fecha` + "HH:MM" en hora de Chile. */
-const instanteChile = (fecha, hhmm) => {
-  const f = new Date(fecha);
-  const [h, m] = hhmm.split(':').map(Number);
-  const ingenuo = Date.UTC(f.getUTCFullYear(), f.getUTCMonth(), f.getUTCDate(), h, m);
-  let t = ingenuo - offsetZonaMin(new Date(ingenuo)) * MIN_MS;
-  t = ingenuo - offsetZonaMin(new Date(t)) * MIN_MS; // segunda pasada: bordes de cambio de hora
-  return new Date(t);
-};
-
-const inicioTurno = (turno) => instanteChile(turno.fecha, turno.hora_inicio);
-
-const finTurno = (turno) => {
-  const inicio = inicioTurno(turno);
-  const mismoDia = instanteChile(turno.fecha, turno.hora_fin);
-  if (mismoDia > inicio) return mismoDia;
-  // Turno nocturno: termina al día siguiente.
-  const diaSiguiente = new Date(new Date(turno.fecha).getTime() + DIA_MS);
-  return instanteChile(diaSiguiente, turno.hora_fin);
-};
-
-/** Día de calendario ("YYYY-MM-DD") de un instante, en hora de Chile. */
-const diaChile = (instante) => {
-  const p = partesEnZona(instante);
-  return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
-};
 
 const redondear = (n, dec = 1) => {
   const k = 10 ** dec;
@@ -404,8 +353,6 @@ const getInsight = async (user, { dias = 30 } = {}) => {
     const ids = await resolverInstalacionesSupervisor(user);
     filtroInst = { instalacion_id: { in: ids } };
   }
-
-  const diaUTC = (d) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 
   const [turnos, novedades] = await Promise.all([
     prisma.turno.findMany({

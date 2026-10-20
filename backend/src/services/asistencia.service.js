@@ -3,9 +3,23 @@ const { getSocketIO } = require('../socket/socketManager');
 const geovalidacion = require('./geovalidacion.service');
 const notificacion = require('./notificacion.service');
 const { ROLES } = require('../constants/roles');
+const { MIN_MS, DIA_MS, inicioTurno, finTurno, diaUTC } = require('../utils/tiempo');
 
 const TOLERANCIA_MINUTOS = 15;
 const ATRASO_MINUTOS = 10;
+
+/**
+ * Elige el turno vigente en `ahora` entre varios candidatos.
+ * Vigente = desde TOLERANCIA_MINUTOS antes del inicio hasta el fin del turno.
+ * Si hay más de uno (turnos seguidos), gana el que empezó más recientemente.
+ */
+const seleccionarTurno = (candidatos, ahora) => {
+  const vigentes = candidatos
+    .map((t) => ({ t, inicio: inicioTurno(t), fin: finTurno(t) }))
+    .filter(({ inicio, fin }) => ahora.getTime() >= inicio.getTime() - TOLERANCIA_MINUTOS * MIN_MS && ahora < fin)
+    .sort((a, b) => b.inicio - a.inicio);
+  return vigentes.length > 0 ? vigentes[0].t : null;
+};
 
 /**
  * Entrada desde TABLET (dispositivo fijo en instalación).
@@ -40,34 +54,27 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
 
   const ahora = new Date();
 
-  // Ventana de búsqueda de 24 h hacia atrás + TOLERANCIA hacia adelante.
-  // Cubre tres casos sin depender del reloj local del servidor:
-  //   1. Turnos diurnos que empezaron "hoy" en UTC.
-  //   2. Turnos nocturnos que empezaron ayer UTC y aún están vigentes (ej. 19:00–07:00).
-  //   3. Turnos del día chileno real cuando ya es "mañana" en UTC (después de las 20:00 CLT).
-  const ventanaInicio = new Date(ahora.getTime() - 24 * 60 * 60 * 1000);
-  const ventanaFin    = new Date(ahora.getTime() + TOLERANCIA_MINUTOS * 60 * 1000);
-
-  const turno = await prisma.turno.findFirst({
+  // Candidatos: turnos del usuario en la instalación con fecha cercana (la columna
+  // `fecha` es un día de calendario, no un instante). Entre ellos se elige el que
+  // está vigente ahora, comparando con la hora de Chile (ver utils/tiempo.js).
+  const candidatos = await prisma.turno.findMany({
     where: {
       usuario_id,
       instalacion_id,
-      fecha: { gte: ventanaInicio, lte: ventanaFin },
+      fecha: { gte: diaUTC(new Date(ahora.getTime() - 2 * DIA_MS)), lte: diaUTC(new Date(ahora.getTime() + DIA_MS)) },
       estado: { not: 'cancelado' },
     },
     include: { instalacion: true },
-    orderBy: { fecha: 'desc' }, // Si hay varios en ventana, tomar el más reciente
   });
+  const turno = seleccionarTurno(candidatos, ahora);
 
   if (!turno) {
-    // Mensaje de debug con timestamp del servidor y rango buscado, para facilitar diagnóstico
-    const fechaUTC   = ahora.toISOString();
     const fechaChile = ahora.toLocaleString('es-CL', { timeZone: 'America/Santiago', hour12: false });
     throw Object.assign(
       new Error(
-        `No tienes un turno asignado en esta instalación. ` +
-        `Hora servidor: ${fechaUTC} (UTC) / ${fechaChile} (CLT). ` +
-        `Rango buscado: ${ventanaInicio.toISOString()} → ${ventanaFin.toISOString()}.`,
+        `No tienes un turno vigente en esta instalación. ` +
+        `Hora actual: ${fechaChile} (hora de Chile). ` +
+        `Puedes marcar desde ${TOLERANCIA_MINUTOS} min antes del inicio hasta el fin del turno.`,
       ),
       { statusCode: 400 },
     );
@@ -101,21 +108,9 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
     }
   }
 
-  // Calcular minutos de retraso usando la fecha UTC real almacenada en el turno.
-  // turno.fecha está guardado como mediodía UTC (ej. 2026-04-13T12:00:00Z).
-  // Reconstruimos el instante de inicio del turno en UTC con la hora del turno,
-  // de modo que el diff sea correcto independientemente del TZ del servidor.
-  const fechaTurnoUTC = new Date(turno.fecha);
-  const [horaInicio, minInicio] = turno.hora_inicio.split(':').map(Number);
-  const inicioTurno = new Date(Date.UTC(
-    fechaTurnoUTC.getUTCFullYear(),
-    fechaTurnoUTC.getUTCMonth(),
-    fechaTurnoUTC.getUTCDate(),
-    horaInicio,
-    minInicio,
-    0,
-  ));
-  const diffMin = Math.floor((ahora - inicioTurno) / 60000);
+  // Minutos de retraso respecto del inicio del turno en hora de Chile.
+  const inicioDelTurno = inicioTurno(turno);
+  const diffMin = Math.floor((ahora - inicioDelTurno) / MIN_MS);
   const minutosRetraso = Math.max(0, diffMin);
   const estado = minutosRetraso > ATRASO_MINUTOS ? 'tardio' : 'normal';
 
@@ -194,10 +189,8 @@ const registrarSalida = async (data, user) => {
   const horasTrabajadas = (ahora - new Date(asistencia.hora_entrada)) / 3600000;
 
   // Calcular horas extra
-  const [horaFin, minFin] = asistencia.turno.hora_fin.split(':').map(Number);
-  const finTurno = new Date(asistencia.hora_entrada);
-  finTurno.setHours(horaFin, minFin, 0, 0);
-  const horasExtra = Math.max(0, (ahora - finTurno) / 3600000);
+  // El fin se calcula en hora de Chile; los turnos nocturnos terminan al día siguiente.
+  const horasExtra = Math.max(0, (ahora - finTurno(asistencia.turno)) / 3600000);
 
   const actualizada = await prisma.asistencia.update({
     where: { id: asistencia_id },
@@ -344,4 +337,5 @@ module.exports = {
   obtenerHistorial,
   obtenerEstadoActual,
   sincronizarBatch,
+  seleccionarTurno,
 };
