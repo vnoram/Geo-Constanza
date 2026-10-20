@@ -290,6 +290,7 @@ function IncidentesPanel({ token }) {
     { id: "todas",   label: "Todas" },
     { id: "abierta", label: "Abiertas" },
     { id: "escalada",label: "Escaladas" },
+    { id: "resuelta", label: "Resueltas" },
   ];
 
   return (
@@ -340,7 +341,7 @@ function IncidentesPanel({ token }) {
         const urgColor   = URGENCIA_COLOR[n.urgencia]  ?? T.textMut;
         const estadoColor = ESTADO_COLOR[n.estado]      ?? T.textMut;
         const hora = new Date(n.created_at).toLocaleString("es-CL", {
-          day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago",
+          day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago",
         });
         return (
           <div className="responsive-card" key={n.id} style={{
