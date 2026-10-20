@@ -14,9 +14,13 @@ const URGENCIA_COLOR = {
   verde:    { border: T.accent, badge: "accent" },
 };
 
-function formatHora(dateStr) {
+function formatFechaHora(dateStr) {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" });
+  return new Date(dateStr).toLocaleString("es-CL", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+    timeZone: "America/Santiago",
+  });
 }
 
 // ─── Modal: Resolver con comentario ──────────────────────────────────
@@ -179,6 +183,7 @@ export function SupNovedades({ user }) {
   const [resolverTarget, setResolver] = useState(null); // novedad seleccionada para resolver
   const [actionLoading, setActionLoading] = useState({}); // { [id]: true }
   const [alertaCritica, setAlertaCritica] = useState(null);
+  const [vista, setVista]             = useState("activas"); // "activas" | "resueltas"
   const socketRef = useRef(null);
 
   const cargarNovedades = async () => {
@@ -251,10 +256,14 @@ export function SupNovedades({ user }) {
   // ── Resolver (callback desde modal) ─────────────────────────────
   const handleResuelta = (id) => {
     setNovedades(prev =>
-      prev.map(n => n.id === id ? { ...n, estado: "resuelta" } : n),
+      prev.map(n => n.id === id ? { ...n, estado: "resuelta", fecha_atencion: new Date().toISOString() } : n),
     );
     setResolver(null);
   };
+
+  const activas   = novedades.filter(n => n.estado !== "resuelta");
+  const resueltas = novedades.filter(n => n.estado === "resuelta");
+  const visibles  = vista === "resueltas" ? resueltas : activas;
 
   return (
     <div className="operations-screen">
@@ -291,16 +300,43 @@ export function SupNovedades({ user }) {
         </div>
       )}
 
-      {!loading && novedades.length === 0 && (
+      <div role="tablist" style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        {[
+          { id: "activas",   label: "Activas",   count: activas.length },
+          { id: "resueltas", label: "Resueltas", count: resueltas.length },
+        ].map(t => {
+          const activo = vista === t.id;
+          return (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={activo}
+              className="touch-target"
+              onClick={() => setVista(t.id)}
+              style={{
+                padding: "8px 14px", borderRadius: 8, cursor: "pointer",
+                fontSize: 13, fontWeight: 700, fontFamily: "var(--font-ui)",
+                background: activo ? T.bgCard : "transparent",
+                color: activo ? T.text : T.textSec,
+                border: `1px solid ${activo ? T.accent : T.border}`,
+              }}
+            >
+              {t.label} ({t.count})
+            </button>
+          );
+        })}
+      </div>
+
+      {!loading && visibles.length === 0 && (
         <div style={{
           textAlign: "center", color: T.textMut, padding: 32, fontSize: 14,
           background: T.bgCard, borderRadius: 8, border: `1px solid ${T.border}`,
         }}>
-          No hay novedades registradas.
+          {vista === "resueltas" ? "Aún no hay novedades resueltas." : "No hay novedades activas."}
         </div>
       )}
 
-      {novedades.map(n => {
+      {visibles.map(n => {
         const urgencia = n.urgencia ?? "verde";
         const colors   = URGENCIA_COLOR[urgencia] ?? URGENCIA_COLOR.verde;
         const resuelta = n.estado === "resuelta";
@@ -321,12 +357,23 @@ export function SupNovedades({ user }) {
             </div>
 
             <div style={{ fontSize: 12, color: T.textMut, marginBottom: 4 }}>
-              {guardaNombre} · {instNombre} · {formatHora(n.created_at)}
+              {guardaNombre} · {instNombre} · {formatFechaHora(n.created_at)}
             </div>
+            {resuelta && n.fecha_atencion && (
+              <div style={{ fontSize: 12, color: T.textMut, marginBottom: 4 }}>
+                Resuelta el {formatFechaHora(n.fecha_atencion)}
+              </div>
+            )}
 
             <div style={{ fontSize: 12, color: T.textSec, marginBottom: 8 }}>
               {n.descripcion}
             </div>
+
+            {resuelta && n.comentario_cierre && (
+              <div style={{ fontSize: 12, color: T.textSec, marginBottom: 8 }}>
+                Cierre: {n.comentario_cierre}
+              </div>
+            )}
 
             {n.foto_url_firmada && <FotoNovedad url={n.foto_url_firmada} />}
 
