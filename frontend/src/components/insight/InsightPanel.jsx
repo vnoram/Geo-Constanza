@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { T, FONT } from "../../theme/theme";
 import { KPI } from "../ui/KPI";
 import { SectionHeader } from "../ui/SectionHeader";
@@ -32,10 +32,23 @@ function TendenciaDescubiertos({ tendencia }) {
   const [activo, setActivo] = useState(null);
   const [tabla, setTabla] = useState(false);
 
-  const W = 300, H = 90, PAD_B = 4;
+  // El ancho del gráfico sigue al de su contenedor para que las barras ocupen todo el espacio.
+  const caja = useRef(null);
+  const [W, setW] = useState(300);
+  useEffect(() => {
+    const el = caja.current;
+    if (!el) return undefined;
+    const medir = () => setW(Math.max(160, Math.floor(el.clientWidth)));
+    medir();
+    const obs = new ResizeObserver(medir);
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [tabla]);
+
+  const H = 90, PAD_B = 4;
   const max = Math.max(1, ...tendencia.map((d) => d.descubiertos));
   const paso = W / tendencia.length;
-  const ancho = Math.max(2, Math.min(14, paso - 2));
+  const ancho = Math.max(2, Math.min(18, paso - 3));
   const sel = activo !== null ? tendencia[activo] : null;
 
   return (
@@ -76,14 +89,17 @@ function TendenciaDescubiertos({ tendencia }) {
         </div>
       ) : (
         <>
+          <div ref={caja} style={{ width: "100%" }}>
           <svg
+            width={W} height={H}
             viewBox={`0 0 ${W} ${H}`}
             role="img"
             aria-label="Turnos sin cobertura por día"
-            style={{ width: "100%", height: 90, display: "block" }}
+            style={{ display: "block" }}
             onMouseLeave={() => setActivo(null)}
           >
             <line x1="0" x2={W} y1={H - PAD_B} y2={H - PAD_B} stroke={T.border} strokeWidth="1" />
+            <text x="0" y="9" fontSize="10" fill={T.textMut} fontFamily={FONT.mono}>máx. {max}</text>
             {tendencia.map((d, i) => {
               const h = d.descubiertos > 0 ? Math.max(3, (d.descubiertos / max) * (H - PAD_B - 8)) : 0;
               const x = i * paso + (paso - ancho) / 2;
@@ -101,6 +117,7 @@ function TendenciaDescubiertos({ tendencia }) {
               );
             })}
           </svg>
+          </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.textMut, marginTop: 4 }}>
             <span>{etiquetaDia(tendencia[0].fecha)}</span>
             <span>{etiquetaDia(tendencia[tendencia.length - 1].fecha)}</span>
@@ -230,7 +247,7 @@ export function InsightPanel() {
 
           {/* ── Línea base ── */}
           <div style={tituloSeccion}>Línea base · últimos {data.periodo.dias} días</div>
-          <div className="metrics-grid" style={{ display: "grid", gap: 10, marginBottom: 20 }}>
+          <div className="metrics-grid--compact" style={{ display: "grid", gap: 10, marginBottom: 20 }}>
             <KPI label="Cobertura" value={fmt(lb.coberturaPct, "%")} sub={`${lb.turnosCubiertos} de ${lb.turnosEvaluados} turnos`} accent={T.accent} />
             <KPI label="Sin cobertura" value={lb.turnosDescubiertos} sub="turnos sin marcaje" accent={T.alert} />
             <KPI label="Tardíos" value={fmt(lb.tardiosPct, "%")} sub={`${lb.tardios} entradas con retraso`} accent={T.yellow} />

@@ -3,7 +3,7 @@
 jest.mock('../../config/database', () => ({ prisma: {} }));
 jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn() }));
 
-const { construirInsight } = require('../insight.service');
+const { construirInsight, formatearDuracion } = require('../insight.service');
 
 // 2026-10-20 15:00 UTC = 12:00 en Chile (UTC-3 en horario de verano).
 const AHORA = new Date('2026-10-20T15:00:00Z');
@@ -24,6 +24,12 @@ const turno = (usuario, dia, ini, fin, entradaUTC, extra = {}) => ({
   usuario,
   instalacion: INST,
   asistencias: entradaUTC ? [{ hora_entrada: new Date(entradaUTC), es_fallback: false, estado: 'normal', ...extra }] : [],
+});
+
+describe('formatearDuracion', () => {
+  test.each([[5, '5 min'], [60, '1 h'], [125, '2 h 5 min'], [1440, '1 d'], [2179, '1 d 12 h']])('%i min', (min, esperado) => {
+    expect(formatearDuracion(min)).toBe(esperado);
+  });
 });
 
 describe('construirInsight', () => {

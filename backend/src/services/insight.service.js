@@ -57,6 +57,15 @@ const redondear = (n, dec = 1) => {
 const pct = (parte, total) => (total > 0 ? redondear((parte / total) * 100, 1) : null);
 const promedio = (xs) => (xs.length > 0 ? redondear(xs.reduce((a, b) => a + b, 0) / xs.length, 1) : null);
 
+/** 125 -> "2 h 5 min"; 2179 -> "1 d 12 h". */
+const formatearDuracion = (min) => {
+  if (min < 60) return `${min} min`;
+  if (min < 1440) return `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}`;
+  const d = Math.floor(min / 1440);
+  const h = Math.floor((min % 1440) / 60);
+  return `${d} d${h ? ` ${h} h` : ''}`;
+};
+
 const minutosEntre = (a, b) => Math.floor((a.getTime() - b.getTime()) / MIN_MS);
 
 // ─── Evaluación de un turno ────────────────────────────────────────────────
@@ -197,7 +206,7 @@ const construirInsight = ({ turnos, novedades, ahora, dias }) => {
       regla: 'SIN_MARCAJE',
       prioridad: critica || min >= UMBRALES.SIN_MARCAJE_ALTA_MIN ? 'alta' : 'media',
       titulo: `Sin marcaje: ${e.turno.usuario.nombre}`,
-      detalle: `El turno de ${e.turno.hora_inicio} a ${e.turno.hora_fin} en ${e.turno.instalacion.nombre} lleva ${min} min sin marcaje.`,
+      detalle: `El turno de ${e.turno.hora_inicio} a ${e.turno.hora_fin} en ${e.turno.instalacion.nombre} lleva ${formatearDuracion(min)} sin marcaje.`,
       porQue: `Regla SIN_MARCAJE: más de ${UMBRALES.SIN_MARCAJE_MIN} min desde el inicio sin entrada registrada${critica ? '; instalación de criticidad Alta' : ''}.`,
       instalacion: { id: e.turno.instalacion.id, nombre: e.turno.instalacion.nombre, criticidad: e.turno.instalacion.nivel_criticidad || 'Media' },
       guardia: e.turno.usuario.nombre,
@@ -251,7 +260,7 @@ const construirInsight = ({ turnos, novedades, ahora, dias }) => {
         regla: 'NOVEDAD_ROJA_PENDIENTE',
         prioridad: 'alta',
         titulo: `Novedad roja sin atender: ${n.tipo}`,
-        detalle: `${n.instalacion.nombre}: reportada hace ${min} min, estado ${n.estado}.`,
+        detalle: `${n.instalacion.nombre}: reportada hace ${formatearDuracion(min)}, estado ${n.estado}.`,
         porQue: `Regla NOVEDAD_ROJA_PENDIENTE: urgencia roja sin atención por más de ${UMBRALES.NOVEDAD_ROJA_SIN_ATENCION_MIN} min.`,
         instalacion: { id: n.instalacion.id, nombre: n.instalacion.nombre, criticidad: n.instalacion.nivel_criticidad || 'Media' },
         guardia: null,
@@ -396,5 +405,6 @@ module.exports = {
   getInsight,
   construirInsight,
   // Exportadas para pruebas
+  formatearDuracion,
   UMBRALES,
 };
