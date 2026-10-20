@@ -3,6 +3,9 @@ import { T, ROLES } from "../../theme/theme";
 import { ROLES as ROL } from "../../constants/roles";
 import { Placeholder } from "../ui/Placeholder";
 
+// ─── Insight (supervisor, central y administrador) ───
+import { InsightPanel } from "../insight/InsightPanel";
+
 // ─── GGSS en pauta ───
 import { PautaTurno } from "../../screens/ggss-en-pauta/PautaTurno";
 import { PautaNovedades } from "../../screens/ggss-en-pauta/PautaNovedades";
@@ -58,6 +61,7 @@ function RoleContent({ user, rol, section }) {
   }
   if (rol === ROL.SUPERVISOR) {
     if (section === "dashboard") return <SupDashboard />;
+    if (section === "insight") return <InsightPanel />;
     if (section === "novedades") return <SupNovedades />;
     if (section === "solicitudes") return <SupSolicitudes />;
     if (section === "guardias") return <SupGuardias />;
@@ -67,6 +71,7 @@ function RoleContent({ user, rol, section }) {
     // "panel" reutiliza el dashboard completo con mapa + KPIs de AdminPanel
     if (section === "panel")      return <AdminPanel />;
     if (section === "incidentes") return <CentralPanel section="incidentes" />;
+    if (section === "insight")    return <InsightPanel />;
   }
   if (rol === ROL.ADMINISTRADOR) {
     // Admin ya no tiene el panel de monitoreo — solo gestión RRHH/config
@@ -74,6 +79,7 @@ function RoleContent({ user, rol, section }) {
     if (section === "instalaciones") return <AdminInstalaciones />;
     if (section === "turnos")        return <AdminTurnos />;
     if (section === "auditoria")     return <AdminAuditoria />;
+    if (section === "insight")       return <InsightPanel />;
   }
   return <Placeholder section={section} />;
 }

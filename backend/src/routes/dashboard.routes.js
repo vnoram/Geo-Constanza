@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { hoy, estadoSupervisores } = require('../controllers/dashboard.controller');
+const { hoy, estadoSupervisores, insight } = require('../controllers/dashboard.controller');
 const { authenticate } = require('../middlewares/auth');
 const { authorize } = require('../middlewares/rbac');
 const { ROLES } = require('../constants/roles');
@@ -13,5 +13,8 @@ router.get('/hoy', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADM
 
 // Estado de supervisores (solo Central y Admin)
 router.get('/supervisores', authorize(ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), estadoSupervisores);
+
+// Insight: línea base y alertas por reglas (supervisor ve sus instalaciones; central y admin ven todo)
+router.get('/insight', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), insight);
 
 module.exports = router;

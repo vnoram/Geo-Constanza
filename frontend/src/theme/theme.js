@@ -54,6 +54,7 @@ export const ROLES = {
     desc: "Panel de supervisión",
     sections: [
       { id: "dashboard", icon: "📊", label: "Dashboard", badge: "3" },
+      { id: "insight", icon: "💡", label: "Insight", badge: null },
       { id: "novedades", icon: "🚨", label: "Novedades", badge: "2" },
       { id: "solicitudes", icon: "📝", label: "Solicitudes", badge: "1" },
       { id: "guardias", icon: "👥", label: "Guardias", badge: null },
@@ -68,6 +69,7 @@ export const ROLES = {
     sections: [
       { id: "panel",      icon: "🗺️", label: "Mapa en Vivo", badge: null },
       { id: "incidentes", icon: "🚨", label: "Novedades",    badge: null },
+      { id: "insight",    icon: "💡", label: "Insight",      badge: null },
     ],
   },
   [ROL.ADMINISTRADOR]: {
@@ -80,6 +82,7 @@ export const ROLES = {
       { id: "instalaciones", icon: "🏢", label: "Instalaciones", badge: null },
       { id: "turnos",        icon: "📅", label: "Turnos",        badge: null },
       { id: "auditoria",     icon: "🔍", label: "Auditoría",     badge: null },
+      { id: "insight",       icon: "💡", label: "Insight",       badge: null },
     ],
   },
 };
