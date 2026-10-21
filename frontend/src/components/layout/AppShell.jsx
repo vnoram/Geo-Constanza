@@ -50,7 +50,7 @@ function RoleContent({ user, rol, section }) {
   if (rol === ROL.GGSS_EN_PAUTA) {
     if (section === "turno") return <PautaTurno user={user} />;
     if (section === "novedades") return <PautaNovedades user={user} />;
-    if (section === "historial") return <PautaHistorial />;
+    if (section === "historial") return <PautaHistorial user={user} />;
     if (section === "alertas") return <PautaAlertas />;
   }
   if (rol === ROL.GGSS_LIBRE) {
