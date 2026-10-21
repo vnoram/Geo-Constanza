@@ -34,9 +34,13 @@ const URGENCIA_COLOR = {
   verde:    { border: T.accent, badge: "accent" },
 };
 
-function formatHora(dateStr) {
+function formatFechaHora(dateStr) {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" });
+  return new Date(dateStr).toLocaleString("es-CL", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+    timeZone: "America/Santiago",
+  });
 }
 
 // ─── Modal: Reportar Novedad ─────────────────────────────────────────
@@ -279,7 +283,8 @@ export function PautaNovedades({ user }) {
   const [novedades, setNovedades] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const socketRef                 = useRef(null);
+  const [vista, setVista]         = useState("activas"); // "activas" | "resueltas"
+  const socketRef                = useRef(null);
 
   const cargarNovedades = async () => {
     try {
@@ -313,6 +318,10 @@ export function PautaNovedades({ user }) {
     cargarNovedades();
   };
 
+  const activas   = novedades.filter(n => n.estado !== "resuelta");
+  const resueltas = novedades.filter(n => n.estado === "resuelta");
+  const visibles  = vista === "resueltas" ? resueltas : activas;
+
   return (
     <div className="guard-screen">
       <SectionHeader
@@ -327,16 +336,43 @@ export function PautaNovedades({ user }) {
         </div>
       )}
 
-      {!loading && novedades.length === 0 && (
+      <div role="tablist" style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        {[
+          { id: "activas",   label: "Activas",   count: activas.length },
+          { id: "resueltas", label: "Resueltas", count: resueltas.length },
+        ].map(t => {
+          const activo = vista === t.id;
+          return (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={activo}
+              className="touch-target"
+              onClick={() => setVista(t.id)}
+              style={{
+                padding: "8px 14px", borderRadius: 8, cursor: "pointer",
+                fontSize: 13, fontWeight: 700, fontFamily: "var(--font-ui)",
+                background: activo ? T.bgCard : "transparent",
+                color: activo ? T.text : T.textSec,
+                border: `1px solid ${activo ? T.accent : T.border}`,
+              }}
+            >
+              {t.label} ({t.count})
+            </button>
+          );
+        })}
+      </div>
+
+      {!loading && visibles.length === 0 && (
         <div style={{
           textAlign: "center", color: T.textMut, padding: 32, fontSize: 14,
           background: T.bgCard, borderRadius: 8, border: `1px solid ${T.border}`,
         }}>
-          No hay novedades registradas en este turno.
+          {vista === "resueltas" ? "Aún no hay novedades resueltas." : "No hay novedades activas."}
         </div>
       )}
 
-      {novedades.map(n => {
+      {visibles.map(n => {
         const urgencia = n.urgencia ?? "verde";
         const colors   = URGENCIA_COLOR[urgencia] ?? URGENCIA_COLOR.verde;
         return (
@@ -350,8 +386,14 @@ export function PautaNovedades({ user }) {
               <Badge color={colors.badge}>{urgencia}</Badge>
             </div>
             <div style={{ fontSize: 12, color: T.textMut, marginBottom: 6 }}>
-              {formatHora(n.created_at)} · {n.descripcion}
+              {formatFechaHora(n.created_at)} · {n.descripcion}
             </div>
+            {n.estado === "resuelta" && n.fecha_atencion && (
+              <div style={{ fontSize: 12, color: T.textMut, marginBottom: 6 }}>
+                Resuelta el {formatFechaHora(n.fecha_atencion)}
+                {n.comentario_cierre ? ` · ${n.comentario_cierre}` : ""}
+              </div>
+            )}
             <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
               <Badge color={n.estado === "abierta" ? "yellow" : n.estado === "escalada" ? "red" : "accent"}>
                 {n.estado}
