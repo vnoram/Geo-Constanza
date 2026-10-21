@@ -372,15 +372,17 @@ export function PautaNovedades({ user }) {
         </div>
       )}
 
+      <div className="nov-list">
       {visibles.map(n => {
         const urgencia = n.urgencia ?? "verde";
         const colors   = URGENCIA_COLOR[urgencia] ?? URGENCIA_COLOR.verde;
         return (
-          <div className="guard-card" key={n.id} style={{
+          <div className="guard-card nov-card nov-card--sinfoto" key={n.id} style={{
             background: T.bgCard, border: `1px solid ${T.border}`,
             borderLeft: `4px solid ${colors.border}`,
-            borderRadius: 8, padding: 14, marginBottom: 8,
+            borderRadius: 8, padding: 14,
           }}>
+            <div className="nov-card__body">
             <div className="guard-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>
               <Badge color={colors.badge}>{urgencia}</Badge>
@@ -394,17 +396,21 @@ export function PautaNovedades({ user }) {
                 {n.comentario_cierre ? ` · ${n.comentario_cierre}` : ""}
               </div>
             )}
-            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-              <Badge color={n.estado === "abierta" ? "yellow" : n.estado === "escalada" ? "red" : "accent"}>
-                {n.estado}
-              </Badge>
-              {n.gps_dentro_rango === false && (
-                <Badge color="yellow">GPS fuera de rango</Badge>
-              )}
+            </div>
+            <div className="nov-card__pie">
+              <div className="nov-card__estado" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                <Badge color={n.estado === "abierta" ? "yellow" : n.estado === "escalada" ? "red" : "accent"}>
+                  {n.estado}
+                </Badge>
+                {n.gps_dentro_rango === false && (
+                  <Badge color="yellow">GPS fuera de rango</Badge>
+                )}
+              </div>
             </div>
           </div>
         );
       })}
+      </div>
 
       {showModal && (
         <ReportarModal
