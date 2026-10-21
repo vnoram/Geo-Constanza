@@ -724,3 +724,45 @@ span[style*='text-transform: uppercase'] { display: inline-block; }
 
 /* En el recuadro del celular no hay texto encima: velo casi nulo para respetar el color original */
 .login__thumb .login__art-tint { background: rgba(14, 23, 20, 0.15); }
+
+/* ─── NOVEDADES (supervisor) ───
+   Móvil: tarjetas apiladas. Escritorio: rejilla de dos columnas y cada
+   tarjeta pone la foto a la izquierda y las acciones al pie. */
+.nov-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+@media (min-width: 900px) {
+  .nov-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr));
+    gap: 12px;
+    align-items: start;
+  }
+  .nov-card {
+    display: grid;
+    grid-template-columns: 168px minmax(0, 1fr);
+    grid-template-areas: "foto body" "foto pie";
+    column-gap: 16px;
+    align-content: start;
+  }
+  .nov-card--sinfoto {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "body" "pie";
+  }
+  .nov-card__body { grid-area: body; }
+  .nov-card__foto { grid-area: foto; }
+  .nov-card__pie {
+    grid-area: pie;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+    flex-wrap: wrap;
+    align-self: end;
+    padding-top: 10px;
+    border-top: 1px solid var(--gc-line);
+  }
+  .nov-card__estado { margin-bottom: 0 !important; }
+}

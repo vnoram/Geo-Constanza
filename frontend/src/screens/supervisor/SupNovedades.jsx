@@ -336,6 +336,7 @@ export function SupNovedades({ user }) {
         </div>
       )}
 
+      <div className="nov-list">
       {visibles.map(n => {
         const urgencia = n.urgencia ?? "verde";
         const colors   = URGENCIA_COLOR[urgencia] ?? URGENCIA_COLOR.verde;
@@ -345,12 +346,13 @@ export function SupNovedades({ user }) {
         const instNombre   = n.instalacion?.nombre ?? "—";
 
         return (
-          <div className="responsive-card" key={n.id} style={{
+          <div className={`responsive-card nov-card${n.foto_url_firmada ? "" : " nov-card--sinfoto"}`} key={n.id} style={{
             background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
             borderLeft: `4px solid ${colors.border}`,
-            padding: 14, marginBottom: 8,
+            padding: 14,
             opacity: resuelta ? 0.6 : 1,
           }}>
+            <div className="nov-card__body">
             <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>
               <Badge color={colors.badge}>{urgencia}</Badge>
@@ -375,10 +377,15 @@ export function SupNovedades({ user }) {
               </div>
             )}
 
-            {n.foto_url_firmada && <FotoNovedad url={n.foto_url_firmada} />}
+            </div>
 
+            {n.foto_url_firmada && (
+              <div className="nov-card__foto"><FotoNovedad url={n.foto_url_firmada} /></div>
+            )}
+
+            <div className="nov-card__pie">
             {/* Badges de estado + GPS */}
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+            <div className="nov-card__estado" style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
               <Badge color={resuelta ? "accent" : escalada ? "red" : "yellow"}>
                 {n.estado}
               </Badge>
@@ -408,9 +415,11 @@ export function SupNovedades({ user }) {
                 )}
               </div>
             )}
+            </div>
           </div>
         );
       })}
+      </div>
 
       {resolverTarget && (
         <ResolverModal
