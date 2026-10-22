@@ -281,14 +281,16 @@ async function generarUrlLectura(blobUrl, minutos = CONFIG.SAS_MINUTOS) {
     validarConfiguracion();
     const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME;
     const url = new URL(blobUrl);
-    const prefijo = `/${containerName}/`;
+    const containerClient = BlobServiceClient
+      .fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING)
+      .getContainerClient(containerName);
+    // En Azure el contenedor cuelga de la raíz (/reportes); en el emulador
+    // local (Azurite) cuelga de la cuenta (/devstoreaccount1/reportes).
+    const prefijo = `${new URL(containerClient.url).pathname}/`;
     if (!url.pathname.startsWith(prefijo)) return null;
 
     const nombreBlob = decodeURIComponent(url.pathname.slice(prefijo.length));
-    const blobClient = BlobServiceClient
-      .fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING)
-      .getContainerClient(containerName)
-      .getBlobClient(nombreBlob);
+    const blobClient = containerClient.getBlobClient(nombreBlob);
 
     // Solo firmar blobs de nuestra propia cuenta
     if (new URL(blobClient.url).host !== url.host) return null;
