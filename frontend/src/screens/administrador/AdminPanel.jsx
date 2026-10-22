@@ -148,7 +148,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
         </div>
       )}
       <div ref={containerRef} className="central-map" style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }} />
-      <div style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 12, color: T.textSec }}>
+      <div className="admin-map-legend" style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 12, color: T.textSec }}>
         <span><span style={{ color: T.accent }}>●</span> Instalación y geocerca</span>
         <span><span style={{ color: T.accent }}>●</span> A tiempo</span>
         <span><span style={{ color: T.yellow }}>●</span> Tardío</span>
@@ -353,7 +353,7 @@ export function AdminPanel() {
   const n = s?.novedadesAbiertas ?? 0;
 
   return (
-    <div>
+    <div className="admin-screen">
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <SectionHeader title="Panel central" sub="Vista general del sistema" />
         <SocketBadge status={socketStatus} />

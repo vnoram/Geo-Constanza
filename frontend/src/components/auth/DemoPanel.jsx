@@ -22,7 +22,7 @@ export function DemoPanel({ onSelect }) {
           key={d.rut}
           type="button"
           onClick={() => onSelect(d.rut, "geo2026")}
-          className="demo-row"
+          className="demo-row touch-target"
           style={{
             display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
             width: "100%", minHeight: 38, padding: "0 12px", background: "transparent", border: "none",

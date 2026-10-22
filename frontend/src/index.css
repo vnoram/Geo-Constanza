@@ -262,6 +262,73 @@ canvas {
   font-size: 12px;
 }
 
+/* ─── ADMINISTRACIÓN Y ACCESO ─── */
+.admin-screen,
+.admin-card,
+.admin-list-row,
+.admin-list-row__main {
+  min-width: 0;
+}
+
+.admin-screen {
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.admin-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-list-row,
+.admin-actions,
+.admin-map-legend {
+  flex-wrap: wrap;
+}
+
+.admin-list-row__main {
+  overflow-wrap: anywhere;
+}
+
+.admin-user-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+.admin-user-meta__text {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.admin-user-meta__email {
+  word-break: break-all;
+}
+
+.admin-modal-overlay {
+  overflow-y: auto;
+  padding-top: max(12px, env(safe-area-inset-top)) !important;
+  padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+}
+
+.admin-modal {
+  max-height: calc(100dvh - 24px) !important;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.admin-turn-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 /* ─── APP SHELL ─── */
 .app-shell {
   width: 100%;
@@ -445,6 +512,33 @@ canvas {
     gap: 10px;
     padding: 10px;
   }
+
+  .admin-form-grid,
+  .admin-turn-card {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .admin-list-row {
+    align-items: flex-start !important;
+  }
+
+  .admin-actions {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  .admin-actions > .touch-target {
+    flex: 1 1 100%;
+    width: 100% !important;
+  }
+
+  .admin-modal-overlay {
+    align-items: flex-start !important;
+  }
+
+  .admin-modal {
+    padding: 18px !important;
+  }
 }
 
 @media (min-width: 640px) and (max-width: 1023px) {
@@ -565,7 +659,7 @@ button, input, select, textarea { font-family: inherit; }
 
 /* ─── LOGIN (dividido) ─── */
 .login {
-  min-height: 100svh;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   background: var(--gc-bg);
@@ -585,6 +679,8 @@ button, input, select, textarea { font-family: inherit; }
   align-items: center;
   justify-content: center;
   padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  min-height: 0;
+  overflow-y: auto;
 }
 .login__form { width: 100%; max-width: 360px; }
 .login__mobile-mark { margin-bottom: 28px; }
@@ -607,6 +703,25 @@ button, input, select, textarea { font-family: inherit; }
 }
 .login__demo-toggle:hover { color: var(--gc-text-2); }
 .demo-row:hover { background: var(--gc-card) !important; }
+
+@media (max-height: 560px) {
+  .login__panel {
+    align-items: flex-start;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .login__head { margin-bottom: 12px; }
+  .login__thumb { display: none; }
+  .login__footer { margin-top: 16px; }
+}
+
+@media (max-width: 639px) {
+  .demo-row {
+    min-height: 44px !important;
+    flex-wrap: wrap;
+    padding-block: 6px !important;
+  }
+}
 
 @media (min-width: 900px) {
   .login { grid-template-columns: minmax(300px, 40%) minmax(0, 1fr); }

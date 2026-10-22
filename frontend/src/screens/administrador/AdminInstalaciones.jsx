@@ -51,10 +51,11 @@ const ESTILOS_MODAL = `
     align-items: start;
   }
   .gc-inst-mapa { position: sticky; top: 0; }
+  .gc-inst-mapa-box { height: clamp(360px, 52dvh, 520px) !important; min-height: 280px; }
   @media (max-width: 900px) {
     .gc-inst-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
     .gc-inst-mapa { position: static; }
-    .gc-inst-mapa-box { height: 320px !important; }
+    .gc-inst-mapa-box { height: clamp(260px, 40dvh, 380px) !important; min-height: 260px; }
     .gc-inst-modal { padding: 18px !important; }
   }
   @media (max-width: 520px) {
@@ -82,6 +83,7 @@ function Select({ label, value, onChange, options }) {
         </label>
       )}
       <select
+        className="touch-target"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         style={{
@@ -302,6 +304,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
 
   return (
     <div
+      className="admin-modal-overlay"
       style={{
         position: "fixed",
         inset: 0,
@@ -316,7 +319,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
     >
       <style>{ESTILOS_MODAL}</style>
       <div
-        className="gc-inst-modal"
+        className="gc-inst-modal admin-modal"
         style={{
           background: T.bgCard,
           border: `1px solid ${T.border}`,
@@ -330,8 +333,8 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
         }}
       >
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <div>
+        <div className="admin-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div className="admin-list-row__main">
             <div style={{ fontWeight: 800, fontSize: 18, color: T.text }}>
               {esEdicion ? "Editar Instalación" : "Nueva Instalación"}
             </div>
@@ -340,6 +343,8 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
             </div>
           </div>
           <button
+            className="touch-target"
+            aria-label="Cerrar"
             onClick={onClose}
             style={{
               background: "none",
@@ -561,6 +566,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                   </b>
                 </span>
                 <button
+                  className="touch-target"
                   type="button"
                   onClick={usarSugerenciaPin}
                   style={{
@@ -579,6 +585,8 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                   Usar
                 </button>
                 <button
+                  className="touch-target"
+                  aria-label="Descartar dirección sugerida"
                   type="button"
                   onClick={() => setSugerenciaPin(null)}
                   style={{ background: "none", border: "none", color: T.textMut, cursor: "pointer", fontSize: 14 }}
@@ -625,7 +633,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10 }}>
+        <div className="admin-actions" style={{ display: "flex", gap: 10 }}>
           <Btn variant="outline" onClick={onClose} disabled={loading}>
             Cancelar
           </Btn>
@@ -645,6 +653,7 @@ function InstCard({ inst, onEditar }) {
 
   return (
     <div
+      className="admin-card"
       style={{
         background: T.bgCard,
         border: `1px solid ${T.border}`,
@@ -655,8 +664,8 @@ function InstCard({ inst, onEditar }) {
         transition: "border-color 0.2s",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 8 }}>
-        <div style={{ flex: 1, marginRight: 12 }}>
+      <div className="admin-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 8 }}>
+        <div className="admin-list-row__main" style={{ flex: 1, marginRight: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontWeight: 800, fontSize: 15, color: T.text }}>{inst.nombre}</span>
             <Badge color={color}>{inst.nivel_criticidad || "Media"}</Badge>
@@ -671,6 +680,7 @@ function InstCard({ inst, onEditar }) {
 
         {/* Botón Editar */}
         <button
+          className="touch-target"
           onClick={() => onEditar(inst)}
           style={{
             background: "rgba(122,78,191,0.1)",
@@ -777,7 +787,7 @@ export function AdminInstalaciones() {
   );
 
   return (
-    <div>
+    <div className="admin-screen">
       <SectionHeader
         title="Instalaciones"
         sub={`${instalaciones.length} recinto${instalaciones.length !== 1 ? "s" : ""} registrado${instalaciones.length !== 1 ? "s" : ""}`}
@@ -809,6 +819,7 @@ export function AdminInstalaciones() {
       {/* Buscador */}
       <div style={{ marginBottom: 14 }}>
         <input
+          className="touch-target"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar por nombre, dirección, comuna o tipo..."

@@ -83,32 +83,32 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
   };
 
   return (
-    <div style={{
+    <div className="admin-modal-overlay" style={{
       position: "fixed", inset: 0, zIndex: 100,
       background: "rgba(14,23,20,0.88)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: 16,
     }}>
-      <div style={{
+      <div className="admin-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`,
         borderRadius: 8, padding: 24, width: "100%", maxWidth: 480,
         maxHeight: "90vh", overflowY: "auto",
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div className="admin-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <span style={{ fontWeight: 700, fontSize: 16, color: T.text }}>
             {esEdicion ? "Editar Usuario" : "Crear Usuario"}
           </span>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: T.textMut, fontSize: 20, cursor: "pointer" }}>✕</button>
+          <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{ background: "none", border: "none", color: T.textMut, fontSize: 20, cursor: "pointer" }}>✕</button>
         </div>
 
         <form onSubmit={handleSubmit}>
           {/* Fila 1: RUT + Rol */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
+          <div className="admin-form-grid" style={{ display: "grid", gap: "0 12px" }}>
             <Field label="RUT" required>
-              <input style={inputStyle} value={form.rut} onChange={(e) => set("rut", e.target.value)} placeholder="12345678-9" />
+              <input className="touch-target" style={inputStyle} value={form.rut} onChange={(e) => set("rut", e.target.value)} placeholder="12345678-9" />
             </Field>
             <Field label="Rol" required>
-              <select style={{ ...inputStyle, appearance: "none" }} value={form.rol} onChange={(e) => set("rol", e.target.value)}>
+              <select className="touch-target" style={{ ...inputStyle, appearance: "none" }} value={form.rol} onChange={(e) => set("rol", e.target.value)}>
                 {ROLES_DISPONIBLES.map((r) => (
                   <option key={r} value={r} style={{ background: T.bgCard }}>{ROL_LABEL[r]}</option>
                 ))}
@@ -117,20 +117,20 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
           </div>
 
           <Field label="Nombre completo" required>
-            <input style={inputStyle} value={form.nombre} onChange={(e) => set("nombre", e.target.value)} placeholder="Ej: Andrés Martínez" />
+            <input className="touch-target" style={inputStyle} value={form.nombre} onChange={(e) => set("nombre", e.target.value)} placeholder="Ej: Andrés Martínez" />
           </Field>
 
           <Field label="Email" required>
-            <input style={inputStyle} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="usuario@geoconstanza.cl" />
+            <input className="touch-target" style={inputStyle} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="usuario@geoconstanza.cl" />
           </Field>
 
           {/* Fila 2: teléfono + contraseña */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
+          <div className="admin-form-grid" style={{ display: "grid", gap: "0 12px" }}>
             <Field label="Teléfono">
-              <input style={inputStyle} value={form.telefono} onChange={(e) => set("telefono", e.target.value)} placeholder="+56 9 1234 5678" />
+              <input className="touch-target" style={inputStyle} value={form.telefono} onChange={(e) => set("telefono", e.target.value)} placeholder="+56 9 1234 5678" />
             </Field>
             <Field label={esEdicion ? "Nueva contraseña" : "Contraseña"} required={!esEdicion}>
-              <input style={inputStyle} type="password" value={form.password} onChange={(e) => set("password", e.target.value)}
+              <input className="touch-target" style={inputStyle} type="password" value={form.password} onChange={(e) => set("password", e.target.value)}
                 placeholder={esEdicion ? "Dejar vacío para no cambiar" : "••••••••"} />
             </Field>
           </div>
@@ -139,6 +139,7 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
           {[ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(form.rol) && (
             <Field label="Instalación asignada">
               <select
+                className="touch-target"
                 style={{ ...inputStyle, appearance: "none", color: form.instalacion_asignada_id ? T.text : T.textMut }}
                 value={form.instalacion_asignada_id}
                 onChange={(e) => set("instalacion_asignada_id", e.target.value)}
@@ -205,7 +206,7 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
             </div>
           )}
 
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <div className="admin-actions" style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <Btn variant="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn>
             <Btn loading={loading}>{esEdicion ? "Guardar cambios" : "Crear usuario"}</Btn>
           </div>
@@ -268,7 +269,7 @@ export function AdminUsuarios() {
   };
 
   return (
-    <div>
+    <div className="admin-screen">
       <SectionHeader
         title="Usuarios"
         sub="Gestión de personal del sistema"
@@ -284,19 +285,22 @@ export function AdminUsuarios() {
       {!loading && usuarios.map((u) => {
         const instSup = u.instalaciones_sup ?? [];
         return (
-          <div key={u.id} style={{
+          <div className="admin-card" key={u.id} style={{
             background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
             padding: "12px 14px", marginBottom: 6,
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div className="admin-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               {/* Info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="admin-list-row__main" style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 3 }}>
                   <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{u.nombre}</span>
                   <Badge color={ROL_BADGE[u.rol] ?? "accent"}>{ROL_LABEL[u.rol] ?? u.rol}</Badge>
                   <Badge color={u.estado === "activo" ? "accent" : "red"}>{u.estado}</Badge>
                 </div>
-                <div style={{ fontSize: 11, color: T.textMut, overflowWrap: "anywhere", minWidth: 0 }}>{u.email} · {u.rut}</div>
+                <div className="admin-user-meta" style={{ fontSize: 11, color: T.textMut }}>
+                  <span className="admin-user-meta__text admin-user-meta__email">{u.email}</span>
+                  <span className="admin-user-meta__text">· {u.rut}</span>
+                </div>
 
                 {/* Área del supervisor: chips de instalaciones */}
                 {u.rol === ROL.SUPERVISOR && instSup.length > 0 && (
@@ -319,15 +323,16 @@ export function AdminUsuarios() {
 
                 {/* Instalación del guardia */}
                 {[ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(u.rol) && u.instalacion_asignada && (
-                  <div style={{ fontSize: 10, color: T.textMut, marginTop: 3 }}>
-                    📍 {u.instalacion_asignada.nombre}
+                  <div className="admin-user-meta" style={{ fontSize: 10, color: T.textMut, marginTop: 3 }}>
+                    <span className="admin-user-meta__text">📍 {u.instalacion_asignada.nombre}</span>
                   </div>
                 )}
               </div>
 
               {/* Acciones */}
-              <div style={{ display: "flex", gap: 6, marginLeft: 10, flexShrink: 0 }}>
+              <div className="admin-actions" style={{ display: "flex", gap: 6, marginLeft: 10, flexShrink: 0 }}>
                 <button
+                  className="touch-target"
                   onClick={() => abrirEditar(u)}
                   style={{
                     background: T.accentGhost, border: `1px solid ${T.accent}44`,
@@ -339,6 +344,7 @@ export function AdminUsuarios() {
                 </button>
                 {u.estado === "activo" && (
                   <button
+                    className="touch-target"
                     onClick={() => handleDesactivar(u.id)}
                     disabled={desactivando === u.id}
                     style={{
