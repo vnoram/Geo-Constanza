@@ -86,7 +86,7 @@ export function SupDashboard() {
               <div className="responsive-list-row" key={inst.id} style={{
                 background: T.bgCard, border: `1px solid ${T.border}`,
                 borderLeft: `3px solid ${CRITICIDAD_COLOR[inst.criticidad] ?? T.accent}`,
-                borderRadius: 10, padding: "10px 14px", marginBottom: 6,
+                borderRadius: 8, padding: "10px 14px", marginBottom: 6,
                 display: "flex", justifyContent: "space-between", alignItems: "center",
               }}>
                 <div className="responsive-list-row__main">
@@ -126,7 +126,7 @@ export function SupDashboard() {
       {data.lista.length === 0 ? (
         <div style={{
           background: T.bgCard, border: `1px solid ${T.border}`,
-          borderRadius: 12, padding: 20, textAlign: "center", fontSize: 13, color: T.textMut,
+          borderRadius: 8, padding: 20, textAlign: "center", fontSize: 13, color: T.textMut,
         }}>
           No hay turnos asignados para hoy
         </div>
@@ -134,7 +134,7 @@ export function SupDashboard() {
         <div className="responsive-list-row" key={i} style={{
           background: T.bgCard, border: `1px solid ${T.border}`,
           borderLeft: `3px solid ${ESTADO_COLOR[g.estado]}`,
-          borderRadius: 12, padding: 12, marginBottom: 6,
+          borderRadius: 8, padding: 12, marginBottom: 6,
           display: "flex", justifyContent: "space-between", alignItems: "center",
         }}>
           <div className="responsive-list-row__main">

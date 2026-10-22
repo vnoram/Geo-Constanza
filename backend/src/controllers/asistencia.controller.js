@@ -1,4 +1,5 @@
 const asistenciaService = require('../services/asistencia.service');
+const { ROLES } = require('../constants/roles');
 
 const registrarEntrada = async (req, res, next) => {
   try {
@@ -59,6 +60,10 @@ const obtenerHoy = async (req, res, next) => {
 const obtenerHistorial = async (req, res, next) => {
   try {
     const { usuarioId } = req.params;
+    // Un guardia solo puede ver su propio historial (evita IDOR)
+    if ([ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE].includes(req.user.rol) && usuarioId !== req.user.id) {
+      return res.status(403).json({ error: 'No tienes permiso para ver el historial de otro usuario.' });
+    }
     const result = await asistenciaService.obtenerHistorial(usuarioId, req.query);
     res.json(result);
   } catch (error) {

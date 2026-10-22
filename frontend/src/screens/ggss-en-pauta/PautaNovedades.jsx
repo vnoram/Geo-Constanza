@@ -34,9 +34,13 @@ const URGENCIA_COLOR = {
   verde:    { border: T.accent, badge: "accent" },
 };
 
-function formatHora(dateStr) {
+function formatFechaHora(dateStr) {
   if (!dateStr) return "";
-  return new Date(dateStr).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" });
+  return new Date(dateStr).toLocaleString("es-CL", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+    timeZone: "America/Santiago",
+  });
 }
 
 // ─── Modal: Reportar Novedad ─────────────────────────────────────────
@@ -140,13 +144,13 @@ function ReportarModal({ onClose, onSuccess }) {
   return (
     <div className="guard-modal-overlay" style={{
       position: "fixed", inset: 0, zIndex: 100,
-      background: "rgba(6,13,24,0.85)", backdropFilter: "blur(4px)",
+      background: "rgba(14,23,20,0.85)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: 16,
     }}>
       <div className="responsive-modal guard-report-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`,
-        borderRadius: 16, padding: 24, width: "100%", maxWidth: 420,
+        borderRadius: 8, padding: 24, width: "100%", maxWidth: 420,
       }}>
         <div className="guard-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <span style={{ fontWeight: 700, fontSize: 16, color: T.text }}>Reportar Novedad</span>
@@ -194,7 +198,7 @@ function ReportarModal({ onClose, onSuccess }) {
                 width: "100%", padding: "10px 12px",
                 background: T.bgInput, border: `1px solid ${T.border}`,
                 borderRadius: 8, color: tipo ? T.text : T.textMut,
-                fontSize: 14, outline: "none", fontFamily: "'Outfit', sans-serif",
+                fontSize: 14, outline: "none", fontFamily: "var(--font-ui)",
                 appearance: "none", boxSizing: "border-box",
               }}
             >
@@ -220,7 +224,7 @@ function ReportarModal({ onClose, onSuccess }) {
                 width: "100%", padding: "10px 12px", resize: "vertical",
                 background: T.bgInput, border: `1px solid ${T.border}`,
                 borderRadius: 8, color: T.text, fontSize: 14,
-                outline: "none", fontFamily: "'Outfit', sans-serif",
+                outline: "none", fontFamily: "var(--font-ui)",
                 boxSizing: "border-box",
               }}
             />
@@ -240,7 +244,7 @@ function ReportarModal({ onClose, onSuccess }) {
                 width: "100%", padding: "8px 12px",
                 background: T.bgInput, border: `1px solid ${T.border}`,
                 borderRadius: 8, color: T.text, fontSize: 13,
-                fontFamily: "'Outfit', sans-serif", boxSizing: "border-box",
+                fontFamily: "var(--font-ui)", boxSizing: "border-box",
               }}
             />
             {fotoPreview && (
@@ -279,7 +283,8 @@ export function PautaNovedades({ user }) {
   const [novedades, setNovedades] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const socketRef                 = useRef(null);
+  const [vista, setVista]         = useState("activas"); // "activas" | "resueltas"
+  const socketRef                = useRef(null);
 
   const cargarNovedades = async () => {
     try {
@@ -313,6 +318,10 @@ export function PautaNovedades({ user }) {
     cargarNovedades();
   };
 
+  const activas   = novedades.filter(n => n.estado !== "resuelta");
+  const resueltas = novedades.filter(n => n.estado === "resuelta");
+  const visibles  = vista === "resueltas" ? resueltas : activas;
+
   return (
     <div className="guard-screen">
       <SectionHeader
@@ -327,42 +336,81 @@ export function PautaNovedades({ user }) {
         </div>
       )}
 
-      {!loading && novedades.length === 0 && (
+      <div role="tablist" style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        {[
+          { id: "activas",   label: "Activas",   count: activas.length },
+          { id: "resueltas", label: "Resueltas", count: resueltas.length },
+        ].map(t => {
+          const activo = vista === t.id;
+          return (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={activo}
+              className="touch-target"
+              onClick={() => setVista(t.id)}
+              style={{
+                padding: "8px 14px", borderRadius: 8, cursor: "pointer",
+                fontSize: 13, fontWeight: 700, fontFamily: "var(--font-ui)",
+                background: activo ? T.bgCard : "transparent",
+                color: activo ? T.text : T.textSec,
+                border: `1px solid ${activo ? T.accent : T.border}`,
+              }}
+            >
+              {t.label} ({t.count})
+            </button>
+          );
+        })}
+      </div>
+
+      {!loading && visibles.length === 0 && (
         <div style={{
           textAlign: "center", color: T.textMut, padding: 32, fontSize: 14,
-          background: T.bgCard, borderRadius: 12, border: `1px solid ${T.border}`,
+          background: T.bgCard, borderRadius: 8, border: `1px solid ${T.border}`,
         }}>
-          No hay novedades registradas en este turno.
+          {vista === "resueltas" ? "Aún no hay novedades resueltas." : "No hay novedades activas."}
         </div>
       )}
 
-      {novedades.map(n => {
+      <div className="nov-list">
+      {visibles.map(n => {
         const urgencia = n.urgencia ?? "verde";
         const colors   = URGENCIA_COLOR[urgencia] ?? URGENCIA_COLOR.verde;
         return (
-          <div className="guard-card" key={n.id} style={{
+          <div className="guard-card nov-card nov-card--sinfoto" key={n.id} style={{
             background: T.bgCard, border: `1px solid ${T.border}`,
             borderLeft: `4px solid ${colors.border}`,
-            borderRadius: 12, padding: 14, marginBottom: 8,
+            borderRadius: 8, padding: 14,
           }}>
+            <div className="nov-card__body">
             <div className="guard-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>
               <Badge color={colors.badge}>{urgencia}</Badge>
             </div>
             <div style={{ fontSize: 12, color: T.textMut, marginBottom: 6 }}>
-              {formatHora(n.created_at)} · {n.descripcion}
+              {formatFechaHora(n.created_at)} · {n.descripcion}
             </div>
-            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-              <Badge color={n.estado === "abierta" ? "yellow" : n.estado === "escalada" ? "red" : "accent"}>
-                {n.estado}
-              </Badge>
-              {n.gps_dentro_rango === false && (
-                <Badge color="yellow">GPS fuera de rango</Badge>
-              )}
+            {n.estado === "resuelta" && n.fecha_atencion && (
+              <div style={{ fontSize: 12, color: T.textMut, marginBottom: 6 }}>
+                Resuelta el {formatFechaHora(n.fecha_atencion)}
+                {n.comentario_cierre ? ` · ${n.comentario_cierre}` : ""}
+              </div>
+            )}
+            </div>
+            <div className="nov-card__pie">
+              <div className="nov-card__estado" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                <Badge color={n.estado === "abierta" ? "yellow" : n.estado === "escalada" ? "red" : "accent"}>
+                  {n.estado}
+                </Badge>
+                {n.gps_dentro_rango === false && (
+                  <Badge color="yellow">GPS fuera de rango</Badge>
+                )}
+              </div>
             </div>
           </div>
         );
       })}
+      </div>
 
       {showModal && (
         <ReportarModal

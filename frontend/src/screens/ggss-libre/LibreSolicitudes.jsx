@@ -13,9 +13,9 @@ export function LibreSolicitudes() {
           { icon: "🔄", label: "Cambio Inst." },
         ].map((t, i) => (
           <button className="touch-target" key={i} style={{
-            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
+            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
             padding: "14px 10px", color: T.text, fontSize: 12, fontWeight: 600,
-            cursor: "pointer", textAlign: "center", fontFamily: "'Outfit', sans-serif",
+            cursor: "pointer", textAlign: "center", fontFamily: "var(--font-ui)",
             transition: "all 0.15s",
           }}>{t.icon} {t.label}</button>
         ))}

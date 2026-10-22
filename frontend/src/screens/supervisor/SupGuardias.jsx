@@ -29,8 +29,8 @@ function AvisoNocturno({ form }) {
   if (!esNocturno(form) || !form.fecha) return null;
   return (
     <div style={{
-      fontSize: 11, color: "#c4a8ff", background: "rgba(196,168,255,0.08)",
-      border: "1px solid rgba(196,168,255,0.3)", borderRadius: 8, padding: "8px 10px", marginBottom: 12,
+      fontSize: 11, color: "#B39BE0", background: "rgba(179,155,224,0.08)",
+      border: "1px solid rgba(179,155,224,0.3)", borderRadius: 8, padding: "8px 10px", marginBottom: 12,
     }}>
       🌙 Turno nocturno: comienza el {formatearFecha(form.fecha)} a las {form.hora_inicio} y
       termina el {diaSiguiente(form.fecha)} a las {form.hora_fin}.
@@ -100,14 +100,14 @@ function ModalEditarTurno({ turno, turnos, guardias, instalaciones, inputStyle, 
     <div
       className="responsive-modal-overlay"
       style={{
-        position: "fixed", inset: 0, background: "rgba(6,13,24,0.88)", backdropFilter: "blur(6px)",
+        position: "fixed", inset: 0, background: "rgba(14,23,20,0.88)", backdropFilter: "blur(6px)",
         display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16,
       }}
     >
       <div
         className="responsive-modal"
         style={{
-          background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 16, padding: 22,
+          background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 22,
           width: "100%", maxWidth: 440, maxHeight: "90vh", overflowY: "auto",
           boxShadow: "0 16px 40px rgba(0,0,0,0.6)",
         }}
@@ -172,7 +172,7 @@ function ModalEditarTurno({ turno, turnos, guardias, instalaciones, inputStyle, 
         {error && (
           <div style={{
             fontSize: 12, padding: "8px 12px", borderRadius: 8, marginBottom: 12,
-            background: "rgba(239, 68, 68, 0.15)", color: T.red, border: `1px solid ${T.red}`,
+            background: "rgba(232,106,42,0.15)", color: T.red, border: `1px solid ${T.red}`,
           }}>
             {error}
           </div>
@@ -306,7 +306,7 @@ export function SupGuardias() {
   const inputStyle = {
     width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`,
     background: T.bgCard, color: T.text, fontSize: 13, marginBottom: 10, boxSizing: "border-box",
-    outline: "none", fontFamily: "'Outfit', sans-serif",
+    outline: "none", fontFamily: "var(--font-ui)",
   };
 
   return (
@@ -324,7 +324,7 @@ export function SupGuardias() {
       />
 
       {mostrarForm && (
-        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 14, padding: 18, marginBottom: 16 }}>
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 18, marginBottom: 16 }}>
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, color: T.text }}>
             Nuevo Turno
           </div>
@@ -398,7 +398,7 @@ export function SupGuardias() {
               fontSize: 12,
               padding: "8px 12px",
               borderRadius: 8,
-              background: msg.includes("exitosamente") ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)",
+              background: msg.includes("exitosamente") ? "rgba(62,154,114,0.15)" : "rgba(232,106,42,0.15)",
               color: msg.includes("exitosamente") ? T.accent : T.red,
               border: `1px solid ${msg.includes("exitosamente") ? T.accent : T.red}`,
               marginBottom: 12,
@@ -455,14 +455,14 @@ export function SupGuardias() {
                 className="responsive-list-row"
                 key={t.id}
                 style={{
-                  background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
+                  background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
                   padding: 12, marginBottom: 6, display: "flex", alignItems: "center", gap: 10,
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>
                     {t.hora_inicio} – {t.hora_fin}
-                    {esNocturno(t) && <span style={{ color: "#c4a8ff", fontSize: 11 }}> (+1) 🌙</span>}
+                    {esNocturno(t) && <span style={{ color: "#B39BE0", fontSize: 11 }}> (+1) 🌙</span>}
                     {" · "}{t.usuario?.nombre || "Sin guardia"}
                   </div>
                   <div style={{ fontSize: 11, color: T.textMut, marginTop: 2 }}>
@@ -475,9 +475,9 @@ export function SupGuardias() {
                     className="touch-target"
                     onClick={() => setTurnoEditando(t)}
                     style={{
-                      background: "rgba(56, 189, 248, 0.1)", border: "1px solid rgba(56, 189, 248, 0.3)",
-                      color: "#38BDF8", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700,
-                      fontFamily: "'Outfit', sans-serif", cursor: "pointer", whiteSpace: "nowrap",
+                      background: "rgba(122,78,191,0.1)", border: "1px solid rgba(122,78,191,0.3)",
+                      color: "#7A4EBF", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700,
+                      fontFamily: "var(--font-ui)", cursor: "pointer", whiteSpace: "nowrap",
                     }}
                   >
                     ✏️ Editar
@@ -505,7 +505,7 @@ export function SupGuardias() {
             className="responsive-list-row"
             key={g.id || i}
             style={{
-              background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
+              background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
               padding: 12, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center",
             }}
           >

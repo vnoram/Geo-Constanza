@@ -1,53 +1,42 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Paleta (mar de noche). Verde: sistema en calma. Naranja: alerta y acción principal. Morado: foco y selección. */
+  --gc-bg: #0E1714;
+  --gc-surface: #162420;
+  --gc-card: #1C2E28;
+  --gc-line: #2C4038;
+  --gc-text: #F3EFE6;
+  --gc-text-2: #A8B7AE;
+  --gc-text-3: #7C8F85;
+  --gc-ok: #3E9A72;
+  --gc-focus: #7A4EBF;
+  --gc-alert: #E86A2A;
+  --gc-radius: 8px;
+  --topbar-h: 52px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --font-ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  /* Nombres heredados de la plantilla, apuntando a la paleta nueva */
+  --text: var(--gc-text-2);
+  --text-h: var(--gc-text);
+  --bg: var(--gc-bg);
+  --border: var(--gc-line);
+  --code-bg: var(--gc-card);
+  --accent: var(--gc-ok);
+  --accent-bg: rgba(62, 154, 114, 0.12);
+  --accent-border: var(--gc-ok);
+  --sans: var(--font-ui);
+  --heading: var(--font-ui);
+  --mono: var(--font-mono);
+
+  font: 15px/1.5 var(--font-ui);
+  color-scheme: dark;
+  color: var(--gc-text);
+  background: var(--gc-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
 }
 
 body {
@@ -305,13 +294,17 @@ canvas {
   flex-wrap: wrap;
   gap: 3px 8px;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
+  white-space: normal !important;
   overflow-wrap: anywhere;
 }
 
 .admin-user-meta__text {
   flex: 1 1 100%;
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -334,21 +327,6 @@ canvas {
 
 .admin-turn-card {
   grid-template-columns: minmax(0, 1fr) auto;
-}
-
-.login-screen {
-  min-height: 100dvh !important;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-  padding-top: max(20px, env(safe-area-inset-top)) !important;
-  padding-right: max(20px, env(safe-area-inset-right)) !important;
-  padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
-  padding-left: max(20px, env(safe-area-inset-left)) !important;
-}
-
-.login-stack {
-  min-width: 0;
-  margin-block: auto;
 }
 
 /* ─── APP SHELL ─── */
@@ -544,16 +522,6 @@ canvas {
     align-items: flex-start !important;
   }
 
-  .admin-card > .admin-list-row {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .admin-card > .admin-list-row > .admin-list-row__main {
-    width: 100%;
-    margin-right: 0 !important;
-  }
-
   .admin-actions {
     width: 100%;
     margin-left: 0 !important;
@@ -570,24 +538,6 @@ canvas {
 
   .admin-modal {
     padding: 18px !important;
-  }
-
-  .demo-row {
-    min-height: 44px;
-    flex-wrap: wrap;
-    gap: 4px 10px;
-  }
-}
-
-@media (max-height: 560px) {
-  .login-screen {
-    align-items: flex-start !important;
-    padding-top: max(12px, env(safe-area-inset-top)) !important;
-    padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
-  }
-
-  .login-stack {
-    margin-block: 0;
   }
 }
 
@@ -607,12 +557,12 @@ canvas {
   .app-shell__sidebar-layer.is-open {
     position: sticky;
     inset: auto;
-    top: 56px;
+    top: var(--topbar-h);
     z-index: 20;
     display: flex;
     flex: 0 0 280px;
     width: 280px;
-    height: calc(100dvh - 56px);
+    height: calc(100dvh - var(--topbar-h));
   }
 
   .app-shell__sidebar-backdrop {
@@ -621,7 +571,7 @@ canvas {
 
   .app-shell__sidebar {
     width: 280px;
-    height: calc(100dvh - 56px);
+    height: calc(100dvh - var(--topbar-h));
     padding-top: 20px;
   }
 
@@ -690,4 +640,244 @@ code {
   .admin-charts-row {
     grid-template-columns: minmax(0, 1fr) !important;
   }
+}
+
+/* ─── REDISEÑO: reglas globales ─── */
+button, input, select, textarea { font-family: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--gc-focus);
+  outline-offset: 2px;
+}
+
+/* Separación por borde de 1 px y contraste de superficie: sin sombras blandas ni
+   vidrio. Red de seguridad para estilos en línea que aún los declaran. */
+[style*="box-shadow"] { box-shadow: none !important; }
+[style*="backdrop-filter"] { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* ─── LOGIN (dividido) ─── */
+.login {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  background: var(--gc-bg);
+}
+.login__brand {
+  position: relative;
+  overflow: hidden;
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 32px 40px;
+  background: var(--gc-surface);
+  border-right: 1px solid var(--gc-line);
+}
+.login__panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  min-height: 0;
+  overflow-y: auto;
+}
+.login__form { width: 100%; max-width: 360px; }
+.login__mobile-mark { margin-bottom: 28px; }
+.login__footer {
+  margin-top: 28px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gc-text-3);
+}
+.login__demo-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 6px 0;
+  color: var(--gc-text-3);
+  font-size: 12px;
+  cursor: pointer;
+}
+.login__demo-toggle:hover { color: var(--gc-text-2); }
+.demo-row:hover { background: var(--gc-card) !important; }
+
+@media (max-height: 560px) {
+  .login__panel {
+    align-items: flex-start;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .login__head { margin-bottom: 12px; }
+  .login__thumb { display: none; }
+  .login__footer { margin-top: 16px; }
+}
+
+@media (max-width: 639px) {
+  .demo-row {
+    min-height: 44px !important;
+    flex-wrap: wrap;
+    padding-block: 6px !important;
+  }
+}
+
+@media (min-width: 900px) {
+  .login { grid-template-columns: minmax(300px, 40%) minmax(0, 1fr); }
+  .login__brand { display: flex; }
+  .login__mobile-mark { display: none; }
+  .login__panel { justify-content: flex-start; padding-left: clamp(48px, 8vw, 120px); }
+}
+
+/* ─── CENTRAL: el mapa es la pieza principal ─── */
+.central-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.central-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.central-map { height: clamp(320px, 52dvh, 620px); }
+@media (min-width: 1100px) {
+  .central-grid { grid-template-columns: minmax(0, 1fr) 320px; }
+  .central-map { height: clamp(480px, 64dvh, 780px); }
+}
+
+/* ─── BARRA SUPERIOR en pantallas angostas ─── */
+.app-shell__role { max-width: 46vw; }
+@media (max-width: 639px) {
+  .app-shell__user { display: none !important; }
+}
+@media (max-width: 399px) {
+  .app-shell__role { display: none !important; }
+}
+
+/* ─── Etiquetas en minúscula normal (sentence case) ───
+   Las pantallas aún no migradas declaran text-transform: uppercase en línea.
+   Se anula y se capitaliza solo la primera letra. */
+[style*='text-transform: uppercase'] {
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  display: block;
+}
+[style*='text-transform: uppercase']::first-letter { text-transform: uppercase; }
+span[style*='text-transform: uppercase'] { display: inline-block; }
+.sentence { display: inline-block; }
+.sentence::first-letter { text-transform: uppercase; }
+
+/* ─── LOGIN: ilustración en el panel de marca ───
+   object-fit: cover llena el panel y recorta lo que sobra; object-position
+   decide qué parte se conserva. El velo es un color liso (sin degradado) que
+   acerca los azules de la imagen al verde de la paleta y mantiene legible el texto. */
+.login__art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 45%;
+}
+.login__art-tint {
+  position: absolute;
+  inset: 0;
+  background: rgba(14, 23, 20, 0.5);
+}
+.login__brand > :not(.login__art):not(.login__art-tint) {
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── LOGIN en celular: texto a la izquierda e ilustración a la derecha ───
+   El recuadro de la imagen es vertical (3:4). La marca queda arriba y el título
+   abajo, ambos dentro de la altura de la imagen. Desde 900 px la ilustración pasa
+   al panel lateral y este bloque vuelve a ser una sola columna. */
+.login__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(104px, 44%);
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 22px;
+}
+.login__head-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  min-width: 0;
+}
+.login__title { margin: 0 0 4px; }
+.login__sub { margin: 0; }
+.login__mobile-mark { margin-bottom: 0; }
+.login__thumb {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--gc-radius);
+  overflow: hidden;
+  border: 1px solid var(--gc-line);
+  background: var(--gc-surface);
+}
+.login__thumb-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 47% 38%;
+}
+@media (min-width: 900px) {
+  .login__head { grid-template-columns: minmax(0, 1fr); margin-bottom: 0; }
+  .login__head-text { display: block; }
+  .login__sub { margin: 0 0 22px; }
+  .login__thumb { display: none; }
+}
+
+/* En el recuadro del celular no hay texto encima: velo casi nulo para respetar el color original */
+.login__thumb .login__art-tint { background: rgba(14, 23, 20, 0.15); }
+
+/* ─── NOVEDADES (supervisor) ───
+   Móvil: tarjetas apiladas. Escritorio: rejilla de dos columnas y cada
+   tarjeta pone la foto a la izquierda y las acciones al pie. */
+.nov-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+@media (min-width: 900px) {
+  .nov-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr));
+    gap: 12px;
+    align-items: start;
+  }
+  .nov-card {
+    display: grid;
+    grid-template-columns: 168px minmax(0, 1fr);
+    grid-template-areas: "foto body" "foto pie";
+    column-gap: 16px;
+    align-content: start;
+  }
+  .nov-card--sinfoto {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "body" "pie";
+  }
+  .nov-card__body { grid-area: body; }
+  .nov-card__foto { grid-area: foto; }
+  .nov-card__pie {
+    grid-area: pie;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+    flex-wrap: wrap;
+    align-self: end;
+    padding-top: 10px;
+    border-top: 1px solid var(--gc-line);
+  }
+  .nov-card__estado { margin-bottom: 0 !important; }
 }

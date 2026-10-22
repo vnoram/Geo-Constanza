@@ -90,11 +90,11 @@ function Select({ label, value, onChange, options }) {
           width: "100%",
           background: T.bgInput,
           border: `1.5px solid ${T.border}`,
-          borderRadius: 12,
+          borderRadius: 8,
           padding: "12px 14px",
           color: value ? T.text : T.textMut,
           fontSize: 14,
-          fontFamily: "'Outfit', sans-serif",
+          fontFamily: "var(--font-ui)",
           outline: "none",
           cursor: "pointer",
         }}
@@ -308,7 +308,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(6,13,24,0.88)",
+        background: "rgba(14,23,20,0.88)",
         backdropFilter: "blur(6px)",
         display: "flex",
         alignItems: "center",
@@ -323,7 +323,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
         style={{
           background: T.bgCard,
           border: `1px solid ${T.border}`,
-          borderRadius: 18,
+          borderRadius: 8,
           padding: 28,
           width: "100%",
           maxWidth: 1180,
@@ -365,7 +365,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
             style={{
               background: T.redGhost,
               border: `1px solid ${T.red}`,
-              borderRadius: 10,
+              borderRadius: 8,
               padding: "10px 14px",
               marginBottom: 16,
               fontSize: 13,
@@ -484,7 +484,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                 <div
                   style={{
                     border: `1.5px solid ${T.border}`,
-                    borderRadius: 12,
+                    borderRadius: 8,
                     padding: "8px 12px",
                     maxHeight: 140,
                     overflowY: "auto",
@@ -549,7 +549,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                   marginTop: 10,
                   background: T.bgInput,
                   border: `1px solid ${T.border}`,
-                  borderRadius: 10,
+                  borderRadius: 8,
                   padding: "10px 14px",
                   display: "flex",
                   alignItems: "center",
@@ -577,7 +577,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                     padding: "5px 10px",
                     fontSize: 12,
                     fontWeight: 700,
-                    fontFamily: "'Outfit', sans-serif",
+                    fontFamily: "var(--font-ui)",
                     cursor: "pointer",
                     whiteSpace: "nowrap",
                   }}
@@ -603,7 +603,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
               style={{
                 background: T.bgInput,
                 border: `1px solid ${T.border}`,
-                borderRadius: 10,
+                borderRadius: 8,
                 padding: "10px 14px",
                 marginBottom: 20,
                 display: "flex",
@@ -657,7 +657,7 @@ function InstCard({ inst, onEditar }) {
       style={{
         background: T.bgCard,
         border: `1px solid ${T.border}`,
-        borderRadius: 14,
+        borderRadius: 8,
         padding: "16px 18px",
         marginBottom: 10,
         boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
@@ -683,14 +683,14 @@ function InstCard({ inst, onEditar }) {
           className="touch-target"
           onClick={() => onEditar(inst)}
           style={{
-            background: "rgba(56, 189, 248, 0.1)",
-            border: "1px solid rgba(56, 189, 248, 0.3)",
-            color: "#38BDF8",
+            background: "rgba(122,78,191,0.1)",
+            border: "1px solid rgba(122,78,191,0.3)",
+            color: "#7A4EBF",
             borderRadius: 8,
             padding: "6px 12px",
             fontSize: 12,
             fontWeight: 700,
-            fontFamily: "'Outfit', sans-serif",
+            fontFamily: "var(--font-ui)",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
@@ -698,12 +698,12 @@ function InstCard({ inst, onEditar }) {
             transition: "all 0.2s ease",
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(56, 189, 248, 0.2)";
-            e.currentTarget.style.borderColor = "#38BDF8";
+            e.currentTarget.style.background = "rgba(122,78,191,0.2)";
+            e.currentTarget.style.borderColor = "#7A4EBF";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(56, 189, 248, 0.1)";
-            e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.3)";
+            e.currentTarget.style.background = "rgba(122,78,191,0.1)";
+            e.currentTarget.style.borderColor = "rgba(122,78,191,0.3)";
           }}
         >
           <span>✏️</span> Editar
@@ -803,7 +803,7 @@ export function AdminInstalaciones() {
           style={{
             background: T.accentGhost,
             border: `1px solid ${T.accent}`,
-            borderRadius: 10,
+            borderRadius: 8,
             padding: "10px 14px",
             marginBottom: 14,
             fontSize: 13,
@@ -827,11 +827,11 @@ export function AdminInstalaciones() {
             width: "100%",
             background: T.bgInput,
             border: `1.5px solid ${T.border}`,
-            borderRadius: 12,
+            borderRadius: 8,
             padding: "11px 14px",
             color: T.text,
             fontSize: 13,
-            fontFamily: "'Outfit', sans-serif",
+            fontFamily: "var(--font-ui)",
             outline: "none",
             boxSizing: "border-box",
           }}
