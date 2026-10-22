@@ -4,7 +4,7 @@
   "description": "API REST para Geo Constanza - Plataforma de Gestión Operacional de Seguridad Privada",
   "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon src/server.js",
+    "dev": "nodemon scripts/start-local.js",
     "start": "node src/server.js",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
