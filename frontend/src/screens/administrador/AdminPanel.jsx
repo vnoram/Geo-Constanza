@@ -146,8 +146,8 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
           Cargando mapa...
         </div>
       )}
-      <div ref={containerRef} style={{ height: 260, borderRadius: 14, overflow: "hidden", border: `1px solid ${T.border}`, background: "#060D18" }} />
-      <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: T.textMut }}>
+      <div ref={containerRef} className="central-map" style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${T.border}`, background: "#060D18" }} />
+      <div className="admin-map-legend" style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: T.textMut }}>
         <span><span style={{ color: T.accent }}>●</span> Instalación</span>
         <span><span style={{ color: T.accent }}>●</span> A tiempo</span>
         <span><span style={{ color: T.yellow }}>●</span> Tardío</span>
@@ -224,7 +224,7 @@ function GraficoDonut({ presentes = 0, tardios = 0, faltantes = 0 }) {
   });
 
   return (
-    <div>
+    <div className="admin-screen">
       <svg width={110} height={110} viewBox="0 0 110 110">
         {paths.map((p, i) => <path key={i} d={p.d} fill={p.color} opacity={0.9} />)}
         <circle cx={CX} cy={CY} r={r - 2} fill="#060D18" />
@@ -356,7 +356,7 @@ export function AdminPanel() {
       <SocketBadge status={socketStatus} />
 
       {/* KPIs — muestran datos cacheados inmediatamente; "—" solo si aún no hay nada */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+      <div className="metrics-grid" style={{ display: "grid", gap: 10, marginBottom: 12 }}>
         <KPI label="Guardias"      value={s?.totalGuardias      ?? (loading ? "…" : "—")} sub="activos"     accent="#B98CFF" />
         <KPI label="Instalaciones" value={s?.totalInstalaciones ?? (loading ? "…" : "—")} sub="operativas"  accent="#B98CFF" />
         <KPI label="Turnos Hoy"    value={stats?.total          ?? (loading ? "…" : "—")} sub="programados" accent={T.accent} />
@@ -365,7 +365,7 @@ export function AdminPanel() {
 
       {/* Mini stats — visibles aunque haya un refresh en curso */}
       {stats && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+        <div className="metrics-grid--compact" style={{ display: "grid", gap: 8, marginBottom: 14 }}>
           <MiniStat value={stats.presentes} label="Presentes" color={T.accent} />
           <MiniStat value={stats.tardios}   label="Tardíos"   color={T.yellow} />
           <MiniStat value={stats.faltantes} label="Faltantes" color={T.red}    />

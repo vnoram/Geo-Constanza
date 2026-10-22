@@ -20,6 +20,7 @@ function Select({ label, value, onChange, options, placeholder }) {
         </label>
       )}
       <select
+        className="touch-target"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         style={{
@@ -93,24 +94,24 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
   };
 
   return (
-    <div style={{
+    <div className="admin-modal-overlay" style={{
       position: "fixed", inset: 0, background: "rgba(6,13,24,0.85)",
       display: "flex", alignItems: "center", justifyContent: "center",
       zIndex: 1000, padding: 16,
     }}>
-      <div style={{
+      <div className="admin-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 18,
         padding: 28, width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto",
       }}>
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
-          <div>
+        <div className="admin-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
+          <div className="admin-list-row__main">
             <div style={{ fontWeight: 800, fontSize: 17, color: T.text }}>Generar Pauta 4×4</div>
             <div style={{ fontSize: 12, color: T.textMut, marginTop: 2 }}>
               32 días · 4 trabajo / 4 descanso
             </div>
           </div>
-          <button onClick={onClose} style={{
+          <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{
             background: "none", border: "none", color: T.textMut, fontSize: 20,
             cursor: "pointer", lineHeight: 1,
           }}>✕</button>
@@ -188,7 +189,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
               onChange={set("fecha_inicio")}
             />
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="admin-form-grid" style={{ display: "grid", gap: 12 }}>
               <Input
                 label="Hora Entrada"
                 type="time"
@@ -269,7 +270,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
               </div>
             )}
 
-            <div style={{ display: "flex", gap: 10 }}>
+            <div className="admin-actions" style={{ display: "flex", gap: 10 }}>
               <Btn variant="outline" onClick={onClose} disabled={loading}>Cancelar</Btn>
               <Btn full onClick={handleConfirmar} loading={loading}>Confirmar Pauta</Btn>
             </div>
@@ -289,12 +290,12 @@ function TurnoCard({ turno }) {
   }[turno.estado] || T.textMut;
 
   return (
-    <div style={{
+    <div className="admin-card admin-turn-card" style={{
       background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
       padding: "12px 16px", marginBottom: 8,
-      display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 12,
+      display: "grid", alignItems: "center", gap: 12,
     }}>
-      <div>
+      <div className="admin-list-row__main">
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>
             {turno.usuario?.nombre || "—"}
@@ -360,7 +361,7 @@ export function AdminTurnos() {
   const handlePautaExitosa = () => { cargarDatos(); };
 
   return (
-    <div>
+    <div className="admin-screen">
       <SectionHeader
         title="Turnos"
         sub="Gestión masiva de horarios"

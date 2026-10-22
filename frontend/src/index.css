@@ -273,6 +273,84 @@ canvas {
   font-size: 12px;
 }
 
+/* ─── ADMINISTRACIÓN Y ACCESO ─── */
+.admin-screen,
+.admin-card,
+.admin-list-row,
+.admin-list-row__main {
+  min-width: 0;
+}
+
+.admin-screen {
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.admin-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-list-row,
+.admin-actions,
+.admin-map-legend {
+  flex-wrap: wrap;
+}
+
+.admin-list-row__main {
+  overflow-wrap: anywhere;
+}
+
+.admin-user-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 8px;
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-user-meta__text {
+  flex: 1 1 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.admin-user-meta__email {
+  word-break: break-all;
+}
+
+.admin-modal-overlay {
+  overflow-y: auto;
+  padding-top: max(12px, env(safe-area-inset-top)) !important;
+  padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+}
+
+.admin-modal {
+  max-height: calc(100dvh - 24px) !important;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.admin-turn-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.login-screen {
+  min-height: 100dvh !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding-top: max(20px, env(safe-area-inset-top)) !important;
+  padding-right: max(20px, env(safe-area-inset-right)) !important;
+  padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
+  padding-left: max(20px, env(safe-area-inset-left)) !important;
+}
+
+.login-stack {
+  min-width: 0;
+  margin-block: auto;
+}
+
 /* ─── APP SHELL ─── */
 .app-shell {
   width: 100%;
@@ -455,6 +533,61 @@ canvas {
     display: grid;
     gap: 10px;
     padding: 10px;
+  }
+
+  .admin-form-grid,
+  .admin-turn-card {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .admin-list-row {
+    align-items: flex-start !important;
+  }
+
+  .admin-card > .admin-list-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .admin-card > .admin-list-row > .admin-list-row__main {
+    width: 100%;
+    margin-right: 0 !important;
+  }
+
+  .admin-actions {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+
+  .admin-actions > .touch-target {
+    flex: 1 1 100%;
+    width: 100% !important;
+  }
+
+  .admin-modal-overlay {
+    align-items: flex-start !important;
+  }
+
+  .admin-modal {
+    padding: 18px !important;
+  }
+
+  .demo-row {
+    min-height: 44px;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+}
+
+@media (max-height: 560px) {
+  .login-screen {
+    align-items: flex-start !important;
+    padding-top: max(12px, env(safe-area-inset-top)) !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .login-stack {
+    margin-block: 0;
   }
 }
 

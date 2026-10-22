@@ -18,10 +18,10 @@ export function LoginScreen({ onLogin }) {
   } = useLoginForm({ onLogin });
 
   return (
-    <div style={{
-      minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center",
+    <div className="login-screen" style={{
+      minHeight: "100dvh", background: T.bg, display: "flex", alignItems: "center",
       justifyContent: "center", padding: 20, fontFamily: "'Outfit', sans-serif",
-      position: "relative", overflow: "hidden",
+      position: "relative", overflowX: "hidden", overflowY: "auto",
     }}>
       <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 
@@ -35,7 +35,7 @@ export function LoginScreen({ onLogin }) {
         backgroundSize: "40px 40px", pointerEvents: "none",
       }} />
 
-      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 380 }}>
+      <div className="login-stack" style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 380 }}>
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: step === "login" ? 36 : 28 }}>
           <div style={{
@@ -82,6 +82,7 @@ export function LoginScreen({ onLogin }) {
 
             <div style={{ textAlign: "center", marginTop: 16 }}>
               <button
+                className="touch-target"
                 onClick={() => setShowDemo(v => !v)}
                 style={{
                   background: "none", border: "none", color: T.textMut, fontSize: 12,

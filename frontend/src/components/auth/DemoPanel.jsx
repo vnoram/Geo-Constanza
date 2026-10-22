@@ -22,6 +22,7 @@ export function DemoPanel({ onSelect }) {
       </div>
       {DEMO_USERS.map((d, i) => (
         <div
+          className="demo-row"
           key={d.rut}
           onClick={() => onSelect(d.rut, "geo2026")}
           style={{

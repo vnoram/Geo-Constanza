@@ -39,7 +39,7 @@ export function TwoFactorStep({ code2fa, setCode2fa, error, loading, pendingUser
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 10 }}>
+      <div className="admin-actions" style={{ display: "flex", gap: 10 }}>
         <Btn variant="ghost" onClick={onBack}>← Volver</Btn>
         <Btn onClick={onVerify} loading={loading} full>Verificar</Btn>
       </div>

@@ -108,6 +108,7 @@ export function DireccionAutocomplete({ label, value, onChange, comuna, onSelecc
       >
         <span style={{ fontSize: 18, opacity: 0.5 }}>📍</span>
         <input
+          className="touch-target"
           value={value}
           onChange={(e) => {
             tecleadoRef.current = e.target.value;
@@ -150,7 +151,9 @@ export function DireccionAutocomplete({ label, value, onChange, comuna, onSelecc
             border: `1.5px solid ${T.border}`,
             borderRadius: 12,
             boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
-            overflow: "hidden",
+            maxHeight: "min(260px, 40dvh)",
+            overflowX: "hidden",
+            overflowY: "auto",
           }}
         >
           {sinResultados ? (

@@ -10,14 +10,14 @@ export function AdminAuditoria() {
     { accion: "EDITAR_INST", usuario: "C. González", detalle: "Faena Norte · criticidad: Media→Alta", hora: "10:00", ip: "192.168.x.x" },
   ];
   return (
-    <div>
+    <div className="admin-screen">
       <SectionHeader title="Auditoría" sub="Log de cambios del sistema" />
       {logs.map((l, i) => (
-        <div key={i} style={{
+        <div className="admin-card" key={i} style={{
           background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 12,
           padding: 12, marginBottom: 5,
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+          <div className="admin-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
             <Badge color="accent">{l.accion}</Badge>
             <span style={{ fontSize: 10, color: T.textMut, fontFamily: "'JetBrains Mono', monospace" }}>{l.hora}</span>
           </div>
