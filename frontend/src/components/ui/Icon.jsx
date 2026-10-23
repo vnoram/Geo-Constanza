@@ -1,7 +1,7 @@
 import {
   ArrowLeft, Bell, Building2, CalendarDays, Camera, ChartColumn, Check, ChevronDown,
   ChevronRight, CircleAlert, Download, ClipboardCheck, ClipboardList, Clock, Crosshair, Eye, EyeOff,
-  FileText, Folder, IdCard, Info, KeyRound, LayoutDashboard, LogOut, Map, MapPin, Menu,
+  FileText, Folder, IdCard, Info, KeyRound, LayoutDashboard, Lightbulb, LogOut, Map, MapPin, Menu,
   Pencil, Plus, RadioTower, ScrollText, Search, Settings, TriangleAlert, UserRound,
   UserRoundCheck, Users, Wifi, WifiOff, X,
 } from "lucide-react";
@@ -14,7 +14,7 @@ const ICONS = {
   "chevron-right": ChevronRight, "circle-alert": CircleAlert, "clipboard-check": ClipboardCheck,
   "clipboard-list": ClipboardList, download: Download, clock: Clock, crosshair: Crosshair, eye: Eye, "eye-off": EyeOff,
   "file-text": FileText, folder: Folder, "id-card": IdCard, info: Info, "key-round": KeyRound,
-  "layout-dashboard": LayoutDashboard, "log-out": LogOut, map: Map, "map-pin": MapPin, menu: Menu,
+  "layout-dashboard": LayoutDashboard, lightbulb: Lightbulb, "log-out": LogOut, map: Map, "map-pin": MapPin, menu: Menu,
   pencil: Pencil, plus: Plus, "radio-tower": RadioTower, "scroll-text": ScrollText, search: Search,
   settings: Settings, "triangle-alert": TriangleAlert, "user-round": UserRound,
   "user-round-check": UserRoundCheck, users: Users, wifi: Wifi, "wifi-off": WifiOff, x: X,
