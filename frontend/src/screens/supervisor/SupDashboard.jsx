@@ -35,6 +35,7 @@ export function SupDashboard() {
       socketRef.current = socket;
       socket.on("guardia:entrada",  fetchData);
       socket.on("guardia:atraso",   fetchData);
+      socket.on("guardia:marcaje_por_revisar", fetchData);
       socket.on("novedad:nueva",    fetchData);
       socket.on("novedad:escalada", fetchData);
       return () => socket.disconnect();
@@ -146,6 +147,21 @@ export function SupDashboard() {
               <div style={{ fontSize: 10, color: T.textMut, marginTop: 2 }}>
                 Entrada: {new Date(g.hora_entrada).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" })}
                 {g.es_fallback && " · 📱 fallback móvil"}
+              </div>
+            )}
+            {(g.verificacion_gps === "por_revisar" || g.verificacion_gps === "sin_ubicacion") && (
+              <div style={{ fontSize: 11, color: T.yellow, marginTop: 4, fontWeight: 600 }}>
+                ⚠️ {g.verificacion_gps === "sin_ubicacion"
+                  ? "Marcaje sin ubicación"
+                  : "Ubicación imprecisa"}
+                {g.distancia_entrada_m != null && ` · a ${g.distancia_entrada_m} m`}
+                {g.precision_entrada_m != null && ` · ±${g.precision_entrada_m} m`}
+                {" · por revisar"}
+              </div>
+            )}
+            {g.verificacion_gps === "verificado" && (
+              <div style={{ fontSize: 10, color: T.accent, marginTop: 2 }}>
+                Ubicación verificada{g.distancia_entrada_m != null && ` · a ${g.distancia_entrada_m} m`}
               </div>
             )}
           </div>
