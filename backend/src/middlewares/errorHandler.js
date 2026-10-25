@@ -1,5 +1,15 @@
 const { logger } = require('../config/logger');
 
+const CODIGOS_CONEXION_BD = ['P1001', 'P1002', 'P1008', 'P1017'];
+
+const esErrorDeConexionBD = (err) =>
+  CODIGOS_CONEXION_BD.includes(err.code) ||
+  err.name === 'PrismaClientInitializationError' ||
+  /Can't reach database server|Server has closed the connection|Connection terminated/i.test(err.message || '');
+
+const detalleSoloEnDesarrollo = (err) =>
+  process.env.NODE_ENV === 'development' ? { detalle: err.message } : {};
+
 const errorHandler = (err, req, res, _next) => {
   logger.error(err.message, { stack: err.stack, path: req.path, method: req.method });
 
@@ -29,12 +39,24 @@ const errorHandler = (err, req, res, _next) => {
     });
   }
 
+  // Base de datos inaccesible: no es un fallo del código, es un servicio caído
+  if (esErrorDeConexionBD(err)) {
+    return res.status(503).json({
+      error: 'El servicio no está disponible por el momento. Intenta de nuevo en unos minutos.',
+      ...detalleSoloEnDesarrollo(err),
+    });
+  }
+
   const statusCode = err.statusCode || 500;
-  // En desarrollo se devuelve el motivo real del 500 para facilitar la depuración
-  const ocultarDetalle = statusCode === 500 && process.env.NODE_ENV === 'production';
-  res.status(statusCode).json({
-    error: ocultarDetalle ? 'Error interno del servidor' : err.message,
-  });
+  // Un 5xx nunca devuelve el mensaje interno (rutas, SQL, trozos de código).
+  // El motivo real queda en el log; en desarrollo viaja aparte en "detalle".
+  if (statusCode >= 500) {
+    return res.status(statusCode).json({
+      error: 'Error interno del servidor',
+      ...detalleSoloEnDesarrollo(err),
+    });
+  }
+  res.status(statusCode).json({ error: err.message });
 };
 
 module.exports = { errorHandler };
