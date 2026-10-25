@@ -1,0 +1,4 @@
+# Ignorar todos los archivos subidos/cargados en esta carpeta
+*
+# Mantener este archivo .gitignore para que la carpeta permanezca en el repositorio Git
+!.gitignore
