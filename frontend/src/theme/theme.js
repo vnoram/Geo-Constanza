@@ -74,6 +74,7 @@ export const ROLES = {
     desc: "Panel de supervisión",
     sections: [
       { id: "dashboard", icon: "layout-dashboard", label: "Dashboard", badge: "3" },
+      { id: "insight", icon: "lightbulb", label: "Insight", badge: null },
       { id: "novedades", icon: "triangle-alert", label: "Novedades", badge: "2" },
       { id: "solicitudes", icon: "file-text", label: "Solicitudes", badge: "1" },
       { id: "guardias", icon: "users", label: "Guardias", badge: null },
@@ -88,6 +89,7 @@ export const ROLES = {
     sections: [
       { id: "panel",      icon: "map", label: "Mapa en Vivo", badge: null },
       { id: "incidentes", icon: "triangle-alert", label: "Novedades", badge: null },
+      { id: "insight", icon: "lightbulb", label: "Insight", badge: null },
     ],
   },
   [ROL.ADMINISTRADOR]: {
