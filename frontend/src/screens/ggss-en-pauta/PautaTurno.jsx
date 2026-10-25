@@ -20,16 +20,49 @@ function leerTurnoCacheado() {
   return t;
 }
 
-/** Captura la posición GPS del dispositivo. */
-function capturarGPS() {
-  return new Promise((resolve, reject) =>
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve(pos.coords),
-      (err) => reject(new Error("GPS no disponible: " + err.message)),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-    ),
-  );
+const GPS_ESPERA_MS = 12000;     // tiempo máximo para afinar la lectura
+const GPS_PRECISION_OK_M = 25;   // con esta precisión se deja de esperar
+
+/**
+ * Sigue al GPS unos segundos y devuelve la lectura MÁS precisa (un PC o un celular
+ * en interior suelen empezar con un error grande y mejorar). Devuelve null si el
+ * equipo no entrega ubicación: el marcaje se registra igual, señalado como sin ubicación.
+ * @param {(precisionM:number)=>void} [onLectura] se llama con cada lectura nueva
+ */
+function capturarGPS(onLectura) {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null);
+    let mejor = null;
+    let terminado = false;
+    let watchId;
+    let timer;
+    const terminar = () => {
+      if (terminado) return;
+      terminado = true;
+      navigator.geolocation.clearWatch(watchId);
+      clearTimeout(timer);
+      resolve(mejor);
+    };
+    timer = setTimeout(terminar, GPS_ESPERA_MS);
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (!mejor || pos.coords.accuracy < mejor.accuracy) mejor = pos.coords;
+        onLectura?.(Math.round(pos.coords.accuracy));
+        if (pos.coords.accuracy <= GPS_PRECISION_OK_M) terminar();
+      },
+      terminar,
+      { enableHighAccuracy: true, timeout: GPS_ESPERA_MS, maximumAge: 0 },
+    );
+  });
 }
+
+/** Cómo se muestra al guardia el resultado de la verificación del GPS. */
+const VERIFICACION_GPS = {
+  verificado:    { texto: "Ubicación verificada", color: "accent" },
+  tablet:        { texto: "Marcaje desde la tablet", color: "accent" },
+  por_revisar:   { texto: "Ubicación imprecisa: un supervisor revisará tu marcaje", color: "yellow" },
+  sin_ubicacion: { texto: "Sin ubicación: un supervisor revisará tu marcaje", color: "yellow" },
+};
 
 /** Formatea un Date/string ISO a "HH:MM" en hora Chile. */
 function horaChile(dt) {
@@ -53,6 +86,7 @@ export function PautaTurno({ user }) {
   const [error,          setError]          = useState("");
   const [cierresAuto,    setCierresAuto]    = useState([]); // entradas olvidadas cerradas por el sistema
   const [precisionGps,   setPrecisionGps]   = useState(null);
+  const [lecturaVivo,    setLecturaVivo]    = useState(null); // precisión de la lectura mientras se marca
 
   // ── Hidratación — servidor es la fuente de verdad ─────────────
   useEffect(() => {
@@ -119,27 +153,28 @@ export function PautaTurno({ user }) {
   // Adelanta una lectura para que el guardia vea su precisión antes de marcar.
   useEffect(() => {
     if (!turno || marcaje?.hora_salida || !navigator.geolocation) return;
-    capturarGPS()
-      .then((coords) => setPrecisionGps(Math.round(coords.accuracy)))
-      .catch(() => setPrecisionGps(null));
+    let activo = true;
+    capturarGPS((p) => activo && setPrecisionGps(p));
+    return () => { activo = false; };
   }, [turno, marcaje?.hora_salida]);
 
   // ── Marcar Entrada ─────────────────────────────────────────────
   const marcarEntrada = useCallback(async () => {
     setError("");
     setLoadingMarcaje(true);
+    setLecturaVivo(null);
     try {
-      const coords = await capturarGPS();
-      setPrecisionGps(Math.round(coords.accuracy));
+      const coords = await capturarGPS(setLecturaVivo);
+      if (coords) setPrecisionGps(Math.round(coords.accuracy));
       const res = await fetch(`${API_BASE}/asistencia/entrada`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           instalacion_id: turno.instalacion_id,
           metodo:   "fallback_telefono",
-          latitud:  coords.latitude,
-          longitud: coords.longitude,
-          precision_m: coords.accuracy,
+          latitud:  coords?.latitude ?? null,
+          longitud: coords?.longitude ?? null,
+          precision_m: coords?.accuracy ?? null,
         }),
       });
       const data = await res.json();
@@ -152,6 +187,8 @@ export function PautaTurno({ user }) {
         hora_salida:     null,
         estado:          data.estado,
         minutos_retraso: data.minutos_retraso ?? 0,
+        verificacion:    data.verificacion_gps ?? null,
+        mensaje_gps:     data.mensaje_gps ?? null,
       };
       setMarcaje(m);
       cacheWrite(CACHE_KEYS.pautaMarcajeHoy, m);
@@ -167,17 +204,18 @@ export function PautaTurno({ user }) {
     setError("");
     setLoadingMarcaje(true);
     try {
-      const coords = await capturarGPS();
-      setPrecisionGps(Math.round(coords.accuracy));
+      setLecturaVivo(null);
+      const coords = await capturarGPS(setLecturaVivo);
+      if (coords) setPrecisionGps(Math.round(coords.accuracy));
       const res = await fetch(`${API_BASE}/asistencia/salida`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           asistencia_id: marcaje.asistencia_id,
           metodo:   "fallback_telefono",
-          latitud:  coords.latitude,
-          longitud: coords.longitude,
-          precision_m: coords.accuracy,
+          latitud:  coords?.latitude ?? null,
+          longitud: coords?.longitude ?? null,
+          precision_m: coords?.accuracy ?? null,
         }),
       });
       const data = await res.json();
@@ -320,6 +358,17 @@ export function PautaTurno({ user }) {
               🟡 Entrada registrada a las {marcaje.hora_entrada} — recuerda marcar la salida al terminar
             </div>
           )}
+          {yaEntro && VERIFICACION_GPS[marcaje.verificacion] && (
+            <div style={{
+              background: VERIFICACION_GPS[marcaje.verificacion].color === "accent" ? T.accentGhost : T.yellowGhost,
+              border: `1px solid ${VERIFICACION_GPS[marcaje.verificacion].color === "accent" ? T.accent : T.yellow}44`,
+              borderRadius: 8, padding: 12, marginBottom: 12, fontSize: 12,
+              color: VERIFICACION_GPS[marcaje.verificacion].color === "accent" ? T.accent : T.yellow,
+            }}>
+              <strong>{VERIFICACION_GPS[marcaje.verificacion].texto}.</strong>
+              {marcaje.mensaje_gps ? ` ${marcaje.mensaje_gps}` : ""}
+            </div>
+          )}
           {yaSalio && (
             <div style={{
               background: T.accentGhost, border: `1px solid ${T.accent}33`,
@@ -363,7 +412,16 @@ export function PautaTurno({ user }) {
                   borderRadius: 8, padding: 10, marginBottom: 10,
                   fontSize: 12, color: T.yellow,
                 }}>
-                  ⚠️ Tu ubicación en este equipo es imprecisa. Usa tu celular o tablet en la instalación.
+                  ⚠️ Tu ubicación en este equipo es imprecisa (un computador no tiene GPS).
+                  Puedes marcar igual, pero un supervisor revisará tu marcaje. Para que quede
+                  verificado, márcalo desde un celular en la instalación.
+                </div>
+              )}
+              {loadingMarcaje && (
+                <div style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>
+                  {lecturaVivo === null
+                    ? "Obteniendo tu ubicación…"
+                    : `Afinando ubicación… ±${lecturaVivo} m`}
                 </div>
               )}
 

@@ -55,6 +55,9 @@ const getDashboardHoy = async (user) => {
       hora_fin: t.hora_fin,
       hora_entrada: asistencia?.hora_entrada || null,
       es_fallback: asistencia?.es_fallback || false,
+      verificacion_gps: asistencia?.verificacion_gps || null,
+      distancia_entrada_m: asistencia?.distancia_entrada_m ?? null,
+      precision_entrada_m: asistencia?.precision_entrada_m ?? null,
       estado: estadoActual,
     };
   });

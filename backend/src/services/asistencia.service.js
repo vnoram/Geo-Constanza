@@ -139,20 +139,23 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
     const lat = latitud  != null ? parseFloat(latitud)  : null;
     const lon = longitud != null ? parseFloat(longitud) : null;
 
-    // Validar geofence: aplica cuando se envían coordenadas válidas
-    if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
-      const instLat = parseFloat(turno.instalacion.latitud);
-      const instLon = parseFloat(turno.instalacion.longitud);
-      const { esValido, mensaje } = geovalidacion.validarAsistencia(
-        lat, lon, instLat, instLon,
+    // Validar geofence considerando también la precisión de la lectura.
+    // La tablet es un equipo fijo en la instalación: sin coordenadas no hay nada que validar.
+    const hayCoordenadas = lat != null && lon != null && !isNaN(lat) && !isNaN(lon);
+    let gps;
+    if (!hayCoordenadas && metodo === 'tablet') {
+      gps = { resultado: 'tablet', permitido: true, distanciaMetros: null, precisionMetros: null, mensaje: 'Marcaje desde la tablet de la instalación.' };
+    } else {
+      gps = geovalidacion.clasificarMarcaje(
+        hayCoordenadas ? lat : null,
+        hayCoordenadas ? lon : null,
+        parseFloat(turno.instalacion.latitud),
+        parseFloat(turno.instalacion.longitud),
         turno.instalacion.radio_geofence_m,
         precision_m,
       );
-      if (!esValido) {
-        throw Object.assign(
-          new Error(mensaje),
-          { statusCode: 400 },
-        );
+      if (!gps.permitido) {
+        throw Object.assign(new Error(gps.mensaje), { statusCode: 400 });
       }
     }
 
@@ -178,12 +181,15 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
         longitud_entrada: lon,
         es_fallback: esFallback,
         dispositivo_usado: dispositivo || (metodo === 'fallback_telefono' ? 'mobil_empresa' : 'tablet'),
+        verificacion_gps: gps.resultado,
+        distancia_entrada_m: gps.distanciaMetros,
+        precision_entrada_m: gps.precisionMetros,
       },
     });
 
-    return { asistencia, ahora, estado, esFallback, lat, lon };
+    return { asistencia, ahora, estado, esFallback, lat, lon, gps };
   }, { isolationLevel: 'ReadCommitted' });
-  const { asistencia, ahora, estado, esFallback, lat, lon } = resultado;
+  const { asistencia, ahora, estado, esFallback, lat, lon, gps } = resultado;
   if (!ahora) return asistencia; // Reintento idempotente, sin repetir notificaciones.
 
   // Emitir evento WebSocket (no crítico — no bloquea el registro si falla)
@@ -212,6 +218,16 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
         minutos_retraso: asistencia.minutos_retraso,
       });
     }
+    // Marcaje sin verificar: el supervisor de la instalación debe revisarlo
+    if (gps.resultado === 'por_revisar' || gps.resultado === 'sin_ubicacion') {
+      io.to(`instalacion:${instalacion_id}`).emit('guardia:marcaje_por_revisar', {
+        guardia: usuario_id,
+        instalacion: instalacion_id,
+        hora: ahora,
+        verificacion: gps.resultado,
+        mensaje: gps.mensaje,
+      });
+    }
     // Publicar ubicación GPS del guardia para el mapa del admin (solo si hay coords)
     if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
       io.emit('guardia:ubicacion', {
@@ -229,7 +245,8 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
     // Socket.IO no disponible — el registro se guarda igual
   }
 
-  return asistencia;
+  // El mensaje explica al guardia cómo quedó su marcaje (no se guarda en la base)
+  return { ...asistencia, mensaje_gps: gps.mensaje };
 };
 
 const registrarSalida = async (data, user) => {

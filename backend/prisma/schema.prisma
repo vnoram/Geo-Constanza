@@ -134,6 +134,11 @@ model Asistencia {
 
   dispositivo_usado   String?      // 'tablet' | 'mobil_empresa' | 'mobil_personal'
 
+  // Resultado de validar el GPS de la entrada (ver clasificarMarcaje)
+  verificacion_gps      String?    // 'verificado' | 'por_revisar' | 'sin_ubicacion' | 'tablet'
+  distancia_entrada_m   Int?       // metros a la instalación al marcar
+  precision_entrada_m   Int?       // error estimado de la lectura, en metros
+
   usuario             Usuario      @relation(fields: [usuario_id], references: [id])
   turno               Turno        @relation(fields: [turno_id], references: [id])
   instalacion         Instalacion  @relation(fields: [instalacion_id], references: [id])
