@@ -11,6 +11,7 @@ const geovalidacion = require('./geovalidacion.service');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { uploadFotoToAzure, generarUrlLectura } = require('../utils/azureStorage');
 const { ROLES } = require('../constants/roles');
+const { ESTADO_NOVEDAD } = require('../constants/estados');
 const { inicioDiaChile, finDiaChile, turnosDeHoy } = require('../utils/fechaChile');
 
 // ============================================================================
@@ -307,15 +308,29 @@ const crear = async (data, file, user) => {
 };
 
 const resolver = async (id, comentario, supervisorId) => {
-  return prisma.novedad.update({
-    where: { id },
-    data: {
-      estado: 'resuelta',
-      comentario_cierre: comentario,
-      atendida_por: supervisorId,
-      fecha_atencion: new Date(),
-    },
-  });
+  if (typeof comentario !== 'string' || comentario.trim().length < 5) {
+    throw Object.assign(new Error('El comentario de resolución debe tener al menos 5 caracteres.'), { statusCode: 400 });
+  }
+
+  try {
+    return await prisma.novedad.update({
+      // La condición evita sobrescribir un cierre concurrente.
+      where: { id, estado: { not: ESTADO_NOVEDAD.RESUELTA } },
+      data: {
+        estado: ESTADO_NOVEDAD.RESUELTA,
+        comentario_cierre: comentario.trim(),
+        atendida_por: supervisorId,
+        fecha_atencion: new Date(),
+      },
+    });
+  } catch (error) {
+    if (error.code !== 'P2025') throw error;
+    const novedad = await prisma.novedad.findUnique({ where: { id } });
+    if (novedad?.estado === ESTADO_NOVEDAD.RESUELTA) {
+      throw Object.assign(new Error('La novedad ya está resuelta.'), { statusCode: 409 });
+    }
+    throw Object.assign(new Error('Novedad no encontrada.'), { statusCode: 404 });
+  }
 };
 
 const escalar = async (id, supervisorId) => {
