@@ -46,4 +46,14 @@ const escalar = async (req, res, next) => {
   }
 };
 
-module.exports = { listar, obtener, crear, resolver, escalar };
+const asignar = async (req, res, next) => {
+  try {
+    res.json(await novedadesService.asignar(req.params.id, req.body.responsable_id, req.user));
+  } catch (error) { next(error); }
+};
+const responsables = async (req, res, next) => {
+  try { res.json(await novedadesService.responsables(req.params.id, req.user)); }
+  catch (error) { next(error); }
+};
+
+module.exports = { listar, obtener, crear, resolver, escalar, asignar, responsables };

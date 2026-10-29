@@ -42,7 +42,8 @@ model Usuario {
   // Relaciones
   turnos                   Turno[]
   asistencias              Asistencia[]
-  novedades                Novedad[]
+  novedades                Novedad[] @relation("NovedadAutor")
+  novedades_asignadas       Novedad[] @relation("NovedadResponsable")
   auditorias               Auditoria[]
   instalaciones_sup        Supervisor_Instalacion[]
   solicitudes              Solicitud[] @relation("UsuarioSolicita")
@@ -164,10 +165,12 @@ model Novedad {
   gps_dentro_rango    Boolean?     @default(true)      // false = guardia fuera del radio al reportar
   comentario_cierre   String?
   atendida_por        String?
+  asignada_a          String?
   fecha_atencion      DateTime?
   created_at          DateTime     @default(now())
 
-  usuario             Usuario      @relation(fields: [usuario_id], references: [id])
+  usuario             Usuario      @relation("NovedadAutor", fields: [usuario_id], references: [id])
+  responsable         Usuario?     @relation("NovedadResponsable", fields: [asignada_a], references: [id])
   instalacion         Instalacion  @relation(fields: [instalacion_id], references: [id])
   turno               Turno        @relation(fields: [turno_id], references: [id])
 }

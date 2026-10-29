@@ -84,7 +84,7 @@ test.each([ESTADO_NOVEDAD.RESUELTA, ESTADO_NOVEDAD.ESCALADA])('escalar rechaza e
   prisma.novedad.findUnique.mockResolvedValue({ id: 'n1', instalacion_id: 'i1', estado });
   prisma.novedad.update.mockRejectedValue({ code: 'P2025' });
   await expect(escalar('n1', user)).rejects.toMatchObject({ statusCode: 409 });
-  expect(prisma.novedad.update.mock.calls[0][0].where.estado).toBe(ESTADO_NOVEDAD.ABIERTA);
+  expect(prisma.novedad.update.mock.calls[0][0].where.estado).toEqual({ in: [ESTADO_NOVEDAD.ABIERTA, ESTADO_NOVEDAD.EN_ATENCION] });
 });
 
 test('escalar responde 404 al id inexistente', async () => {
