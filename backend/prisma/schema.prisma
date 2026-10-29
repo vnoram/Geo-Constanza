@@ -150,6 +150,7 @@ model Asistencia {
 // de si el guardia estaba dentro de la geocerca al reportar.
 model Novedad {
   id                  String       @id @default(uuid())
+  numero              Int          @unique @default(autoincrement())
   usuario_id          String
   instalacion_id      String
   turno_id            String
