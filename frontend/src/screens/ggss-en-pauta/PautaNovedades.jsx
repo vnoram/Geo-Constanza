@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { HistorialNovedad } from "../../components/novedades/HistorialNovedad";
 import { io } from "socket.io-client";
 import { T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
@@ -383,6 +384,7 @@ export function PautaNovedades({ user }) {
             borderRadius: 8, padding: 14,
           }}>
             <div className="nov-card__body">
+            <div style={{ color: T.textMut, fontSize: 12 }}>{n.folio}</div>
             <div className="guard-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>
               <Badge color={colors.badge}>{urgencia}</Badge>
@@ -398,6 +400,7 @@ export function PautaNovedades({ user }) {
             )}
             </div>
             <div className="nov-card__pie">
+              <HistorialNovedad id={n.id} />
               <div className="nov-card__estado" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                 <Badge color={n.estado === "abierta" ? "yellow" : n.estado === "escalada" ? "red" : "accent"}>
                   {n.estado}
