@@ -11,6 +11,9 @@ const geovalidacion = require('./geovalidacion.service');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { uploadFotoToAzure, generarUrlLectura } = require('../utils/azureStorage');
 const { ROLES } = require('../constants/roles');
+const { ESTADO_NOVEDAD, ESTADO_USUARIO } = require('../constants/estados');
+const { conFolio } = require('../utils/folioNovedad');
+const { ACCION_NOVEDAD } = require('../constants/accionesNovedad');
 const { inicioDiaChile, finDiaChile, turnosDeHoy } = require('../utils/fechaChile');
 
 // ============================================================================
@@ -25,7 +28,7 @@ const FILE_CONFIG = {
 
 // Agrega `foto_url_firmada`: link temporal para ver la foto con el contenedor privado
 const conFotoFirmada = async (novedad) => ({
-  ...novedad,
+  ...conFolio(novedad),
   foto_url_firmada: await generarUrlLectura(novedad.foto_url),
 });
 
@@ -65,6 +68,9 @@ const listar = async (query, user) => {
       where.usuario_id = user.id;
     } else if (user.rol === ROLES.SUPERVISOR) {
       const ids = await resolverInstalacionesSupervisor(user);
+      if (instalacion_id && !ids.includes(instalacion_id)) {
+        throw Object.assign(new Error('No tienes permiso para ver esta instalación.'), { statusCode: 403 });
+      }
       where.instalacion_id = instalacion_id ? instalacion_id : { in: ids };
     } else if (instalacion_id) {
       where.instalacion_id = instalacion_id;
@@ -77,6 +83,7 @@ const listar = async (query, user) => {
       prisma.novedad.findMany({
         where,
         include: {
+          responsable: { select: { id: true, nombre: true } },
           usuario: { select: { id: true, nombre: true } },
           instalacion: { select: { id: true, nombre: true } },
         },
@@ -110,6 +117,7 @@ const obtenerPorId = async (id, user) => {
     const novedad = await prisma.novedad.findUniqueOrThrow({
       where: { id },
       include: {
+        responsable: { select: { id: true, nombre: true } },
         usuario: { select: { id: true, nombre: true, telefono: true } },
         instalacion: { select: { id: true, nombre: true } },
       },
@@ -123,6 +131,12 @@ const obtenerPorId = async (id, user) => {
       }
     }
 
+    if (user.rol === ROLES.SUPERVISOR) {
+      const ids = await resolverInstalacionesSupervisor(user);
+      if (!ids.includes(novedad.instalacion_id)) {
+        throw Object.assign(new Error('No tienes permiso para ver esta novedad.'), { statusCode: 403 });
+      }
+    }
     return conFotoFirmada(novedad);
   } catch (error) {
     logger.error('❌ Error obteniendo novedad', {
@@ -236,7 +250,8 @@ const crear = async (data, file, user) => {
       }
     }
 
-    const novedad = await prisma.novedad.create({
+    const novedad = await prisma.$transaction(async (tx) => {
+      const creada = await tx.novedad.create({
       data: {
         usuario_id: user.id,
         instalacion_id: turno.instalacion_id,
@@ -249,6 +264,12 @@ const crear = async (data, file, user) => {
         longitud: isNaN(lon) ? null : lon,
         gps_dentro_rango,
       },
+      });
+      await tx.novedadHistorial.create({ data: {
+        novedad_id: creada.id, usuario_id: user.id, accion: ACCION_NOVEDAD.CREAR,
+        estado_anterior: null, estado_nuevo: ESTADO_NOVEDAD.ABIERTA,
+      } });
+      return creada;
     });
 
     // ── Eventos WebSocket ─────────────────────────────────────────
@@ -259,6 +280,8 @@ const crear = async (data, file, user) => {
 
       io.to(`instalacion:${turno.instalacion_id}`).emit('novedad:nueva', {
         id: novedad.id,
+        folio: conFolio(novedad).folio,
+        numero: novedad.numero,
         foto_url_firmada,
         tipo,
         urgencia,
@@ -289,7 +312,7 @@ const crear = async (data, file, user) => {
       }
     } catch (_) {}
 
-    return novedad;
+    return conFolio(novedad);
   } catch (error) {
     logger.error(`❌ Error creando novedad`, {
       usuarioId: user.id,
@@ -306,23 +329,37 @@ const crear = async (data, file, user) => {
   }
 };
 
-const resolver = async (id, comentario, supervisorId) => {
-  return prisma.novedad.update({
-    where: { id },
-    data: {
-      estado: 'resuelta',
-      comentario_cierre: comentario,
-      atendida_por: supervisorId,
-      fecha_atencion: new Date(),
-    },
-  });
+const exigirGestion = async (id, user, db = prisma) => {
+  if (![ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR].includes(user?.rol)) {
+    throw Object.assign(new Error('No tienes permiso para gestionar novedades.'), { statusCode: 403 });
+  }
+  const novedad = await db.novedad.findUnique({ where: { id } });
+  if (!novedad) throw Object.assign(new Error('Novedad no encontrada.'), { statusCode: 404 });
+  if (user.rol === ROLES.SUPERVISOR) {
+    const ids = await resolverInstalacionesSupervisor(user);
+    if (!ids.includes(novedad.instalacion_id)) {
+      throw Object.assign(new Error('No tienes permiso para gestionar esta instalación.'), { statusCode: 403 });
+    }
+  }
+  return novedad;
 };
 
-const escalar = async (id, supervisorId) => {
-  const novedad = await prisma.novedad.update({
-    where: { id },
-    data: { estado: 'escalada' },
-  });
+const resolver = async (id, comentario, user) => {
+  if (typeof comentario !== 'string' || comentario.trim().length < 5) {
+    throw Object.assign(new Error('El comentario de resolución debe tener al menos 5 caracteres.'), { statusCode: 400 });
+  }
+
+  return cambiarEstado(id, user, ACCION_NOVEDAD.RESOLVER, {
+        estado: ESTADO_NOVEDAD.RESUELTA,
+        comentario_cierre: comentario.trim(),
+        atendida_por: user.id,
+        fecha_atencion: new Date(),
+  }, [ESTADO_NOVEDAD.ABIERTA, ESTADO_NOVEDAD.EN_ATENCION, ESTADO_NOVEDAD.ESCALADA], comentario.trim());
+};
+
+const escalar = async (id, user) => {
+  const novedad = await cambiarEstado(id, user, ACCION_NOVEDAD.ESCALAR,
+    { estado: ESTADO_NOVEDAD.ESCALADA }, [ESTADO_NOVEDAD.ABIERTA, ESTADO_NOVEDAD.EN_ATENCION]);
 
   try {
     const io = getSocketIO();
@@ -337,4 +374,62 @@ const escalar = async (id, supervisorId) => {
   return novedad;
 };
 
-module.exports = { listar, obtenerPorId, crear, resolver, escalar, FILE_CONFIG };
+const responsables = async (id, user) => {
+  await exigirGestion(id, user);
+  return prisma.usuario.findMany({
+    where: { rol: { in: [ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL] }, estado: ESTADO_USUARIO.ACTIVO },
+    select: { id: true, nombre: true }, orderBy: { nombre: 'asc' },
+  });
+};
+
+const asignar = async (id, responsableId, user) => {
+  await exigirGestion(id, user);
+  if (typeof responsableId !== 'string' || !responsableId.trim()) {
+    throw Object.assign(new Error('Selecciona un responsable.'), { statusCode: 400 });
+  }
+  const responsable = await prisma.usuario.findUnique({ where: { id: responsableId } });
+  if (!responsable || responsable.estado !== ESTADO_USUARIO.ACTIVO ||
+      ![ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL].includes(responsable.rol)) {
+    throw Object.assign(new Error('El responsable debe ser supervisor o central activo.'), { statusCode: 400 });
+  }
+  const novedad = await cambiarEstado(id, user, ACCION_NOVEDAD.ASIGNAR,
+    { asignada_a: responsableId, estado: ESTADO_NOVEDAD.EN_ATENCION }, [ESTADO_NOVEDAD.ABIERTA]);
+  try {
+    getSocketIO().to(`instalacion:${novedad.instalacion_id}`).emit('novedad:asignada', novedad);
+  } catch (_) {}
+  return novedad;
+};
+
+const cambiarEstado = async (id, user, accion, data, permitidos, comentario = null) => {
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const anterior = await exigirGestion(id, user, tx);
+      if (!permitidos.includes(anterior.estado)) {
+        throw Object.assign(new Error('La novedad no admite esta acción en su estado actual.'), { statusCode: 409 });
+      }
+      const novedad = await tx.novedad.update({
+        where: { id, estado: anterior.estado }, data,
+        include: { responsable: { select: { id: true, nombre: true } } },
+      });
+      await tx.novedadHistorial.create({ data: {
+        novedad_id: id, usuario_id: user.id, accion, estado_anterior: anterior.estado,
+        estado_nuevo: data.estado, comentario,
+      } });
+      return novedad;
+    });
+  } catch (error) {
+    if (error.code !== 'P2025') throw error;
+    const actual = await prisma.novedad.findUnique({ where: { id } });
+    throw Object.assign(new Error(actual ? 'La novedad cambió de estado. Recarga e intenta de nuevo.' : 'Novedad no encontrada.'), { statusCode: actual ? 409 : 404 });
+  }
+};
+
+const historial = async (id, user) => {
+  await obtenerPorId(id, user);
+  return prisma.novedadHistorial.findMany({ where: { novedad_id: id },
+    include: { usuario: { select: { id: true, nombre: true } } },
+    orderBy: [{ created_at: 'asc' }, { id: 'asc' }],
+  });
+};
+
+module.exports = { listar, obtenerPorId, crear, resolver, escalar, asignar, responsables, historial, FILE_CONFIG };
