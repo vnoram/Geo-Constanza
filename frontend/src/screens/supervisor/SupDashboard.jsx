@@ -1,3 +1,5 @@
+import { Icon } from "../../components/ui/Icon";
+import { Badge } from "../../components/ui/Badge";
 import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import { T } from "../../theme/theme";
@@ -146,12 +148,12 @@ export function SupDashboard() {
             {g.hora_entrada && (
               <div style={{ fontSize: 10, color: T.textMut, marginTop: 2 }}>
                 Entrada: {new Date(g.hora_entrada).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago" })}
-                {g.es_fallback && " · 📱 fallback móvil"}
+                {g.es_fallback && <>{" · "}<Icon name="smartphone" size={16} />{" fallback móvil"}</>}
               </div>
             )}
             {(g.verificacion_gps === "por_revisar" || g.verificacion_gps === "sin_ubicacion") && (
               <div style={{ fontSize: 11, color: T.yellow, marginTop: 4, fontWeight: 600 }}>
-                ⚠️ {g.verificacion_gps === "sin_ubicacion"
+                <Icon name="triangle-alert" size={16} /> {g.verificacion_gps === "sin_ubicacion"
                   ? "Marcaje sin ubicación"
                   : "Ubicación imprecisa"}
                 {g.distancia_entrada_m != null && ` · a ${g.distancia_entrada_m} m`}
@@ -176,7 +178,7 @@ export function SupDashboard() {
       ))}
 
       <div style={{ fontSize: 10, color: T.textMut, textAlign: "center", marginTop: 12 }}>
-        🔴 En vivo · Se actualiza automáticamente
+        <Badge color="red"><span aria-hidden="true" style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: T.red, verticalAlign: "middle" }} /></Badge> En vivo · Se actualiza automáticamente
       </div>
     </div>
   );

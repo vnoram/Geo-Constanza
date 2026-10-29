@@ -1,3 +1,4 @@
+import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect, useRef } from "react";
 import { HistorialNovedad } from "../../components/novedades/HistorialNovedad";
 import { io } from "socket.io-client";
@@ -158,7 +159,7 @@ function ReportarModal({ onClose, onSuccess }) {
           <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{
             background: "none", border: "none", color: T.textMut,
             fontSize: 20, cursor: "pointer", lineHeight: 1,
-          }}>✕</button>
+          }}><Icon name="x" size={16} /></button>
         </div>
 
         {/* Indicador GPS */}
@@ -168,10 +169,10 @@ function ReportarModal({ onClose, onSuccess }) {
           background: gpsStyle.bg, border: `1px solid ${gpsStyle.border}`,
         }}>
           <span style={{ fontSize: 13, color: gpsStyle.text }}>
-            {gpsStatus === "loading" && "📡 Obteniendo ubicación..."}
-            {gpsStatus === "ok"      && `📍 Precisión de tu ubicación: ±${precisionGps} m`}
-            {gpsStatus === "error"   && "⚠️ GPS no disponible — se reportará sin coordenadas"}
-            {gpsStatus === "idle"    && "📡 Iniciando GPS..."}
+            {gpsStatus === "loading" && <><Icon name="radio-tower" size={16} />{" Obteniendo ubicación..."}</>}
+            {gpsStatus === "ok"      && <><Icon name="map-pin" size={16} />{" Precisión de tu ubicación: ±"}{precisionGps}{" m"}</>}
+            {gpsStatus === "error"   && <><Icon name="triangle-alert" size={16} />{" GPS no disponible — se reportará sin coordenadas"}</>}
+            {gpsStatus === "idle"    && <><Icon name="radio-tower" size={16} />{" Iniciando GPS..."}</>}
           </span>
         </div>
 
@@ -181,7 +182,7 @@ function ReportarModal({ onClose, onSuccess }) {
             borderRadius: 8, padding: "8px 12px", marginBottom: 16,
             fontSize: 12, color: T.yellow,
           }}>
-            ⚠️ Tu ubicación en este equipo es imprecisa. Usa tu celular o tablet en la instalación.
+            <Icon name="triangle-alert" size={16} /> Tu ubicación en este equipo es imprecisa. Usa tu celular o tablet en la instalación.
           </div>
         )}
 

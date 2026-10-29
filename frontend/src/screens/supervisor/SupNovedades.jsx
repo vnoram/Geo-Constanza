@@ -1,3 +1,4 @@
+import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import { T } from "../../theme/theme";
@@ -59,7 +60,7 @@ function ResolverModal({ novedad, onClose, onSuccess }) {
           <span style={{ fontWeight: 700, fontSize: 15, color: T.text }}>Resolver Novedad</span>
           <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{
             background: "none", border: "none", color: T.textMut, fontSize: 20, cursor: "pointer",
-          }}>✕</button>
+          }}><Icon name="x" size={16} /></button>
         </div>
         <div style={{ fontSize: 13, color: T.textSec, marginBottom: 16 }}>
           <strong style={{ color: T.text }}>{novedad.tipo}</strong>
@@ -146,7 +147,7 @@ function FotoNovedad({ url }) {
   if (error) {
     return (
       <div style={{ fontSize: 11, color: T.textMut, marginBottom: 10 }}>
-        📷 Foto no disponible (recarga la página para renovar el enlace)
+        <Icon name="camera" size={16} /> Foto no disponible (recarga la página para renovar el enlace)
       </div>
     );
   }
@@ -193,7 +194,7 @@ function FotoNovedad({ url }) {
               onClick={(e) => e.stopPropagation()}
               style={{ color: T.accent, fontSize: 13, fontWeight: 700, textDecoration: "none" }}
             >
-              Abrir original ↗
+              Abrir original <Icon name="arrow-up-right" size={16} />
             </a>
             <button
               className="touch-target"
@@ -201,7 +202,7 @@ function FotoNovedad({ url }) {
               onClick={() => setAbierta(false)}
               style={{ background: "none", border: "none", color: T.text, fontSize: 22, cursor: "pointer" }}
             >
-              ✕
+              <Icon name="x" size={16} />
             </button>
           </div>
         </div>
@@ -314,19 +315,19 @@ export function SupNovedades({ user }) {
         }}>
           <div className="responsive-list-row__main">
             <div style={{ color: T.red, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
-              🚨 ALERTA CRÍTICA — {alertaCritica.instalacion?.nombre}
+              <Icon name="siren" size={16} /> ALERTA CRÍTICA — {alertaCritica.instalacion?.nombre}
             </div>
             <div style={{ fontSize: 13, color: T.text }}>
               {alertaCritica.tipo}: {alertaCritica.descripcion}
             </div>
             <div style={{ fontSize: 12, color: T.textMut, marginTop: 4 }}>
               Guardia: {alertaCritica.guardia?.nombre}
-              {alertaCritica.gps_dentro_rango === false && " · ⚠️ GPS fuera de rango"}
+              {alertaCritica.gps_dentro_rango === false && <>{" · "}<Icon name="triangle-alert" size={16} />{" GPS fuera de rango"}</>}
             </div>
           </div>
           <button className="touch-target" aria-label="Cerrar alerta" onClick={() => setAlertaCritica(null)} style={{
             background: "none", border: "none", color: T.textMut, fontSize: 18, cursor: "pointer",
-          }}>✕</button>
+          }}><Icon name="x" size={16} /></button>
         </div>
       )}
 
