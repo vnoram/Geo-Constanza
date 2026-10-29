@@ -353,6 +353,7 @@ export function SupNovedades({ user }) {
             opacity: resuelta ? 0.6 : 1,
           }}>
             <div className="nov-card__body">
+            <div style={{ color: T.textMut, fontSize: 12 }}>{n.folio}</div>
             <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>
               <Badge color={colors.badge}>{urgencia}</Badge>

@@ -12,6 +12,7 @@ const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { uploadFotoToAzure, generarUrlLectura } = require('../utils/azureStorage');
 const { ROLES } = require('../constants/roles');
 const { ESTADO_NOVEDAD } = require('../constants/estados');
+const { conFolio } = require('../utils/folioNovedad');
 const { inicioDiaChile, finDiaChile, turnosDeHoy } = require('../utils/fechaChile');
 
 // ============================================================================
@@ -26,7 +27,7 @@ const FILE_CONFIG = {
 
 // Agrega `foto_url_firmada`: link temporal para ver la foto con el contenedor privado
 const conFotoFirmada = async (novedad) => ({
-  ...novedad,
+  ...conFolio(novedad),
   foto_url_firmada: await generarUrlLectura(novedad.foto_url),
 });
 
@@ -260,6 +261,8 @@ const crear = async (data, file, user) => {
 
       io.to(`instalacion:${turno.instalacion_id}`).emit('novedad:nueva', {
         id: novedad.id,
+        folio: conFolio(novedad).folio,
+        numero: novedad.numero,
         foto_url_firmada,
         tipo,
         urgencia,
@@ -290,7 +293,7 @@ const crear = async (data, file, user) => {
       }
     } catch (_) {}
 
-    return novedad;
+    return conFolio(novedad);
   } catch (error) {
     logger.error(`❌ Error creando novedad`, {
       usuarioId: user.id,
