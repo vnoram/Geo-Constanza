@@ -11,6 +11,7 @@ const geovalidacion = require('./geovalidacion.service');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { uploadFotoToAzure, generarUrlLectura } = require('../utils/azureStorage');
 const { ROLES } = require('../constants/roles');
+const { ESTADO_NOVEDAD } = require('../constants/estados');
 const { inicioDiaChile, finDiaChile, turnosDeHoy } = require('../utils/fechaChile');
 
 // ============================================================================
@@ -306,23 +307,61 @@ const crear = async (data, file, user) => {
   }
 };
 
-const resolver = async (id, comentario, supervisorId) => {
-  return prisma.novedad.update({
-    where: { id },
-    data: {
-      estado: 'resuelta',
-      comentario_cierre: comentario,
-      atendida_por: supervisorId,
-      fecha_atencion: new Date(),
-    },
-  });
+const exigirGestion = async (id, user) => {
+  if (![ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR].includes(user?.rol)) {
+    throw Object.assign(new Error('No tienes permiso para gestionar novedades.'), { statusCode: 403 });
+  }
+  const novedad = await prisma.novedad.findUnique({ where: { id } });
+  if (!novedad) throw Object.assign(new Error('Novedad no encontrada.'), { statusCode: 404 });
+  if (user.rol === ROLES.SUPERVISOR) {
+    const ids = await resolverInstalacionesSupervisor(user);
+    if (!ids.includes(novedad.instalacion_id)) {
+      throw Object.assign(new Error('No tienes permiso para gestionar esta instalación.'), { statusCode: 403 });
+    }
+  }
+  return novedad;
 };
 
-const escalar = async (id, supervisorId) => {
-  const novedad = await prisma.novedad.update({
-    where: { id },
-    data: { estado: 'escalada' },
-  });
+const resolver = async (id, comentario, user) => {
+  if (typeof comentario !== 'string' || comentario.trim().length < 5) {
+    throw Object.assign(new Error('El comentario de resolución debe tener al menos 5 caracteres.'), { statusCode: 400 });
+  }
+
+  await exigirGestion(id, user);
+  try {
+    return await prisma.novedad.update({
+      // La condición evita sobrescribir un cierre concurrente.
+      where: { id, estado: { not: ESTADO_NOVEDAD.RESUELTA } },
+      data: {
+        estado: ESTADO_NOVEDAD.RESUELTA,
+        comentario_cierre: comentario.trim(),
+        atendida_por: user.id,
+        fecha_atencion: new Date(),
+      },
+    });
+  } catch (error) {
+    if (error.code !== 'P2025') throw error;
+    const novedad = await prisma.novedad.findUnique({ where: { id } });
+    if (novedad?.estado === ESTADO_NOVEDAD.RESUELTA) {
+      throw Object.assign(new Error('La novedad ya está resuelta.'), { statusCode: 409 });
+    }
+    throw Object.assign(new Error('Novedad no encontrada.'), { statusCode: 404 });
+  }
+};
+
+const escalar = async (id, user) => {
+  await exigirGestion(id, user);
+  let novedad;
+  try {
+    novedad = await prisma.novedad.update({
+      where: { id, estado: ESTADO_NOVEDAD.ABIERTA },
+      data: { estado: ESTADO_NOVEDAD.ESCALADA },
+    });
+  } catch (error) {
+    if (error.code !== 'P2025') throw error;
+    const actual = await prisma.novedad.findUnique({ where: { id } });
+    throw Object.assign(new Error(actual ? 'La novedad no se puede escalar en su estado actual.' : 'Novedad no encontrada.'), { statusCode: actual ? 409 : 404 });
+  }
 
   try {
     const io = getSocketIO();
