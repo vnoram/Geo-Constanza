@@ -11,7 +11,8 @@ const geovalidacion = require('./geovalidacion.service');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { uploadFotoToAzure, generarUrlLectura } = require('../utils/azureStorage');
 const { ROLES } = require('../constants/roles');
-const { ESTADO_NOVEDAD, ESTADO_USUARIO } = require('../constants/estados');
+const { ESTADO_NOVEDAD, ESTADO_USUARIO, ESTADO_TURNO } = require('../constants/estados');
+const { URGENCIAS } = require('../constants/urgencias');
 const { conFolio } = require('../utils/folioNovedad');
 const { ACCION_NOVEDAD } = require('../constants/accionesNovedad');
 const { SALAS } = require('../constants/salas');
@@ -23,8 +24,8 @@ const { inicioDiaChile, finDiaChile, turnosDeHoy } = require('../utils/fechaChil
 
 const FILE_CONFIG = {
   ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'],
-  MAX_SIZE_MB: 5,
-  MAX_SIZE_BYTES: 5 * 1024 * 1024,
+  MAX_SIZE_MB: 10,
+  MAX_SIZE_BYTES: 10 * 1024 * 1024,
 };
 
 // Agrega `foto_url_firmada`: link temporal para ver la foto con el contenedor privado
@@ -172,7 +173,7 @@ const crear = async (data, file, user) => {
     // Hora Chile; incluye un turno nocturno de ayer que sigue en curso (tiene prioridad)
     const ventana = turnosDeHoy();
     const candidatos = await prisma.turno.findMany({
-      where: { usuario_id: user.id, ...ventana.where, estado: { not: 'cancelado' } },
+      where: { usuario_id: user.id, ...ventana.where, estado: { not: ESTADO_TURNO.CANCELADO } },
       include: { instalacion: true },
       orderBy: [{ fecha: 'asc' }, { hora_inicio: 'asc' }],
     });
@@ -216,7 +217,6 @@ const crear = async (data, file, user) => {
     // ── Foto (Azure) — MEJORADO: validación + manejo de errores ───
     let foto_url = null;
     if (file) {
-      try {
         // ✅ Validar tipo MIME
         if (!FILE_CONFIG.ALLOWED_TYPES.includes(file.mimetype)) {
           throw Object.assign(
@@ -233,6 +233,7 @@ const crear = async (data, file, user) => {
           );
         }
 
+      try {
         // ✅ Sanitizar nombre
         const ext = file.originalname.split('.').pop().toLowerCase();
         const safeFilename = `novedad-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
@@ -295,7 +296,7 @@ const crear = async (data, file, user) => {
 
       io.to([SALAS.ADMIN, SALAS.CENTRAL]).emit('admin:dashboard_update', { entity: 'novedad' });
 
-      if (urgencia === 'rojo' && turno.instalacion.nivel_criticidad === 'Alta') {
+      if (urgencia === URGENCIAS.ROJO && turno.instalacion.nivel_criticidad === 'Alta') {
         io.to(SALAS.CENTRAL).emit('alerta_critica_central', {
           id: novedad.id,
           tipo,
