@@ -6,6 +6,7 @@ import { Badge } from "../../components/ui/Badge";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 import { SOCKET_URL } from "../../config/api";
+import { HistorialNovedad } from "../../components/novedades/HistorialNovedad";
 
 
 const URGENCIA_COLOR = {
@@ -421,6 +422,7 @@ export function SupNovedades({ user }) {
             )}
 
             <div className="nov-card__pie">
+            <HistorialNovedad id={n.id} />
             {/* Badges de estado + GPS */}
             <div className="nov-card__estado" style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
               <Badge color={resuelta ? "accent" : escalada ? "red" : "yellow"}>

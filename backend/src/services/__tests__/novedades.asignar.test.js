@@ -1,6 +1,7 @@
 jest.mock('../../config/database', () => ({ prisma: {
   novedad: { findUnique: jest.fn(), update: jest.fn() },
   usuario: { findUnique: jest.fn(), findMany: jest.fn() },
+  novedadHistorial: { create: jest.fn() }, $transaction: jest.fn(),
 } }));
 jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn() }));
 jest.mock('../../utils/azureStorage', () => ({ generarUrlLectura: jest.fn() }));
@@ -16,6 +17,7 @@ const emit = jest.fn();
 const to = jest.fn(() => ({ emit }));
 beforeEach(() => {
   jest.clearAllMocks();
+  prisma.$transaction.mockImplementation(fn => fn(prisma));
   prisma.novedad.findUnique.mockResolvedValue({ id: 'n1', instalacion_id: 'i1', estado: ESTADO_NOVEDAD.ABIERTA });
   resolverInstalacionesSupervisor.mockResolvedValue(['i1']);
   prisma.usuario.findUnique.mockResolvedValue({ id: 'r1', rol: ROLES.SUPERVISOR, estado: ESTADO_USUARIO.ACTIVO });
@@ -52,8 +54,9 @@ test('asignar en estado distinto de abierta devuelve 409', async () => {
   expect(emit).not.toHaveBeenCalled();
 });
 test('escalar admite en atención', async () => {
+  prisma.novedad.findUnique.mockResolvedValue({ id: 'n1', instalacion_id: 'i1', estado: ESTADO_NOVEDAD.EN_ATENCION });
   await escalar('n1', actor);
-  expect(prisma.novedad.update.mock.calls[0][0].where.estado.in).toContain(ESTADO_NOVEDAD.EN_ATENCION);
+  expect(prisma.novedad.update.mock.calls[0][0].where.estado).toBe(ESTADO_NOVEDAD.EN_ATENCION);
 });
 test('candidatos expone solo id/nombre de supervisores y centrales activos', async () => {
   prisma.usuario.findMany.mockResolvedValue([]);

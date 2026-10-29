@@ -1,6 +1,6 @@
 jest.mock('../../config/database', () => ({ prisma: { novedad: {
   update: jest.fn(), findUnique: jest.fn(),
-} } }));
+}, novedadHistorial: { create: jest.fn() }, $transaction: jest.fn() } }));
 jest.mock('../../utils/azureStorage', () => ({ uploadFotoToAzure: jest.fn(), generarUrlLectura: jest.fn() }));
 jest.mock('../../socket/socketManager', () => ({ getSocketIO: jest.fn() }));
 jest.mock('../../config/logger', () => ({ logger: { error: jest.fn(), warn: jest.fn() } }));
@@ -15,6 +15,7 @@ const user = { id: 's1', rol: ROLES.SUPERVISOR };
 
 beforeEach(() => {
   jest.resetAllMocks();
+  prisma.$transaction.mockImplementation(fn => fn(prisma));
   prisma.novedad.findUnique.mockResolvedValue({ id: 'n1', instalacion_id: 'i1', estado: ESTADO_NOVEDAD.ABIERTA });
   resolverInstalacionesSupervisor.mockResolvedValue(['i1']);
 });
@@ -31,10 +32,7 @@ test('responde 409 si ya está resuelta y no sobrescribe el cierre', async () =>
   prisma.novedad.update.mockRejectedValue({ code: 'P2025' });
   prisma.novedad.findUnique.mockResolvedValue({ id: 'n1', instalacion_id: 'i1', estado: ESTADO_NOVEDAD.RESUELTA });
   await expect(resolver('n1', 'Cierre válido', user)).rejects.toMatchObject({ statusCode: 409 });
-  expect(prisma.novedad.update).toHaveBeenCalledTimes(1);
-  expect(prisma.novedad.update.mock.calls[0][0].where).toEqual({
-    id: 'n1', estado: { not: ESTADO_NOVEDAD.RESUELTA },
-  });
+  expect(prisma.novedad.update).not.toHaveBeenCalled();
 });
 
 test('responde 404 si el id no existe', async () => {
@@ -48,11 +46,11 @@ test('acepta el mínimo de cinco caracteres, recorta y registra el cierre', asyn
   const cerrada = { id: 'n1', estado: ESTADO_NOVEDAD.RESUELTA };
   prisma.novedad.update.mockResolvedValue(cerrada);
   await expect(resolver('n1', '  Listo  ', user)).resolves.toEqual(cerrada);
-  expect(prisma.novedad.update).toHaveBeenCalledWith({
-    where: { id: 'n1', estado: { not: ESTADO_NOVEDAD.RESUELTA } },
+  expect(prisma.novedad.update).toHaveBeenCalledWith(expect.objectContaining({
+    where: { id: 'n1', estado: ESTADO_NOVEDAD.ABIERTA },
     data: { estado: ESTADO_NOVEDAD.RESUELTA, comentario_cierre: 'Listo',
       atendida_por: 's1', fecha_atencion: expect.any(Date) },
-  });
+  }));
 });
 
 test('conserva los errores inesperados de base de datos', async () => {
@@ -84,7 +82,7 @@ test.each([ESTADO_NOVEDAD.RESUELTA, ESTADO_NOVEDAD.ESCALADA])('escalar rechaza e
   prisma.novedad.findUnique.mockResolvedValue({ id: 'n1', instalacion_id: 'i1', estado });
   prisma.novedad.update.mockRejectedValue({ code: 'P2025' });
   await expect(escalar('n1', user)).rejects.toMatchObject({ statusCode: 409 });
-  expect(prisma.novedad.update.mock.calls[0][0].where.estado).toEqual({ in: [ESTADO_NOVEDAD.ABIERTA, ESTADO_NOVEDAD.EN_ATENCION] });
+  expect(prisma.novedad.update).not.toHaveBeenCalled();
 });
 
 test('escalar responde 404 al id inexistente', async () => {

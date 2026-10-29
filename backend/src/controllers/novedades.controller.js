@@ -56,4 +56,8 @@ const responsables = async (req, res, next) => {
   catch (error) { next(error); }
 };
 
-module.exports = { listar, obtener, crear, resolver, escalar, asignar, responsables };
+const historial = async (req, res, next) => {
+  try { res.json(await novedadesService.historial(req.params.id, req.user)); }
+  catch (error) { next(error); }
+};
+module.exports = { listar, obtener, crear, resolver, escalar, asignar, responsables, historial };

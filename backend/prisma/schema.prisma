@@ -44,6 +44,7 @@ model Usuario {
   asistencias              Asistencia[]
   novedades                Novedad[] @relation("NovedadAutor")
   novedades_asignadas       Novedad[] @relation("NovedadResponsable")
+  historial_novedades       NovedadHistorial[]
   auditorias               Auditoria[]
   instalaciones_sup        Supervisor_Instalacion[]
   solicitudes              Solicitud[] @relation("UsuarioSolicita")
@@ -171,12 +172,27 @@ model Novedad {
 
   usuario             Usuario      @relation("NovedadAutor", fields: [usuario_id], references: [id])
   responsable         Usuario?     @relation("NovedadResponsable", fields: [asignada_a], references: [id])
+  historial           NovedadHistorial[]
   instalacion         Instalacion  @relation(fields: [instalacion_id], references: [id])
   turno               Turno        @relation(fields: [turno_id], references: [id])
 }
 
 // ─── 7. SOLICITUDES (Vacaciones, Permisos, Traslados, Turnos) ───
 // tipos: 'vacaciones' | 'dias_libres' | 'turno_extra' | 'traslado' | 'turno'
+model NovedadHistorial {
+  id              String   @id @default(uuid())
+  novedad_id      String
+  usuario_id      String
+  accion          String
+  estado_anterior String?
+  estado_nuevo    String
+  comentario      String?
+  created_at      DateTime @default(now())
+  novedad         Novedad @relation(fields: [novedad_id], references: [id])
+  usuario         Usuario @relation(fields: [usuario_id], references: [id])
+  @@index([novedad_id, created_at])
+}
+
 model Solicitud {
   id                  String       @id @default(uuid())
   usuario_id          String
