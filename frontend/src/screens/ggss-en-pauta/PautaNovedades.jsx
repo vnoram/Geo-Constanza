@@ -383,6 +383,7 @@ export function PautaNovedades({ user }) {
             borderRadius: 8, padding: 14,
           }}>
             <div className="nov-card__body">
+            <div style={{ color: T.textMut, fontSize: 12 }}>{n.folio}</div>
             <div className="guard-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>
               <Badge color={colors.badge}>{urgencia}</Badge>

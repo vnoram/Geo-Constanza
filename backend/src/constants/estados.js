@@ -6,6 +6,7 @@
 
 const ESTADO_NOVEDAD = {
   ABIERTA: 'abierta',
+  EN_ATENCION: 'en_atencion',
   RESUELTA: 'resuelta',
   ESCALADA: 'escalada',
 };

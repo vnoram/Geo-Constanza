@@ -103,6 +103,39 @@ function ResolverModal({ novedad, onClose, onSuccess }) {
 }
 
 // ─── Foto de la novedad (miniatura + vista ampliada) ─────────────────
+function AsignarModal({ novedad, onClose, onSuccess }) {
+  const [usuarios, setUsuarios] = useState([]);
+  const [responsable, setResponsable] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    api.get(`/novedades/${novedad.id}/responsables`).then(setUsuarios).catch(e => setError(e.message));
+  }, [novedad.id]);
+  const enviar = async (e) => {
+    e.preventDefault(); setLoading(true); setError("");
+    try {
+      await api.patch(`/novedades/${novedad.id}/asignar`, { responsable_id: responsable });
+      onSuccess();
+    } catch (e) { setError(e.message); }
+    finally { setLoading(false); }
+  };
+  return <div className="responsive-modal-overlay" style={{ position: "fixed", inset: 0, zIndex: 100, background: T.bg + "EE", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+    <form onSubmit={enviar} className="responsive-modal" style={{ background: T.bgCard, color: T.text, padding: 24, borderRadius: 8, width: "100%", maxWidth: 400 }}>
+      <h3>Asignar responsable</h3>
+      <label htmlFor="responsable-novedad">Responsable</label>
+      <select id="responsable-novedad" required value={responsable} onChange={e => setResponsable(e.target.value)} style={{ width: "100%", margin: "12px 0", padding: 12, background: T.bgInput, color: T.text, border: `1px solid ${T.border}` }}>
+        <option value="">Selecciona un responsable</option>
+        {usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
+      </select>
+      {error && <p role="alert" style={{ color: T.red }}>{error}</p>}
+      <div className="action-wrap" style={{ display: "flex", gap: 8 }}>
+        <Btn variant="ghost" onClick={e => { e.preventDefault(); onClose(); }} disabled={loading}>Cancelar</Btn>
+        <Btn loading={loading} disabled={!responsable}>Asignar</Btn>
+      </div>
+    </form>
+  </div>;
+}
+
 // `foto_url_firmada` es un link temporal generado por el backend; si vence,
 // basta con recargar la lista para obtener uno nuevo.
 function FotoNovedad({ url }) {
@@ -181,6 +214,7 @@ export function SupNovedades({ user }) {
   const [novedades, setNovedades]     = useState([]);
   const [loading, setLoading]         = useState(true);
   const [resolverTarget, setResolver] = useState(null); // novedad seleccionada para resolver
+  const [asignarTarget, setAsignar] = useState(null);
   const [actionLoading, setActionLoading] = useState({}); // { [id]: true }
   const [alertaCritica, setAlertaCritica] = useState(null);
   const [vista, setVista]             = useState("activas"); // "activas" | "resueltas"
@@ -227,6 +261,7 @@ export function SupNovedades({ user }) {
         prev.map(n => n.id === id ? { ...n, estado: "escalada" } : n),
       );
     });
+    socket.on("novedad:asignada", () => cargarNovedades());
 
     // Alerta crítica desde Central
     socket.on("alerta_critica_central", (data) => {
@@ -353,6 +388,7 @@ export function SupNovedades({ user }) {
             opacity: resuelta ? 0.6 : 1,
           }}>
             <div className="nov-card__body">
+            <div style={{ color: T.textMut, fontSize: 12 }}>{n.folio}</div>
             <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>
               <Badge color={colors.badge}>{urgencia}</Badge>
@@ -370,6 +406,7 @@ export function SupNovedades({ user }) {
             <div style={{ fontSize: 12, color: T.textSec, marginBottom: 8 }}>
               {n.descripcion}
             </div>
+            {n.responsable && <div style={{ fontSize: 12, color: T.textSec, marginBottom: 8 }}>Responsable: {n.responsable.nombre}</div>}
 
             {resuelta && n.comentario_cierre && (
               <div style={{ fontSize: 12, color: T.textSec, marginBottom: 8 }}>
@@ -397,6 +434,7 @@ export function SupNovedades({ user }) {
             {/* Acciones (sólo si no está resuelta) */}
             {!resuelta && (
               <div className="action-wrap" style={{ display: "flex", gap: 8 }}>
+                {n.estado === "abierta" && <Btn variant="ghost" onClick={() => setAsignar(n)}>Asignar</Btn>}
                 <Btn
                   variant="ghost"
                   onClick={() => setResolver(n)}
@@ -428,6 +466,7 @@ export function SupNovedades({ user }) {
           onSuccess={handleResuelta}
         />
       )}
+      {asignarTarget && <AsignarModal novedad={asignarTarget} onClose={() => setAsignar(null)} onSuccess={() => { setAsignar(null); cargarNovedades(); }} />}
     </div>
   );
 }

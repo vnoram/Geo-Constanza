@@ -30,7 +30,7 @@ const crear = async (req, res, next) => {
 const resolver = async (req, res, next) => {
   try {
     const { comentario } = req.body;
-    const novedad = await novedadesService.resolver(req.params.id, comentario, req.user.id);
+    const novedad = await novedadesService.resolver(req.params.id, comentario, req.user);
     res.json(novedad);
   } catch (error) {
     next(error);
@@ -39,11 +39,21 @@ const resolver = async (req, res, next) => {
 
 const escalar = async (req, res, next) => {
   try {
-    const novedad = await novedadesService.escalar(req.params.id, req.user.id);
+    const novedad = await novedadesService.escalar(req.params.id, req.user);
     res.json(novedad);
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { listar, obtener, crear, resolver, escalar };
+const asignar = async (req, res, next) => {
+  try {
+    res.json(await novedadesService.asignar(req.params.id, req.body.responsable_id, req.user));
+  } catch (error) { next(error); }
+};
+const responsables = async (req, res, next) => {
+  try { res.json(await novedadesService.responsables(req.params.id, req.user)); }
+  catch (error) { next(error); }
+};
+
+module.exports = { listar, obtener, crear, resolver, escalar, asignar, responsables };

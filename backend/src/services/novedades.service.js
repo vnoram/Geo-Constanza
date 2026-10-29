@@ -11,6 +11,8 @@ const geovalidacion = require('./geovalidacion.service');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { uploadFotoToAzure, generarUrlLectura } = require('../utils/azureStorage');
 const { ROLES } = require('../constants/roles');
+const { ESTADO_NOVEDAD, ESTADO_USUARIO } = require('../constants/estados');
+const { conFolio } = require('../utils/folioNovedad');
 const { inicioDiaChile, finDiaChile, turnosDeHoy } = require('../utils/fechaChile');
 
 // ============================================================================
@@ -25,7 +27,7 @@ const FILE_CONFIG = {
 
 // Agrega `foto_url_firmada`: link temporal para ver la foto con el contenedor privado
 const conFotoFirmada = async (novedad) => ({
-  ...novedad,
+  ...conFolio(novedad),
   foto_url_firmada: await generarUrlLectura(novedad.foto_url),
 });
 
@@ -77,6 +79,7 @@ const listar = async (query, user) => {
       prisma.novedad.findMany({
         where,
         include: {
+          responsable: { select: { id: true, nombre: true } },
           usuario: { select: { id: true, nombre: true } },
           instalacion: { select: { id: true, nombre: true } },
         },
@@ -110,6 +113,7 @@ const obtenerPorId = async (id, user) => {
     const novedad = await prisma.novedad.findUniqueOrThrow({
       where: { id },
       include: {
+        responsable: { select: { id: true, nombre: true } },
         usuario: { select: { id: true, nombre: true, telefono: true } },
         instalacion: { select: { id: true, nombre: true } },
       },
@@ -259,6 +263,8 @@ const crear = async (data, file, user) => {
 
       io.to(`instalacion:${turno.instalacion_id}`).emit('novedad:nueva', {
         id: novedad.id,
+        folio: conFolio(novedad).folio,
+        numero: novedad.numero,
         foto_url_firmada,
         tipo,
         urgencia,
@@ -289,7 +295,7 @@ const crear = async (data, file, user) => {
       }
     } catch (_) {}
 
-    return novedad;
+    return conFolio(novedad);
   } catch (error) {
     logger.error(`❌ Error creando novedad`, {
       usuarioId: user.id,
@@ -306,23 +312,61 @@ const crear = async (data, file, user) => {
   }
 };
 
-const resolver = async (id, comentario, supervisorId) => {
-  return prisma.novedad.update({
-    where: { id },
-    data: {
-      estado: 'resuelta',
-      comentario_cierre: comentario,
-      atendida_por: supervisorId,
-      fecha_atencion: new Date(),
-    },
-  });
+const exigirGestion = async (id, user) => {
+  if (![ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR].includes(user?.rol)) {
+    throw Object.assign(new Error('No tienes permiso para gestionar novedades.'), { statusCode: 403 });
+  }
+  const novedad = await prisma.novedad.findUnique({ where: { id } });
+  if (!novedad) throw Object.assign(new Error('Novedad no encontrada.'), { statusCode: 404 });
+  if (user.rol === ROLES.SUPERVISOR) {
+    const ids = await resolverInstalacionesSupervisor(user);
+    if (!ids.includes(novedad.instalacion_id)) {
+      throw Object.assign(new Error('No tienes permiso para gestionar esta instalación.'), { statusCode: 403 });
+    }
+  }
+  return novedad;
 };
 
-const escalar = async (id, supervisorId) => {
-  const novedad = await prisma.novedad.update({
-    where: { id },
-    data: { estado: 'escalada' },
-  });
+const resolver = async (id, comentario, user) => {
+  if (typeof comentario !== 'string' || comentario.trim().length < 5) {
+    throw Object.assign(new Error('El comentario de resolución debe tener al menos 5 caracteres.'), { statusCode: 400 });
+  }
+
+  await exigirGestion(id, user);
+  try {
+    return await prisma.novedad.update({
+      // La condición evita sobrescribir un cierre concurrente.
+      where: { id, estado: { not: ESTADO_NOVEDAD.RESUELTA } },
+      data: {
+        estado: ESTADO_NOVEDAD.RESUELTA,
+        comentario_cierre: comentario.trim(),
+        atendida_por: user.id,
+        fecha_atencion: new Date(),
+      },
+    });
+  } catch (error) {
+    if (error.code !== 'P2025') throw error;
+    const novedad = await prisma.novedad.findUnique({ where: { id } });
+    if (novedad?.estado === ESTADO_NOVEDAD.RESUELTA) {
+      throw Object.assign(new Error('La novedad ya está resuelta.'), { statusCode: 409 });
+    }
+    throw Object.assign(new Error('Novedad no encontrada.'), { statusCode: 404 });
+  }
+};
+
+const escalar = async (id, user) => {
+  await exigirGestion(id, user);
+  let novedad;
+  try {
+    novedad = await prisma.novedad.update({
+      where: { id, estado: { in: [ESTADO_NOVEDAD.ABIERTA, ESTADO_NOVEDAD.EN_ATENCION] } },
+      data: { estado: ESTADO_NOVEDAD.ESCALADA },
+    });
+  } catch (error) {
+    if (error.code !== 'P2025') throw error;
+    const actual = await prisma.novedad.findUnique({ where: { id } });
+    throw Object.assign(new Error(actual ? 'La novedad no se puede escalar en su estado actual.' : 'Novedad no encontrada.'), { statusCode: actual ? 409 : 404 });
+  }
 
   try {
     const io = getSocketIO();
@@ -337,4 +381,40 @@ const escalar = async (id, supervisorId) => {
   return novedad;
 };
 
-module.exports = { listar, obtenerPorId, crear, resolver, escalar, FILE_CONFIG };
+const responsables = async (id, user) => {
+  await exigirGestion(id, user);
+  return prisma.usuario.findMany({
+    where: { rol: { in: [ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL] }, estado: ESTADO_USUARIO.ACTIVO },
+    select: { id: true, nombre: true }, orderBy: { nombre: 'asc' },
+  });
+};
+
+const asignar = async (id, responsableId, user) => {
+  await exigirGestion(id, user);
+  if (typeof responsableId !== 'string' || !responsableId.trim()) {
+    throw Object.assign(new Error('Selecciona un responsable.'), { statusCode: 400 });
+  }
+  const responsable = await prisma.usuario.findUnique({ where: { id: responsableId } });
+  if (!responsable || responsable.estado !== ESTADO_USUARIO.ACTIVO ||
+      ![ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL].includes(responsable.rol)) {
+    throw Object.assign(new Error('El responsable debe ser supervisor o central activo.'), { statusCode: 400 });
+  }
+  let novedad;
+  try {
+    novedad = await prisma.novedad.update({
+      where: { id, estado: ESTADO_NOVEDAD.ABIERTA },
+      data: { asignada_a: responsableId, estado: ESTADO_NOVEDAD.EN_ATENCION },
+      include: { responsable: { select: { id: true, nombre: true } } },
+    });
+  } catch (error) {
+    if (error.code !== 'P2025') throw error;
+    const actual = await prisma.novedad.findUnique({ where: { id } });
+    throw Object.assign(new Error(actual ? 'Solo se puede asignar una novedad abierta.' : 'Novedad no encontrada.'), { statusCode: actual ? 409 : 404 });
+  }
+  try {
+    getSocketIO().to(`instalacion:${novedad.instalacion_id}`).emit('novedad:asignada', novedad);
+  } catch (_) {}
+  return novedad;
+};
+
+module.exports = { listar, obtenerPorId, crear, resolver, escalar, asignar, responsables, FILE_CONFIG };
