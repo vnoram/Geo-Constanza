@@ -14,6 +14,7 @@ const { ROLES } = require('../constants/roles');
 const { ESTADO_NOVEDAD, ESTADO_USUARIO } = require('../constants/estados');
 const { conFolio } = require('../utils/folioNovedad');
 const { ACCION_NOVEDAD } = require('../constants/accionesNovedad');
+const { SALAS } = require('../constants/salas');
 const { inicioDiaChile, finDiaChile, turnosDeHoy } = require('../utils/fechaChile');
 
 // ============================================================================
@@ -292,10 +293,10 @@ const crear = async (data, file, user) => {
         created_at: novedad.created_at,
       });
 
-      io.emit('admin:dashboard_update', { entity: 'novedad' });
+      io.to([SALAS.ADMIN, SALAS.CENTRAL]).emit('admin:dashboard_update', { entity: 'novedad' });
 
       if (urgencia === 'rojo' && turno.instalacion.nivel_criticidad === 'Alta') {
-        io.emit('alerta_critica_central', {
+        io.to(SALAS.CENTRAL).emit('alerta_critica_central', {
           id: novedad.id,
           tipo,
           urgencia,
@@ -363,7 +364,7 @@ const escalar = async (id, user) => {
 
   try {
     const io = getSocketIO();
-    io.emit('novedad:escalada', {
+    io.to(`instalacion:${novedad.instalacion_id}`).emit('novedad:escalada', {
       id: novedad.id,
       tipo: novedad.tipo,
       urgencia: novedad.urgencia,
