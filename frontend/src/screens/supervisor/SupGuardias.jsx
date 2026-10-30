@@ -1,3 +1,4 @@
+import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect } from "react";
 import { T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
@@ -29,10 +30,10 @@ function AvisoNocturno({ form }) {
   if (!esNocturno(form) || !form.fecha) return null;
   return (
     <div style={{
-      fontSize: 11, color: "#B39BE0", background: "rgba(179,155,224,0.08)",
+      fontSize: 11, color: T.focusText, background: "rgba(179,155,224,0.08)",
       border: "1px solid rgba(179,155,224,0.3)", borderRadius: 8, padding: "8px 10px", marginBottom: 12,
     }}>
-      🌙 Turno nocturno: comienza el {formatearFecha(form.fecha)} a las {form.hora_inicio} y
+      <Icon name="moon" size={16} /> Turno nocturno: comienza el {formatearFecha(form.fecha)} a las {form.hora_inicio} y
       termina el {diaSiguiente(form.fecha)} a las {form.hora_fin}.
     </div>
   );
@@ -125,7 +126,7 @@ function ModalEditarTurno({ turno, turnos, guardias, instalaciones, inputStyle, 
             onClick={onClose}
             style={{ background: "none", border: "none", color: T.textMut, fontSize: 18, cursor: "pointer" }}
           >
-            ✕
+            <Icon name="x" size={16} />
           </button>
         </div>
 
@@ -254,7 +255,7 @@ export function SupGuardias() {
 
   const onTurnoGuardado = () => {
     setTurnoEditando(null);
-    setAviso("✅ Turno actualizado correctamente");
+    setAviso(<><Icon name="circle-check" size={16} />{" Turno actualizado correctamente"}</>);
     setTimeout(() => setAviso(""), 4000);
     cargarTurnos();
   };
@@ -462,11 +463,11 @@ export function SupGuardias() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>
                     {t.hora_inicio} – {t.hora_fin}
-                    {esNocturno(t) && <span style={{ color: "#B39BE0", fontSize: 11 }}> (+1) 🌙</span>}
+                    {esNocturno(t) && <span style={{ color: T.focusText, fontSize: 11 }}> (+1) <Icon name="moon" size={16} /></span>}
                     {" · "}{t.usuario?.nombre || "Sin guardia"}
                   </div>
                   <div style={{ fontSize: 11, color: T.textMut, marginTop: 2 }}>
-                    🏢 {t.instalacion?.nombre || "—"}
+                    <Icon name="building-2" size={16} /> {t.instalacion?.nombre || "—"}
                   </div>
                 </div>
                 <Badge color={ESTADO_COLOR[t.estado] || "accent"}>{t.estado}</Badge>
@@ -480,7 +481,7 @@ export function SupGuardias() {
                       fontFamily: "var(--font-ui)", cursor: "pointer", whiteSpace: "nowrap",
                     }}
                   >
-                    ✏️ Editar
+                    <Icon name="pencil" size={16} /> Editar
                   </button>
                 )}
               </div>
