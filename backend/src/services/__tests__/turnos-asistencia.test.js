@@ -13,6 +13,7 @@ const asistencia = require('../asistencia.service');
 const solicitudes = require('../solicitudes.service');
 const { getDashboardHoy } = require('../dashboard.service');
 const { getSocketIO } = require('../../socket/socketManager');
+const { TIPOS_COBERTURA } = require('../../constants/solicitudes');
 
 const inst = { id: 'i', nombre: 'Instalación Norte' };
 const turno = (id, fecha, hora_inicio, hora_fin, extra = {}) => ({
@@ -113,7 +114,7 @@ test('solicitud aprobada consulta el 3-oct a las 22:00 Chile, no el día UTC sig
   prisma.solicitud.findFirst.mockResolvedValue({ id: 'solicitud' });
   await expect(solicitudes.tieneturnoAprobadoHoy('u')).resolves.toBe(true);
   expect(prisma.solicitud.findFirst).toHaveBeenCalledWith({ where: {
-    usuario_id: 'u', tipo: { in: ['turno', 'turno_extra'] }, estado: 'aprobada',
+    usuario_id: 'u', tipo: { in: TIPOS_COBERTURA }, estado: 'aprobada',
     fecha_desde: { lte: new Date('2026-10-03T00:00:00.000Z') },
     OR: [{ fecha_hasta: null }, { fecha_hasta: { gte: new Date('2026-10-03T00:00:00.000Z') } }],
   } });

@@ -237,6 +237,7 @@ router.use(authenticate);
 
 // ── Perfil propio (cualquier rol autenticado) ──────────────────────────────
 router.get('/me', usuariosController.miInformacion);
+router.put('/me/token-dispositivo', require('../controllers/notificacion.controller').registrarDispositivo);
 
 // ── CRUD (solo admin, supervisor puede listar) ─────────────────────────────
 router.get('/', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), usuariosController.listar);

@@ -4,11 +4,17 @@ import {
   FileText, Folder, IdCard, Info, KeyRound, LayoutDashboard, LogOut, Map, MapPin, Menu,
   Pencil, Plus, RadioTower, ScrollText, Search, Settings, TriangleAlert, UserRound,
   UserRoundCheck, Users, Wifi, WifiOff, X,
+  ArrowUpRight, Ban, Banknote, CircleCheck, FilePen, Globe, GraduationCap,
+  Hourglass, Moon, Paperclip, RefreshCw, Siren, Smartphone, Umbrella, Wrench, Zap,
 } from "lucide-react";
 
 // Un solo set lineal (Lucide), trazo de 1.5 px. Se importa por nombre para que
 // el empaquetado solo incluya los íconos usados.
 const ICONS = {
+  "arrow-up-right": ArrowUpRight, ban: Ban, banknote: Banknote, "circle-check": CircleCheck,
+  "file-pen": FilePen, globe: Globe, "graduation-cap": GraduationCap, hourglass: Hourglass,
+  moon: Moon, paperclip: Paperclip, "refresh-cw": RefreshCw, siren: Siren,
+  smartphone: Smartphone, umbrella: Umbrella, wrench: Wrench, zap: Zap,
   "arrow-left": ArrowLeft, bell: Bell, "building-2": Building2, "calendar-days": CalendarDays,
   camera: Camera, "chart-column": ChartColumn, check: Check, "chevron-down": ChevronDown,
   "chevron-right": ChevronRight, "circle-alert": CircleAlert, "clipboard-check": ClipboardCheck,
@@ -23,5 +29,5 @@ const ICONS = {
 export function Icon({ name, size = 18, color = "currentColor", style }) {
   const Cmp = ICONS[name];
   if (!Cmp) return null;
-  return <Cmp size={size} strokeWidth={1.5} color={color} aria-hidden="true" style={{ flex: "none", ...style }} />;
+  return <Cmp size={size} strokeWidth={1.5} color={color} aria-hidden="true" style={{ flex: "none", verticalAlign: "middle", ...style }} />;
 }

@@ -2,6 +2,7 @@ const { prisma } = require('../config/database');
 const { getSocketIO } = require('../socket/socketManager');
 const geovalidacion = require('./geovalidacion.service');
 const { ROLES } = require('../constants/roles');
+const { SALAS, salaInstalacion } = require('../constants/salas');
 
 const { ahoraChile, sumarDias, aFechaDB, inicioDiaChile, finDiaChile, intervaloTurno, turnoVigente, instanteChile } = require('../utils/fechaChile');
 
@@ -230,7 +231,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
     }
     // Publicar ubicación GPS del guardia para el mapa del admin (solo si hay coords)
     if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
-      io.emit('guardia:ubicacion', {
+      io.to([salaInstalacion(instalacion_id), SALAS.ADMIN, SALAS.CENTRAL]).emit('guardia:ubicacion', {
         guardia_id: usuario_id,
         instalacion_id,
         latitud: lat,
@@ -240,7 +241,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
       });
     }
     // Notificar al panel admin global
-    io.emit('admin:dashboard_update', { entity: 'asistencia' });
+    io.to([SALAS.ADMIN, SALAS.CENTRAL]).emit('admin:dashboard_update', { entity: 'asistencia' });
   } catch (_) {
     // Socket.IO no disponible — el registro se guarda igual
   }
@@ -250,7 +251,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
 };
 
 const registrarSalida = async (data, user) => {
-  const { asistencia_id, metodo, latitud, longitud } = data;
+  const { asistencia_id, metodo } = data;
 
   const asistencia = await prisma.asistencia.findUniqueOrThrow({ where: { id: asistencia_id }, include: { turno: true } });
 
