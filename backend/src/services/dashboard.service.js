@@ -48,7 +48,7 @@ const getDashboardHoy = async (user) => {
     }
     return {
       turno_id: t.id,
-      guardia: t.usuario.nombre,
+      guardia: t.usuario?.nombre ?? 'Sin asignar',
       instalacion: t.instalacion.nombre,
       instalacion_id: t.instalacion.id,
       hora_inicio: t.hora_inicio,

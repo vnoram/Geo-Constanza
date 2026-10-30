@@ -4,11 +4,10 @@ const { prisma } = require('../config/database');
 const { jwtConfig } = require('../config/jwt');
 const { getRedis } = require('../config/redis');
 
-const BCRYPT_ROUNDS = 12;
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
-const login = async (rut, password, ip, userAgent) => {
+const login = async (rut, password, _ip, _userAgent) => {
   const usuario = await prisma.usuario.findUnique({
     where: { rut },
     include: { instalacion_asignada: { select: { id: true, nombre: true } } },
@@ -56,7 +55,7 @@ const login = async (rut, password, ip, userAgent) => {
   return { usuario: sanitizeUser(usuario), ...tokens };
 };
 
-const verify2FA = async (tempToken, code) => {
+const verify2FA = async (_tempToken, _code) => {
   // TODO: Implementar verificación TOTP con otplib
   throw Object.assign(new Error('2FA no implementado aún'), { statusCode: 501 });
 };
@@ -70,7 +69,7 @@ const refreshToken = async (token) => {
   return generateTokens(usuario);
 };
 
-const logout = async (token, userId) => {
+const logout = async (token, _userId) => {
   try {
     const redis = getRedis();
     if (redis) {
@@ -81,7 +80,7 @@ const logout = async (token, userId) => {
   } catch (_) { /* Redis caído — logout continúa sin blacklist */ }
 };
 
-const requestPasswordReset = async (email) => {
+const requestPasswordReset = async (_email) => {
   // TODO: Implementar envío de email con token de reset
 };
 

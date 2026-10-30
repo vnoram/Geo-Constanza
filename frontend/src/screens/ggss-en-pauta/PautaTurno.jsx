@@ -1,3 +1,4 @@
+import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect, useCallback } from "react";
 import { T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
@@ -251,7 +252,7 @@ export function PautaTurno({ user }) {
         }}>
           {cierresAuto.map((c) => (
             <div key={c.asistencia_id}>
-              ⚠️ No marcaste salida del turno del {c.fecha.split("-").reverse().join("/")} ({c.hora_inicio}–{c.hora_fin}
+              <Icon name="triangle-alert" size={16} /> No marcaste salida del turno del {c.fecha.split("-").reverse().join("/")} ({c.hora_inicio}–{c.hora_fin}
               {c.instalacion ? ` en ${c.instalacion}` : ""}). Se cerró automáticamente a las {c.hora_fin} y
               quedó marcado para revisión de tu supervisor.
             </div>
@@ -262,7 +263,7 @@ export function PautaTurno({ user }) {
       {/* Spinner solo en primera carga sin caché */}
       {cargando && (
         <div style={{ textAlign: "center", padding: 30, color: T.textMut, fontSize: 13 }}>
-          ⏳ Cargando turno...
+          <Icon name="hourglass" size={16} /> Cargando turno...
         </div>
       )}
 
@@ -272,7 +273,7 @@ export function PautaTurno({ user }) {
           background: T.yellowGhost, border: `1px solid ${T.yellow}33`,
           borderRadius: 8, padding: 20, textAlign: "center",
         }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>📅</div>
+          <div style={{ fontSize: 32, marginBottom: 8 }}><Icon name="calendar-days" size={32} /></div>
           <div style={{ fontWeight: 700, color: T.yellow }}>Sin turno asignado hoy</div>
           <div style={{ fontSize: 12, color: T.textMut, marginTop: 4 }}>
             Contacta a tu supervisor si crees que es un error
@@ -299,7 +300,7 @@ export function PautaTurno({ user }) {
                 <div style={{ fontSize: 13, color: T.textSec, marginTop: 4 }}>
                   {turno.hora_inicio} — {turno.hora_fin}
                   {turno.hora_fin < turno.hora_inicio && (
-                    <span style={{ color: "#B39BE0", fontSize: 11, marginLeft: 6 }}>🌙 nocturno</span>
+                    <span style={{ color: T.focusText, fontSize: 11, marginLeft: 6 }}><Icon name="moon" size={16} /> nocturno</span>
                   )}
                 </div>
               </div>
@@ -355,7 +356,7 @@ export function PautaTurno({ user }) {
               borderRadius: 8, padding: 14, marginBottom: 12,
               fontSize: 13, color: T.yellow, fontWeight: 600,
             }}>
-              🟡 Entrada registrada a las {marcaje.hora_entrada} — recuerda marcar la salida al terminar
+              <Badge color="yellow"><span aria-hidden="true" style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: T.yellow, verticalAlign: "middle" }} /></Badge> Entrada registrada a las {marcaje.hora_entrada} — recuerda marcar la salida al terminar
             </div>
           )}
           {yaEntro && VERIFICACION_GPS[marcaje.verificacion] && (
@@ -375,7 +376,7 @@ export function PautaTurno({ user }) {
               borderRadius: 8, padding: 14, marginBottom: 12,
               fontSize: 13, color: T.accent, fontWeight: 600,
             }}>
-              ✅ Turno completado · Entrada {marcaje.hora_entrada} → Salida {marcaje.hora_salida}
+              <Icon name="circle-check" size={16} /> Turno completado · Entrada {marcaje.hora_entrada} → Salida {marcaje.hora_salida}
             </div>
           )}
 
@@ -385,7 +386,7 @@ export function PautaTurno({ user }) {
               background: T.redGhost, border: `1px solid ${T.red}33`,
               borderRadius: 8, padding: 14, marginBottom: 12, fontSize: 12, color: T.red,
             }}>
-              ⚠️ {error}
+              <Icon name="triangle-alert" size={16} /> {error}
             </div>
           )}
 
@@ -412,7 +413,7 @@ export function PautaTurno({ user }) {
                   borderRadius: 8, padding: 10, marginBottom: 10,
                   fontSize: 12, color: T.yellow,
                 }}>
-                  ⚠️ Tu ubicación en este equipo es imprecisa (un computador no tiene GPS).
+                  <Icon name="triangle-alert" size={16} /> Tu ubicación en este equipo es imprecisa (un computador no tiene GPS).
                   Puedes marcar igual, pero un supervisor revisará tu marcaje. Para que quede
                   verificado, márcalo desde un celular en la instalación.
                 </div>
@@ -426,8 +427,8 @@ export function PautaTurno({ user }) {
               )}
 
               {!yaEntro ? (
-                <Btn onClick={marcarEntrada} loading={loadingMarcaje} full>
-                  📍 Marcar Entrada
+                <Btn onClick={marcarEntrada} loading={loadingMarcaje} full icon="map-pin">
+                   Marcar Entrada
                 </Btn>
               ) : (
                 /* Botón naranja para salida — usa button nativo porque Btn no admite color custom */
@@ -438,14 +439,14 @@ export function PautaTurno({ user }) {
                   style={{
                     width: "100%", padding: "14px 32px",
                     background: loadingMarcaje ? T.textMut : "#E86A2A",
-                    color: "#fff", border: "none", borderRadius: 8,
+                    color: T.white, border: "none", borderRadius: 8,
                     fontSize: 14, fontWeight: 700, cursor: loadingMarcaje ? "not-allowed" : "pointer",
                     fontFamily: "var(--font-ui)", letterSpacing: 0.5, transition: "all 0.2s",
                     opacity: loadingMarcaje ? 0.7 : 1,
                     boxShadow: loadingMarcaje ? "none" : "0 4px 20px #E05A0044",
                   }}
                 >
-                  {loadingMarcaje ? "⏳ Procesando..." : "📍 Marcar Salida"}
+                  {loadingMarcaje ? <><Icon name="hourglass" size={16} />{" Procesando..."}</> : <><Icon name="map-pin" size={16} />{" Marcar Salida"}</>}
                 </button>
               )}
             </div>
@@ -457,7 +458,6 @@ export function PautaTurno({ user }) {
               background: T.bgCard, border: `1px solid ${T.accent}22`,
               borderRadius: 8, padding: 16, textAlign: "center",
             }}>
-              <div style={{ fontSize: 20, marginBottom: 6 }}>👋</div>
               <div style={{ fontSize: 13, color: T.textMut }}>Turno finalizado — ¡Buen trabajo!</div>
             </div>
           )}
