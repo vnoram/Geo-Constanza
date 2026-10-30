@@ -1,5 +1,6 @@
 const usuariosService = require('../services/usuarios.service');
 const { registrarAuditoria } = require('../middlewares/auditLog');
+const twoFactorService = require('./../services/twoFactor.service');
 
 /**
  * GET /usuarios/me — perfil del usuario autenticado (cualquier rol)
@@ -84,4 +85,30 @@ const desactivar = async (req, res, next) => {
   }
 };
 
-module.exports = { miInformacion, listar, crear, editar, desactivar };
+/**
+ * POST /usuarios/:id/2fa/reset — un administrador desactiva el 2FA de OTRO usuario (nunca el propio).
+ */
+const reiniciar2FA = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (id === req.user.id) {
+      return res.status(403).json({ error: 'No puedes reiniciar tu propio segundo factor.' });
+    }
+    const result = await twoFactorService.reiniciar(id);
+
+    await registrarAuditoria({
+      usuarioId: req.user.id,
+      accion: 'reiniciar_2fa',
+      tablaAfectada: 'usuarios',
+      registroId: id,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { miInformacion, listar, crear, editar, desactivar, reiniciar2FA };

@@ -240,6 +240,8 @@ const { ROLES } = require('../constants/roles');
 const router = Router();
 
 router.use(authenticate);
+router.get('/vacantes', authorize(ROLES.GGSS_LIBRE), require('../controllers/vacantes.controller').listar);
+router.post('/cobertura', authorize(ROLES.GGSS_LIBRE), require('../controllers/vacantes.controller').solicitar);
 
 // ── GGSS: ver y crear sus propias solicitudes ─────────────────────────────
 router.get('/',  authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), solicitudesController.listar);

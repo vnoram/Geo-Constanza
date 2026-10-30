@@ -1,6 +1,7 @@
 const { prisma } = require('../config/database');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { ROLES } = require('../constants/roles');
+const { sinCobertura } = require('../utils/cobertura');
 const { ahoraChile, aFechaDB, instanteChile, turnosDeHoy } = require('../utils/fechaChile');
 
 /**
@@ -29,7 +30,7 @@ const getDashboardHoy = async (user) => {
     },
     include: {
       usuario: { select: { id: true, nombre: true, rol: true } },
-      instalacion: { select: { id: true, nombre: true } },
+      instalacion: { select: { id: true, nombre: true, tolerancia_atraso_minutos: true } },
       // La asistencia ya pertenece al turno: no filtrar por fecha, porque en un
       // turno nocturno la entrada se marca el día anterior
       asistencias: {
@@ -48,7 +49,7 @@ const getDashboardHoy = async (user) => {
     }
     return {
       turno_id: t.id,
-      guardia: t.usuario.nombre,
+      guardia: t.usuario?.nombre ?? 'Sin asignar',
       instalacion: t.instalacion.nombre,
       instalacion_id: t.instalacion.id,
       hora_inicio: t.hora_inicio,
@@ -59,6 +60,7 @@ const getDashboardHoy = async (user) => {
       distancia_entrada_m: asistencia?.distancia_entrada_m ?? null,
       precision_entrada_m: asistencia?.precision_entrada_m ?? null,
       estado: estadoActual,
+      sin_cobertura: sinCobertura(t),
     };
   });
 
@@ -67,7 +69,8 @@ const getDashboardHoy = async (user) => {
   const faltantes = lista.filter(t => t.estado === 'faltante').length;
   const fallbacks = lista.filter(t => t.es_fallback).length;
 
-  const base = { total: turnos.length, presentes, tardios, faltantes, fallbacks, lista };
+  const sinCoberturaTotal = lista.filter(t => t.sin_cobertura).length;
+  const base = { total: turnos.length, presentes, tardios, faltantes, fallbacks, lista, sinCobertura: sinCoberturaTotal };
 
   // ── KPIs para Supervisor (sus instalaciones asignadas) ─────────────────────
   if (user.rol === ROLES.SUPERVISOR && instalacionIds) {

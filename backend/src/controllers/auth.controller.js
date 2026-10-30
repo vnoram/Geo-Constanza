@@ -1,4 +1,5 @@
 const authService = require('../services/auth.service');
+const twoFactorService = require('../services/twoFactor.service');
 const { registrarAuditoria } = require('../middlewares/auditLog');
 
 const login = async (req, res, next) => {
@@ -49,6 +50,43 @@ const verify2FA = async (req, res, next) => {
   try {
     const { tempToken, code } = req.body;
     const result = await authService.verify2FA(tempToken, code);
+
+    await registrarAuditoria({
+      usuarioId: result.usuario.id,
+      accion: 'login_2fa',
+      tablaAfectada: 'usuarios',
+      registroId: result.usuario.id,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const setup2FA = async (req, res, next) => {
+  try {
+    res.json(await twoFactorService.iniciarEnrolamiento(req.user.id));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const enable2FA = async (req, res, next) => {
+  try {
+    const result = await twoFactorService.confirmarEnrolamiento(req.user.id, req.body.code);
+
+    await registrarAuditoria({
+      usuarioId: req.user.id,
+      accion: 'activar_2fa',
+      tablaAfectada: 'usuarios',
+      registroId: req.user.id,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
     res.json(result);
   } catch (error) {
     next(error);
@@ -57,12 +95,39 @@ const verify2FA = async (req, res, next) => {
 
 const resetPassword = async (req, res, next) => {
   try {
-    const { email } = req.body;
-    await authService.requestPasswordReset(email);
-    res.json({ message: 'Si el correo existe, recibirás un enlace de recuperación.' });
+    const result = await authService.requestPasswordReset(req.body.email, req.ip);
+    if (result.usuarioId) {
+      await registrarAuditoria({
+        usuarioId: result.usuarioId,
+        accion: 'solicitar_reset_password',
+        tablaAfectada: 'usuarios',
+        registroId: result.usuarioId,
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+    }
+    // Misma respuesta exista o no la cuenta.
+    res.json({ message: result.mensaje });
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { login, refreshToken, logout, verify2FA, resetPassword };
+const confirmResetPassword = async (req, res, next) => {
+  try {
+    const { usuarioId } = await authService.confirmPasswordReset(req.body.token, req.body.password);
+    await registrarAuditoria({
+      usuarioId,
+      accion: 'reset_password',
+      tablaAfectada: 'usuarios',
+      registroId: usuarioId,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+    res.json({ message: 'Contraseña actualizada. Inicia sesión con tu nueva contraseña.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { login, refreshToken, logout, verify2FA, setup2FA, enable2FA, resetPassword, confirmResetPassword };

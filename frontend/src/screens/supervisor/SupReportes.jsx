@@ -1,3 +1,4 @@
+import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect } from "react";
 import { T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
@@ -474,8 +475,8 @@ export function SupReportes() {
         {/* Tabs: Asistencia / Novedades */}
         <div className="action-wrap" style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           {[
-            { id: "asistencia", label: "📋 Asistencia" },
-            { id: "novedades",  label: "🚨 Novedades"  },
+            { id: "asistencia", label: <><Icon name="clipboard-list" size={16} />{" Asistencia"}</> },
+            { id: "novedades",  label: <><Icon name="siren" size={16} />{" Novedades"}</>  },
           ].map((tab) => (
             <button className="touch-target" key={tab.id} onClick={() => setVistaActiva(tab.id)} style={{
               padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
@@ -520,7 +521,7 @@ export function SupReportes() {
                 padding: "7px 12px", color: T.textSec, fontSize: 11, fontWeight: 700,
                 cursor: "pointer", fontFamily: "var(--font-ui)",
               }}>
-                📊 Excel
+                <Icon name="chart-column" size={16} /> Excel
               </button>
               <button className="touch-target" onClick={exportarPDF} disabled={exportando} style={{
                 background: exportando ? T.textMut : T.accent, border: "none", borderRadius: 8,
@@ -528,7 +529,7 @@ export function SupReportes() {
                 cursor: exportando ? "not-allowed" : "pointer", fontFamily: "var(--font-ui)",
                 boxShadow: exportando ? "none" : `0 2px 12px rgba(0,229,176,.3)`,
               }}>
-                {exportando ? "⏳ Generando..." : "📑 PDF OS-10"}
+                {exportando ? <><Icon name="hourglass" size={16} />{" Generando..."}</> : <><Icon name="file-text" size={16} />{" PDF OS-10"}</>}
               </button>
             </div>
           </div>

@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { cacheClearAll } from "../utils/cache";
+import { SESION_EXPIRADA } from "../services/sesion";
 
 // ─── STORAGE KEYS ───────────────────────────────────────────────
 const TOKEN_KEY = "gc_token";
 const USER_KEY  = "gc_user";
+const REFRESH_KEY = "gc_refresh";
 
 // ─── AUTH CONTEXT ───────────────────────────────────────────────
 export const AuthCtx = createContext(null);
@@ -32,8 +34,9 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = useCallback((u, t) => {
+  const login = useCallback((u, t, r) => {
     localStorage.setItem(TOKEN_KEY, t);
+    if (r) localStorage.setItem(REFRESH_KEY, r);
     localStorage.setItem(USER_KEY, JSON.stringify(u));
     setToken(t);
     setUser(u);
@@ -42,10 +45,17 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     cacheClearAll(); // Purgar todos los datos cacheados antes de limpiar la sesión
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem(USER_KEY);
     setToken(null);
     setUser(null);
   }, []);
+
+  // La sesión no se pudo renovar (refresh vencido o revocado): volver al login.
+  useEffect(() => {
+    window.addEventListener(SESION_EXPIRADA, logout);
+    return () => window.removeEventListener(SESION_EXPIRADA, logout);
+  }, [logout]);
 
   return (
     <AuthCtx.Provider value={{ user, token, login, logout, ready }}>
