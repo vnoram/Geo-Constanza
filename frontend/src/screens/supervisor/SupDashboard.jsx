@@ -68,6 +68,7 @@ export function SupDashboard() {
         <KPI label="Presentes"    value={data.presentes} sub="en turno"    accent={T.accent}  />
         <KPI label="Tardíos"      value={data.tardios}   sub="con retraso" accent={T.yellow}  />
         <KPI label="Faltantes"    value={data.faltantes} sub="sin marcar"  accent={T.red}     />
+        <KPI label="Sin cobertura" value={data.sinCobertura ?? 0} sub="tolerancia vencida" accent={T.red} />
       </div>
 
       {/* ── KPIs de novedades del área ────────────────────────────── */}

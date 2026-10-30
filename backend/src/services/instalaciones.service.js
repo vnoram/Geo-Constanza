@@ -1,6 +1,15 @@
 const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
+const { TOLERANCIA_POR_DEFECTO_MINUTOS } = require('../constants/cobertura');
+
+const validarTolerancia = (valor) => {
+  const numero = Number(valor);
+  if (!['string', 'number'].includes(typeof valor) || valor === '' || !Number.isInteger(numero) || numero < 0 || numero > 2147483647) {
+    throw Object.assign(new Error('La tolerancia debe ser un número entero de minutos no negativo.'), { statusCode: 400 });
+  }
+  return numero;
+};
 
 const listar = async (query, user) => {
   const where = {};
@@ -28,6 +37,7 @@ const listar = async (query, user) => {
 
 const crear = async (data) => {
   const { supervisorIds, ...campos } = data;
+  const tolerancia = validarTolerancia(campos.tolerancia_atraso_minutos ?? TOLERANCIA_POR_DEFECTO_MINUTOS);
 
   return prisma.$transaction(async (tx) => {
     const nueva = await tx.instalacion.create({
@@ -36,6 +46,7 @@ const crear = async (data) => {
         latitud:          parseFloat(campos.latitud),
         longitud:         parseFloat(campos.longitud),
         radio_geofence_m: parseInt(campos.radio_geofence_m ?? 100, 10),
+        tolerancia_atraso_minutos: tolerancia,
       },
       include: {
         supervisores: {
@@ -74,6 +85,9 @@ const editar = async (id, data) => {
   const { supervisorIds, ...campos } = data;
 
   const dataToUpdate = { ...campos };
+  if (campos.tolerancia_atraso_minutos !== undefined) {
+    dataToUpdate.tolerancia_atraso_minutos = validarTolerancia(campos.tolerancia_atraso_minutos);
+  }
   if (campos.latitud !== undefined) {
     dataToUpdate.latitud = parseFloat(campos.latitud);
   }

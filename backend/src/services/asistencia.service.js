@@ -3,11 +3,10 @@ const { getSocketIO } = require('../socket/socketManager');
 const geovalidacion = require('./geovalidacion.service');
 const { ROLES } = require('../constants/roles');
 const { SALAS, salaInstalacion } = require('../constants/salas');
+const { toleranciaInstalacion } = require('../constants/cobertura');
 
 const { ahoraChile, sumarDias, aFechaDB, inicioDiaChile, finDiaChile, intervaloTurno, turnoVigente, instanteChile } = require('../utils/fechaChile');
 
-const TOLERANCIA_MINUTOS = 15;
-const ATRASO_MINUTOS = 10;
 
 // La misma selección alimenta el marcaje y la pantalla del guardia.
 const ordenarTurnos = (a, b) => intervaloTurno(a).inicio - intervaloTurno(b).inicio
@@ -27,7 +26,7 @@ const buscarTurnos = (db, usuario_id, ahora, instalacion_id) => {
 };
 
 const seleccionarVigente = (turnos, abiertas, ahora) => {
-  const vigentes = turnos.filter((t) => turnoVigente(t, ahora, TOLERANCIA_MINUTOS));
+  const vigentes = turnos.filter((t) => turnoVigente(t, ahora, toleranciaInstalacion(t.instalacion)));
   if (vigentes.length > 1) console.warn('[Asistencia] Varios turnos elegibles:', vigentes.map((t) => t.id));
   return vigentes.sort((a, b) =>
     Number(abiertas.some((x) => x.turno_id === b.id)) - Number(abiertas.some((x) => x.turno_id === a.id))
@@ -163,7 +162,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
     const { inicio: inicioTurno } = intervaloTurno(turno);
     const diffMin = Math.floor((ahora - inicioTurno) / 60000);
     const minutosRetraso = Math.max(0, diffMin);
-    const estado = minutosRetraso > ATRASO_MINUTOS ? 'tardio' : 'normal';
+    const estado = minutosRetraso > toleranciaInstalacion(turno.instalacion) ? 'tardio' : 'normal';
 
     const esFallback = esFallbackOverride !== null
       ? esFallbackOverride

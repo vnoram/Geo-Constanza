@@ -83,7 +83,7 @@ test('pauta 4x4 omite choque con nocturno de ayer', async () => {
   expect(resultado.detalles_omitidos[0].motivo).toContain('2026-09-26');
 });
 
-test.each([['00:21', 21, 'tardio'], ['00:10', 10, 'normal'], ['00:11', 11, 'tardio']])('entrada %s calcula %i minutos', async (hora, minutos, estado) => {
+test.each([['00:21', 21, 'tardio'], ['00:15', 15, 'normal'], ['00:16', 16, 'tardio']])('entrada %s calcula %i minutos', async (hora, minutos, estado) => {
   jest.setSystemTime(instanteChile('2026-09-27', hora));
   prisma.turno.findMany.mockResolvedValue([b]);
   await expect(entrada()).resolves.toMatchObject({ turno_id: 'B', minutos_retraso: minutos, estado });
@@ -241,6 +241,11 @@ test('dashboard conserva una fila del nocturno con su asistencia correcta', asyn
   const resultado = await getDashboardHoy({ rol: 'test' });
   expect(resultado.total).toBe(1);
   expect(resultado.lista).toEqual([expect.objectContaining({ turno_id: 'A', guardia: 'Víctor', hora_entrada: abierta(a).hora_entrada, estado: 'tardio' })]);
+});
+
+test('entrada respeta tolerancia de su instalación en lugar de un margen global', async () => {
+  prisma.turno.findMany.mockResolvedValue([{ ...b, instalacion: { ...inst, tolerancia_atraso_minutos: 30 } }]);
+  await expect(entrada()).resolves.toMatchObject({ minutos_retraso: 21, estado: 'normal' });
 });
 
 test('sincronización offline no puede abrir otro turno ni duplicar un reintento', async () => {

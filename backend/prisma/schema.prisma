@@ -65,6 +65,7 @@ model Instalacion {
   latitud             Float
   longitud            Float
   radio_geofence_m    Int        @default(100) // Metros de tolerancia para GPS
+  tolerancia_atraso_minutos Int  @default(15)
   tipo_recinto        String?
   nivel_criticidad    String     @default("Media") // Alta, Media, Baja
   comuna              String?    // Comuna donde se ubica la instalación (para cobertura de supervisor)
