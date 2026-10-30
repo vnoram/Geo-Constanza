@@ -5,6 +5,7 @@ const { authenticator } = require('otplib');
 const { prisma } = require('../config/database');
 const { jwtConfig } = require('../config/jwt');
 const { getRedis } = require('../config/redis');
+const { logger } = require('../config/logger');
 const { ROLES } = require('../constants/roles');
 const { cifrar, descifrar, hashSha256 } = require('../utils/cifrado');
 
@@ -18,11 +19,21 @@ const TIPO_TEMP = '2fa_pending';
 authenticator.options = { window: 1, step: 30, digits: 6 };
 
 // REQUIRE_2FA="true"/"false". Por defecto: activo solo en producción.
+// Sin TWO_FACTOR_ENCRYPTION_KEY no se puede enrolar a nadie (el secreto no se puede cifrar):
+// exigir el 2FA dejaría a supervisores y administradores sin poder entrar. En ese caso se
+// desactiva y se deja un error visible en el log hasta que se configure la clave.
+let avisoSinClave = false;
 const dosFactoresExigido = () => {
   const valor = (process.env.REQUIRE_2FA || '').trim().toLowerCase();
-  if (valor === 'true') return true;
-  if (valor === 'false') return false;
-  return process.env.NODE_ENV === 'production';
+  const exigido = valor === 'true' ? true : valor === 'false' ? false : process.env.NODE_ENV === 'production';
+  if (exigido && !(process.env.TWO_FACTOR_ENCRYPTION_KEY || '').trim()) {
+    if (!avisoSinClave) {
+      avisoSinClave = true;
+      logger.error('2FA exigido pero falta TWO_FACTOR_ENCRYPTION_KEY: el 2FA queda DESACTIVADO para no bloquear el acceso. Configura la clave.');
+    }
+    return false;
+  }
+  return exigido;
 };
 
 const rolExige2FA = (rol) => ROLES_CON_2FA.includes(rol);

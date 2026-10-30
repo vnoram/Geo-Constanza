@@ -1,6 +1,6 @@
-# Despliegue en Azure
+# Despliegue
 
-Esta guía resume lo que el código necesita; no asume un servicio concreto de Azure (App Service, Container Apps u otro).
+Backend en Azure Container Apps y frontend en Vercel.
 
 ## Backend
 - Imagen: `backend/Dockerfile` (Node 22). Al iniciar ejecuta `npx prisma migrate deploy` y luego `node src/server.js`.
@@ -15,7 +15,7 @@ Esta guía resume lo que el código necesita; no asume un servicio concreto de A
 | `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `FRONTEND_URL` | Sí (el servidor no inicia sin ellas) | Base de datos, firma de tokens, origen permitido por CORS y sockets, base de los enlaces de correo |
 | `NODE_ENV=production` | Sí | Activa CORS estricto, SSL de base de datos y 2FA por defecto |
 | `TWO_FACTOR_ENCRYPTION_KEY` | Sí si hay 2FA | Cifra los secretos TOTP. Perderla obliga a reiniciar el 2FA de todos |
-| `REQUIRE_2FA` | No | `true`/`false`; por defecto activo solo en producción (supervisor y administrador) |
+| `REQUIRE_2FA` | No | `true`/`false`; por defecto activo solo en producción (supervisor y administrador). Si falta `TWO_FACTOR_ENCRYPTION_KEY`, el 2FA se desactiva solo y queda un error en el log, para no bloquear el acceso |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Para el reset de contraseña | Sin ellas, en producción el correo no se envía y queda un error en el log |
 | `REDIS_URL` | Recomendada | Bloqueo por intentos, cierre de sesión efectivo, revocación al cambiar contraseña, límites compartidos |
 | `AZURE_STORAGE_CONNECTION_STRING`, `AZURE_STORAGE_CONTAINER_NAME` | Para fotos de novedades | Azure Blob Storage |
@@ -24,9 +24,11 @@ Esta guía resume lo que el código necesita; no asume un servicio concreto de A
 | `PUBLIC_API_URL` | No | Lista la URL pública en `/api-docs` |
 | `JWT_ACCESS_EXPIRY_*`, `JWT_REFRESH_EXPIRY`, `RATE_LIMIT_PUBLIC`, `MAX_HORAS_SEMANALES` | No | Ajustes con valores por defecto |
 
-## Frontend
-- `npm run build` en `frontend/` genera `dist/`. Defina `VITE_API_URL` al compilar (ver `frontend/.env.example`).
-- Es una aplicación de una sola página: todas las rutas deben reescribirse a `index.html` (`frontend/vercel.json` lo hacía en el hosting anterior; el hosting actual necesita su propia regla equivalente).
+## Frontend (Vercel)
+- Root directory `frontend/`, comando `npm run build`, salida `dist/` (`frontend/vercel.json` reescribe todas las rutas a `index.html`).
+- **`VITE_API_URL` debe estar definida en Vercel** (Settings → Environment Variables), con la URL pública del backend sin `/api/v1`. Sin ella el frontend llama a su propio dominio y la página queda sin datos. Ver `frontend/.env.example`.
+- `FRONTEND_URL` del backend debe coincidir con el dominio del frontend (CORS y sockets).
+- Las credenciales de demostración del login solo aparecen si se define `VITE_MOSTRAR_DEMO=true`; si se activan para una presentación, cambiar esas contraseñas después.
 
 ## Verificación posterior al despliegue
 1. `GET /api/v1/health` responde `{"status":"ok"}`.

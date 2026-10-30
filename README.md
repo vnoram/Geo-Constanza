@@ -312,11 +312,11 @@ npm run test:watch        # Modo observación
 
 ## 🚢 Deployment
 
-### Producción (Azure)
+### Producción (Azure + Vercel)
 
 Pasos, variables de entorno y verificación en [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md). En resumen:
-el backend se construye con `backend/Dockerfile` (aplica las migraciones de Prisma al iniciar) y el
-frontend se compila con `npm run build` definiendo `VITE_API_URL`.
+el backend corre en Azure Container Apps, construido con `backend/Dockerfile` (aplica las migraciones de
+Prisma al iniciar), y el frontend en Vercel, que lo compila con `npm run build` usando `VITE_API_URL`.
 
 ### Docker (Local o Cloud)
 
@@ -375,7 +375,8 @@ docker-compose up -d
 - **Maps**: Leaflet + OpenStreetMap
 
 ### Infraestructura
-- **Hosting**: Azure (API en contenedor y frontend estático)
+- **API**: Azure Container Apps
+- **Frontend**: Vercel
 - **Database**: PostgreSQL
 - **File Storage**: Azure Blob Storage (fotos de novedades, URLs firmadas)
 - **Push Notifications**: Firebase Cloud Messaging
