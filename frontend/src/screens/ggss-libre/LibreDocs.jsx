@@ -1,3 +1,4 @@
+import { Icon } from "../../components/ui/Icon";
 import { T } from "../../theme/theme";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 
@@ -12,7 +13,7 @@ export function LibreDocs() {
           padding: 14, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center",
         }}>
           <div className="guard-list-row__main" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 18 }}>{["📄", "💰", "🎓", "📎"][i]}</span>
+            <Icon name={["file-text", "banknote", "graduation-cap", "paperclip"][i]} size={18} />
             <span style={{ fontSize: 13, fontWeight: 600 }}>{d}</span>
           </div>
           <span style={{ color: T.accent, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>Descargar →</span>

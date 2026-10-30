@@ -1,3 +1,4 @@
+import { Icon } from "../../components/ui/Icon";
 import { useEffect, useState } from "react";
 import { T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
@@ -114,7 +115,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
           <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{
             background: "none", border: "none", color: T.textMut, fontSize: 20,
             cursor: "pointer", lineHeight: 1,
-          }}>✕</button>
+          }}><Icon name="x" size={16} /></button>
         </div>
 
         {/* Resultado de éxito */}
@@ -126,8 +127,8 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
               borderRadius: 8, padding: 16, marginBottom: 20,
             }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: resultado.creados > 0 ? T.accent : T.red, marginBottom: 8 }}>
-                {resultado.creados > 0 ? "✓ Pauta generada correctamente" : "⚠ Sin turnos creados"}
-                {resultado.esNocturno && <span style={{ fontWeight: 400, fontSize: 12, marginLeft: 8 }}>🌙 nocturno</span>}
+                {resultado.creados > 0 ? <><Icon name="check" size={16} />{" Pauta generada correctamente"}</> : <><Icon name="triangle-alert" size={16} />{" Sin turnos creados"}</>}
+                {resultado.esNocturno && <span style={{ fontWeight: 400, fontSize: 12, marginLeft: 8 }}><Icon name="moon" size={16} /> nocturno</span>}
               </div>
               <div style={{ fontSize: 13, color: T.text }}>
                 <span style={{ fontWeight: 700 }}>{resultado.creados}</span> turnos creados
@@ -207,11 +208,11 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
             {/* Aviso turno nocturno */}
             {esNocturno && (
               <div style={{
-                background: "#1C2E28", border: "1px solid #7A4EBF",
+                background: T.bgCard, border: "1px solid #7A4EBF",
                 borderRadius: 8, padding: "8px 12px", marginBottom: 14,
-                fontSize: 12, color: "#B39BE0", display: "flex", gap: 8, alignItems: "center",
+                fontSize: 12, color: T.focusText, display: "flex", gap: 8, alignItems: "center",
               }}>
-                <span>🌙</span>
+                <span><Icon name="moon" size={16} /></span>
                 <span>Turno nocturno detectado — la salida ({form.hora_fin}) ocurre al día siguiente.</span>
               </div>
             )}
@@ -301,14 +302,14 @@ function TurnoCard({ turno }) {
             {turno.usuario?.nombre || "—"}
           </span>
           {turno.hora_fin < turno.hora_inicio && (
-            <span style={{ fontSize: 10, color: "#B39BE0", background: "#1C2E28", borderRadius: 4, padding: "1px 5px" }}>
-              🌙
+            <span style={{ fontSize: 10, color: T.focusText, background: T.bgCard, borderRadius: 4, padding: "1px 5px" }}>
+              <Icon name="moon" size={16} />
             </span>
           )}
         </div>
         <div style={{ fontSize: 12, color: T.textMut, marginTop: 2 }}>
           {turno.instalacion?.nombre} · {turno.hora_inicio} – {turno.hora_fin}
-          {turno.hora_fin < turno.hora_inicio && <span style={{ color: "#B39BE0" }}> (+1d)</span>}
+          {turno.hora_fin < turno.hora_inicio && <span style={{ color: T.focusText }}> (+1d)</span>}
         </div>
         <div style={{ fontSize: 11, color: T.textSec, marginTop: 3 }}>
           {new Date(turno.fecha).toLocaleDateString("es-CL", {
@@ -365,7 +366,7 @@ export function AdminTurnos() {
       <SectionHeader
         title="Turnos"
         sub="Gestión masiva de horarios"
-        action={{ label: "⚡ Generar Pauta 4×4", onClick: () => setModalAbierto(true) }}
+        action={{ label: <><Icon name="zap" size={16} />{" Generar Pauta 4×4"}</>, onClick: () => setModalAbierto(true) }}
       />
 
       {/* Tarjeta de importación CSV */}
@@ -373,7 +374,7 @@ export function AdminTurnos() {
         background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
         padding: 20, textAlign: "center", marginBottom: 20,
       }}>
-        <div style={{ fontSize: 40, marginBottom: 10 }}>📥</div>
+        <div style={{ fontSize: 40, marginBottom: 10 }}><Icon name="download" size={40} /></div>
         <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Importar Turnos</div>
         <div style={{ fontSize: 12, color: T.textMut, marginBottom: 14 }}>
           Sube un archivo CSV o Excel con los turnos programados
