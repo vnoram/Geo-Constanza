@@ -9,7 +9,7 @@ const { verificarConflictos } = require('./turnos.service');
 const esVacante = (turno, ahora = new Date()) => {
   if (turno.estado !== ESTADO_TURNO.PROGRAMADO) return false;
   const { inicio, fin } = intervaloTurno(turno);
-  if (ahora >= fin || turno.asistencias?.length) return false;
+  if (ahora >= fin || turno.asistencias?.length || turno.solicitudes_cobertura?.length) return false;
   return !turno.usuario_id || ahora.getTime() >= inicio.getTime() + toleranciaInstalacion(turno.instalacion) * 60000;
 };
 
@@ -25,7 +25,9 @@ const listarCompatibles = async (user) => {
   const ahora = new Date();
   const ayer = sumarDias(ahoraChile(ahora).fecha, -1);
   const turnos = await prisma.turno.findMany({ where: { estado: ESTADO_TURNO.PROGRAMADO, fecha: { gte: aFechaDB(ayer) } },
-    include: { instalacion: true, asistencias: { select: { id: true } } }, orderBy: [{ fecha: 'asc' }, { hora_inicio: 'asc' }],
+    include: { instalacion: true, asistencias: { select: { id: true } },
+      solicitudes_cobertura: { where: { estado: ESTADO_SOLICITUD.APROBADA }, select: { id: true } },
+    }, orderBy: [{ fecha: 'asc' }, { hora_inicio: 'asc' }],
   });
   const compatibles = [];
   for (const turno of turnos.filter(t => esVacante(t, ahora))) {
@@ -42,7 +44,9 @@ const solicitar = async (turnoId, user, motivo) => {
   await exigirLibre(user);
   if (typeof turnoId !== 'string' || !turnoId) throw Object.assign(new Error('Indica la vacante.'), { statusCode: 400 });
   return prisma.$transaction(async (tx) => {
-    const turno = await tx.turno.findUnique({ where: { id: turnoId }, include: { instalacion: true, asistencias: { select: { id: true } } } });
+    const turno = await tx.turno.findUnique({ where: { id: turnoId }, include: { instalacion: true, asistencias: { select: { id: true } },
+      solicitudes_cobertura: { where: { estado: ESTADO_SOLICITUD.APROBADA }, select: { id: true } },
+    } });
     if (!turno) throw Object.assign(new Error('Vacante no encontrada.'), { statusCode: 404 });
     if (!esVacante(turno)) throw Object.assign(new Error('El turno ya no está vacante.'), { statusCode: 409 });
     if ((await verificarConflictos({ ...turno, usuario_id: user.id }, tx)).length) {
@@ -53,7 +57,8 @@ const solicitar = async (turnoId, user, motivo) => {
     } });
     if (existente) throw Object.assign(new Error('Ya existe una solicitud para esta vacante.'), { statusCode: 409 });
     return tx.solicitud.create({ data: { usuario_id: user.id, tipo: TIPO_SOLICITUD.COBERTURA, vacante_turno_id: turnoId,
-      fecha_desde: turno.fecha, motivo: typeof motivo === 'string' ? motivo.trim() : null, estado: ESTADO_SOLICITUD.PENDIENTE,
+      fecha_desde: turno.fecha, fecha_hasta: aFechaDB(ahoraChile(new Date(intervaloTurno(turno).fin.getTime() - 1)).fecha),
+      motivo: typeof motivo === 'string' ? motivo.trim() : null, estado: ESTADO_SOLICITUD.PENDIENTE,
     } });
   }, { isolationLevel: 'Serializable' });
 };

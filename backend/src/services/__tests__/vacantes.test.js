@@ -48,7 +48,7 @@ test('registra cobertura vinculada a la vacante y al solicitante', async () => {
   prisma.solicitud.create.mockResolvedValue({ id: 's1' });
   await solicitar('t1', user, ' Disponible ');
   expect(prisma.solicitud.create).toHaveBeenCalledWith({ data: { usuario_id: 'g1', tipo: TIPO_SOLICITUD.COBERTURA,
-    vacante_turno_id: 't1', fecha_desde: turno.fecha, motivo: 'Disponible', estado: ESTADO_SOLICITUD.PENDIENTE } });
+    vacante_turno_id: 't1', fecha_desde: turno.fecha, fecha_hasta: turno.fecha, motivo: 'Disponible', estado: ESTADO_SOLICITUD.PENDIENTE } });
 });
 test('rechaza vacante inexistente o ya cubierta', async () => {
   prisma.turno.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({ ...turno, asistencias: [{ id: 'a1' }] });

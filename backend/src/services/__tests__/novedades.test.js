@@ -15,7 +15,7 @@ const { prisma } = require('../../config/database');
 const service = require('../novedades.service');
 const { uploadFotoToAzure, generarUrlLectura } = require('../../utils/azureStorage');
 const { getSocketIO } = require('../../socket/socketManager');
-const { ahoraChile, aFechaDB } = require('../../utils/fechaChile');
+const { ahoraChile, aFechaDB, sumarDias } = require('../../utils/fechaChile');
 const { ROLES } = require('../../constants/roles');
 const { ESTADO_NOVEDAD, ESTADO_USUARIO } = require('../../constants/estados');
 const { ACCION_NOVEDAD } = require('../../constants/accionesNovedad');
@@ -58,7 +58,8 @@ suite('HU-02 / HU-08 con PostgreSQL Docker local', () => {
     }
     await prisma.novedadHistorial.deleteMany({ where: { novedad: { instalacion_id: instalacionId } } });
     await prisma.novedad.deleteMany({ where: { instalacion_id: instalacionId } });
-    await prisma.turno.deleteMany({ where: { id: turnoId } });
+    await prisma.solicitud.deleteMany({ where: { usuario_id: { in: ids } } });
+    await prisma.turno.deleteMany({ where: { instalacion_id: instalacionId } });
     await prisma.usuario.deleteMany({ where: { id: { in: ids } } });
     await prisma.instalacion.deleteMany({ where: { id: instalacionId } });
     await prisma.$disconnect();
@@ -144,5 +145,21 @@ suite('HU-02 / HU-08 con PostgreSQL Docker local', () => {
     await expect(service.crear({ tipo: 'Ronda' }, null, guardia)).rejects.toMatchObject({ statusCode: 400 });
     uploadFotoToAzure.mockRejectedValueOnce(new Error('Almacenamiento de prueba no disponible'));
     await expect(service.crear(datos, foto, guardia)).resolves.toHaveProperty('foto_url', null);
+  });
+  test('cobertura vincula solicitud y asigna la vacante en PostgreSQL real', async () => {
+    const vacantes = require('../vacantes.service');
+    const solicitudes = require('../solicitudes.service');
+    const politica = require('../../constants/cobertura');
+    const anterior = politica.MAX_HORAS_SEMANALES;
+    politica.MAX_HORAS_SEMANALES = 24; // Valor exclusivo del caso de prueba, no política operativa.
+    try {
+      const vacante = await prisma.turno.create({ data: { instalacion_id: instalacionId,
+        fecha: aFechaDB(sumarDias(ahoraChile().fecha, 1)), hora_inicio: '08:00', hora_fin: '20:00' } });
+      const solicitud = await vacantes.solicitar(vacante.id, libre, 'Disponible');
+      expect(solicitud.vacante_turno_id).toBe(vacante.id);
+      expect((await solicitudes.aprobar(solicitud.id, supervisor.id, 'Aceptada')).estado).toBe('aprobada');
+      expect((await prisma.turno.findUnique({ where: { id: vacante.id } })).usuario_id).toBe(libre.id);
+      expect((await vacantes.listarCompatibles(libre)).map(t => t.id)).not.toContain(vacante.id);
+    } finally { politica.MAX_HORAS_SEMANALES = anterior; }
   });
 });

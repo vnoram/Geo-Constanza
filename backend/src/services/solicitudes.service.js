@@ -104,7 +104,9 @@ const aprobar = async (id, supervisorId, comentario) => {
     throw Object.assign(new Error('Solo se pueden aprobar solicitudes en estado pendiente'), { statusCode: 409 });
   }
 
-  const actualizada = await prisma.solicitud.update({
+  const actualizada = solicitud.vacante_turno_id
+    ? await require('./cobertura.service').aprobarCobertura(id, supervisorId, comentario)
+    : await prisma.solicitud.update({
     where: { id },
     data: {
       estado: 'aprobada',
@@ -160,7 +162,7 @@ const tieneturnoAprobadoHoy = async (usuarioId) => {
   const solicitud = await prisma.solicitud.findFirst({
     where: {
       usuario_id: usuarioId,
-      tipo: { in: ['turno', 'turno_extra'] },
+      tipo: { in: TIPOS_COBERTURA },
       estado: 'aprobada',
       fecha_desde: { lte: fechaHoy },
       OR: [
