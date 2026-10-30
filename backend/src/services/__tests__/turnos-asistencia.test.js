@@ -13,6 +13,7 @@ const asistencia = require('../asistencia.service');
 const solicitudes = require('../solicitudes.service');
 const { getDashboardHoy } = require('../dashboard.service');
 const { getSocketIO } = require('../../socket/socketManager');
+const { TIPOS_COBERTURA } = require('../../constants/solicitudes');
 
 const inst = { id: 'i', nombre: 'Instalación Norte' };
 const turno = (id, fecha, hora_inicio, hora_fin, extra = {}) => ({
@@ -82,7 +83,7 @@ test('pauta 4x4 omite choque con nocturno de ayer', async () => {
   expect(resultado.detalles_omitidos[0].motivo).toContain('2026-09-26');
 });
 
-test.each([['00:21', 21, 'tardio'], ['00:10', 10, 'normal'], ['00:11', 11, 'tardio']])('entrada %s calcula %i minutos', async (hora, minutos, estado) => {
+test.each([['00:21', 21, 'tardio'], ['00:15', 15, 'normal'], ['00:16', 16, 'tardio']])('entrada %s calcula %i minutos', async (hora, minutos, estado) => {
   jest.setSystemTime(instanteChile('2026-09-27', hora));
   prisma.turno.findMany.mockResolvedValue([b]);
   await expect(entrada()).resolves.toMatchObject({ turno_id: 'B', minutos_retraso: minutos, estado });
@@ -113,7 +114,7 @@ test('solicitud aprobada consulta el 3-oct a las 22:00 Chile, no el día UTC sig
   prisma.solicitud.findFirst.mockResolvedValue({ id: 'solicitud' });
   await expect(solicitudes.tieneturnoAprobadoHoy('u')).resolves.toBe(true);
   expect(prisma.solicitud.findFirst).toHaveBeenCalledWith({ where: {
-    usuario_id: 'u', tipo: { in: ['turno', 'turno_extra'] }, estado: 'aprobada',
+    usuario_id: 'u', tipo: { in: TIPOS_COBERTURA }, estado: 'aprobada',
     fecha_desde: { lte: new Date('2026-10-03T00:00:00.000Z') },
     OR: [{ fecha_hasta: null }, { fecha_hasta: { gte: new Date('2026-10-03T00:00:00.000Z') } }],
   } });
@@ -240,6 +241,11 @@ test('dashboard conserva una fila del nocturno con su asistencia correcta', asyn
   const resultado = await getDashboardHoy({ rol: 'test' });
   expect(resultado.total).toBe(1);
   expect(resultado.lista).toEqual([expect.objectContaining({ turno_id: 'A', guardia: 'Víctor', hora_entrada: abierta(a).hora_entrada, estado: 'tardio' })]);
+});
+
+test('entrada respeta tolerancia de su instalación en lugar de un margen global', async () => {
+  prisma.turno.findMany.mockResolvedValue([{ ...b, instalacion: { ...inst, tolerancia_atraso_minutos: 30 } }]);
+  await expect(entrada()).resolves.toMatchObject({ minutos_retraso: 21, estado: 'normal' });
 });
 
 test('sincronización offline no puede abrir otro turno ni duplicar un reintento', async () => {

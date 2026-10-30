@@ -38,7 +38,7 @@ function RoleContent({ user, rol, section }) {
   if (!allowed.includes(section)) {
     return (
       <div style={{ textAlign: "center", padding: 40 }}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>🚫</div>
+        <div style={{ fontSize: 48, marginBottom: 12 }}><Icon name="ban" size={48} /></div>
         <div style={{ color: T.red, fontWeight: 700, fontSize: 16 }}>Acceso Denegado</div>
         <div style={{ color: T.textMut, fontSize: 13, marginTop: 6 }}>
           Tu rol ({ROLES[rol]?.label}) no tiene permisos para esta sección.
