@@ -1,3 +1,4 @@
+import { Icon } from "../../components/ui/Icon";
 import { useEffect, useState } from "react";
 import { T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
@@ -60,8 +61,8 @@ function TurnoRow({ turno }) {
         <div className="guard-card-header" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
           <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{fechaStr}</span>
           {nocturno && (
-            <span style={{ fontSize: 10, color: "#B39BE0", background: "#1C2E28", borderRadius: 4, padding: "1px 5px" }}>
-              🌙 nocturno
+            <span style={{ fontSize: 10, color: T.focusText, background: T.bgCard, borderRadius: 4, padding: "1px 5px" }}>
+              <Icon name="moon" size={16} /> nocturno
             </span>
           )}
         </div>
@@ -70,7 +71,7 @@ function TurnoRow({ turno }) {
         </div>
         {turno.instalacion?.nombre && (
           <div style={{ fontSize: 11, color: T.textMut, marginTop: 2 }}>
-            📍 {turno.instalacion.nombre}
+            <Icon name="map-pin" size={16} /> {turno.instalacion.nombre}
           </div>
         )}
       </div>
@@ -157,7 +158,7 @@ export function LibreTurnos() {
 
       {!cargando && !error && turnos.length === 0 && (
         <div style={{ textAlign: "center", padding: 50 }}>
-          <div style={{ fontSize: 36, marginBottom: 10 }}>📅</div>
+          <div style={{ fontSize: 36, marginBottom: 10 }}><Icon name="calendar-days" size={36} /></div>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 6 }}>
             Sin turnos asignados
           </div>

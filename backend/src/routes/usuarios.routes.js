@@ -237,11 +237,13 @@ router.use(authenticate);
 
 // ── Perfil propio (cualquier rol autenticado) ──────────────────────────────
 router.get('/me', usuariosController.miInformacion);
+router.put('/me/token-dispositivo', require('../controllers/notificacion.controller').registrarDispositivo);
 
 // ── CRUD (solo admin, supervisor puede listar) ─────────────────────────────
 router.get('/', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), usuariosController.listar);
 router.post('/', authorize(ROLES.ADMINISTRADOR), usuariosController.crear);
 router.put('/:id', authorize(ROLES.ADMINISTRADOR), usuariosController.editar);
 router.patch('/:id/desactivar', authorize(ROLES.ADMINISTRADOR), usuariosController.desactivar);
+router.post('/:id/2fa/reset', authorize(ROLES.ADMINISTRADOR), usuariosController.reiniciar2FA);
 
 module.exports = router;

@@ -1,3 +1,4 @@
+import { Icon } from "../ui/Icon";
 import { useEffect, useRef, useState } from "react";
 import { T } from "../../theme/theme";
 import { buscarDirecciones } from "../../services/geocoding";
@@ -106,7 +107,7 @@ export function DireccionAutocomplete({ label, value, onChange, comuna, onSelecc
           boxShadow: focused ? `0 0 0 3px ${T.accentGhost}` : "none",
         }}
       >
-        <span style={{ fontSize: 18, opacity: 0.5 }}>📍</span>
+        <span style={{ fontSize: 18, opacity: 0.5 }}><Icon name="map-pin" size={16} /></span>
         <input
           className="touch-target"
           value={value}
