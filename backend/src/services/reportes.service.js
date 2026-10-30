@@ -1,6 +1,7 @@
 // src/services/reportes.service.js
 const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
+const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { ahoraChile, sumarDias, aFechaDB, inicioDiaChile, finDiaChile } = require('../utils/fechaChile');
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -71,12 +72,18 @@ const reporteIncidentes = async (query, user) => {
 };
 
 // ── Novedades agrupadas por día (últimos 7 días) — para gráfico ────
-const novedadesPorSemana = async () => {
+// Filtro de instalaciones para reportes agregados: supervisor solo las suyas.
+const filtroAlcance = async (user) => (
+  user?.rol === ROLES.SUPERVISOR ? { in: await resolverInstalacionesSupervisor(user) } : undefined
+);
+
+const novedadesPorSemana = async (user) => {
+  const alcance = await filtroAlcance(user);
   const hoy = ahoraChile().fecha;
   const hace7dias = inicioDiaChile(sumarDias(hoy, -6));
 
   const novedades = await prisma.novedad.findMany({
-    where: { created_at: { gte: hace7dias } },
+    where: { created_at: { gte: hace7dias }, ...(alcance && { instalacion_id: alcance }) },
     select: { created_at: true, urgencia: true },
   });
 
@@ -107,17 +114,19 @@ const novedadesPorSemana = async () => {
 };
 
 // ── Estado de guardias hoy — para gráfico de torta ────────────────
-const estadoGuardias = async () => {
+const estadoGuardias = async (user) => {
+  const alcance = await filtroAlcance(user);
+  const porInstalacion = alcance ? { instalacion_id: alcance } : {};
   const hoy = ahoraChile().fecha;
   const inicio = inicioDiaChile(hoy);
   const manana = inicioDiaChile(sumarDias(hoy, 1));
 
   const [totalTurnos, asistencias] = await Promise.all([
     prisma.turno.count({
-      where: { fecha: aFechaDB(hoy), estado: { not: 'cancelado' } },
+      where: { fecha: aFechaDB(hoy), estado: { not: 'cancelado' }, ...porInstalacion },
     }),
     prisma.asistencia.findMany({
-      where: { hora_entrada: { gte: inicio, lt: manana } },
+      where: { hora_entrada: { gte: inicio, lt: manana }, ...porInstalacion },
       select: { estado: true },
     }),
   ]);
@@ -130,7 +139,9 @@ const estadoGuardias = async () => {
 };
 
 // ── Resumen mensual por instalación — para tabla analítica ─────────
-const resumenMensual = async (mes, anio) => {
+const resumenMensual = async (mes, anio, user) => {
+  const alcance = await filtroAlcance(user);
+  const porInstalacion = alcance ? { instalacion_id: alcance } : {};
   const inicioISO = `${anio}-${String(mes).padStart(2, '0')}-01`;
   const siguienteISO = mes === 12
     ? `${anio + 1}-01-01`
@@ -143,18 +154,18 @@ const resumenMensual = async (mes, anio) => {
   const [turnos, asistencias, novedades] = await Promise.all([
     prisma.turno.groupBy({
       by: ['instalacion_id'],
-      where: { fecha: { gte: inicioTurnos, lt: siguienteTurnos }, estado: { not: 'cancelado' } },
+      where: { fecha: { gte: inicioTurnos, lt: siguienteTurnos }, estado: { not: 'cancelado' }, ...porInstalacion },
       _count: { id: true },
     }),
     prisma.asistencia.groupBy({
       by: ['instalacion_id'],
-      where: { hora_entrada: { gte: inicioInstantes, lt: siguienteInstantes } },
+      where: { hora_entrada: { gte: inicioInstantes, lt: siguienteInstantes }, ...porInstalacion },
       _count: { id: true },
       _avg:   { minutos_retraso: true, horas_trabajadas: true },
     }),
     prisma.novedad.groupBy({
       by: ['instalacion_id'],
-      where: { created_at: { gte: inicioInstantes, lt: siguienteInstantes } },
+      where: { created_at: { gte: inicioInstantes, lt: siguienteInstantes }, ...porInstalacion },
       _count: { id: true },
     }),
   ]);

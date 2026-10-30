@@ -71,6 +71,7 @@ const listar = async ({ rol, estado, page, limit }) => {
 
 const crear = async (data) => {
   const { instalacionIds, comunas, password, ...campos } = data;
+  if (!Object.values(ROLES).includes(campos.rol)) throw Object.assign(new Error('Rol de usuario inválido.'), { statusCode: 400 });
 
   const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
@@ -98,6 +99,9 @@ const crear = async (data) => {
 
 const editar = async (id, data) => {
   const { instalacionIds, comunas, password, ...campos } = data;
+  if (campos.rol !== undefined && !Object.values(ROLES).includes(campos.rol)) {
+    throw Object.assign(new Error('Rol de usuario inválido.'), { statusCode: 400 });
+  }
 
   if (password) {
     campos.password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -135,6 +139,7 @@ const desactivar = async (id) => {
   return prisma.usuario.update({
     where: { id },
     data: { estado: 'inactivo' },
+    select: { id: true, nombre: true, email: true, rol: true, estado: true },
   });
 };
 

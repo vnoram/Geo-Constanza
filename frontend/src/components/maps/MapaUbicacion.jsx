@@ -167,7 +167,7 @@ export function MapaUbicacion({ latitud, longitud, radio, onCambio, alto = 420, 
             pointerEvents: "none",
           }}
         >
-          👆 Busca la dirección en el formulario o <b style={{ color: T.accent }}>haz click en el mapa</b> para ubicar la instalación.
+           Busca la dirección en el formulario o <b style={{ color: T.accent }}>haz click en el mapa</b> para ubicar la instalación.
         </div>
       )}
 

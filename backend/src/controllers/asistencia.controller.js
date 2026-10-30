@@ -84,7 +84,7 @@ const obtenerEstadoActual = async (req, res, next) => {
 const sincronizarOffline = async (req, res, next) => {
   try {
     const { registros } = req.body;
-    const result = await asistenciaService.sincronizarBatch(registros);
+    const result = await asistenciaService.sincronizarBatch(registros, req.user);
     res.json(result);
   } catch (error) {
     next(error);

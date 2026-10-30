@@ -2,6 +2,9 @@
 
 const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
+const { enviarNotificacion } = require('./notificacion.service');
+const { exigirAlcanceInstalacion } = require('./supervisor.helper');
+const { TIPOS_COBERTURA } = require('../constants/solicitudes');
 const { ahoraChile, aFechaDB } = require('../utils/fechaChile');
 
 const TIPOS_VALIDOS = ['vacaciones', 'dias_libres', 'turno_extra', 'traslado', 'turno'];
@@ -95,14 +98,17 @@ const crear = async (body, userId) => {
 /**
  * Aprueba una solicitud. Solo supervisor (sobre sus GGSS) o admin.
  */
-const aprobar = async (id, supervisorId, comentario) => {
+const aprobar = async (id, supervisorId, comentario, user) => {
   const solicitud = await prisma.solicitud.findUniqueOrThrow({ where: { id } });
+  await exigirAlcanceSolicitud(solicitud, user);
 
   if (solicitud.estado !== 'pendiente') {
     throw Object.assign(new Error('Solo se pueden aprobar solicitudes en estado pendiente'), { statusCode: 409 });
   }
 
-  return prisma.solicitud.update({
+  const actualizada = solicitud.vacante_turno_id
+    ? await require('./cobertura.service').aprobarCobertura(id, supervisorId, comentario)
+    : await prisma.solicitud.update({
     where: { id },
     data: {
       estado: 'aprobada',
@@ -114,19 +120,40 @@ const aprobar = async (id, supervisorId, comentario) => {
       revisor: { select: { id: true, nombre: true } },
     },
   });
+  if (TIPOS_COBERTURA.includes(solicitud.tipo)) {
+    await enviarNotificacion(solicitud.usuario_id, 'Solicitud de cobertura aprobada', comentario || 'Tu solicitud fue aprobada.', { solicitud_id: id });
+  }
+  return actualizada;
+};
+
+// Un supervisor solo revisa solicitudes de su alcance: la instalación del turno
+// vacante o, si no hay, la instalación del solicitante.
+const exigirAlcanceSolicitud = async (solicitud, user) => {
+  if (user?.rol !== ROLES.SUPERVISOR) return;
+  let instalacionId = null;
+  if (solicitud.vacante_turno_id) {
+    const turno = await prisma.turno.findUnique({ where: { id: solicitud.vacante_turno_id }, select: { instalacion_id: true } });
+    instalacionId = turno?.instalacion_id || null;
+  }
+  if (!instalacionId) {
+    const autor = await prisma.usuario.findUnique({ where: { id: solicitud.usuario_id }, select: { instalacion_asignada_id: true } });
+    instalacionId = autor?.instalacion_asignada_id || null;
+  }
+  await exigirAlcanceInstalacion(user, instalacionId);
 };
 
 /**
  * Rechaza una solicitud. Solo supervisor o admin.
  */
-const rechazar = async (id, motivo, supervisorId) => {
+const rechazar = async (id, motivo, supervisorId, user) => {
   const solicitud = await prisma.solicitud.findUniqueOrThrow({ where: { id } });
+  await exigirAlcanceSolicitud(solicitud, user);
 
   if (solicitud.estado !== 'pendiente') {
     throw Object.assign(new Error('Solo se pueden rechazar solicitudes en estado pendiente'), { statusCode: 409 });
   }
 
-  return prisma.solicitud.update({
+  const actualizada = await prisma.solicitud.update({
     where: { id },
     data: {
       estado: 'rechazada',
@@ -138,6 +165,10 @@ const rechazar = async (id, motivo, supervisorId) => {
       revisor: { select: { id: true, nombre: true } },
     },
   });
+  if (TIPOS_COBERTURA.includes(solicitud.tipo)) {
+    await enviarNotificacion(solicitud.usuario_id, 'Solicitud de cobertura rechazada', motivo || 'Tu solicitud fue rechazada.', { solicitud_id: id });
+  }
+  return actualizada;
 };
 
 /**
@@ -150,7 +181,7 @@ const tieneturnoAprobadoHoy = async (usuarioId) => {
   const solicitud = await prisma.solicitud.findFirst({
     where: {
       usuario_id: usuarioId,
-      tipo: { in: ['turno', 'turno_extra'] },
+      tipo: { in: TIPOS_COBERTURA },
       estado: 'aprobada',
       fecha_desde: { lte: fechaHoy },
       OR: [
