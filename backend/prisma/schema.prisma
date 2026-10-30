@@ -96,7 +96,7 @@ model Supervisor_Instalacion {
 // El algoritmo de turnos 4x4 para GGSS_EN_PAUTA vive en turnos.service.js.
 model Turno {
   id                  String       @id @default(uuid())
-  usuario_id          String
+  usuario_id          String?
   instalacion_id      String
   fecha               DateTime     @db.Date
   hora_inicio         String       // Ej: "06:00"
@@ -108,10 +108,11 @@ model Turno {
   created_at          DateTime     @default(now())
   updated_at          DateTime     @updatedAt
 
-  usuario             Usuario      @relation(fields: [usuario_id], references: [id])
+  usuario             Usuario?     @relation(fields: [usuario_id], references: [id])
   instalacion         Instalacion  @relation(fields: [instalacion_id], references: [id])
   asistencias         Asistencia[]
   novedades           Novedad[]
+  solicitudes_cobertura Solicitud[] @relation("VacanteSolicitada")
 }
 
 // ─── 5. ASISTENCIA (Marcajes reales) ───
@@ -201,6 +202,8 @@ model Solicitud {
   fecha_desde         DateTime     @db.Date
   fecha_hasta         DateTime?    @db.Date
   motivo              String?
+  vacante_turno_id     String?
+  vacante             Turno?       @relation("VacanteSolicitada", fields: [vacante_turno_id], references: [id])
   estado              String       @default("pendiente") // 'pendiente', 'aprobada', 'rechazada'
   revisada_por        String?
   comentario_revision String?
