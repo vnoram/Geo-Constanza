@@ -24,15 +24,15 @@ const reportesRoutes = require('./routes/reportes.routes');
 const auditoriaRoutes = require('./routes/auditoria.routes');
 
 const app = express();
-// Railway coloca la app detrás de un proxy inverso que agrega el header
-// X-Forwarded-For. Sin esto, Express no confía en ese header y
+// En producción la app corre detrás de un proxy inverso (balanceador de Azure) que
+// agrega el header X-Forwarded-For. Sin esto, Express no confía en ese header y
 // express-rate-limit lanza ERR_ERL_UNEXPECTED_X_FORWARDED_FOR en cada
 // request, sin poder identificar la IP real de cada usuario para el rate limit.
 app.set('trust proxy', 1);
 
 // CORS debe ir ANTES de helmet para que los headers no sean sobreescritos
 const frontendOrigin = process.env.NODE_ENV === 'production'
-  ? (process.env.FRONTEND_URL || 'https://geo-constanza.vercel.app').replace(/\/$/, '')
+  ? process.env.FRONTEND_URL.replace(/\/$/, '')
   : true;
 
 const corsOptions = {
@@ -70,10 +70,9 @@ const swaggerOptions = {
         url: 'http://localhost:3005',
         description: 'Servidor de Desarrollo Local',
       },
-      {
-        url: 'https://geo-constanza-production.up.railway.app',
-        description: 'Servidor de Producción (Railway)',
-      },
+      ...(process.env.PUBLIC_API_URL
+        ? [{ url: process.env.PUBLIC_API_URL.replace(/\/$/, ''), description: 'Servidor de Producción (Azure)' }]
+        : []),
     ],
     components: {
       securitySchemes: {

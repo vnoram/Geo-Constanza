@@ -1,6 +1,6 @@
 # Geo Constanza — mini informe de trabajo y criterio de jornada
 
-**Corte:** 30 de octubre de 2026, hora de Chile. **Entorno:** Docker local; PR apilados, sin merge ni despliegue a Railway/Vercel.
+**Corte:** 30 de octubre de 2026, hora de Chile. **Entorno:** Docker local; PR apilados, sin merge ni despliegue a producción.
 
 ## Qué se trabajó y cómo se repartió
 

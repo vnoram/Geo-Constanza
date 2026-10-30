@@ -13,7 +13,7 @@ let io;
 const initSocket = (server) => {
   const { Server } = require('socket.io');
   const frontendOrigin = process.env.NODE_ENV === 'production'
-    ? (process.env.FRONTEND_URL || 'https://geo-constanza.vercel.app').replace(/\/$/, '')
+    ? (process.env.FRONTEND_URL || '').replace(/\/$/, '')
     : true;
 
   io = new Server(server, {

@@ -19,7 +19,7 @@ Variables de entorno relevantes (`backend/.env`, no versionado):
 ```bash
 npm install
 npm run dev      # Vite dev server
-npm run build     # build de producción (usado por Vercel)
+npm run build     # build de producción (genera el sitio estático de producción)
 ```
 
 ## Convenciones
@@ -39,8 +39,9 @@ npm run build     # build de producción (usado por Vercel)
   (sin `tsconfig.json`), así que los archivos nuevos deben ser `.js`.
 
 ## Despliegue
-- **Frontend**: Vercel, root directory `frontend/` (ver `frontend/vercel.json`).
-- **Backend**: Railway (ver `railway.json` en la raíz).
+Producción corre en Azure. Pasos, variables de entorno y verificación: [DESPLIEGUE.md](DESPLIEGUE.md).
+- **Frontend**: `npm run build` en `frontend/` genera `dist/` (sitio estático con reescritura a `index.html`); la URL del backend se fija con `VITE_API_URL` al compilar.
+- **Backend**: imagen de `backend/Dockerfile` (aplica `prisma migrate deploy` al iniciar y expone `/api/v1/health`).
 
 ## Documentos relacionados
 - [ARQUITECTURA.md](ARQUITECTURA.md)
