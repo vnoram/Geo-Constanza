@@ -33,7 +33,7 @@ export function SupDashboard() {
   useEffect(() => {
     fetchData();
     try {
-      const socket = io(SOCKET_URL, { auth: { token }, transports: ["websocket"] });
+      const socket = io(SOCKET_URL, { auth: (cb) => cb({ token: localStorage.getItem("gc_token") || token }), transports: ["websocket"] });
       socketRef.current = socket;
       socket.on("guardia:entrada",  fetchData);
       socket.on("guardia:atraso",   fetchData);

@@ -302,7 +302,7 @@ export function PautaNovedades({ user }) {
   useEffect(() => {
     cargarNovedades();
 
-    const socket = io(SOCKET_URL, { auth: { token: localStorage.getItem("gc_token") }, transports: ["websocket"] });
+    const socket = io(SOCKET_URL, { auth: (cb) => cb({ token: localStorage.getItem("gc_token") }), transports: ["websocket"] });
     socketRef.current = socket;
 
     if (user?.instalacion_asignada_id) {

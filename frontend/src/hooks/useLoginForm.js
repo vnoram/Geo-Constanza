@@ -45,9 +45,9 @@ export function useLoginForm({ onLogin }) {
         setStep("2fa");
       } else if (result.mustEnroll2FA) {
         // Sesión válida pero el rol exige 2FA: la app muestra el enrolamiento antes de entrar.
-        onLogin({ ...result.user, mustEnroll2FA: true }, result.token);
+        onLogin({ ...result.user, mustEnroll2FA: true }, result.token, result.refreshToken);
       } else {
-        onLogin(result.user, result.token);
+        onLogin(result.user, result.token, result.refreshToken);
       }
       setAttempts(0);
     } catch (err) {
@@ -78,7 +78,7 @@ export function useLoginForm({ onLogin }) {
     setLoading(true);
     try {
       const result = await api.verify2FA(tempToken, codigo);
-      onLogin({ ...result.user, segundoFactor: true }, result.token);
+      onLogin({ ...result.user, segundoFactor: true }, result.token, result.refreshToken);
     } catch (err) {
       setError(err.message);
       // Token temporal vencido (5 min) o bloqueo: hay que volver a ingresar la contraseña.

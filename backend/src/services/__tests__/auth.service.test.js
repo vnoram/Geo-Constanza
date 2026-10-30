@@ -59,7 +59,7 @@ test('refresh valida usuario activo y firma nueva pareja', async () => {
   prisma.usuario.findUnique.mockResolvedValue(null);
   await expect(auth.refreshToken('refresh-simulado')).rejects.toMatchObject({ statusCode: 401 });
   jwt.verify.mockImplementation(() => { throw new Error('Token inválido simulado'); });
-  await expect(auth.refreshToken('refresh-simulado')).rejects.toThrow('Token inválido');
+  await expect(auth.refreshToken('refresh-simulado')).rejects.toMatchObject({ statusCode: 401, message: 'Token inválido' });
 });
 test('logout agrega token vigente a blacklist y omite uno expirado', async () => {
   jwt.decode.mockReturnValue({ exp: Math.floor(Date.now()/1000) + 120 });

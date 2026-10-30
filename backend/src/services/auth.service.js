@@ -68,7 +68,13 @@ const verify2FA = async (tempToken, code) => {
 };
 
 const refreshToken = async (token) => {
-  const decoded = jwt.verify(token, jwtConfig.refreshSecret);
+  let decoded;
+  try {
+    decoded = jwt.verify(token, jwtConfig.refreshSecret);
+  } catch (_) {
+    // Refresh token mal formado, vencido o firmado con otra clave: es un 401, no un fallo del servidor.
+    throw Object.assign(new Error('Token inválido'), { statusCode: 401 });
+  }
   const usuario = await prisma.usuario.findUnique({ where: { id: decoded.id } });
   if (!usuario || usuario.estado !== 'activo') {
     throw Object.assign(new Error('Token inválido'), { statusCode: 401 });
