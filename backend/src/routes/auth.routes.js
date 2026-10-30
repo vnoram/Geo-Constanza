@@ -14,5 +14,7 @@ router.post('/logout', authenticate, authController.logout);
 
 // 2FA (Supervisor y Admin)
 router.post('/2fa/verify', authController.verify2FA);
+router.post('/2fa/setup', authenticate, authController.setup2FA);
+router.post('/2fa/enable', authenticate, authController.enable2FA);
 
 module.exports = router;

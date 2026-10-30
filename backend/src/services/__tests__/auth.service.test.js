@@ -49,8 +49,9 @@ test('sin Redis puede iniciar sesión', async () => {
   getRedis.mockReturnValue(null);
   await expect(auth.login('rut-prueba', 'entrada-simulada')).resolves.toHaveProperty('accessToken');
 });
-test('2FA pendiente responde 501 y no emite tokens', async () => {
-  await expect(auth.verify2FA('temporal-simulado', 'codigo-simulado')).rejects.toMatchObject({ statusCode: 501 });
+test('verify2FA con token temporal inválido responde 401 y no emite tokens', async () => {
+  jwt.verify.mockImplementation(() => { throw new Error('token inválido'); });
+  await expect(auth.verify2FA('temporal-simulado', 'codigo-simulado')).rejects.toMatchObject({ statusCode: 401 });
   expect(jwt.sign).not.toHaveBeenCalled();
 });
 test('refresh valida usuario activo y firma nueva pareja', async () => {

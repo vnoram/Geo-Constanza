@@ -21,7 +21,10 @@ model Usuario {
   password_hash            String
   rol                      String     // 'pauta', 'libre', 'supervisor', 'central', 'admin'
   estado                   String     @default("activo") // 'activo', 'inactivo'
-  two_factor_secret        String?
+  two_factor_secret        String?    // cifrado AES-256-GCM (ver utils/cifrado.js); nunca se expone por API
+  two_factor_enabled       Boolean    @default(false)
+  two_factor_recovery      Json?      // hashes SHA-256 de los códigos de recuperación vigentes
+  two_factor_ultimo_paso   Int?       // último paso TOTP aceptado (anti-reutilización)
   fcm_token                String?
 
   // Para GGSS: diferencia en_pauta (pauta fija 4x4) vs libre (eventual)

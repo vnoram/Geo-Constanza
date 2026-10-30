@@ -244,5 +244,6 @@ router.get('/', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINI
 router.post('/', authorize(ROLES.ADMINISTRADOR), usuariosController.crear);
 router.put('/:id', authorize(ROLES.ADMINISTRADOR), usuariosController.editar);
 router.patch('/:id/desactivar', authorize(ROLES.ADMINISTRADOR), usuariosController.desactivar);
+router.post('/:id/2fa/reset', authorize(ROLES.ADMINISTRADOR), usuariosController.reiniciar2FA);
 
 module.exports = router;
