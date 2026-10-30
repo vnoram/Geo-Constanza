@@ -150,7 +150,7 @@ const editar = async (id, data, user) => {
   return { turno, anterior: actual, cambios };
 };
 
-const cancelar = async (id, motivo, canceladoPor) => {
+const cancelar = async (id, motivo, _canceladoPor) => {
   if (!motivo) {
     throw Object.assign(new Error('El motivo de cancelación es obligatorio'), { statusCode: 400 });
   }
