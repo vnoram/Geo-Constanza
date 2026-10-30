@@ -95,12 +95,39 @@ const enable2FA = async (req, res, next) => {
 
 const resetPassword = async (req, res, next) => {
   try {
-    const { email } = req.body;
-    await authService.requestPasswordReset(email);
-    res.json({ message: 'Si el correo existe, recibirás un enlace de recuperación.' });
+    const result = await authService.requestPasswordReset(req.body.email, req.ip);
+    if (result.usuarioId) {
+      await registrarAuditoria({
+        usuarioId: result.usuarioId,
+        accion: 'solicitar_reset_password',
+        tablaAfectada: 'usuarios',
+        registroId: result.usuarioId,
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+    }
+    // Misma respuesta exista o no la cuenta.
+    res.json({ message: result.mensaje });
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { login, refreshToken, logout, verify2FA, setup2FA, enable2FA, resetPassword };
+const confirmResetPassword = async (req, res, next) => {
+  try {
+    const { usuarioId } = await authService.confirmPasswordReset(req.body.token, req.body.password);
+    await registrarAuditoria({
+      usuarioId,
+      accion: 'reset_password',
+      tablaAfectada: 'usuarios',
+      registroId: usuarioId,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+    res.json({ message: 'Contraseña actualizada. Inicia sesión con tu nueva contraseña.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { login, refreshToken, logout, verify2FA, setup2FA, enable2FA, resetPassword, confirmResetPassword };

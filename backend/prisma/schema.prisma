@@ -26,6 +26,7 @@ model Usuario {
   two_factor_recovery      Json?      // hashes SHA-256 de los códigos de recuperación vigentes
   two_factor_ultimo_paso   Int?       // último paso TOTP aceptado (anti-reutilización)
   fcm_token                String?
+  password_cambiada_en     DateTime?  // invalida refresh tokens emitidos antes (reset de contraseña)
 
   // Para GGSS: diferencia en_pauta (pauta fija 4x4) vs libre (eventual)
   tipo_ggss                String?    // 'pauta' | 'libre' — solo aplica a rol 'pauta' o 'libre'
@@ -50,6 +51,7 @@ model Usuario {
   novedades_asignadas       Novedad[] @relation("NovedadResponsable")
   historial_novedades       NovedadHistorial[]
   auditorias               Auditoria[]
+  password_resets          PasswordReset[]
   instalaciones_sup        Supervisor_Instalacion[]
   solicitudes              Solicitud[] @relation("UsuarioSolicita")
   solicitudes_rev          Solicitud[] @relation("SupervisorRevisa")
@@ -232,4 +234,18 @@ model Auditoria {
   created_at          DateTime     @default(now())
 
   usuario             Usuario      @relation(fields: [usuario_id], references: [id])
+}
+
+// ─── 9. RESET DE CONTRASEÑA (token de un solo uso; solo se guarda su hash) ───
+model PasswordReset {
+  id          String    @id @default(uuid())
+  usuario_id  String
+  token_hash  String    @unique // SHA-256 del token enviado por correo
+  expira_en   DateTime
+  usado_en    DateTime?
+  created_at  DateTime  @default(now())
+
+  usuario     Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@index([usuario_id])
 }

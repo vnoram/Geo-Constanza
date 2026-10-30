@@ -6,7 +6,9 @@ const router = Router();
 
 // Públicos
 router.post('/login', authController.login);
-router.post('/password/reset', authController.resetPassword);
+router.post('/password/reset-request', authController.resetPassword);
+router.post('/password/reset', authController.resetPassword); // alias histórico
+router.post('/password/reset-confirm', authController.confirmResetPassword);
 
 // Autenticados
 router.post('/refresh', authController.refreshToken);

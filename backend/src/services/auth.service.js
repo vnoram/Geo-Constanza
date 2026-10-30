@@ -4,6 +4,7 @@ const { prisma } = require('../config/database');
 const { jwtConfig } = require('../config/jwt');
 const { getRedis } = require('../config/redis');
 const twoFactor = require('./twoFactor.service');
+const passwordReset = require('./passwordReset.service');
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
@@ -72,6 +73,10 @@ const refreshToken = async (token) => {
   if (!usuario || usuario.estado !== 'activo') {
     throw Object.assign(new Error('Token inválido'), { statusCode: 401 });
   }
+  // Sesión revocada por cambio de contraseña: el refresh token es anterior al cambio.
+  if (usuario.password_cambiada_en && decoded.iat * 1000 < usuario.password_cambiada_en.getTime()) {
+    throw Object.assign(new Error('Token inválido'), { statusCode: 401 });
+  }
   return generateTokens(usuario);
 };
 
@@ -86,9 +91,8 @@ const logout = async (token, _userId) => {
   } catch (_) { /* Redis caído — logout continúa sin blacklist */ }
 };
 
-const requestPasswordReset = async (_email) => {
-  // TODO: Implementar envío de email con token de reset
-};
+const requestPasswordReset = (email, ip) => passwordReset.solicitar(email, ip);
+const confirmPasswordReset = (token, password) => passwordReset.confirmar(token, password);
 
 const generateTokens = (usuario) => {
   const payload = {
@@ -111,4 +115,4 @@ const sanitizeUser = (usuario) => ({
   instalacion_asignada: usuario.instalacion_asignada || null,
 });
 
-module.exports = { login, verify2FA, refreshToken, logout, requestPasswordReset };
+module.exports = { login, verify2FA, refreshToken, logout, requestPasswordReset, confirmPasswordReset };

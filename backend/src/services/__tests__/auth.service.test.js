@@ -66,8 +66,7 @@ test('logout agrega token vigente a blacklist y omite uno expirado', async () =>
   await auth.logout('jwt-simulado', 'u1'); expect(redis.set).toHaveBeenCalledWith('bl:jwt-simulado', '1', 'EX', expect.any(Number));
   redis.set.mockClear(); jwt.decode.mockReturnValue({ exp: 1 }); await auth.logout('vencido-simulado', 'u1'); expect(redis.set).not.toHaveBeenCalled();
 });
-test('logout degrada si falla Redis y reset sigue siendo stub', async () => {
+test('logout degrada si falla Redis', async () => {
   jwt.decode.mockImplementation(() => { throw new Error('Simulado'); });
   await expect(auth.logout('jwt-simulado', 'u1')).resolves.toBeUndefined();
-  await expect(auth.requestPasswordReset('prueba@example.invalid')).resolves.toBeUndefined();
 });

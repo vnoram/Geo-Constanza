@@ -24,6 +24,13 @@ const authenticate = async (req, res, next) => {
     if (decoded.tipo === '2fa_pending') {
       return res.status(401).json({ error: 'Token inválido' });
     }
+    // Sesiones anteriores a un restablecimiento de contraseña quedan revocadas.
+    if (redis) {
+      const cambio = await redis.get(`pwd_changed:${decoded.id}`);
+      if (cambio && decoded.iat < parseInt(cambio, 10)) {
+        return res.status(401).json({ error: 'Token inválido' });
+      }
+    }
     req.user = decoded;
     next();
   } catch (error) {
