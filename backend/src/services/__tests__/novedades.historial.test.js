@@ -7,7 +7,7 @@ jest.mock('../../config/database', () => ({ prisma: {
 jest.mock('../../socket/socketManager', () => ({ getSocketIO: jest.fn() }));
 jest.mock('../../utils/azureStorage', () => ({ generarUrlLectura: jest.fn() }));
 jest.mock('../../config/logger', () => ({ logger: { error: jest.fn(), warn: jest.fn() } }));
-jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn() }));
+jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn(), exigirAlcanceInstalacion: jest.fn() }));
 jest.mock('../../utils/fechaChile', () => ({ ...jest.requireActual('../../utils/fechaChile'),
   turnosDeHoy: () => ({ where: {}, incluir: () => true }),
 }));

@@ -30,7 +30,7 @@ const aprobar = async (req, res, next) => {
   try {
     const antes = await prisma.solicitud.findUnique({ where: { id: req.params.id } });
     const { comentario } = req.body;
-    const solicitud = await solicitudesService.aprobar(req.params.id, req.user.id, comentario);
+    const solicitud = await solicitudesService.aprobar(req.params.id, req.user.id, comentario, req.user);
     await auditar(req, 'aprobar', antes, solicitud);
     res.json(solicitud);
   } catch (error) {
@@ -42,7 +42,7 @@ const rechazar = async (req, res, next) => {
   try {
     const antes = await prisma.solicitud.findUnique({ where: { id: req.params.id } });
     const { motivo } = req.body;
-    const solicitud = await solicitudesService.rechazar(req.params.id, motivo, req.user.id);
+    const solicitud = await solicitudesService.rechazar(req.params.id, motivo, req.user.id, req.user);
     await auditar(req, 'rechazar', antes, solicitud);
     res.json(solicitud);
   } catch (error) {

@@ -3,7 +3,7 @@ jest.mock('../../config/database', () => ({ prisma: {
   usuario: { findUnique: jest.fn(), findMany: jest.fn() },
   novedadHistorial: { create: jest.fn() }, $transaction: jest.fn(),
 } }));
-jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn() }));
+jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn(), exigirAlcanceInstalacion: jest.fn() }));
 jest.mock('../../utils/azureStorage', () => ({ generarUrlLectura: jest.fn() }));
 jest.mock('../../socket/socketManager', () => ({ getSocketIO: jest.fn() }));
 jest.mock('../notificacion.service', () => ({ enviarNotificacion: jest.fn() }));

@@ -1,11 +1,11 @@
 jest.mock('../../config/database', () => ({ prisma: {
-  turno: { findMany: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn(), update: jest.fn() },
+  turno: { findMany: jest.fn(), findUnique: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn(), update: jest.fn() },
   asistencia: { findMany: jest.fn(), create: jest.fn(), findUniqueOrThrow: jest.fn(), update: jest.fn() },
   solicitud: { findFirst: jest.fn() },
   $transaction: jest.fn(), $executeRaw: jest.fn(),
 } }));
 jest.mock('../../socket/socketManager', () => ({ getSocketIO: jest.fn() }));
-jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn() }));
+jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn(), exigirAlcanceInstalacion: jest.fn() }));
 const { prisma } = require('../../config/database');
 const { instanteChile } = require('../../utils/fechaChile');
 const turnos = require('../turnos.service');
@@ -249,14 +249,40 @@ test('entrada respeta tolerancia de su instalación en lugar de un margen global
 });
 
 test('sincronización offline no puede abrir otro turno ni duplicar un reintento', async () => {
+  prisma.turno.findUnique.mockImplementation(async ({ where }) => ({ id: where.id, usuario_id: 'u', instalacion_id: 'i1' }));
   prisma.asistencia.findMany.mockResolvedValue([abierta(a)]);
   const resultado = await asistencia.sincronizarBatch([
-    { usuario_id: 'u', turno_id: 'B', hora_salida: null },
-    { usuario_id: 'u', turno_id: 'A', hora_salida: null },
-  ]);
+    { turno_id: 'B', hora_entrada: '2026-09-27T09:00:00Z', hora_salida: null },
+    { turno_id: 'A', hora_entrada: '2026-09-27T09:00:00Z', hora_salida: null },
+  ], { id: 'u' });
   expect(resultado).toEqual([
     { success: false, error: expect.stringContaining('entrada abierta') },
     { success: true, id: 'as-A' },
   ]);
   expect(prisma.asistencia.create).not.toHaveBeenCalled();
+});
+
+test('sincronización offline: ignora usuario ajeno, campos extra y exige turno propio', async () => {
+  prisma.turno.findUnique.mockImplementation(async ({ where }) => (
+    where.id === 'AJENO' ? { id: 'AJENO', usuario_id: 'otro', instalacion_id: 'i9' } : { id: 'PROPIO', usuario_id: 'u', instalacion_id: 'i1' }
+  ));
+  prisma.asistencia.findMany.mockResolvedValue([]);
+  prisma.asistencia.create.mockResolvedValue({ id: 'nuevo' });
+  const resultado = await asistencia.sincronizarBatch([
+    { turno_id: 'AJENO', hora_entrada: '2026-09-27T09:00:00Z' },
+    { turno_id: 'PROPIO', usuario_id: 'otro', instalacion_id: 'i9', id: 'forzado', horas_extra: 99, verificacion_gps: 'verificado', hora_entrada: '2026-09-27T09:00:00Z' },
+    { turno_id: 'PROPIO', hora_entrada: 'no-es-fecha' },
+  ], { id: 'u' });
+  expect(resultado.map((r) => r.success)).toEqual([false, true, false]);
+  expect(resultado[0].error).toMatch(/no pertenece/);
+  const data = prisma.asistencia.create.mock.calls[0][0].data;
+  expect(data).toMatchObject({ usuario_id: 'u', instalacion_id: 'i1', turno_id: 'PROPIO', verificacion_gps: 'por_revisar' });
+  expect(data).not.toHaveProperty('id');
+  expect(data).not.toHaveProperty('horas_extra');
+});
+
+test('sincronización offline rechaza listas vacías, enormes o que no son listas', async () => {
+  for (const malo of [undefined, 'x', {}, [], new Array(201).fill({})]) {
+    await expect(asistencia.sincronizarBatch(malo, { id: 'u' })).rejects.toMatchObject({ statusCode: 400 });
+  }
 });

@@ -3,6 +3,7 @@
 const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
 const { enviarNotificacion } = require('./notificacion.service');
+const { exigirAlcanceInstalacion } = require('./supervisor.helper');
 const { TIPOS_COBERTURA } = require('../constants/solicitudes');
 const { ahoraChile, aFechaDB } = require('../utils/fechaChile');
 
@@ -97,8 +98,9 @@ const crear = async (body, userId) => {
 /**
  * Aprueba una solicitud. Solo supervisor (sobre sus GGSS) o admin.
  */
-const aprobar = async (id, supervisorId, comentario) => {
+const aprobar = async (id, supervisorId, comentario, user) => {
   const solicitud = await prisma.solicitud.findUniqueOrThrow({ where: { id } });
+  await exigirAlcanceSolicitud(solicitud, user);
 
   if (solicitud.estado !== 'pendiente') {
     throw Object.assign(new Error('Solo se pueden aprobar solicitudes en estado pendiente'), { statusCode: 409 });
@@ -124,11 +126,28 @@ const aprobar = async (id, supervisorId, comentario) => {
   return actualizada;
 };
 
+// Un supervisor solo revisa solicitudes de su alcance: la instalación del turno
+// vacante o, si no hay, la instalación del solicitante.
+const exigirAlcanceSolicitud = async (solicitud, user) => {
+  if (user?.rol !== ROLES.SUPERVISOR) return;
+  let instalacionId = null;
+  if (solicitud.vacante_turno_id) {
+    const turno = await prisma.turno.findUnique({ where: { id: solicitud.vacante_turno_id }, select: { instalacion_id: true } });
+    instalacionId = turno?.instalacion_id || null;
+  }
+  if (!instalacionId) {
+    const autor = await prisma.usuario.findUnique({ where: { id: solicitud.usuario_id }, select: { instalacion_asignada_id: true } });
+    instalacionId = autor?.instalacion_asignada_id || null;
+  }
+  await exigirAlcanceInstalacion(user, instalacionId);
+};
+
 /**
  * Rechaza una solicitud. Solo supervisor o admin.
  */
-const rechazar = async (id, motivo, supervisorId) => {
+const rechazar = async (id, motivo, supervisorId, user) => {
   const solicitud = await prisma.solicitud.findUniqueOrThrow({ where: { id } });
+  await exigirAlcanceSolicitud(solicitud, user);
 
   if (solicitud.estado !== 'pendiente') {
     throw Object.assign(new Error('Solo se pueden rechazar solicitudes en estado pendiente'), { statusCode: 409 });

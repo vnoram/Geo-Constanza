@@ -3,7 +3,7 @@ jest.mock('../../config/database', () => ({ prisma: {
   instalacion: { findMany: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
   $transaction: jest.fn(),
 } }));
-jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn() }));
+jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn(), exigirAlcanceInstalacion: jest.fn() }));
 const { prisma } = require('../../config/database');
 const { getDashboardHoy } = require('../dashboard.service');
 const instalaciones = require('../instalaciones.service');

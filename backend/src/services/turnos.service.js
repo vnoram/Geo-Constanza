@@ -1,7 +1,7 @@
 const { prisma } = require('../config/database');
 const { getSocketIO } = require('../socket/socketManager');
 const { ROLES } = require('../constants/roles');
-const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
+const { resolverInstalacionesSupervisor, exigirAlcanceInstalacion } = require('./supervisor.helper');
 
 const { ahoraChile, aFechaDB, sumarDias, intervaloTurno, seSolapan } = require('../utils/fechaChile');
 
@@ -58,17 +58,24 @@ const listar = async (query, user) => {
   });
 };
 
-const obtenerPorId = async (id) => {
-  return prisma.turno.findUniqueOrThrow({
+const obtenerPorId = async (id, user) => {
+  const turno = await prisma.turno.findUniqueOrThrow({
     where: { id },
     include: {
       usuario: { select: { id: true, nombre: true, rut: true } },
       instalacion: { select: { id: true, nombre: true, direccion: true } },
     },
   });
+  // Un guardia solo lee sus propios turnos; el supervisor, los de sus instalaciones.
+  if (user && [ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE].includes(user.rol) && turno.usuario_id !== user.id) {
+    throw Object.assign(new Error('No tienes acceso a este turno'), { statusCode: 403 });
+  }
+  await exigirAlcanceInstalacion(user, turno.instalacion_id);
+  return turno;
 };
 
-const crear = async (data, creadoPor) => {
+const crear = async (data, creadoPor, user) => {
+  await exigirAlcanceInstalacion(user, data.instalacion_id);
   // Validar conflictos antes de crear
   const conflicto = data.usuario_id ? await buscarConflicto(data) : null;
 
@@ -100,6 +107,7 @@ const crearLote = async (turnos, creadoPor) => {
 
 const editar = async (id, data, user) => {
   const actual = await prisma.turno.findUniqueOrThrow({ where: { id } });
+  await exigirAlcanceInstalacion(user, actual.instalacion_id);
 
   if (actual.estado !== 'programado') {
     throw Object.assign(new Error('Solo se pueden editar turnos en estado programado'), { statusCode: 409 });
@@ -150,10 +158,12 @@ const editar = async (id, data, user) => {
   return { turno, anterior: actual, cambios };
 };
 
-const cancelar = async (id, motivo, _canceladoPor) => {
+const cancelar = async (id, motivo, user) => {
   if (!motivo) {
     throw Object.assign(new Error('El motivo de cancelación es obligatorio'), { statusCode: 400 });
   }
+  const actual = await prisma.turno.findUniqueOrThrow({ where: { id } });
+  await exigirAlcanceInstalacion(user, actual.instalacion_id);
   return prisma.turno.update({
     where: { id },
     data: { estado: 'cancelado', motivo_cancelacion: motivo },

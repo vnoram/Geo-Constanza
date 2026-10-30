@@ -4,7 +4,7 @@ jest.mock('../../config/database', () => ({ prisma: { novedad: {
 jest.mock('../../utils/azureStorage', () => ({ uploadFotoToAzure: jest.fn(), generarUrlLectura: jest.fn() }));
 jest.mock('../../socket/socketManager', () => ({ getSocketIO: jest.fn() }));
 jest.mock('../../config/logger', () => ({ logger: { error: jest.fn(), warn: jest.fn() } }));
-jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn() }));
+jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn(), exigirAlcanceInstalacion: jest.fn() }));
 
 const { prisma } = require('../../config/database');
 const { ESTADO_NOVEDAD } = require('../../constants/estados');

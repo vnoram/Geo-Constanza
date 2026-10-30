@@ -362,10 +362,42 @@ const obtenerEstadoActual = async (usuarioId) => {
   return { activo: false, turno, instalacion: turno?.instalacion || null, cerradas_automaticamente };
 };
 
-const sincronizarBatch = async (registros) => {
+const MAX_REGISTROS_SYNC = 200;
+// Solo estos campos se aceptan del cliente; usuario_id e instalacion_id salen del servidor.
+const CAMPOS_SYNC = [
+  'turno_id', 'hora_entrada', 'hora_salida', 'metodo_entrada', 'metodo_salida', 'estado',
+  'minutos_retraso', 'latitud_entrada', 'longitud_entrada', 'es_fallback', 'dispositivo_usado',
+];
+
+const sincronizarBatch = async (registros, user) => {
+  if (!user?.id) throw Object.assign(new Error('No autenticado'), { statusCode: 401 });
+  if (!Array.isArray(registros) || registros.length === 0 || registros.length > MAX_REGISTROS_SYNC) {
+    throw Object.assign(new Error(`registros debe ser una lista de 1 a ${MAX_REGISTROS_SYNC} elementos`), { statusCode: 400 });
+  }
   const resultados = [];
-  for (const registro of registros) {
+  for (const crudo of registros) {
     try {
+      if (!crudo || typeof crudo !== 'object' || typeof crudo.turno_id !== 'string') {
+        throw Object.assign(new Error('Registro inválido'), { statusCode: 400 });
+      }
+      // El turno debe ser del propio usuario: de ahí salen el dueño y la instalación.
+      const turno = await prisma.turno.findUnique({ where: { id: crudo.turno_id } });
+      if (!turno || turno.usuario_id !== user.id) {
+        throw Object.assign(new Error('El turno no pertenece al usuario'), { statusCode: 403 });
+      }
+      const registro = { usuario_id: user.id, instalacion_id: turno.instalacion_id };
+      for (const campo of CAMPOS_SYNC) if (crudo[campo] !== undefined) registro[campo] = crudo[campo];
+      for (const campo of ['hora_entrada', 'hora_salida']) {
+        if (registro[campo] != null) {
+          registro[campo] = new Date(registro[campo]);
+          if (Number.isNaN(registro[campo].getTime())) throw Object.assign(new Error(`${campo} inválida`), { statusCode: 400 });
+        }
+      }
+      if (!registro.hora_entrada) throw Object.assign(new Error('hora_entrada es obligatoria'), { statusCode: 400 });
+      if (registro.estado !== undefined && !['normal', 'tardio'].includes(registro.estado)) throw Object.assign(new Error('estado inválido'), { statusCode: 400 });
+      if (registro.metodo_entrada !== undefined && !['totem', 'fallback_telefono'].includes(registro.metodo_entrada)) throw Object.assign(new Error('metodo_entrada inválido'), { statusCode: 400 });
+      // Un registro sincronizado no pasó la validación de geocerca del servidor: queda para revisión.
+      registro.verificacion_gps = 'por_revisar';
       // La sincronización también puede abrir entradas: respeta el mismo bloqueo.
       const result = await prisma.$transaction(async (db) => {
         await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${registro.usuario_id}))`;

@@ -2,7 +2,7 @@ jest.mock('../../config/database', () => ({ prisma: {
   instalacion: { findMany: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn(), update: jest.fn() },
   supervisor_Instalacion: { createMany: jest.fn(), deleteMany: jest.fn() }, $transaction: jest.fn(),
 } }));
-jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn() }));
+jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn(), exigirAlcanceInstalacion: jest.fn() }));
 const { prisma } = require('../../config/database');
 const { resolverInstalacionesSupervisor } = require('../supervisor.helper');
 const service = require('../instalaciones.service');

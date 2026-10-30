@@ -4,7 +4,7 @@ jest.mock('../../config/database', () => ({ prisma: {
   usuario: { findUnique: jest.fn() }, $transaction: jest.fn(),
 } }));
 jest.mock('../turnos.service', () => ({ verificarConflictos: jest.fn() }));
-jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn() }));
+jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn(), exigirAlcanceInstalacion: jest.fn() }));
 jest.mock('../../constants/cobertura', () => ({ ...jest.requireActual('../../constants/cobertura'), MAX_HORAS_SEMANALES: 24 }));
 const { prisma } = require('../../config/database');
 const politica = require('../../constants/cobertura');
