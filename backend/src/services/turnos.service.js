@@ -70,7 +70,7 @@ const obtenerPorId = async (id) => {
 
 const crear = async (data, creadoPor) => {
   // Validar conflictos antes de crear
-  const conflicto = await buscarConflicto(data);
+  const conflicto = data.usuario_id ? await buscarConflicto(data) : null;
 
   if (conflicto) {
     throw Object.assign(new Error(mensajeConflicto(conflicto)), { statusCode: 409 });
@@ -150,7 +150,7 @@ const editar = async (id, data, user) => {
   return { turno, anterior: actual, cambios };
 };
 
-const cancelar = async (id, motivo, canceladoPor) => {
+const cancelar = async (id, motivo, _canceladoPor) => {
   if (!motivo) {
     throw Object.assign(new Error('El motivo de cancelación es obligatorio'), { statusCode: 400 });
   }
@@ -160,16 +160,21 @@ const cancelar = async (id, motivo, canceladoPor) => {
   });
 };
 
-const verificarConflictos = async (query) => {
-  const { usuario_id, fecha } = query;
-  return prisma.turno.findMany({
+const verificarConflictos = async (query, db = prisma) => {
+  const { usuario_id, fecha, hora_inicio, hora_fin, excluirId } = query;
+  const dia = new Date(fecha).toISOString().slice(0, 10);
+  const candidatos = await db.turno.findMany({
     where: {
       usuario_id,
-      fecha: new Date(fecha),
+      fecha: hora_inicio && hora_fin
+        ? { gte: aFechaDB(sumarDias(dia, -1)), lte: aFechaDB(sumarDias(dia, 1)) } : new Date(fecha),
       estado: { not: 'cancelado' },
+      ...(excluirId && { id: { not: excluirId } }),
     },
     include: { instalacion: { select: { nombre: true } } },
   });
+  return hora_inicio && hora_fin
+    ? candidatos.filter(t => seSolapan(intervaloTurno(query), intervaloTurno(t))) : candidatos;
 };
 
 const crearPauta4x4 = async (data, creadoPor) => {
