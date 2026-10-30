@@ -9,10 +9,13 @@ de cada uno).
 | Método | Ruta | Roles |
 |---|---|---|
 | POST | `/login` | público |
-| POST | `/password/reset` | público |
+| POST | `/password/reset-request` | público (alias histórico: `/password/reset`) |
+| POST | `/password/reset-confirm` | público |
 | POST | `/refresh` | público |
 | POST | `/logout` | autenticado |
-| POST | `/2fa/verify` | público |
+| POST | `/2fa/verify` | público (exige `tempToken` del login) |
+| POST | `/2fa/setup` | autenticado |
+| POST | `/2fa/enable` | autenticado |
 
 ## Usuarios (`/usuarios`)
 | Método | Ruta | Roles |
@@ -216,9 +219,19 @@ El cómputo técnico distribuye duración real entre semanas ISO lunes-domingo y
 
 El documento contiene fecha chilena, usuario, acción, tabla, registro, IP e ID de auditoría; no exporta snapshots antes/después ni credenciales. Sin filas se genera un PDF válido que lo indica. `AdminAuditoria.jsx` exporta los filtros aplicados que usa su listado, no cambios de formulario aún sin aplicar.
 
-### Autenticación y segundo factor: estado real
+### Autenticación, segundo factor y restablecer contraseña
 
-El JWT y el bloqueo por intentos con Redis existen. `POST /auth/2fa/verify` todavía responde 501 y el login omite el segundo factor; el reset de contraseña también es un stub. No interpretar pruebas verdes o etiquetas de interfaz como garantía de 2FA operativo. Ver [ADR 0002](ADR/0002-jwt-2fa.md).
+Contratos (detalle de decisiones en [ADR 0002](ADR/0002-jwt-2fa.md) y [ADR 0006](ADR/0006-2fa-totp-y-reset-password.md)):
+
+- `POST /auth/login` `{ rut, password }`. Para supervisor y administrador con 2FA exigido: si ya enrolaron responde `{ requires2FA: true, tempToken }` (sin sesión); si no, devuelve la sesión con `mustEnroll2FA: true` y el frontend obliga a enrolar antes de entrar.
+- `POST /auth/2fa/verify` `{ tempToken, code }`: `code` es TOTP de 6 dígitos o un código de recuperación `XXXXX-XXXXX`. Responde `{ usuario, accessToken, refreshToken }`. 401 con token temporal inválido o vencido (5 min); 429 tras 5 códigos erróneos (bloqueo 15 min).
+- `POST /auth/2fa/setup` (autenticado) responde `{ otpauth_url, secreto }`; `POST /auth/2fa/enable` `{ code }` responde `{ codigos_recuperacion }` (8 códigos, se muestran una sola vez).
+- `POST /usuarios/:id/2fa/reset` (solo administrador, no sobre sí mismo): borra el segundo factor para que el usuario vuelva a enrolar. Auditado.
+- `POST /auth/password/reset-request` `{ email }`: siempre `200` con el mismo mensaje exista o no la cuenta. Límite 3 por hora por correo (silencioso) y 10 por hora por IP (`429`).
+- `POST /auth/password/reset-confirm` `{ token, password }`: contraseña de 10 a 128 caracteres y distinta de la actual; `400` con enlace inválido, vencido o ya usado. Al confirmar se revocan las sesiones previas.
+- Acciones auditadas: `login_2fa`, `activar_2fa`, `reiniciar_2fa`, `solicitar_reset_password`, `reset_password`.
+
+Variables: `TWO_FACTOR_ENCRYPTION_KEY`, `TWO_FACTOR_ISSUER`, `REQUIRE_2FA` (por defecto activo solo en producción), `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `FRONTEND_URL`. Todas vacías en `.env.example`.
 
 ### Verificación local y límites
 

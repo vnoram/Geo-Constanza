@@ -91,6 +91,14 @@ export const api = {
     return { user: data.usuario, token: data.accessToken, refreshToken: data.refreshToken };
   },
 
+  // Restablecer contraseña (público): la respuesta es la misma exista o no el correo.
+  requestPasswordReset: (email) => request('/auth/password/reset-request', {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }),
+  }),
+  confirmPasswordReset: (token, password) => request('/auth/password/reset-confirm', {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, password }),
+  }),
+
   // Enrolamiento (requiere sesión): devuelve { otpauth_url, secreto }.
   setup2FA: () => authFetch('/auth/2fa/setup', { method: "POST", body: JSON.stringify({}) }),
   // Confirma con un código y devuelve { codigos_recuperacion } (se muestran una sola vez).

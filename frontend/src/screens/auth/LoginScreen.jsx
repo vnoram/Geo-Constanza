@@ -9,7 +9,7 @@ import { TwoFactorStep } from "../../components/auth/TwoFactorStep";
 import { useLoginForm } from "../../hooks/useLoginForm";
 import arteLogin from "../../assets/login-ilustracion.webp";
 
-export function LoginScreen({ onLogin }) {
+export function LoginScreen({ onLogin, onForgot }) {
   const [showDemo, setShowDemo] = useState(false);
 
   const {
@@ -85,6 +85,15 @@ export function LoginScreen({ onLogin }) {
               <Btn onClick={handleLogin} loading={loading} disabled={locked} full>
                 {locked ? `Bloqueado (${lockLabel})` : "Iniciar sesión"}
               </Btn>
+
+              {onForgot && (
+                <div style={{ marginTop: 14, textAlign: "center" }}>
+                  <button onClick={onForgot} className="login__demo-toggle">
+                    <Icon name="key-round" size={14} />
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
+              )}
 
               <div style={{ marginTop: 18 }}>
                 <button
