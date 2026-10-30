@@ -9,12 +9,15 @@ import { TwoFactorStep } from "../../components/auth/TwoFactorStep";
 import { useLoginForm } from "../../hooks/useLoginForm";
 import arteLogin from "../../assets/login-ilustracion.webp";
 
-export function LoginScreen({ onLogin }) {
+// Credenciales de demostración: solo en desarrollo o si se pide explícitamente al compilar.
+const MOSTRAR_DEMO = import.meta.env.DEV || import.meta.env.VITE_MOSTRAR_DEMO === "true";
+
+export function LoginScreen({ onLogin, onForgot }) {
   const [showDemo, setShowDemo] = useState(false);
 
   const {
     rut, pass, setPass, error, loading,
-    step, code2fa, setCode2fa, pendingUser,
+    step, code2fa, setCode2fa,
     locked, lockTime, lockLabel,
     formatRut, handleLogin, handle2FA, resetTo2FA,
   } = useLoginForm({ onLogin });
@@ -86,6 +89,16 @@ export function LoginScreen({ onLogin }) {
                 {locked ? `Bloqueado (${lockLabel})` : "Iniciar sesión"}
               </Btn>
 
+              {onForgot && (
+                <div style={{ marginTop: 14, textAlign: "center" }}>
+                  <button onClick={onForgot} className="login__demo-toggle">
+                    <Icon name="key-round" size={14} />
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
+              )}
+
+              {MOSTRAR_DEMO && (
               <div style={{ marginTop: 18 }}>
                 <button
                   onClick={() => setShowDemo(v => !v)}
@@ -96,8 +109,9 @@ export function LoginScreen({ onLogin }) {
                   Credenciales de demostración
                 </button>
               </div>
+              )}
 
-              {showDemo && (
+              {MOSTRAR_DEMO && showDemo && (
                 <DemoPanel onSelect={(rut, pwd) => { formatRut(rut); setPass(pwd); }} />
               )}
             </div>
@@ -109,7 +123,6 @@ export function LoginScreen({ onLogin }) {
               setCode2fa={setCode2fa}
               error={error}
               loading={loading}
-              pendingUser={pendingUser}
               onVerify={handle2FA}
               onBack={resetTo2FA}
             />

@@ -9,6 +9,7 @@ import { useAuth } from "../../context/AuthContext";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
+import { escaparHtml } from "../../utils/html";
 
 // Morado: selección y foco en las vistas de Central
 const C_COLOR = "#7A4EBF";
@@ -94,9 +95,9 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
           L.marker([inst.latitud, inst.longitud], { icon })
             .addTo(map)
             .bindPopup(
-              `<b>${inst.nombre}</b><br>` +
-              `<span style="color:#A8B7AE;font-size:11px">${inst.direccion || "—"}</span><br>` +
-              `<span style="color:${C_COLOR};font-size:11px">Radio: ${inst.radio_geofence_m ?? 100}m · ${inst.nivel_criticidad ?? "Media"}</span>`,
+              `<b>${escaparHtml(inst.nombre)}</b><br>` +
+              `<span style="color:#A8B7AE;font-size:11px">${escaparHtml(inst.direccion || "—")}</span><br>` +
+              `<span style="color:${C_COLOR};font-size:11px">Radio: ${inst.radio_geofence_m ?? 100}m · ${escaparHtml(inst.nivel_criticidad ?? "Media")}</span>`,
               { className: "gc-popup" },
             );
           L.circle([inst.latitud, inst.longitud], {
@@ -471,6 +472,7 @@ function MonitoreoPanel({ token }) {
           <MiniStat value={stats.presentes} label="Presentes"  color={C_COLOR}  />
           <MiniStat value={stats.tardios}   label="Tardíos"    color={T.yellow} />
           <MiniStat value={stats.faltantes} label="Faltantes"  color={T.red}    />
+          <MiniStat value={stats.sinCobertura ?? 0} label="Sin cobertura" color={T.red} />
         </div>
       )}
 
