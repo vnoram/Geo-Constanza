@@ -251,7 +251,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
 };
 
 const registrarSalida = async (data, user) => {
-  const { asistencia_id, metodo, latitud, longitud } = data;
+  const { asistencia_id, metodo } = data;
 
   const asistencia = await prisma.asistencia.findUniqueOrThrow({ where: { id: asistencia_id }, include: { turno: true } });
 
