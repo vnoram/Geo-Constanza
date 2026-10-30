@@ -2,6 +2,8 @@
 
 const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
+const { enviarNotificacion } = require('./notificacion.service');
+const { TIPOS_COBERTURA } = require('../constants/solicitudes');
 const { ahoraChile, aFechaDB } = require('../utils/fechaChile');
 
 const TIPOS_VALIDOS = ['vacaciones', 'dias_libres', 'turno_extra', 'traslado', 'turno'];
@@ -102,7 +104,7 @@ const aprobar = async (id, supervisorId, comentario) => {
     throw Object.assign(new Error('Solo se pueden aprobar solicitudes en estado pendiente'), { statusCode: 409 });
   }
 
-  return prisma.solicitud.update({
+  const actualizada = await prisma.solicitud.update({
     where: { id },
     data: {
       estado: 'aprobada',
@@ -114,6 +116,10 @@ const aprobar = async (id, supervisorId, comentario) => {
       revisor: { select: { id: true, nombre: true } },
     },
   });
+  if (TIPOS_COBERTURA.includes(solicitud.tipo)) {
+    await enviarNotificacion(solicitud.usuario_id, 'Solicitud de cobertura aprobada', comentario || 'Tu solicitud fue aprobada.', { solicitud_id: id });
+  }
+  return actualizada;
 };
 
 /**
@@ -126,7 +132,7 @@ const rechazar = async (id, motivo, supervisorId) => {
     throw Object.assign(new Error('Solo se pueden rechazar solicitudes en estado pendiente'), { statusCode: 409 });
   }
 
-  return prisma.solicitud.update({
+  const actualizada = await prisma.solicitud.update({
     where: { id },
     data: {
       estado: 'rechazada',
@@ -138,6 +144,10 @@ const rechazar = async (id, motivo, supervisorId) => {
       revisor: { select: { id: true, nombre: true } },
     },
   });
+  if (TIPOS_COBERTURA.includes(solicitud.tipo)) {
+    await enviarNotificacion(solicitud.usuario_id, 'Solicitud de cobertura rechazada', motivo || 'Tu solicitud fue rechazada.', { solicitud_id: id });
+  }
+  return actualizada;
 };
 
 /**

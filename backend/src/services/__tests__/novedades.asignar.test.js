@@ -6,6 +6,8 @@ jest.mock('../../config/database', () => ({ prisma: {
 jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn() }));
 jest.mock('../../utils/azureStorage', () => ({ generarUrlLectura: jest.fn() }));
 jest.mock('../../socket/socketManager', () => ({ getSocketIO: jest.fn() }));
+jest.mock('../notificacion.service', () => ({ enviarNotificacion: jest.fn() }));
+const { enviarNotificacion } = require('../notificacion.service');
 const { prisma } = require('../../config/database');
 const { ROLES } = require('../../constants/roles');
 const { ESTADO_NOVEDAD, ESTADO_USUARIO } = require('../../constants/estados');
@@ -32,6 +34,7 @@ test.each([ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR])('asig
   }));
   expect(to).toHaveBeenCalledWith('instalacion:i1');
   expect(emit).toHaveBeenCalledTimes(1);
+  expect(enviarNotificacion).toHaveBeenCalledWith('r1', expect.any(String), expect.any(String), { novedad_id: 'n1' });
 });
 test('supervisor ajeno recibe 403', async () => {
   resolverInstalacionesSupervisor.mockResolvedValue(['otra']);

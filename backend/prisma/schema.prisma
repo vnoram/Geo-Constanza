@@ -22,6 +22,7 @@ model Usuario {
   rol                      String     // 'pauta', 'libre', 'supervisor', 'central', 'admin'
   estado                   String     @default("activo") // 'activo', 'inactivo'
   two_factor_secret        String?
+  fcm_token                String?
 
   // Para GGSS: diferencia en_pauta (pauta fija 4x4) vs libre (eventual)
   tipo_ggss                String?    // 'pauta' | 'libre' — solo aplica a rol 'pauta' o 'libre'

@@ -16,6 +16,7 @@ const { URGENCIAS } = require('../constants/urgencias');
 const { conFolio } = require('../utils/folioNovedad');
 const { ACCION_NOVEDAD } = require('../constants/accionesNovedad');
 const { SALAS } = require('../constants/salas');
+const { enviarNotificacion } = require('./notificacion.service');
 const { inicioDiaChile, finDiaChile, turnosDeHoy } = require('../utils/fechaChile');
 
 // ============================================================================
@@ -399,6 +400,7 @@ const asignar = async (id, responsableId, user) => {
   try {
     getSocketIO().to(`instalacion:${novedad.instalacion_id}`).emit('novedad:asignada', novedad);
   } catch (_) {}
+  await enviarNotificacion(responsableId, 'Novedad asignada', 'Se te ha asignado una novedad.', { novedad_id: id });
   return novedad;
 };
 
