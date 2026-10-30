@@ -1,5 +1,6 @@
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LoginScreen } from "./screens/auth/LoginScreen";
+import { Enroll2FAScreen } from "./screens/auth/Enroll2FAScreen";
 import { AppShell } from "./components/layout/AppShell";
 
 // ═══════════════════════════════════════════════════════════════
@@ -16,6 +17,11 @@ function AppRouter() {
 
   if (!user) {
     return <LoginScreen onLogin={login} />;
+  }
+
+  if (user.mustEnroll2FA) {
+    const { mustEnroll2FA, ...usuario } = user; // eslint-disable-line no-unused-vars
+    return <Enroll2FAScreen onDone={() => login(usuario, token)} onLogout={logout} />;
   }
 
   return <AppShell user={user} token={token} onLogout={logout} />;

@@ -21,7 +21,11 @@ model Usuario {
   password_hash            String
   rol                      String     // 'pauta', 'libre', 'supervisor', 'central', 'admin'
   estado                   String     @default("activo") // 'activo', 'inactivo'
-  two_factor_secret        String?
+  two_factor_secret        String?    // cifrado AES-256-GCM (ver utils/cifrado.js); nunca se expone por API
+  two_factor_enabled       Boolean    @default(false)
+  two_factor_recovery      Json?      // hashes SHA-256 de los códigos de recuperación vigentes
+  two_factor_ultimo_paso   Int?       // último paso TOTP aceptado (anti-reutilización)
+  fcm_token                String?
 
   // Para GGSS: diferencia en_pauta (pauta fija 4x4) vs libre (eventual)
   tipo_ggss                String?    // 'pauta' | 'libre' — solo aplica a rol 'pauta' o 'libre'
@@ -42,7 +46,9 @@ model Usuario {
   // Relaciones
   turnos                   Turno[]
   asistencias              Asistencia[]
-  novedades                Novedad[]
+  novedades                Novedad[] @relation("NovedadAutor")
+  novedades_asignadas       Novedad[] @relation("NovedadResponsable")
+  historial_novedades       NovedadHistorial[]
   auditorias               Auditoria[]
   instalaciones_sup        Supervisor_Instalacion[]
   solicitudes              Solicitud[] @relation("UsuarioSolicita")
@@ -62,6 +68,7 @@ model Instalacion {
   latitud             Float
   longitud            Float
   radio_geofence_m    Int        @default(100) // Metros de tolerancia para GPS
+  tolerancia_atraso_minutos Int  @default(15)
   tipo_recinto        String?
   nivel_criticidad    String     @default("Media") // Alta, Media, Baja
   comuna              String?    // Comuna donde se ubica la instalación (para cobertura de supervisor)
@@ -93,7 +100,7 @@ model Supervisor_Instalacion {
 // El algoritmo de turnos 4x4 para GGSS_EN_PAUTA vive en turnos.service.js.
 model Turno {
   id                  String       @id @default(uuid())
-  usuario_id          String
+  usuario_id          String?
   instalacion_id      String
   fecha               DateTime     @db.Date
   hora_inicio         String       // Ej: "06:00"
@@ -105,10 +112,11 @@ model Turno {
   created_at          DateTime     @default(now())
   updated_at          DateTime     @updatedAt
 
-  usuario             Usuario      @relation(fields: [usuario_id], references: [id])
+  usuario             Usuario?     @relation(fields: [usuario_id], references: [id])
   instalacion         Instalacion  @relation(fields: [instalacion_id], references: [id])
   asistencias         Asistencia[]
   novedades           Novedad[]
+  solicitudes_cobertura Solicitud[] @relation("VacanteSolicitada")
 }
 
 // ─── 5. ASISTENCIA (Marcajes reales) ───
@@ -150,6 +158,7 @@ model Asistencia {
 // de si el guardia estaba dentro de la geocerca al reportar.
 model Novedad {
   id                  String       @id @default(uuid())
+  numero              Int          @unique @default(autoincrement())
   usuario_id          String
   instalacion_id      String
   turno_id            String
@@ -163,16 +172,33 @@ model Novedad {
   gps_dentro_rango    Boolean?     @default(true)      // false = guardia fuera del radio al reportar
   comentario_cierre   String?
   atendida_por        String?
+  asignada_a          String?
   fecha_atencion      DateTime?
   created_at          DateTime     @default(now())
 
-  usuario             Usuario      @relation(fields: [usuario_id], references: [id])
+  usuario             Usuario      @relation("NovedadAutor", fields: [usuario_id], references: [id])
+  responsable         Usuario?     @relation("NovedadResponsable", fields: [asignada_a], references: [id])
+  historial           NovedadHistorial[]
   instalacion         Instalacion  @relation(fields: [instalacion_id], references: [id])
   turno               Turno        @relation(fields: [turno_id], references: [id])
 }
 
 // ─── 7. SOLICITUDES (Vacaciones, Permisos, Traslados, Turnos) ───
 // tipos: 'vacaciones' | 'dias_libres' | 'turno_extra' | 'traslado' | 'turno'
+model NovedadHistorial {
+  id              String   @id @default(uuid())
+  novedad_id      String
+  usuario_id      String
+  accion          String
+  estado_anterior String?
+  estado_nuevo    String
+  comentario      String?
+  created_at      DateTime @default(now())
+  novedad         Novedad @relation(fields: [novedad_id], references: [id])
+  usuario         Usuario @relation(fields: [usuario_id], references: [id])
+  @@index([novedad_id, created_at])
+}
+
 model Solicitud {
   id                  String       @id @default(uuid())
   usuario_id          String
@@ -180,6 +206,8 @@ model Solicitud {
   fecha_desde         DateTime     @db.Date
   fecha_hasta         DateTime?    @db.Date
   motivo              String?
+  vacante_turno_id     String?
+  vacante             Turno?       @relation("VacanteSolicitada", fields: [vacante_turno_id], references: [id])
   estado              String       @default("pendiente") // 'pendiente', 'aprobada', 'rechazada'
   revisada_por        String?
   comentario_revision String?

@@ -3,12 +3,12 @@ const jwt = require('jsonwebtoken');
 const { prisma } = require('../config/database');
 const { jwtConfig } = require('../config/jwt');
 const { getRedis } = require('../config/redis');
+const twoFactor = require('./twoFactor.service');
 
-const BCRYPT_ROUNDS = 12;
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
-const login = async (rut, password, ip, userAgent) => {
+const login = async (rut, password, _ip, _userAgent) => {
   const usuario = await prisma.usuario.findUnique({
     where: { rut },
     include: { instalacion_asignada: { select: { id: true, nombre: true } } },
@@ -45,20 +45,25 @@ const login = async (rut, password, ip, userAgent) => {
   // Reset intentos fallidos
   try { if (redis) await redis.del(`login_attempts:${usuario.id}`); } catch (_) { /* ignorar */ }
 
-  // 2FA — Fase 2: se activará cuando two_factor_secret esté configurado Y el backend lo verifique vía TOTP.
-  // Por ahora se omite para que admin/supervisor puedan iniciar sesión en desarrollo.
-  // if ([ROLES.SUPERVISOR, ROLES.ADMINISTRADOR].includes(usuario.rol) && usuario.two_factor_secret) {
-  //   const tempToken = jwt.sign({ id: usuario.id, requires2FA: true }, jwtConfig.accessSecret, { expiresIn: '5m' });
-  //   return { requires2FA: true, tempToken };
-  // }
+  // Segundo factor (TOTP) para supervisor y administrador.
+  // - Enrolado: se exige el código antes de emitir sesión (devuelve tempToken).
+  // - Sin enrolar: el acceso continúa y se avisa para que complete el enrolamiento (nadie queda fuera).
+  if (twoFactor.dosFactoresExigido() && twoFactor.rolExige2FA(usuario.rol)) {
+    if (usuario.two_factor_enabled) {
+      return { requires2FA: true, tempToken: twoFactor.emitirTempToken(usuario.id) };
+    }
+    const tokensSinFactor = generateTokens(usuario);
+    return { usuario: sanitizeUser(usuario), ...tokensSinFactor, mustEnroll2FA: true };
+  }
 
   const tokens = generateTokens(usuario);
   return { usuario: sanitizeUser(usuario), ...tokens };
 };
 
 const verify2FA = async (tempToken, code) => {
-  // TODO: Implementar verificación TOTP con otplib
-  throw Object.assign(new Error('2FA no implementado aún'), { statusCode: 501 });
+  const usuario = await twoFactor.verificarLogin(tempToken, code);
+  const tokens = generateTokens(usuario);
+  return { usuario: sanitizeUser(usuario), ...tokens };
 };
 
 const refreshToken = async (token) => {
@@ -70,7 +75,7 @@ const refreshToken = async (token) => {
   return generateTokens(usuario);
 };
 
-const logout = async (token, userId) => {
+const logout = async (token, _userId) => {
   try {
     const redis = getRedis();
     if (redis) {
@@ -81,7 +86,7 @@ const logout = async (token, userId) => {
   } catch (_) { /* Redis caído — logout continúa sin blacklist */ }
 };
 
-const requestPasswordReset = async (email) => {
+const requestPasswordReset = async (_email) => {
   // TODO: Implementar envío de email con token de reset
 };
 

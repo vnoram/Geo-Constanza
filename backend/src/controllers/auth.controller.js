@@ -1,4 +1,5 @@
 const authService = require('../services/auth.service');
+const twoFactorService = require('../services/twoFactor.service');
 const { registrarAuditoria } = require('../middlewares/auditLog');
 
 const login = async (req, res, next) => {
@@ -49,6 +50,43 @@ const verify2FA = async (req, res, next) => {
   try {
     const { tempToken, code } = req.body;
     const result = await authService.verify2FA(tempToken, code);
+
+    await registrarAuditoria({
+      usuarioId: result.usuario.id,
+      accion: 'login_2fa',
+      tablaAfectada: 'usuarios',
+      registroId: result.usuario.id,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const setup2FA = async (req, res, next) => {
+  try {
+    res.json(await twoFactorService.iniciarEnrolamiento(req.user.id));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const enable2FA = async (req, res, next) => {
+  try {
+    const result = await twoFactorService.confirmarEnrolamiento(req.user.id, req.body.code);
+
+    await registrarAuditoria({
+      usuarioId: req.user.id,
+      accion: 'activar_2fa',
+      tablaAfectada: 'usuarios',
+      registroId: req.user.id,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
     res.json(result);
   } catch (error) {
     next(error);
@@ -65,4 +103,4 @@ const resetPassword = async (req, res, next) => {
   }
 };
 
-module.exports = { login, refreshToken, logout, verify2FA, resetPassword };
+module.exports = { login, refreshToken, logout, verify2FA, setup2FA, enable2FA, resetPassword };

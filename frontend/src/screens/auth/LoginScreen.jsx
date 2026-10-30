@@ -14,7 +14,7 @@ export function LoginScreen({ onLogin }) {
 
   const {
     rut, pass, setPass, error, loading,
-    step, code2fa, setCode2fa, pendingUser,
+    step, code2fa, setCode2fa,
     locked, lockTime, lockLabel,
     formatRut, handleLogin, handle2FA, resetTo2FA,
   } = useLoginForm({ onLogin });
@@ -109,7 +109,6 @@ export function LoginScreen({ onLogin }) {
               setCode2fa={setCode2fa}
               error={error}
               loading={loading}
-              pendingUser={pendingUser}
               onVerify={handle2FA}
               onBack={resetTo2FA}
             />

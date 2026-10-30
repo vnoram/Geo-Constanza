@@ -1,4 +1,6 @@
+import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect, useRef } from "react";
+import { HistorialNovedad } from "../../components/novedades/HistorialNovedad";
 import { io } from "socket.io-client";
 import { T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
@@ -157,7 +159,7 @@ function ReportarModal({ onClose, onSuccess }) {
           <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{
             background: "none", border: "none", color: T.textMut,
             fontSize: 20, cursor: "pointer", lineHeight: 1,
-          }}>✕</button>
+          }}><Icon name="x" size={16} /></button>
         </div>
 
         {/* Indicador GPS */}
@@ -167,10 +169,10 @@ function ReportarModal({ onClose, onSuccess }) {
           background: gpsStyle.bg, border: `1px solid ${gpsStyle.border}`,
         }}>
           <span style={{ fontSize: 13, color: gpsStyle.text }}>
-            {gpsStatus === "loading" && "📡 Obteniendo ubicación..."}
-            {gpsStatus === "ok"      && `📍 Precisión de tu ubicación: ±${precisionGps} m`}
-            {gpsStatus === "error"   && "⚠️ GPS no disponible — se reportará sin coordenadas"}
-            {gpsStatus === "idle"    && "📡 Iniciando GPS..."}
+            {gpsStatus === "loading" && <><Icon name="radio-tower" size={16} />{" Obteniendo ubicación..."}</>}
+            {gpsStatus === "ok"      && <><Icon name="map-pin" size={16} />{" Precisión de tu ubicación: ±"}{precisionGps}{" m"}</>}
+            {gpsStatus === "error"   && <><Icon name="triangle-alert" size={16} />{" GPS no disponible — se reportará sin coordenadas"}</>}
+            {gpsStatus === "idle"    && <><Icon name="radio-tower" size={16} />{" Iniciando GPS..."}</>}
           </span>
         </div>
 
@@ -180,7 +182,7 @@ function ReportarModal({ onClose, onSuccess }) {
             borderRadius: 8, padding: "8px 12px", marginBottom: 16,
             fontSize: 12, color: T.yellow,
           }}>
-            ⚠️ Tu ubicación en este equipo es imprecisa. Usa tu celular o tablet en la instalación.
+            <Icon name="triangle-alert" size={16} /> Tu ubicación en este equipo es imprecisa. Usa tu celular o tablet en la instalación.
           </div>
         )}
 
@@ -300,7 +302,7 @@ export function PautaNovedades({ user }) {
   useEffect(() => {
     cargarNovedades();
 
-    const socket = io(SOCKET_URL, { transports: ["websocket"] });
+    const socket = io(SOCKET_URL, { auth: { token: localStorage.getItem("gc_token") }, transports: ["websocket"] });
     socketRef.current = socket;
 
     if (user?.instalacion_asignada_id) {
@@ -383,6 +385,7 @@ export function PautaNovedades({ user }) {
             borderRadius: 8, padding: 14,
           }}>
             <div className="nov-card__body">
+            <div style={{ color: T.textMut, fontSize: 12 }}>{n.folio}</div>
             <div className="guard-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>
               <Badge color={colors.badge}>{urgencia}</Badge>
@@ -398,6 +401,7 @@ export function PautaNovedades({ user }) {
             )}
             </div>
             <div className="nov-card__pie">
+              <HistorialNovedad id={n.id} />
               <div className="nov-card__estado" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                 <Badge color={n.estado === "abierta" ? "yellow" : n.estado === "escalada" ? "red" : "accent"}>
                   {n.estado}
