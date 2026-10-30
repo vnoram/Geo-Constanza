@@ -9,5 +9,6 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', authorize(ROLES.ADMINISTRADOR), auditoriaController.listar);
+router.get('/pdf', authorize(ROLES.ADMINISTRADOR), auditoriaController.exportar);
 
 module.exports = router;

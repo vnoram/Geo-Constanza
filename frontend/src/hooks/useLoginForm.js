@@ -11,7 +11,7 @@ export function useLoginForm({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState("login"); // "login" | "2fa"
   const [code2fa, setCode2fa] = useState("");
-  const [pendingUser, setPendingUser] = useState(null);
+  const [tempToken, setTempToken] = useState(null);
   const [attempts, setAttempts] = useState(0);
   const [locked, setLocked] = useState(false);
   const [lockTime, setLockTime] = useState(0);
@@ -40,13 +40,15 @@ export function useLoginForm({ onLogin }) {
     setLoading(true);
     try {
       const result = await api.login(rut.trim(), pass);
-      // DEV: 2FA desactivado temporalmente — todos los roles pasan directo al sistema
-      // if (result.user.rol === "supervisor" || result.user.rol === "admin") {
-      //   setPendingUser(result);
-      //   setStep("2fa");
-      // } else {
-      onLogin(result.user, result.token);
-      // }
+      if (result.requires2FA) {
+        setTempToken(result.tempToken);
+        setStep("2fa");
+      } else if (result.mustEnroll2FA) {
+        // Sesión válida pero el rol exige 2FA: la app muestra el enrolamiento antes de entrar.
+        onLogin({ ...result.user, mustEnroll2FA: true }, result.token);
+      } else {
+        onLogin(result.user, result.token);
+      }
       setAttempts(0);
     } catch (err) {
       // Solo una respuesta 401 representa credenciales incorrectas. Los errores
@@ -71,24 +73,27 @@ export function useLoginForm({ onLogin }) {
 
   const handle2FA = async () => {
     setError("");
-    if (!code2fa.trim() || code2fa.length < 6) { setError("Ingrese el código de 6 dígitos"); return; }
+    const codigo = code2fa.trim();
+    if (codigo.length < 6) { setError("Ingrese el código de 6 dígitos o un código de recuperación"); return; }
     setLoading(true);
     try {
-      await api.verify2FA(code2fa);
-      onLogin(pendingUser.user, pendingUser.token);
+      const result = await api.verify2FA(tempToken, codigo);
+      onLogin(result.user, result.token);
     } catch (err) {
       setError(err.message);
+      // Token temporal vencido (5 min) o bloqueo: hay que volver a ingresar la contraseña.
+      if (err.status === 401 && /token|expir/i.test(err.message)) resetTo2FA();
     }
     setLoading(false);
   };
 
-  const resetTo2FA = () => { setStep("login"); setCode2fa(""); setError(""); setPendingUser(null); };
+  const resetTo2FA = () => { setStep("login"); setCode2fa(""); setError(""); setTempToken(null); };
 
   const lockLabel = `${Math.floor(lockTime / 60)}:${String(lockTime % 60).padStart(2, "0")}`;
 
   return {
     rut, pass, setPass, error, loading,
-    step, code2fa, setCode2fa, pendingUser,
+    step, code2fa, setCode2fa,
     locked, lockTime, lockLabel,
     formatRut, handleLogin, handle2FA, resetTo2FA,
   };

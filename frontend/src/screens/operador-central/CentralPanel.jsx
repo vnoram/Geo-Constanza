@@ -471,6 +471,7 @@ function MonitoreoPanel({ token }) {
           <MiniStat value={stats.presentes} label="Presentes"  color={C_COLOR}  />
           <MiniStat value={stats.tardios}   label="Tardíos"    color={T.yellow} />
           <MiniStat value={stats.faltantes} label="Faltantes"  color={T.red}    />
+          <MiniStat value={stats.sinCobertura ?? 0} label="Sin cobertura" color={T.red} />
         </div>
       )}
 
