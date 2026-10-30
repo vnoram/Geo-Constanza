@@ -9,6 +9,9 @@ import { TwoFactorStep } from "../../components/auth/TwoFactorStep";
 import { useLoginForm } from "../../hooks/useLoginForm";
 import arteLogin from "../../assets/login-ilustracion.webp";
 
+// Credenciales de demostración: solo en desarrollo o si se pide explícitamente al compilar.
+const MOSTRAR_DEMO = import.meta.env.DEV || import.meta.env.VITE_MOSTRAR_DEMO === "true";
+
 export function LoginScreen({ onLogin, onForgot }) {
   const [showDemo, setShowDemo] = useState(false);
 
@@ -95,6 +98,7 @@ export function LoginScreen({ onLogin, onForgot }) {
                 </div>
               )}
 
+              {MOSTRAR_DEMO && (
               <div style={{ marginTop: 18 }}>
                 <button
                   onClick={() => setShowDemo(v => !v)}
@@ -105,8 +109,9 @@ export function LoginScreen({ onLogin, onForgot }) {
                   Credenciales de demostración
                 </button>
               </div>
+              )}
 
-              {showDemo && (
+              {MOSTRAR_DEMO && showDemo && (
                 <DemoPanel onSelect={(rut, pwd) => { formatRut(rut); setPass(pwd); }} />
               )}
             </div>

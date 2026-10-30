@@ -86,7 +86,7 @@ export function AppShell({ user, onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const duracionToken = user.rol === ROL.GGSS_EN_PAUTA || user.rol === ROL.GGSS_LIBRE ? "30 min" : user.rol === ROL.SUPERVISOR ? "2 h" : "4 h";
-  const conSegundoFactor = user.rol === ROL.SUPERVISOR || user.rol === ROL.ADMINISTRADOR;
+  const conSegundoFactor = user.segundoFactor === true;
 
   return (
     <div className="app-shell" style={{

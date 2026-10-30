@@ -78,7 +78,7 @@ export function useLoginForm({ onLogin }) {
     setLoading(true);
     try {
       const result = await api.verify2FA(tempToken, codigo);
-      onLogin(result.user, result.token);
+      onLogin({ ...result.user, segundoFactor: true }, result.token);
     } catch (err) {
       setError(err.message);
       // Token temporal vencido (5 min) o bloqueo: hay que volver a ingresar la contraseña.
