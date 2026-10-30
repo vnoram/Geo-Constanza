@@ -11,6 +11,18 @@ const validarTolerancia = (valor) => {
   return numero;
 };
 
+const validarGeocerca = (campos, crear = false) => {
+  for (const [campo, minimo, maximo] of [['latitud', -90, 90], ['longitud', -180, 180], ['radio_geofence_m', 1, 2147483647]]) {
+    const valor = campos[campo] ?? (crear && campo === 'radio_geofence_m' ? 100 : undefined);
+    if (valor === undefined && !crear) continue;
+    const numero = Number(valor);
+    if (!['string', 'number'].includes(typeof valor) || String(valor).trim() === '' || !Number.isFinite(numero) || numero < minimo || numero > maximo ||
+        (campo === 'radio_geofence_m' && !Number.isInteger(numero))) {
+      throw Object.assign(new Error(`Valor inválido para ${campo}.`), { statusCode: 400 });
+    }
+  }
+};
+
 const listar = async (query, user) => {
   const where = {};
   if (query.estado) where.estado = query.estado;
@@ -19,9 +31,7 @@ const listar = async (query, user) => {
   // Row-level security: supervisor ve sus instalaciones asignadas (o todas las activas si aún no tiene asignación)
   if (user && user.rol === ROLES.SUPERVISOR) {
     const ids = await resolverInstalacionesSupervisor(user);
-    if (ids.length > 0) {
-      where.id = { in: ids };
-    }
+    where.id = { in: ids };
   }
 
   return prisma.instalacion.findMany({
@@ -37,6 +47,7 @@ const listar = async (query, user) => {
 
 const crear = async (data) => {
   const { supervisorIds, ...campos } = data;
+  validarGeocerca(campos, true);
   const tolerancia = validarTolerancia(campos.tolerancia_atraso_minutos ?? TOLERANCIA_POR_DEFECTO_MINUTOS);
 
   return prisma.$transaction(async (tx) => {
@@ -83,6 +94,7 @@ const obtenerPorId = async (id) => {
 
 const editar = async (id, data) => {
   const { supervisorIds, ...campos } = data;
+  validarGeocerca(campos);
 
   const dataToUpdate = { ...campos };
   if (campos.tolerancia_atraso_minutos !== undefined) {
