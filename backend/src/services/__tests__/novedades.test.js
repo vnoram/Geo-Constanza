@@ -154,7 +154,7 @@ suite('HU-02 / HU-08 con PostgreSQL Docker local', () => {
     politica.MAX_HORAS_SEMANALES = 24; // Valor exclusivo del caso de prueba, no política operativa.
     try {
       const vacante = await prisma.turno.create({ data: { instalacion_id: instalacionId,
-        fecha: aFechaDB(sumarDias(ahoraChile().fecha, 1)), hora_inicio: '08:00', hora_fin: '20:00' } });
+        fecha: aFechaDB(sumarDias(ahoraChile().fecha, 1)), hora_inicio: '08:00', hora_fin: '16:00' } });
       const solicitud = await vacantes.solicitar(vacante.id, libre, 'Disponible');
       expect(solicitud.vacante_turno_id).toBe(vacante.id);
       expect((await solicitudes.aprobar(solicitud.id, supervisor.id, 'Aceptada')).estado).toBe('aprobada');

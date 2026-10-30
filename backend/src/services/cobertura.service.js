@@ -13,6 +13,9 @@ const validarHoras = async (turno, usuarioId, db) => {
     throw Object.assign(new Error('Falta configurar el máximo de horas semanales acordado para cobertura.'), { statusCode: 503 });
   }
   const intervalo = intervaloTurno(turno);
+  if ((intervalo.fin - intervalo.inicio) / 3600000 > politica.MAX_HORAS_DIARIAS_ORDINARIAS) {
+    throw Object.assign(new Error('La cobertura excede la jornada ordinaria diaria; no hay régimen excepcional implementado.'), { statusCode: 409 });
+  }
   const fecha = ahoraChile(intervalo.inicio).fecha;
   const dia = new Date(`${fecha}T00:00:00Z`).getUTCDay();
   let lunes = sumarDias(fecha, -((dia + 6) % 7));
@@ -23,11 +26,26 @@ const validarHoras = async (turno, usuarioId, db) => {
     const planificados = await db.turno.findMany({ where: { usuario_id: usuarioId, id: { not: turno.id },
       estado: { not: ESTADO_TURNO.CANCELADO }, fecha: { gte: aFechaDB(sumarDias(lunes, -1)), lt: aFechaDB(siguiente) },
     } });
-    const horas = [...planificados, turno].reduce((total, t) => {
+    const turnos = [...planificados, turno];
+    const horas = turnos.reduce((total, t) => {
       const i = intervaloTurno(t);
       return total + Math.max(0, Math.min(i.fin, fin) - Math.max(i.inicio, inicio)) / 3600000;
     }, 0);
-    if (horas > maximo) throw Object.assign(new Error('La cobertura excede el máximo de horas semanales configurado.'), { statusCode: 409 });
+    const ultimoDia = ahoraChile(new Date(Math.min(intervalo.fin.getTime(), fin.getTime()) - 1)).fecha;
+    const maximoAplicable = Math.min(maximo, politica.limiteSemanalOrdinario(ultimoDia));
+    if (horas > maximoAplicable) throw Object.assign(new Error('La cobertura excede el máximo de horas semanales configurado.'), { statusCode: 409 });
+    let dia = fecha;
+    while (instanteChile(dia, '00:00') < intervalo.fin) {
+      const inicioDia = instanteChile(dia, '00:00'), finDia = instanteChile(sumarDias(dia, 1), '00:00');
+      const horasDia = turnos.reduce((total, t) => {
+        const i = intervaloTurno(t);
+        return total + Math.max(0, Math.min(i.fin, finDia) - Math.max(i.inicio, inicioDia)) / 3600000;
+      }, 0);
+      if (horasDia > politica.MAX_HORAS_DIARIAS_ORDINARIAS) {
+        throw Object.assign(new Error('La cobertura excede el máximo diario de jornada ordinaria.'), { statusCode: 409 });
+      }
+      dia = sumarDias(dia, 1);
+    }
     lunes = siguiente;
   }
 };
