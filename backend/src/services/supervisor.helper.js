@@ -5,6 +5,7 @@
 // que necesite aplicar el mismo filtro de visibilidad.
 
 const { prisma } = require('../config/database');
+const { ROLES } = require('../constants/roles');
 
 /**
  * Devuelve el conjunto (sin duplicados) de IDs de instalaciones visibles
@@ -58,4 +59,14 @@ const resolverInstalacionesSupervisor = async (user) => {
   return [...idsSeen];
 };
 
-module.exports = { resolverInstalacionesSupervisor };
+// Lanza 403 si un supervisor intenta operar fuera de sus instalaciones.
+// Central y administrador tienen alcance global y pasan sin consulta.
+const exigirAlcanceInstalacion = async (user, instalacionId) => {
+  if (user?.rol !== ROLES.SUPERVISOR) return;
+  const permitidas = instalacionId ? await resolverInstalacionesSupervisor(user) : [];
+  if (!instalacionId || !permitidas.includes(instalacionId)) {
+    throw Object.assign(new Error('No tienes acceso a esta instalación'), { statusCode: 403 });
+  }
+};
+
+module.exports = { resolverInstalacionesSupervisor, exigirAlcanceInstalacion };

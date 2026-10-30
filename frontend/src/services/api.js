@@ -68,24 +68,41 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ rut, password }),
     });
-    // Guardia: si el backend devuelve requires2FA antes de que esté implementado
-    // en el frontend, lanzamos un error claro en lugar de crashear con TypeError.
+    // Con 2FA exigido el backend responde { requires2FA, tempToken } sin tokens de sesión.
     if (data.requires2FA) {
-      throw new Error("2FA requerido por el servidor pero no implementado aún. Contacta al administrador.");
+      return { requires2FA: true, tempToken: data.tempToken };
     }
-    // Backend devuelve { usuario, accessToken, refreshToken }
+    // Backend devuelve { usuario, accessToken, refreshToken[, mustEnroll2FA] }
     return {
       user: data.usuario,
       token: data.accessToken,
       refreshToken: data.refreshToken,
+      mustEnroll2FA: Boolean(data.mustEnroll2FA),
     };
   },
 
-  verify2FA: async (code) => {
-    await new Promise(r => setTimeout(r, 800));
-    if (code === "123456") return { verified: true };
-    throw new Error("Código 2FA inválido");
+  // Segundo paso del login: código TOTP de 6 dígitos o código de recuperación.
+  verify2FA: async (tempToken, code) => {
+    const data = await request('/auth/2fa/verify', {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tempToken, code }),
+    });
+    return { user: data.usuario, token: data.accessToken, refreshToken: data.refreshToken };
   },
+
+  // Restablecer contraseña (público): la respuesta es la misma exista o no el correo.
+  requestPasswordReset: (email) => request('/auth/password/reset-request', {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }),
+  }),
+  confirmPasswordReset: (token, password) => request('/auth/password/reset-confirm', {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, password }),
+  }),
+
+  // Enrolamiento (requiere sesión): devuelve { otpauth_url, secreto }.
+  setup2FA: () => authFetch('/auth/2fa/setup', { method: "POST", body: JSON.stringify({}) }),
+  // Confirma con un código y devuelve { codigos_recuperacion } (se muestran una sola vez).
+  enable2FA: (code) => authFetch('/auth/2fa/enable', { method: "POST", body: JSON.stringify({ code }) }),
 
   // ── Peticiones autenticadas (con Bearer token) ────────────────
   get:   (path)        => authFetch(path),

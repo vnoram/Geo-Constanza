@@ -38,7 +38,7 @@ function RoleContent({ user, rol, section }) {
   if (!allowed.includes(section)) {
     return (
       <div style={{ textAlign: "center", padding: 40 }}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>🚫</div>
+        <div style={{ fontSize: 48, marginBottom: 12 }}><Icon name="ban" size={48} /></div>
         <div style={{ color: T.red, fontWeight: 700, fontSize: 16 }}>Acceso Denegado</div>
         <div style={{ color: T.textMut, fontSize: 13, marginTop: 6 }}>
           Tu rol ({ROLES[rol]?.label}) no tiene permisos para esta sección.
@@ -86,7 +86,7 @@ export function AppShell({ user, onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const duracionToken = user.rol === ROL.GGSS_EN_PAUTA || user.rol === ROL.GGSS_LIBRE ? "30 min" : user.rol === ROL.SUPERVISOR ? "2 h" : "4 h";
-  const conSegundoFactor = user.rol === ROL.SUPERVISOR || user.rol === ROL.ADMINISTRADOR;
+  const conSegundoFactor = user.segundoFactor === true;
 
   return (
     <div className="app-shell" style={{

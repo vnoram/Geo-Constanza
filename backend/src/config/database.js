@@ -4,6 +4,19 @@ const { PrismaClient } = require('@prisma/client');
 
 const isProd = process.env.NODE_ENV === 'production';
 
+// DATABASE_SSL: 'disable' | 'require' | 'verify'.
+//   require (por defecto en producción): cifra la conexión sin validar el certificado.
+//   verify: valida el certificado del servidor; usa DATABASE_SSL_CA (PEM) si el proveedor
+//           usa una CA que Node no trae (p. ej. Azure Database for PostgreSQL).
+const sslConfig = () => {
+  const modo = (process.env.DATABASE_SSL || (isProd ? 'require' : 'disable')).toLowerCase();
+  if (modo === 'disable') return false;
+  if (modo === 'verify') {
+    return { rejectUnauthorized: true, ...(process.env.DATABASE_SSL_CA && { ca: process.env.DATABASE_SSL_CA.replace(/\\n/g, '\n') }) };
+  }
+  return { rejectUnauthorized: false };
+};
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: isProd ? 15 : 5,
@@ -11,7 +24,7 @@ const pool = new Pool({
   connectionTimeoutMillis: 10000,
   keepAlive: true,
   keepAliveInitialDelayMillis: 10000,
-  ssl: isProd ? { rejectUnauthorized: false } : false,
+  ssl: sslConfig(),
 });
 
 // Reconectar automáticamente si la conexión se cae
