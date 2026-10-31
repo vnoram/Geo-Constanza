@@ -11,6 +11,9 @@ Desde la raiz del repo, con Docker Desktop abierto:
 `powershell -ExecutionPolicy Bypass -File scripts\local-up.ps1`
 Crea el `.env` con secretos aleatorios, levanta todo, espera la API y carga los datos demo. Con `-Con2FA` activa el 2FA para probarlo.
 
+## Uso diario (doble clic)
+Después de la primera vez no necesitas `local-up.ps1`: abre Docker Desktop y haz doble clic en `scripts\iniciar-local.bat` (prende y abre la app) o `scripts\detener-local.bat` (apaga y conserva los datos).
+
 ## Paso a paso manual
 1. Clona y entra a la rama:
    `git clone https://github.com/vnoram/Geo-Constanza.git && cd Geo-Constanza && git checkout chore/docker-local`
