@@ -6,7 +6,12 @@ Levanta todo en tu PC (base de datos, Redis, API, frontend y una bandeja de corr
 - Docker Desktop abierto.
 - Git y Node (solo para generar los secretos).
 
-## Primera vez
+## Camino rapido (Windows)
+Desde la raiz del repo, con Docker Desktop abierto:
+`powershell -ExecutionPolicy Bypass -File scripts\local-up.ps1`
+Crea el `.env` con secretos aleatorios, levanta todo, espera la API y carga los datos demo. Con `-Con2FA` activa el 2FA para probarlo.
+
+## Paso a paso manual
 1. Clona y entra a la rama:
    `git clone https://github.com/vnoram/Geo-Constanza.git && cd Geo-Constanza && git checkout chore/docker-local`
 2. Crea el archivo de secretos locales:
