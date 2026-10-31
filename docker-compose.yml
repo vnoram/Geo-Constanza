@@ -7,10 +7,10 @@ services:
     image: postgres:16
     environment:
       POSTGRES_USER: geo
-      POSTGRES_PASSWORD: geo_local
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}
       POSTGRES_DB: geo_local
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5434:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -22,14 +22,14 @@ services:
   redis:
     image: redis:7
     ports:
-      - "6380:6379"
+      - "127.0.0.1:6380:6379"
 
   # Bandeja de correo falsa: el correo de "restablecer contraseña" se ve en http://localhost:8025
   mailpit:
     image: axllent/mailpit
     ports:
-      - "8025:8025"
-      - "1025:1025"
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
 
   api:
     build: ./backend
@@ -39,11 +39,11 @@ services:
       redis:
         condition: service_started
     ports:
-      - "3005:3005"
+      - "127.0.0.1:3005:3005"
     environment:
       NODE_ENV: development
       PORT: 3005
-      DATABASE_URL: postgresql://geo:geo_local@db:5432/geo_local
+      DATABASE_URL: postgresql://geo:${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}@db:5432/geo_local
       DATABASE_SSL: disable
       REDIS_URL: redis://redis:6379
       FRONTEND_URL: http://localhost:5173
@@ -63,7 +63,7 @@ services:
     depends_on:
       - api
     ports:
-      - "5173:5173"
+      - "127.0.0.1:5173:5173"
     environment:
       VITE_API_URL: http://localhost:3005
       VITE_MOSTRAR_DEMO: "true"

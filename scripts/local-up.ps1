@@ -26,6 +26,7 @@ if (-not (Test-Path .env)) {
   Set-Content -Path .env -Value $lineas -Encoding ascii
   Write-Host 'Creado .env con secretos aleatorios locales.'
 }
+if (-not (Select-String -Path .env -Pattern '^POSTGRES_PASSWORD=.+' -Quiet)) { Add-Content .env "POSTGRES_PASSWORD=$(Nuevo-Secreto)" -Encoding ascii }
 if ($Con2FA) {
   (Get-Content .env) -replace '^REQUIRE_2FA=.*', 'REQUIRE_2FA=true' | Set-Content .env -Encoding ascii
   Write-Host '2FA activado para esta prueba (REQUIRE_2FA=true).'
@@ -46,6 +47,7 @@ if (-not $ok) { docker compose logs --tail 40 api; throw 'La API no respondio a 
 
 # 4) Datos de demostracion (solo base local)
 docker compose exec -T api node prisma/seed.js
+if ($LASTEXITCODE -ne 0) { throw 'Fallo la carga de datos locales.' }
 
 Write-Host ''
 Write-Host 'Listo.'
