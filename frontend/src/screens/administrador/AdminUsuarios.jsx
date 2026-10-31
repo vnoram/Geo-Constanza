@@ -1,3 +1,4 @@
+import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect } from "react";
 import { T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
@@ -98,7 +99,7 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
           <span style={{ fontWeight: 700, fontSize: 16, color: T.text }}>
             {esEdicion ? "Editar Usuario" : "Crear Usuario"}
           </span>
-          <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{ background: "none", border: "none", color: T.textMut, fontSize: 20, cursor: "pointer" }}>✕</button>
+          <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{ background: "none", border: "none", color: T.textMut, fontSize: 20, cursor: "pointer" }}><Icon name="x" size={16} /></button>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -324,7 +325,7 @@ export function AdminUsuarios() {
                 {/* Instalación del guardia */}
                 {[ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(u.rol) && u.instalacion_asignada && (
                   <div className="admin-user-meta" style={{ fontSize: 10, color: T.textMut, marginTop: 3 }}>
-                    <span className="admin-user-meta__text">📍 {u.instalacion_asignada.nombre}</span>
+                    <span className="admin-user-meta__text"><Icon name="map-pin" size={16} /> {u.instalacion_asignada.nombre}</span>
                   </div>
                 )}
               </div>

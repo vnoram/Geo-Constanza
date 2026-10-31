@@ -1,7 +1,7 @@
 // src/utils/fechaChile.js
 //
 // Fechas y horas en hora de Chile, independiente de la zona horaria del
-// servidor (Railway corre en UTC). Los turnos se registran en la fecha en que
+// servidor (el servidor corre en UTC). Los turnos se registran en la fecha en que
 // COMIENZAN; un turno nocturno (ej. 19:00–07:00) termina al día siguiente.
 
 const ZONA = 'America/Santiago';

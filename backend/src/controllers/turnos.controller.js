@@ -12,7 +12,7 @@ const listar = async (req, res, next) => {
 
 const obtener = async (req, res, next) => {
   try {
-    const turno = await turnosService.obtenerPorId(req.params.id);
+    const turno = await turnosService.obtenerPorId(req.params.id, req.user);
     res.json(turno);
   } catch (error) {
     next(error);
@@ -21,7 +21,7 @@ const obtener = async (req, res, next) => {
 
 const crear = async (req, res, next) => {
   try {
-    const turno = await turnosService.crear(req.body, req.user.id);
+    const turno = await turnosService.crear(req.body, req.user.id, req.user);
 
     await registrarAuditoria({
       usuarioId: req.user.id,
@@ -72,7 +72,7 @@ const editar = async (req, res, next) => {
 const cancelar = async (req, res, next) => {
   try {
     const { motivo } = req.body;
-    await turnosService.cancelar(req.params.id, motivo, req.user.id);
+    await turnosService.cancelar(req.params.id, motivo, req.user);
     res.json({ message: 'Turno cancelado correctamente' });
   } catch (error) {
     next(error);

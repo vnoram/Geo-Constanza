@@ -1,0 +1,48 @@
+# Probar Geo Constanza en local con Docker
+
+Levanta todo en tu PC (base de datos, Redis, API, frontend y una bandeja de correo falsa) para probar a mano antes de desplegar. No toca Azure ni Vercel.
+
+## Requisitos
+- Docker Desktop abierto.
+- Git y Node (solo para generar los secretos).
+
+## Camino rapido (Windows)
+Desde la raiz del repo, con Docker Desktop abierto:
+`powershell -ExecutionPolicy Bypass -File scripts\local-up.ps1`
+Crea el `.env` con secretos aleatorios, levanta todo, espera la API y carga los datos demo. Con `-Con2FA` activa el 2FA para probarlo.
+
+## Uso diario (doble clic)
+Después de la primera vez no necesitas `local-up.ps1`: abre Docker Desktop y haz doble clic en `scripts\iniciar-local.bat` (prende y abre la app) o `scripts\detener-local.bat` (apaga y conserva los datos).
+
+## Paso a paso manual
+1. Clona y entra a la rama:
+   `git clone https://github.com/vnoram/Geo-Constanza.git && cd Geo-Constanza && git checkout chore/docker-local`
+2. Crea el archivo de secretos locales:
+   `cp .env.docker.example .env` y completa `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` y `POSTGRES_PASSWORD`
+   (genera cada uno con `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`).
+3. Levanta todo: `docker compose up --build`
+   La API aplica las migraciones sola al arrancar. El frontend tarda un poco la primera vez (instala dependencias).
+4. En otra terminal, carga los datos de demostración (borra y recrea usuarios, turnos, etc. **de la base local**):
+   `docker compose exec api node prisma/seed.js`
+
+## Direcciones
+| Qué | URL |
+|---|---|
+| App (frontend) | http://localhost:5173 |
+| API | http://localhost:3005/api/v1/health |
+| Correos enviados (recuperar contraseña) | http://localhost:8025 |
+| PostgreSQL | localhost:5434, usuario `geo`, base `geo_local` |
+
+## Probar el 2FA
+Por defecto va desactivado en local. Para probarlo, en `.env` pon `TWO_FACTOR_ENCRYPTION_KEY` (otra clave generada igual) y `REQUIRE_2FA=true`, y reinicia la API: `docker compose up -d api`.
+Entra como supervisor o admin: la app te lleva a enrolar con el QR (Google Authenticator) y te muestra los códigos de recuperación.
+
+## Probar recuperar contraseña
+En el login, "¿Olvidaste tu contraseña?", pon un correo del seed y abre http://localhost:8025: ahí llega el enlace.
+
+## Notas
+- Todos los puertos quedan abiertos solo en tu PC (127.0.0.1). Si el puerto 5434 u otro está ocupado, cámbialo en `docker-compose.yml`.
+- Usuarios del seed: el login es con RUT y contraseña `geo2026` (solo datos de demostración locales).
+- Las fotos de reportes usan Azure Blob Storage. Sin cadena de conexión en local, subir fotos no funciona (el resto sí).
+- Para empezar de cero: `docker compose down -v` (borra la base local).
+- El panel de credenciales demo se muestra en el login porque `VITE_MOSTRAR_DEMO=true` solo en este compose.

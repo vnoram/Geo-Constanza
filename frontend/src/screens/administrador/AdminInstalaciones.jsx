@@ -1,3 +1,4 @@
+import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect, useRef } from "react";
 import { T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
@@ -355,7 +356,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
               lineHeight: 1,
             }}
           >
-            ✕
+            <Icon name="x" size={16} />
           </button>
         </div>
 
@@ -385,7 +386,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
               onChange={set("nombre")}
               placeholder="Ej: Centro Comercial Arauco"
               error={errores.nombre}
-              icon="🏢"
+              icon="building-2"
             />
 
             <div className="gc-inst-2col" style={{ display: "grid", gridTemplateColumns: "1.3fr 0.7fr", gap: 12 }}>
@@ -402,7 +403,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                 value={form.comuna}
                 onChange={set("comuna")}
                 placeholder="Ej: Santiago"
-                icon="🗺️"
+                icon="map"
               />
             </div>
 
@@ -433,7 +434,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                 onChange={set("radio_geofence_m")}
                 placeholder="100"
                 error={errores.radio_geofence_m}
-                icon="📡"
+                icon="radio-tower"
               />
               <Select
                 label="Estado"
@@ -591,7 +592,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                   onClick={() => setSugerenciaPin(null)}
                   style={{ background: "none", border: "none", color: T.textMut, cursor: "pointer", fontSize: 14 }}
                 >
-                  ✕
+                  <Icon name="x" size={16} />
                 </button>
               </div>
             )}
@@ -624,7 +625,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                   flexShrink: 0,
                 }}
               >
-                📡
+                <Icon name="radio-tower" size={16} />
               </div>
               <div style={{ fontSize: 11, color: T.textMut }}>
                 Geocerca de <span style={{ color: T.accent, fontWeight: 700 }}>{form.radio_geofence_m || 100}m</span> de tolerancia para marcajes de asistencia y reporte de novedades.
@@ -672,7 +673,7 @@ function InstCard({ inst, onEditar }) {
           </div>
           {inst.direccion && (
             <div style={{ fontSize: 12, color: T.textMut, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
-              <span>📍 {inst.direccion}</span>
+              <span><Icon name="map-pin" size={16} /> {inst.direccion}</span>
               {inst.comuna && <span style={{ color: T.textSec }}>({inst.comuna})</span>}
             </div>
           )}
@@ -706,22 +707,22 @@ function InstCard({ inst, onEditar }) {
             e.currentTarget.style.borderColor = "rgba(122,78,191,0.3)";
           }}
         >
-          <span>✏️</span> Editar
+          <span><Icon name="pencil" size={16} /></span> Editar
         </button>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, fontSize: 11, color: T.textSec }}>
         {inst.tipo_recinto && (
           <span style={{ background: T.bgInput, borderRadius: 6, padding: "3px 8px" }}>
-            🏢 {inst.tipo_recinto}
+            <Icon name="building-2" size={16} /> {inst.tipo_recinto}
           </span>
         )}
         <span style={{ background: T.bgInput, borderRadius: 6, padding: "3px 8px" }}>
-          📡 Geocerca: {inst.radio_geofence_m ?? 100}m
+          <Icon name="radio-tower" size={16} /> Geocerca: {inst.radio_geofence_m ?? 100}m
         </span>
         {inst.latitud !== undefined && inst.longitud !== undefined && (
           <span style={{ background: T.bgInput, borderRadius: 6, padding: "3px 8px", fontFamily: "monospace", fontSize: 10 }}>
-            🌐 {parseFloat(inst.latitud).toFixed(4)}, {parseFloat(inst.longitud).toFixed(4)}
+            <Icon name="globe" size={16} /> {parseFloat(inst.latitud).toFixed(4)}, {parseFloat(inst.longitud).toFixed(4)}
           </span>
         )}
         <span
@@ -770,10 +771,10 @@ export function AdminInstalaciones() {
       setInstalaciones((prev) =>
         prev.map((i) => (i.id === instalacionGuardada.id ? { ...i, ...instalacionGuardada } : i))
       );
-      setConfirmacion(`✅ Instalación "${instalacionGuardada.nombre}" actualizada correctamente`);
+      setConfirmacion(<><Icon name="circle-check" size={16} />{" Instalación \""}{instalacionGuardada.nombre}{"\" actualizada correctamente"}</>);
     } else {
       setInstalaciones((prev) => [instalacionGuardada, ...prev]);
-      setConfirmacion(`✅ Instalación "${instalacionGuardada.nombre}" creada correctamente`);
+      setConfirmacion(<><Icon name="circle-check" size={16} />{" Instalación \""}{instalacionGuardada.nombre}{"\" creada correctamente"}</>);
     }
     setTimeout(() => setConfirmacion(""), 4000);
   };
@@ -845,7 +846,7 @@ export function AdminInstalaciones() {
         </div>
       ) : listaFiltrada.length === 0 ? (
         <div style={{ textAlign: "center", padding: 40 }}>
-          <div style={{ fontSize: 36, marginBottom: 10 }}>🏢</div>
+          <div style={{ fontSize: 36, marginBottom: 10 }}><Icon name="building-2" size={36} /></div>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 6 }}>
             {busqueda ? "Sin resultados" : "Sin instalaciones registradas"}
           </div>

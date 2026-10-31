@@ -9,6 +9,7 @@ import { useAuth } from "../../context/AuthContext";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
+import { escaparHtml } from "../../utils/html";
 
 // ─── ESTILOS POPUP LEAFLET ───────────────────────────────────────
 const LEAFLET_STYLES = `
@@ -90,7 +91,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
           });
           L.marker([inst.latitud, inst.longitud], { icon })
             .addTo(map)
-            .bindPopup(`<b>${inst.nombre}</b><br><span style="color:#A8B7AE;font-size:11px">${inst.direccion || "—"}</span><br><span style="color:#3E9A72;font-size:11px">Radio: ${inst.radio_geofence_m ?? 100}m</span>`, { className: "gc-popup" });
+            .bindPopup(`<b>${escaparHtml(inst.nombre)}</b><br><span style="color:#A8B7AE;font-size:11px">${escaparHtml(inst.direccion || "—")}</span><br><span style="color:#3E9A72;font-size:11px">Radio: ${inst.radio_geofence_m ?? 100}m</span>`, { className: "gc-popup" });
           L.circle([inst.latitud, inst.longitud], {
             radius: inst.radio_geofence_m ?? 100, color: "#3E9A72",
             fillColor: "#3E9A72", fillOpacity: 0.06, weight: 1.5, dashArray: "4 4",
@@ -320,7 +321,7 @@ export function AdminPanel() {
     fetchStats();
     fetchAnalytics();
 
-    const socket = io(SOCKET_URL, { auth: { token }, transports: ["websocket"], reconnectionDelay: 2000 });
+    const socket = io(SOCKET_URL, { auth: (cb) => cb({ token: localStorage.getItem("gc_token") || token }), transports: ["websocket"], reconnectionDelay: 2000 });
     socketRef.current = socket;
 
     socket.on("connect",          ()  => { console.log("[AdminPanel] Socket:", socket.id); setSocketStatus("connected"); });

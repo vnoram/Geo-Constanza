@@ -39,8 +39,9 @@ npm run build     # build de producción (usado por Vercel)
   (sin `tsconfig.json`), así que los archivos nuevos deben ser `.js`.
 
 ## Despliegue
-- **Frontend**: Vercel, root directory `frontend/` (ver `frontend/vercel.json`).
-- **Backend**: Railway (ver `railway.json` en la raíz).
+Pasos, variables de entorno y verificación: [DESPLIEGUE.md](DESPLIEGUE.md).
+- **Frontend**: Vercel, root directory `frontend/` (ver `frontend/vercel.json`). La URL del backend se fija con `VITE_API_URL` en las variables de entorno del proyecto en Vercel.
+- **Backend**: Azure Container Apps, imagen de `backend/Dockerfile` (aplica `prisma migrate deploy` al iniciar y expone `/api/v1/health`).
 
 ## Documentos relacionados
 - [ARQUITECTURA.md](ARQUITECTURA.md)

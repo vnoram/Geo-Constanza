@@ -15,6 +15,7 @@ router.use(authenticate);
 // Supervisor ve su instalación, central/admin ven todas (filtro en service)
 router.get('/', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), novedadesController.listar);
 router.get('/:id', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), novedadesController.obtener);
+router.get('/:id/historial', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), novedadesController.historial);
 
 // ── Creación ──────────────────────────────────────────────────────────────
 // pauta: siempre puede (tiene turno 4x4)
@@ -23,6 +24,8 @@ router.post('/', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE), upload.single
 
 // ── Gestión (supervisor de su instalación, central/admin para todas) ───────
 router.patch('/:id/resolver', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), novedadesController.resolver);
-router.patch('/:id/escalar',  authorize(ROLES.SUPERVISOR), novedadesController.escalar);
+router.get('/:id/responsables', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), novedadesController.responsables);
+router.patch('/:id/asignar', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), novedadesController.asignar);
+router.patch('/:id/escalar', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), novedadesController.escalar);
 
 module.exports = router;
