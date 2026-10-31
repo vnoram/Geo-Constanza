@@ -1,0 +1,77 @@
+# Entorno local completo para pruebas manuales. NO se usa en producción (Azure + Vercel).
+# Uso: ver docs/DOCKER_LOCAL.md
+name: geo-constanza-local
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: geo
+      POSTGRES_PASSWORD: geo_local
+      POSTGRES_DB: geo_local
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U geo -d geo_local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    ports:
+      - "6380:6379"
+
+  # Bandeja de correo falsa: el correo de "restablecer contraseña" se ve en http://localhost:8025
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  api:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "3005:3005"
+    environment:
+      NODE_ENV: development
+      PORT: 3005
+      DATABASE_URL: postgresql://geo:geo_local@db:5432/geo_local
+      DATABASE_SSL: disable
+      REDIS_URL: redis://redis:6379
+      FRONTEND_URL: http://localhost:5173
+      CORS_ORIGIN: http://localhost:5173
+      # Secretos: se leen del archivo .env de la raíz (copia .env.docker.example). Nunca van en el repo.
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?define JWT_ACCESS_SECRET en .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?define JWT_REFRESH_SECRET en .env}
+      TWO_FACTOR_ENCRYPTION_KEY: ${TWO_FACTOR_ENCRYPTION_KEY:-}
+      REQUIRE_2FA: ${REQUIRE_2FA:-false}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      MAIL_FROM: Geo Constanza <no-responder@geo-constanza.local>
+
+  web:
+    image: node:22-bookworm-slim
+    working_dir: /app
+    depends_on:
+      - api
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3005
+      VITE_MOSTRAR_DEMO: "true"
+    volumes:
+      - ./frontend:/app
+      - web_node_modules:/app/node_modules
+    command: sh -c "npm ci --no-audit --no-fund && npm run dev -- --host 0.0.0.0"
+
+volumes:
+  pgdata:
+  web_node_modules:
