@@ -19,10 +19,13 @@ async function main() {
 
   // 1. Limpiar datos previos en orden correcto
   await prisma.asistencia.deleteMany();
+  await prisma.novedadHistorial.deleteMany();
   await prisma.novedad.deleteMany();
   await prisma.solicitud.deleteMany();
   await prisma.auditoria.deleteMany();
   await prisma.turno.deleteMany();
+  await prisma.passwordReset.deleteMany();
+  await prisma.supervisor_Instalacion.deleteMany();
   
   // Limpieza de tablas de usuario e instalación
   await prisma.usuario.deleteMany();
