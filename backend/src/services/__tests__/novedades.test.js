@@ -36,8 +36,9 @@ suite('HU-02 / HU-08 con PostgreSQL Docker local', () => {
   const foto = { originalname: 'foto.png', mimetype: 'image/png', size: 4, buffer: Buffer.from([137, 80, 78, 71]) };
   beforeAll(async () => {
     const url = new URL(process.env.DATABASE_URL);
-    if (process.env.NODE_ENV !== 'test' || url.hostname !== 'geo-sprint5-db' || url.pathname !== '/geo_sprint5') {
-      throw new Error('Esta suite exige PostgreSQL Docker desechable geo-sprint5-db/geo_sprint5.');
+    const hostLocal = ['geo-sprint5-db', 'localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+    if (process.env.NODE_ENV !== 'test' || !hostLocal || !url.pathname.startsWith('/geo_')) {
+      throw new Error('Esta suite exige una PostgreSQL local desechable (host local y base geo_*, p. ej. geo-sprint5-db/geo_sprint5 o localhost:5434/geo_local).');
     }
     habilitada = true;
     await prisma.instalacion.create({ data: { id: instalacionId, nombre: 'Prueba Sprint 5', latitud: datos.latitud, longitud: datos.longitud, nivel_criticidad: 'Alta' } });
