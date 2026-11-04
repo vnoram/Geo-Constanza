@@ -6,7 +6,7 @@ Backend en Azure Container Apps y frontend en Vercel.
 - Imagen: `backend/Dockerfile` (Node 22). Al iniciar ejecuta `npx prisma migrate deploy` y luego `node src/server.js`.
   **Las migraciones pendientes se aplican solas al desplegar**: respalda la base antes de la primera versión que incluya migraciones nuevas.
 - Puerto: variable `PORT` (por defecto 3005). Detrás de un proxy inverso (`trust proxy` = 1).
-- Salud: `GET /api/v1/health` (el Dockerfile ya trae `HEALTHCHECK`).
+- Salud: `GET /api/v1/health` (liveness; el Dockerfile ya trae `HEALTHCHECK`) y `GET /api/v1/health/ready` (readiness: además consulta la base; responde 503 si no contesta en 2 s). Usar `/ready` para alertas en Azure.
 - WebSocket (Socket.IO): el servicio debe permitir WebSockets y, si hay más de una instancia, afinidad de sesión o `REDIS_URL` compartido para el límite de peticiones y el bloqueo de intentos.
 
 ## Variables de entorno (backend)

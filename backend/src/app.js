@@ -95,9 +95,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 // =========================================================================
 
 // Health check
-app.get('/api/v1/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+app.use('/api/v1/health', require('./routes/health.routes'));
 
 // Rutas API v1
 app.use('/api/v1/auth', authRoutes);
