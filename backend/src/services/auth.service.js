@@ -9,9 +9,18 @@ const passwordReset = require('./passwordReset.service');
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
+// El RUT puede estar guardado con o sin puntos (12.345.678-5 / 12345678-5); el login acepta ambos.
+const variantesRut = (rut) => {
+  const limpio = String(rut).replace(/[.\s]/g, '').toUpperCase();
+  const [cuerpo, dv] = limpio.split('-');
+  const variantes = new Set([rut, limpio]);
+  if (cuerpo && dv) variantes.add(`${cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${dv}`);
+  return [...variantes];
+};
+
 const login = async (rut, password, _ip, _userAgent) => {
-  const usuario = await prisma.usuario.findUnique({
-    where: { rut },
+  const usuario = await prisma.usuario.findFirst({
+    where: { rut: { in: variantesRut(rut) } },
     include: { instalacion_asignada: { select: { id: true, nombre: true } } },
   });
   if (!usuario || usuario.estado !== 'activo') {

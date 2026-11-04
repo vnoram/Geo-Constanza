@@ -1,4 +1,4 @@
-jest.mock('../../config/database', () => ({ prisma: { usuario: { findUnique: jest.fn() } } }));
+jest.mock('../../config/database', () => ({ prisma: { usuario: { findUnique: jest.fn(), findFirst: jest.fn() } } }));
 jest.mock('bcryptjs', () => ({ compare: jest.fn() }));
 jest.mock('jsonwebtoken', () => ({ sign: jest.fn(), verify: jest.fn(), decode: jest.fn() }));
 jest.mock('../../config/redis', () => ({ getRedis: jest.fn() }));
@@ -14,7 +14,7 @@ const perfil = { id: 'u1', rol: ROLES.GGSS_EN_PAUTA, nombre: 'Prueba', email: 'p
 let redis;
 beforeEach(() => {
   jest.resetAllMocks();
-  prisma.usuario.findUnique.mockResolvedValue(perfil); bcrypt.compare.mockResolvedValue(true);
+  prisma.usuario.findUnique.mockResolvedValue(perfil); prisma.usuario.findFirst.mockResolvedValue(perfil); bcrypt.compare.mockResolvedValue(true);
   jwt.sign.mockReturnValue('jwt-simulado'); jwt.verify.mockReturnValue({ id: 'u1' });
   redis = { get: jest.fn(), incr: jest.fn(), expire: jest.fn(), del: jest.fn(), set: jest.fn() }; getRedis.mockReturnValue(redis);
 });
@@ -25,8 +25,12 @@ test('login válido devuelve tokens sin hash ni secreto 2FA', async () => {
   expect(redis.del).toHaveBeenCalledWith('login_attempts:u1'); expect(jwt.sign).toHaveBeenCalledTimes(2);
 });
 test.each([null, { ...perfil, estado: ESTADO_USUARIO.INACTIVO }])('usuario inexistente/inactivo recibe 401', async usuario => {
-  prisma.usuario.findUnique.mockResolvedValue(usuario);
+  prisma.usuario.findFirst.mockResolvedValue(usuario);
   await expect(auth.login('rut-prueba', 'entrada-simulada')).rejects.toMatchObject({ statusCode: 401 });
+});
+test('el login encuentra al usuario con RUT con o sin puntos', async () => {
+  await auth.login('22222222-2', 'entrada-simulada');
+  expect(prisma.usuario.findFirst.mock.calls[0][0].where.rut.in).toEqual(expect.arrayContaining(['22222222-2', '22.222.222-2']));
 });
 test('contraseña incorrecta incrementa intentos y TTL de bloqueo', async () => {
   bcrypt.compare.mockResolvedValue(false);
