@@ -130,4 +130,21 @@ const confirmResetPassword = async (req, res, next) => {
   }
 };
 
-module.exports = { login, refreshToken, logout, verify2FA, setup2FA, enable2FA, resetPassword, confirmResetPassword };
+const changePassword = async (req, res, next) => {
+  try {
+    await authService.changePassword(req.user.id, req.body.actual, req.body.nueva);
+    await registrarAuditoria({
+      usuarioId: req.user.id,
+      accion: 'cambio_password',
+      tablaAfectada: 'usuarios',
+      registroId: req.user.id,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+    res.json({ message: 'Contraseña actualizada. Vuelve a iniciar sesión.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { changePassword, login, refreshToken, logout, verify2FA, setup2FA, enable2FA, resetPassword, confirmResetPassword };

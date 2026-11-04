@@ -25,6 +25,11 @@ const resetConfirmSchema = z.object({
   password: z.string().min(1).max(128),
 });
 
+const changePasswordSchema = z.object({
+  actual: z.string().min(1).max(128),
+  nueva: z.string().min(1).max(128),
+});
+
 // Middleware: valida req.body y lo reemplaza por la versión depurada (sin campos extra).
 const validarBody = (schema) => (req, res, next) => {
   const resultado = schema.safeParse(req.body ?? {});
@@ -34,5 +39,5 @@ const validarBody = (schema) => (req, res, next) => {
 };
 
 module.exports = {
-  loginSchema, verify2FASchema, enable2FASchema, refreshSchema, resetRequestSchema, resetConfirmSchema, validarBody,
+  loginSchema, verify2FASchema, enable2FASchema, refreshSchema, resetRequestSchema, resetConfirmSchema, changePasswordSchema, validarBody,
 };

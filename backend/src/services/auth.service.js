@@ -130,4 +130,6 @@ const sanitizeUser = (usuario) => ({
   instalacion_asignada: usuario.instalacion_asignada || null,
 });
 
-module.exports = { login, verify2FA, refreshToken, logout, requestPasswordReset, confirmPasswordReset };
+const changePassword = (usuarioId, actual, nueva) => passwordReset.cambiar(usuarioId, actual, nueva);
+
+module.exports = { changePassword, login, verify2FA, refreshToken, logout, requestPasswordReset, confirmPasswordReset };

@@ -4,6 +4,7 @@ import { Icon } from "../ui/Icon";
 import { Wordmark } from "../ui/Wordmark";
 import { ROLES as ROL } from "../../constants/roles";
 import { Placeholder } from "../ui/Placeholder";
+import { CambiarPasswordModal } from "./CambiarPasswordModal";
 
 // ─── GGSS en pauta ───
 import { PautaTurno } from "../../screens/ggss-en-pauta/PautaTurno";
@@ -84,6 +85,7 @@ export function AppShell({ user, onLogout }) {
   const role = ROLES[user.rol];
   const [activeSection, setActiveSection] = useState(role.sections[0].id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [cambiandoPassword, setCambiandoPassword] = useState(false);
 
   const duracionToken = user.rol === ROL.GGSS_EN_PAUTA || user.rol === ROL.GGSS_LIBRE ? "30 min" : user.rol === ROL.SUPERVISOR ? "2 h" : "4 h";
   const conSegundoFactor = user.segundoFactor === true;
@@ -219,6 +221,15 @@ export function AppShell({ user, onLogout }) {
                   {new Date().toLocaleTimeString("es-CL", { timeZone: "America/Santiago" })}
                 </div>
               </div>
+              <button className="touch-target" onClick={() => setCambiandoPassword(true)} style={{
+                width: "100%", minHeight: 40, padding: "0 14px", marginBottom: 8,
+                background: "transparent", border: `1px solid ${T.border}`,
+                borderRadius: T.radius, color: T.text, fontSize: 13, fontWeight: 500,
+                cursor: "pointer", fontFamily: FONT.ui,
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+              }}>
+                <Icon name="key-round" size={16} /> Cambiar contraseña
+              </button>
               <button className="touch-target" onClick={onLogout} style={{
                 width: "100%", minHeight: 40, padding: "0 14px",
                 background: "transparent", border: `1px solid ${T.border}`,
@@ -241,6 +252,9 @@ export function AppShell({ user, onLogout }) {
           <RoleContent user={user} rol={user.rol} section={activeSection} />
         </main>
       </div>
+      {cambiandoPassword && (
+        <CambiarPasswordModal onClose={() => setCambiandoPassword(false)} onDone={onLogout} />
+      )}
     </div>
   );
 }

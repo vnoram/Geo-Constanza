@@ -11,6 +11,7 @@ de cada uno).
 | POST | `/login` | público |
 | POST | `/password/reset-request` | público (alias histórico: `/password/reset`) |
 | POST | `/password/reset-confirm` | público |
+| POST | `/password/change` | autenticado |
 | POST | `/refresh` | público |
 | POST | `/logout` | autenticado |
 | POST | `/2fa/verify` | público (exige `tempToken` del login) |
@@ -231,6 +232,7 @@ Contratos (detalle de decisiones en [ADR 0002](ADR/0002-jwt-2fa.md) y [ADR 0006]
 - `POST /usuarios/:id/2fa/reset` (solo administrador, no sobre sí mismo): borra el segundo factor para que el usuario vuelva a enrolar. Auditado.
 - `POST /auth/password/reset-request` `{ email }`: siempre `200` con el mismo mensaje exista o no la cuenta. Límite 3 por hora por correo (silencioso) y 10 por hora por IP (`429`).
 - `POST /auth/password/reset-confirm` `{ token, password }`: contraseña de 10 a 128 caracteres y distinta de la actual; `400` con enlace inválido, vencido o ya usado. Al confirmar se revocan las sesiones previas.
+- `POST /auth/password/change` `{ actual, nueva }` (autenticado, «Mi cuenta»): exige la contraseña actual correcta; la nueva debe tener de 10 a 128 caracteres y ser distinta; `400` en caso contrario. Revoca las demás sesiones y queda en auditoría (`cambio_password`).
 - Acciones auditadas: `login_2fa`, `activar_2fa`, `reiniciar_2fa`, `solicitar_reset_password`, `reset_password`.
 
 Variables: `TWO_FACTOR_ENCRYPTION_KEY`, `TWO_FACTOR_ISSUER`, `REQUIRE_2FA` (por defecto activo solo en producción), `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `FRONTEND_URL`. Todas vacías en `.env.example`.

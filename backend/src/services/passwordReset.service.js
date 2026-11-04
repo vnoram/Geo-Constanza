@@ -122,4 +122,26 @@ const confirmar = async (token, password) => {
   return { usuarioId: registro.usuario_id };
 };
 
-module.exports = { solicitar, confirmar, invitar, MENSAJE_GENERICO, TOKEN_VIGENCIA_MIN };
+// Cambio de contraseña desde "Mi cuenta": exige la actual y revoca las demás sesiones.
+const cambiar = async (usuarioId, actual, nueva) => {
+  validarPassword(nueva);
+  const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId } });
+  if (!usuario || usuario.estado !== 'activo') throw error(401, 'Sesión inválida');
+  if (typeof actual !== 'string' || !(await bcrypt.compare(actual, usuario.password_hash))) {
+    throw error(400, 'La contraseña actual no es correcta');
+  }
+  if (actual === nueva) throw error(400, 'La nueva contraseña debe ser distinta a la actual');
+
+  const ahora = new Date();
+  await prisma.usuario.update({
+    where: { id: usuarioId },
+    data: { password_hash: await bcrypt.hash(nueva, 12), password_cambiada_en: ahora },
+  });
+  try {
+    const redis = getRedis();
+    if (redis) await redis.set(`pwd_changed:${usuarioId}`, String(Math.floor(ahora.getTime() / 1000)), 'EX', REVOCACION_SEG);
+  } catch (_) { /* Redis caído: los refresh tokens igual quedan revocados por BD */ }
+  return { usuarioId };
+};
+
+module.exports = { solicitar, confirmar, invitar, cambiar, MENSAJE_GENERICO, TOKEN_VIGENCIA_MIN };

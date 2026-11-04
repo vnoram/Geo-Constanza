@@ -14,6 +14,7 @@ router.post('/password/reset-confirm', v.validarBody(v.resetConfirmSchema), auth
 // Autenticados
 router.post('/refresh', v.validarBody(v.refreshSchema), authController.refreshToken);
 router.post('/logout', authenticate, authController.logout);
+router.post('/password/change', authenticate, v.validarBody(v.changePasswordSchema), authController.changePassword);
 
 // 2FA (Supervisor y Admin)
 router.post('/2fa/verify', v.validarBody(v.verify2FASchema), authController.verify2FA);

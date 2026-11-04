@@ -99,6 +99,11 @@ export const api = {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, password }),
   }),
 
+  // Mi cuenta (requiere sesión): cambia la contraseña propia.
+  cambiarPassword: (actual, nueva) => authFetch('/auth/password/change', {
+    method: "POST", body: JSON.stringify({ actual, nueva }),
+  }),
+
   // Enrolamiento (requiere sesión): devuelve { otpauth_url, secreto }.
   setup2FA: () => authFetch('/auth/2fa/setup', { method: "POST", body: JSON.stringify({}) }),
   // Confirma con un código y devuelve { codigos_recuperacion } (se muestran una sola vez).
