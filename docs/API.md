@@ -59,6 +59,8 @@ de cada uno).
 | GET | `/hoy/:instalacionId` | supervisor, central, admin |
 | GET | `/historial/:usuarioId` | pauta, libre, supervisor, central, admin |
 
+`POST /salida` responde 409 si el turno no tiene un reporte asociado (una novedad, incluida «Sin novedad»): un turno no se cierra sin reporte.
+
 ## Novedades (`/novedades`)
 | Método | Ruta | Roles |
 |---|---|---|

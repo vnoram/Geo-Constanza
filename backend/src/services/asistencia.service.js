@@ -263,6 +263,16 @@ const registrarSalida = async (data, user) => {
     throw Object.assign(new Error(`Esta asistencia ya tiene salida registrada${detalle}`), { statusCode: 409 });
   }
 
+  // Regla de negocio (RF-05/06): un turno no se cierra sin un reporte asociado.
+  // El reporte es una novedad del turno; "Sin novedad" también cuenta.
+  const reportes = await prisma.novedad.count({ where: { turno_id: asistencia.turno_id } });
+  if (reportes === 0) {
+    throw Object.assign(
+      new Error('Antes de marcar la salida debes dejar el reporte del turno (una novedad o «Sin novedad»).'),
+      { statusCode: 409 },
+    );
+  }
+
   const ahora = new Date();
   const horasTrabajadas = (ahora - new Date(asistencia.hora_entrada)) / 3600000;
 

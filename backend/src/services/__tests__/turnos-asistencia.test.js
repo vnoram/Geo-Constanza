@@ -2,6 +2,7 @@ jest.mock('../../config/database', () => ({ prisma: {
   turno: { findMany: jest.fn(), findUnique: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn(), update: jest.fn() },
   asistencia: { findMany: jest.fn(), create: jest.fn(), findUniqueOrThrow: jest.fn(), update: jest.fn() },
   solicitud: { findFirst: jest.fn() },
+  novedad: { count: jest.fn() },
   $transaction: jest.fn(), $executeRaw: jest.fn(),
 } }));
 jest.mock('../../socket/socketManager', () => ({ getSocketIO: jest.fn() }));
@@ -35,6 +36,7 @@ beforeEach(() => {
   prisma.turno.findMany.mockResolvedValue([]);
   prisma.asistencia.findMany.mockResolvedValue([]);
   prisma.solicitud.findFirst.mockResolvedValue(null);
+  prisma.novedad.count.mockResolvedValue(1);
   prisma.asistencia.create.mockImplementation(async ({ data }) => ({ id: 'nueva', ...data }));
   prisma.asistencia.update.mockImplementation(async ({ data }) => data);
   prisma.turno.create.mockImplementation(async ({ data }) => data);
@@ -195,6 +197,14 @@ test('salida nocturna a 08:30 suma media hora extra', async () => {
   jest.setSystemTime(instanteChile('2026-09-27', '08:30'));
   prisma.asistencia.findUniqueOrThrow.mockResolvedValue(abierta(a));
   await expect(asistencia.registrarSalida({ asistencia_id: 'as-A', metodo: 'tablet' }, { id: 'u' })).resolves.toMatchObject({ horas_extra: 0.5, horas_trabajadas: 12.5 });
+});
+test('salida sin reporte del turno: 409 y no cierra la asistencia', async () => {
+  prisma.asistencia.findUniqueOrThrow.mockResolvedValue(abierta(a));
+  prisma.novedad.count.mockResolvedValue(0);
+  await expect(asistencia.registrarSalida({ asistencia_id: 'as-A', metodo: 'tablet' }, { id: 'u' }))
+    .rejects.toMatchObject({ statusCode: 409, message: expect.stringContaining('reporte del turno') });
+  expect(prisma.novedad.count).toHaveBeenCalledWith({ where: { turno_id: 'A' } });
+  expect(prisma.asistencia.update).not.toHaveBeenCalled();
 });
 test('estado cierra la entrada olvidada, informa el cierre y devuelve el turno vigente', async () => {
   const vieja = turno('vieja', '2026-09-25', '20:00', '08:00');
