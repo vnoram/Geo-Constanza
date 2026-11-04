@@ -16,11 +16,16 @@ function AppRouter() {
   const { user, token, login, logout, ready } = useAuth();
   // /restablecer?token=... llega desde el correo; sin token es la solicitud del enlace.
   const [restablecer, setRestablecer] = useState(() => window.location.pathname === "/restablecer");
-  const volverAlLogin = () => { window.history.replaceState(null, "", "/"); setRestablecer(false); };
+  const volverAlLogin = () => {
+    window.history.replaceState(null, "", "/");
+    setRestablecer(false);
+    if (user) logout();      // el enlace era de otra persona: cierra la sesión que estaba abierta
+  };
 
   if (!ready) return null;   // Evita flash de /login durante la hidratación
 
-  if (!user && restablecer) {
+  // El enlace del correo manda aunque ya haya una sesión abierta en este navegador.
+  if (restablecer && (!user || new URLSearchParams(window.location.search).get("token"))) {
     const tokenUrl = new URLSearchParams(window.location.search).get("token");
     return <ResetPasswordScreen token={tokenUrl} onBack={volverAlLogin} />;
   }
