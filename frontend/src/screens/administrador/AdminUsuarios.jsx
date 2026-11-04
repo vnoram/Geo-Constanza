@@ -57,14 +57,10 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
       setError("RUT, nombre y email son obligatorios.");
       return;
     }
-    if (!esEdicion && !form.password.trim()) {
-      setError("La contraseña es obligatoria al crear un usuario.");
-      return;
-    }
 
-    // Construir payload limpio
+    // Construir payload limpio. Sin contraseña, el servidor envía una invitación por correo.
     const payload = { ...form };
-    if (esEdicion && !payload.password) delete payload.password;
+    if (!payload.password) delete payload.password;
     if (payload.rol !== ROL.SUPERVISOR)           delete payload.instalacionIds;
     if (![ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(payload.rol)) delete payload.instalacion_asignada_id;
 
@@ -130,9 +126,9 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
             <Field label="Teléfono">
               <input className="touch-target" style={inputStyle} value={form.telefono} onChange={(e) => set("telefono", e.target.value)} placeholder="+56 9 1234 5678" />
             </Field>
-            <Field label={esEdicion ? "Nueva contraseña" : "Contraseña"} required={!esEdicion}>
+            <Field label={esEdicion ? "Nueva contraseña" : "Contraseña (opcional)"}>
               <input className="touch-target" style={inputStyle} type="password" value={form.password} onChange={(e) => set("password", e.target.value)}
-                placeholder={esEdicion ? "Dejar vacío para no cambiar" : "••••••••"} />
+                placeholder={esEdicion ? "Dejar vacío para no cambiar" : "Vacía: se envía una invitación por correo"} />
             </Field>
           </div>
 

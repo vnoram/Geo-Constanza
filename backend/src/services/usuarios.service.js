@@ -1,6 +1,8 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
+const passwordReset = require('./passwordReset.service');
 
 const BCRYPT_ROUNDS = 12;
 
@@ -73,14 +75,17 @@ const crear = async (data) => {
   const { instalacionIds, comunas, password, ...campos } = data;
   if (!Object.values(ROLES).includes(campos.rol)) throw Object.assign(new Error('Rol de usuario inválido.'), { statusCode: 400 });
 
-  const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+  // Sin contraseña inicial: se guarda una clave aleatoria que nadie conoce y se envía una invitación
+  // por correo para que la persona elija la suya.
+  const invitar = !password;
+  const password_hash = await bcrypt.hash(invitar ? crypto.randomBytes(32).toString('hex') : password, BCRYPT_ROUNDS);
 
   // Guardar comunas de cobertura como JSON si el rol es supervisor
   if (campos.rol === ROLES.SUPERVISOR && Array.isArray(comunas)) {
     campos.comunas_cobertura = comunas.filter((c) => typeof c === 'string' && c.trim());
   }
 
-  return prisma.$transaction(async (tx) => {
+  const creado = await prisma.$transaction(async (tx) => {
     const nuevo = await tx.usuario.create({
       data: { ...campos, password_hash },
       select: { id: true, nombre: true, email: true, rol: true, estado: true },
@@ -95,6 +100,11 @@ const crear = async (data) => {
 
     return nuevo;
   });
+
+  if (!invitar) return creado;
+  let invitacion_enviada = false;
+  try { invitacion_enviada = await passwordReset.invitar(creado); } catch (_) { /* el usuario ya existe: se puede reenviar con "Olvidé mi contraseña" */ }
+  return { ...creado, invitacion_enviada };
 };
 
 const editar = async (id, data) => {

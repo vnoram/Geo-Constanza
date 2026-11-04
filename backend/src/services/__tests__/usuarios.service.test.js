@@ -3,8 +3,10 @@ jest.mock('../../config/database', () => ({ prisma: {
   supervisor_Instalacion: { createMany: jest.fn(), deleteMany: jest.fn() }, $transaction: jest.fn(),
 } }));
 jest.mock('bcryptjs', () => ({ hash: jest.fn() }));
+jest.mock('../passwordReset.service', () => ({ invitar: jest.fn() }));
 const { prisma } = require('../../config/database');
 const bcrypt = require('bcryptjs');
+const passwordReset = require('../passwordReset.service');
 const service = require('../usuarios.service');
 const { ROLES } = require('../../constants/roles');
 const { ESTADO_USUARIO } = require('../../constants/estados');
@@ -63,4 +65,25 @@ test('desactivación es lógica y su respuesta no expone credenciales', async ()
   await service.desactivar('u1');
   expect(prisma.usuario.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { estado: ESTADO_USUARIO.INACTIVO },
     select: { id: true, nombre: true, email: true, rol: true, estado: true } });
+});
+
+test('crear con contraseña no envía invitación', async () => {
+  await service.crear(datos);
+  expect(passwordReset.invitar).not.toHaveBeenCalled();
+});
+test('crear sin contraseña guarda una clave aleatoria y envía la invitación', async () => {
+  prisma.usuario.create.mockResolvedValue({ id: 'u9', nombre: 'Nuevo', email: 'nuevo@example.invalid', rol: ROLES.GGSS_LIBRE });
+  passwordReset.invitar.mockResolvedValue(true);
+  const sinClave = { ...datos, password: undefined };
+  const res = await service.crear(sinClave);
+  const [claveGuardada, rondas] = bcrypt.hash.mock.calls[0];
+  expect(claveGuardada).toMatch(/^[0-9a-f]{64}$/); expect(rondas).toBe(12);
+  expect(passwordReset.invitar).toHaveBeenCalledWith(expect.objectContaining({ id: 'u9' }));
+  expect(res).toMatchObject({ id: 'u9', invitacion_enviada: true });
+});
+test('si la invitación falla el usuario igual queda creado e informa que no se envió', async () => {
+  prisma.usuario.create.mockResolvedValue({ id: 'u9', rol: ROLES.GGSS_LIBRE });
+  passwordReset.invitar.mockRejectedValue(new Error('smtp caído'));
+  const sinClave = { ...datos, password: undefined };
+  await expect(service.crear(sinClave)).resolves.toMatchObject({ id: 'u9', invitacion_enviada: false });
 });

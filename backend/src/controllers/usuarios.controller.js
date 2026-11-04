@@ -2,6 +2,9 @@ const usuariosService = require('../services/usuarios.service');
 const { registrarAuditoria } = require('../middlewares/auditLog');
 const twoFactorService = require('./../services/twoFactor.service');
 
+// Nunca se registra la contraseña en la auditoría.
+const sinPassword = (cuerpo) => Object.fromEntries(Object.entries(cuerpo || {}).filter(([k]) => k !== 'password'));
+
 /**
  * GET /usuarios/me — perfil del usuario autenticado (cualquier rol)
  */
@@ -33,7 +36,7 @@ const crear = async (req, res, next) => {
       accion: 'crear',
       tablaAfectada: 'usuarios',
       registroId: usuario.id,
-      valoresDespues: req.body,
+      valoresDespues: sinPassword(req.body),
       ip: req.ip,
       userAgent: req.get('user-agent'),
     });
@@ -54,7 +57,7 @@ const editar = async (req, res, next) => {
       accion: 'editar',
       tablaAfectada: 'usuarios',
       registroId: id,
-      valoresDespues: req.body,
+      valoresDespues: sinPassword(req.body),
       ip: req.ip,
       userAgent: req.get('user-agent'),
     });
