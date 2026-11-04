@@ -8,6 +8,7 @@ const { hashSha256 } = require('../utils/cifrado');
 const { enviarCorreo } = require('./correo.service');
 
 const TOKEN_VIGENCIA_MIN = 30;
+const INVITACION_VIGENCIA_H = 72;
 const PASSWORD_MIN = 10;
 const PASSWORD_MAX = 128;
 const LIMITE_POR_EMAIL = 3;   // solicitudes por hora
@@ -45,6 +46,16 @@ const validarPassword = (password) => {
   if (password.length > PASSWORD_MAX) throw error(400, `La contraseña no puede superar ${PASSWORD_MAX} caracteres`);
 };
 
+// Token aleatorio de un solo uso; en base solo se guarda su hash. Devuelve el enlace del frontend.
+const crearEnlace = async (usuarioId, vigenciaMs) => {
+  const token = crypto.randomBytes(32).toString('base64url');
+  await prisma.passwordReset.create({
+    data: { usuario_id: usuarioId, token_hash: hashSha256(token), expira_en: new Date(Date.now() + vigenciaMs) },
+  });
+  const base = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
+  return { enlace: `${base}/restablecer?token=${token}` };
+};
+
 // Siempre resuelve igual exista o no el correo (no revela qué cuentas existen).
 // Lanza 429 solo cuando la IP excede su cuota, que no filtra información de cuentas.
 const solicitar = async (email, ip) => {
@@ -58,22 +69,23 @@ const solicitar = async (email, ip) => {
   const usuario = await prisma.usuario.findFirst({ where: { email: { equals: correo, mode: 'insensitive' } } });
   if (!usuario || usuario.estado !== 'activo') return { mensaje: MENSAJE_GENERICO };
 
-  const token = crypto.randomBytes(32).toString('base64url');
-  await prisma.passwordReset.create({
-    data: {
-      usuario_id: usuario.id,
-      token_hash: hashSha256(token),
-      expira_en: new Date(Date.now() + TOKEN_VIGENCIA_MIN * 60 * 1000),
-    },
-  });
-
-  const base = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
-  const enlace = `${base}/restablecer?token=${token}`;
+  const { enlace } = await crearEnlace(usuario.id, TOKEN_VIGENCIA_MIN * 60 * 1000);
   const texto = `Hola ${usuario.nombre}. Para restablecer tu contraseña de Geo Constanza abre este enlace (vale ${TOKEN_VIGENCIA_MIN} minutos y solo se puede usar una vez): ${enlace}\nSi no lo solicitaste, ignora este mensaje.`;
   const html = `<p>Hola ${usuario.nombre},</p><p>Para restablecer tu contraseña de Geo Constanza usa este enlace. Vale ${TOKEN_VIGENCIA_MIN} minutos y solo se puede usar una vez:</p><p><a href="${enlace}">Restablecer contraseña</a></p><p>Si no lo solicitaste, ignora este mensaje.</p>`;
   const enviado = await enviarCorreo(usuario.email, 'Restablecer contraseña - Geo Constanza', html, texto);
   if (!enviado) logger.warn(`Reset de contraseña solicitado para ${usuario.id} pero el correo no pudo enviarse`);
   return { mensaje: MENSAJE_GENERICO, usuarioId: usuario.id };
+};
+
+// Invitación (usuario creado sin contraseña): el mismo mecanismo del reset, con vigencia de 72 horas.
+// La persona elige su propia contraseña; el administrador nunca la conoce.
+const invitar = async (usuario) => {
+  const { enlace } = await crearEnlace(usuario.id, INVITACION_VIGENCIA_H * 3600 * 1000);
+  const texto = `Hola ${usuario.nombre}. Se creó tu cuenta en Geo Constanza. Elige tu contraseña con este enlace (vale ${INVITACION_VIGENCIA_H} horas y solo se puede usar una vez): ${enlace}`;
+  const html = `<p>Hola ${usuario.nombre},</p><p>Se creó tu cuenta en Geo Constanza. Elige tu contraseña con este enlace. Vale ${INVITACION_VIGENCIA_H} horas y solo se puede usar una vez:</p><p><a href="${enlace}">Elegir mi contraseña</a></p>`;
+  const enviado = await enviarCorreo(usuario.email, 'Tu cuenta de Geo Constanza', html, texto);
+  if (!enviado) logger.warn(`Invitación creada para ${usuario.id} pero el correo no pudo enviarse`);
+  return enviado;
 };
 
 const confirmar = async (token, password) => {
@@ -110,4 +122,4 @@ const confirmar = async (token, password) => {
   return { usuarioId: registro.usuario_id };
 };
 
-module.exports = { solicitar, confirmar, MENSAJE_GENERICO, TOKEN_VIGENCIA_MIN };
+module.exports = { solicitar, confirmar, invitar, MENSAJE_GENERICO, TOKEN_VIGENCIA_MIN };
