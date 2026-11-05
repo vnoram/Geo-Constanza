@@ -1,3 +1,5 @@
+// En estas pruebas el contexto de empresa se fija a mano (en producción lo abre authenticate con el token).
+jest.mock('../../config/tenant', () => ({ empresaActual: () => global.__EMPRESA_PRUEBA__ ?? null, conEmpresa: (_e, fn) => fn() }));
 jest.mock('../../utils/azureStorage', () => ({ uploadFotoToAzure: jest.fn(), generarUrlLectura: jest.fn() }));
 jest.mock('../../socket/socketManager', () => ({ getSocketIO: jest.fn() }));
 jest.mock('../../config/logger', () => ({ logger: { error: jest.fn(), warn: jest.fn() } }));
@@ -12,6 +14,7 @@ jest.mock('pg', () => {
 
 const { randomUUID } = require('crypto');
 const { prisma } = require('../../config/database');
+const { crearEmpresaDePrueba, borrarEmpresaDePrueba } = require('../../test-utils/empresaDePrueba');
 const service = require('../novedades.service');
 const { uploadFotoToAzure, generarUrlLectura } = require('../../utils/azureStorage');
 const { getSocketIO } = require('../../socket/socketManager');
@@ -41,6 +44,8 @@ suite('HU-02 / HU-08 con PostgreSQL Docker local', () => {
       throw new Error('Esta suite exige una PostgreSQL local desechable (host local y base geo_*, p. ej. geo-sprint5-db/geo_sprint5 o localhost:5434/geo_local).');
     }
     habilitada = true;
+    const empresa = await crearEmpresaDePrueba();
+    global.__EMPRESA_PRUEBA__ = empresa.id;
     await prisma.instalacion.create({ data: { id: instalacionId, nombre: 'Prueba Sprint 5', latitud: datos.latitud, longitud: datos.longitud, nivel_criticidad: 'Alta' } });
     for (const user of [guardia, libre, supervisor, central]) {
       await prisma.usuario.create({ data: { ...user, rut: randomUUID(), nombre: 'Usuario de prueba', email: `${user.id}@example.invalid`,
@@ -63,6 +68,7 @@ suite('HU-02 / HU-08 con PostgreSQL Docker local', () => {
     await prisma.turno.deleteMany({ where: { instalacion_id: instalacionId } });
     await prisma.usuario.deleteMany({ where: { id: { in: ids } } });
     await prisma.instalacion.deleteMany({ where: { id: instalacionId } });
+    await borrarEmpresaDePrueba(global.__EMPRESA_PRUEBA__);
     await prisma.$disconnect();
     await Promise.all(require('pg').pools.map(pool => pool.end()));
   });
@@ -123,9 +129,11 @@ suite('HU-02 / HU-08 con PostgreSQL Docker local', () => {
   test('fallo de historial revierte el cambio de estado en PostgreSQL', async () => {
     const n = await service.crear(datos, null, guardia);
     const transaccion = prisma.$transaction.bind(prisma);
-    const spy = jest.spyOn(prisma, '$transaction').mockImplementationOnce(fn => transaccion(tx => fn({
-      ...tx, novedadHistorial: { create: () => { throw new Error('Fallo de historial simulado'); } },
-    })));
+    // El cliente de transacción es un cliente extendido (no se puede copiar con ...tx): se envuelve con un Proxy.
+    const conHistorialRoto = tx => new Proxy(tx, { get: (objetivo, clave) => (clave === 'novedadHistorial'
+      ? { create: () => { throw new Error('Fallo de historial simulado'); } }
+      : objetivo[clave]) });
+    const spy = jest.spyOn(prisma, '$transaction').mockImplementationOnce(fn => transaccion(tx => fn(conHistorialRoto(tx))));
     try {
       await expect(service.resolver(n.id, 'Situación controlada', supervisor)).rejects.toThrow('Fallo de historial simulado');
     } finally { spy.mockRestore(); }

@@ -4,7 +4,7 @@ jest.mock('../../config/database', () => ({ prisma: {
   solicitud: { findUniqueOrThrow: jest.fn(), update: jest.fn() },
   usuario: { findUnique: jest.fn(), findMany: jest.fn() },
   supervisor_Instalacion: { findMany: jest.fn() },
-  instalacion: { findMany: jest.fn() },
+  instalacion: { findMany: jest.fn(), findUnique: jest.fn() },
   novedad: { findMany: jest.fn(), groupBy: jest.fn() },
   asistencia: { findMany: jest.fn(), groupBy: jest.fn() },
 } }));
@@ -23,6 +23,8 @@ const guardia = { id: 'g1', rol: ROLES.GGSS_EN_PAUTA };
 
 beforeEach(() => {
   jest.resetAllMocks();
+  prisma.instalacion.findUnique.mockResolvedValue({ id: 'x' }); // la instalación existe en la empresa
+
   prisma.usuario.findUnique.mockResolvedValue({ comunas_cobertura: null, instalacion_asignada_id: null });
   prisma.supervisor_Instalacion.findMany.mockResolvedValue([{ instalacion_id: 'mia' }]);
   prisma.turno.findUniqueOrThrow.mockResolvedValue({ id: 't', estado: 'programado', usuario_id: 'g2', instalacion_id: 'ajena' });

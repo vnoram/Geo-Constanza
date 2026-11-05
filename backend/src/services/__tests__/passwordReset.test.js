@@ -13,6 +13,8 @@ const mockRedis = (() => {
     expire: async () => 1,
   };
 })();
+// En estas pruebas el contexto de empresa se fija a mano (en producción lo abre authenticate con el token).
+jest.mock('../../config/tenant', () => ({ empresaActual: () => global.__EMPRESA_PRUEBA__ ?? null, conEmpresa: (_e, fn) => fn() }));
 jest.mock('../../config/redis', () => ({ getRedis: () => mockRedis }));
 jest.mock('../../config/logger', () => ({ logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn() } }));
 jest.mock('../correo.service', () => ({ enviarCorreo: jest.fn().mockResolvedValue(true) }));
@@ -27,6 +29,7 @@ const { randomUUID } = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { prisma } = require('../../config/database');
+const { crearEmpresaDePrueba, borrarEmpresaDePrueba } = require('../../test-utils/empresaDePrueba');
 const auth = require('../auth.service');
 const reset = require('../passwordReset.service');
 const { enviarCorreo } = require('../correo.service');
@@ -64,19 +67,22 @@ suite('Reset de contraseña con PostgreSQL local', () => {
     return texto.match(/token=([\w-]+)/)[1];
   };
 
-  beforeAll(() => {
+  beforeAll(async () => {
     const url = new URL(process.env.DATABASE_URL || 'postgresql://invalida');
     const hostOk = ['localhost', '127.0.0.1', 'geo-sprint5-db'].includes(url.hostname);
     if (process.env.NODE_ENV !== 'test' || !hostOk || !/^\/geo_/.test(url.pathname)) {
       throw new Error('Esta suite exige NODE_ENV=test y una base local desechable cuyo nombre empiece con geo_.');
     }
     habilitada = true;
+    const empresa = await crearEmpresaDePrueba();
+    global.__EMPRESA_PRUEBA__ = empresa.id;
   });
 
   beforeEach(() => mockRedis.datos.clear());
 
   afterAll(async () => {
     if (habilitada && creados.length) await prisma.usuario.deleteMany({ where: { id: { in: creados } } });
+    if (habilitada) await borrarEmpresaDePrueba(global.__EMPRESA_PRUEBA__);
     await prisma.$disconnect();
     await Promise.all(require('pg').pools.map((pool) => pool.end()));
   });
@@ -161,7 +167,7 @@ suite('Reset de contraseña con PostgreSQL local', () => {
   test('revoca sesiones abiertas: access token (Redis) y refresh token (BD)', async () => {
     const usuario = await crearUsuario();
     const antes = Math.floor(Date.now() / 1000) - 60;
-    const access = jwt.sign({ id: usuario.id, rol: usuario.rol, iat: antes }, process.env.JWT_ACCESS_SECRET, { expiresIn: '1h' });
+    const access = jwt.sign({ id: usuario.id, rol: usuario.rol, empresaId: global.__EMPRESA_PRUEBA__, iat: antes }, process.env.JWT_ACCESS_SECRET, { expiresIn: '1h' });
     const refresh = jwt.sign({ id: usuario.id, iat: antes }, process.env.JWT_REFRESH_SECRET, { expiresIn: '1h' });
 
     const correr = async (token) => {

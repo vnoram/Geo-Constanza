@@ -1,4 +1,5 @@
 const usuariosService = require('../services/usuarios.service');
+const { prisma } = require('../config/database');
 const { registrarAuditoria } = require('../middlewares/auditLog');
 const twoFactorService = require('./../services/twoFactor.service');
 
@@ -96,6 +97,10 @@ const reiniciar2FA = async (req, res, next) => {
     const { id } = req.params;
     if (id === req.user.id) {
       return res.status(403).json({ error: 'No puedes reiniciar tu propio segundo factor.' });
+    }
+    // twoFactorService trabaja sin alcance de empresa (lo usan también los scripts): el usuario debe existir en la empresa del token.
+    if (!await prisma.usuario.findUnique({ where: { id }, select: { id: true } })) {
+      return res.status(404).json({ error: 'Registro no encontrado.' });
     }
     const result = await twoFactorService.reiniciar(id);
 

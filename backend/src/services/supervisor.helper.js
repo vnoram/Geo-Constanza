@@ -59,10 +59,17 @@ const resolverInstalacionesSupervisor = async (user) => {
   return [...idsSeen];
 };
 
-// Lanza 403 si un supervisor intenta operar fuera de sus instalaciones.
-// Central y administrador tienen alcance global y pasan sin consulta.
+// Un supervisor solo opera sus instalaciones. Orden de las respuestas:
+//   - la instalación no existe en SU empresa (incluye las de otra empresa)  -> 404
+//   - existe en su empresa pero no la tiene asignada                         -> 403
+// Central y administrador tienen alcance global sobre su empresa y pasan sin consulta.
 const exigirAlcanceInstalacion = async (user, instalacionId) => {
   if (user?.rol !== ROLES.SUPERVISOR) return;
+  if (instalacionId) {
+    // `prisma` ya está limitado a la empresa del token
+    const existe = await prisma.instalacion.findUnique({ where: { id: instalacionId }, select: { id: true } });
+    if (!existe) throw Object.assign(new Error('Registro no encontrado.'), { statusCode: 404 });
+  }
   const permitidas = instalacionId ? await resolverInstalacionesSupervisor(user) : [];
   if (!instalacionId || !permitidas.includes(instalacionId)) {
     throw Object.assign(new Error('No tienes acceso a esta instalación'), { statusCode: 403 });
