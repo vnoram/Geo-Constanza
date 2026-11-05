@@ -11,7 +11,15 @@ import { ROLES as ROL } from "../../constants/roles";
 // Admin no se asigna desde la interfaz: las cuentas de administrador se crean fuera del sistema.
 const ROLES_DISPONIBLES = [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE, ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL];
 const ROL_LABEL = { [ROL.GGSS_EN_PAUTA]: "GGSS Pauta", [ROL.GGSS_LIBRE]: "GGSS Libre", [ROL.SUPERVISOR]: "Supervisor", [ROL.OPERADOR_CENTRAL]: "Central", [ROL.ADMINISTRADOR]: "Admin" };
-const ROL_BADGE = { [ROL.GGSS_EN_PAUTA]: "accent", [ROL.GGSS_LIBRE]: "accent", [ROL.SUPERVISOR]: "yellow", [ROL.OPERADOR_CENTRAL]: "accent", [ROL.ADMINISTRADOR]: "red" };
+const ROL_BADGE = { [ROL.GGSS_EN_PAUTA]: "accent", [ROL.GGSS_LIBRE]: "accent", [ROL.SUPERVISOR]: "yellow", [ROL.OPERADOR_CENTRAL]: "focus", [ROL.ADMINISTRADOR]: "red" };
+
+// Categorías de la lista, en el orden en que se muestran.
+const GRUPOS = [
+  { rol: ROL.SUPERVISOR,        titulo: "Supervisores" },
+  { rol: ROL.OPERADOR_CENTRAL,  titulo: "Central de monitoreo" },
+  { rol: ROL.GGSS_EN_PAUTA,     titulo: "Guardias en pauta" },
+  { rol: ROL.GGSS_LIBRE,        titulo: "Guardias libres" },
+];
 
 const VACÍO = { rut: "", nombre: "", email: "", telefono: "", rol: ROL.GGSS_EN_PAUTA, instalacionIds: [], instalacion_asignada_id: "" };
 
@@ -280,7 +288,19 @@ export function AdminUsuarios() {
         </div>
       )}
 
-      {!loading && usuarios.map((u) => {
+      {!loading && GRUPOS.map(({ rol, titulo }) => {
+        const delGrupo = usuarios.filter((u) => u.rol === rol);
+        if (delGrupo.length === 0) return null;
+        return (
+          <section key={rol} style={{ marginBottom: 22 }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8, margin: "4px 0 8px",
+              paddingBottom: 6, borderBottom: `1px solid ${T.border}`,
+            }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: T.textSec, letterSpacing: 0.4, textTransform: "uppercase" }}>{titulo}</span>
+              <Badge color={ROL_BADGE[rol] ?? "accent"}>{delGrupo.length}</Badge>
+            </div>
+            {delGrupo.map((u) => {
         const instSup = u.instalaciones_sup ?? [];
         return (
           <div className="admin-card" key={u.id} style={{
@@ -358,6 +378,9 @@ export function AdminUsuarios() {
               </div>
             </div>
           </div>
+        );
+            })}
+          </section>
         );
       })}
 
