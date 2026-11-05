@@ -27,7 +27,7 @@ const SELECT_EMPRESA = {
   created_at: true,
   // Solo conteos y la cuenta de administración: nunca datos operativos de la empresa.
   _count: { select: { usuarios: true, instalaciones: true } },
-  usuarios: { where: { rol: ROLES.ADMINISTRADOR }, select: { id: true, nombre: true, email: true, estado: true } },
+  usuarios: { where: { rol: ROLES.ADMINISTRADOR }, select: { id: true, nombre: true, email: true, rut: true, telefono: true, estado: true } },
 };
 
 const aVista = ({ usuarios, _count, ...empresa }) => ({
@@ -171,4 +171,72 @@ const crearPrimerAdmin = async (empresaId, datos, actor) => {
   return { ...creado, invitacion_enviada };
 };
 
-module.exports = { listar, obtener, crear, editar, cambiarEstado, crearPrimerAdmin };
+// ── Gestión posterior de la cuenta de administración (solo datos de la cuenta) ─────────────────
+const SELECT_ADMIN = { id: true, nombre: true, email: true, rut: true, telefono: true, estado: true };
+
+const buscarAdmin = async (empresaId, adminId) => {
+  const admin = await prismaGlobal.usuario.findFirst({
+    where: { id: adminId, empresa_id: empresaId, rol: ROLES.ADMINISTRADOR },
+    select: SELECT_ADMIN,
+  });
+  if (!admin) throw rechazo('Administrador no encontrado en esa empresa.', 404);
+  return admin;
+};
+
+/** Corrige nombre, correo o teléfono del administrador. El RUT no se edita (es su usuario de acceso). */
+const editarAdmin = async (empresaId, adminId, datos, actor) => {
+  await buscarAdmin(empresaId, adminId);
+  if (datos?.rut !== undefined) throw rechazo('El RUT del administrador no se puede modificar. Desactiva la cuenta y crea una nueva.');
+  const data = {};
+  if (datos?.nombre !== undefined) {
+    const nombre = typeof datos.nombre === 'string' ? datos.nombre.trim() : '';
+    if (nombre.length < 3) throw rechazo('El nombre del administrador es obligatorio.');
+    data.nombre = nombre;
+  }
+  if (datos?.email !== undefined) {
+    const email = typeof datos.email === 'string' ? datos.email.trim().toLowerCase() : '';
+    if (!EMAIL.test(email)) throw rechazo('El correo del administrador no es válido.');
+    data.email = email;
+  }
+  if (datos?.telefono !== undefined) data.telefono = datos.telefono ? String(datos.telefono).trim().slice(0, 30) : null;
+  if (!Object.keys(data).length) throw rechazo('No hay campos para actualizar.');
+  try {
+    const editado = await prismaGlobal.usuario.update({ where: { id: adminId }, data, select: SELECT_ADMIN });
+    await auditar(actor, 'editar_admin_empresa', empresaId, { usuario_id: adminId, campos: Object.keys(data) });
+    return editado;
+  } catch (error) {
+    return traducirDuplicado(error, 'Ya existe un usuario con ese correo.');
+  }
+};
+
+/** Reenvía el enlace para que el administrador elija su contraseña (vigencia de 72 horas). */
+const reenviarInvitacionAdmin = async (empresaId, adminId, actor) => {
+  const admin = await buscarAdmin(empresaId, adminId);
+  if (admin.estado !== ESTADO_USUARIO.ACTIVO) throw rechazo('El administrador está desactivado.', 409);
+  let invitacion_enviada = false;
+  try { invitacion_enviada = await passwordReset.invitar(admin); } catch (_) { /* se informa abajo */ }
+  await auditar(actor, 'reenviar_invitacion_admin', empresaId, { usuario_id: adminId, invitacion_enviada });
+  return { invitacion_enviada };
+};
+
+/**
+ * Desactiva o reactiva al administrador. Desactivar corta su acceso de inmediato (`authenticate`
+ * revisa el estado en cada petición) y permite crear un administrador nuevo para la empresa.
+ */
+const cambiarEstadoAdmin = async (empresaId, adminId, estado, actor) => {
+  if (![ESTADO_USUARIO.ACTIVO, ESTADO_USUARIO.INACTIVO].includes(estado)) {
+    throw rechazo(`Estado inválido. Valores permitidos: ${Object.values(ESTADO_USUARIO).join(', ')}.`);
+  }
+  await buscarAdmin(empresaId, adminId);
+  if (estado === ESTADO_USUARIO.ACTIVO) {
+    const otro = await prismaGlobal.usuario.count({
+      where: { empresa_id: empresaId, rol: ROLES.ADMINISTRADOR, estado: ESTADO_USUARIO.ACTIVO, id: { not: adminId } },
+    });
+    if (otro > 0) throw rechazo('La empresa ya tiene otro administrador activo.', 409);
+  }
+  const actualizado = await prismaGlobal.usuario.update({ where: { id: adminId }, data: { estado }, select: SELECT_ADMIN });
+  await auditar(actor, estado === ESTADO_USUARIO.ACTIVO ? 'activar_admin_empresa' : 'desactivar_admin_empresa', empresaId, { usuario_id: adminId });
+  return actualizado;
+};
+
+module.exports = { listar, obtener, crear, editar, cambiarEstado, crearPrimerAdmin, editarAdmin, reenviarInvitacionAdmin, cambiarEstadoAdmin };

@@ -29,4 +29,16 @@ const crearPrimerAdmin = async (req, res, next) => {
   try { res.status(201).json(await empresasService.crearPrimerAdmin(req.params.id, req.body, actorDe(req))); } catch (e) { next(e); }
 };
 
-module.exports = { listar, obtener, crear, editar, cambiarEstado, crearPrimerAdmin };
+const editarAdmin = async (req, res, next) => {
+  try { res.json(await empresasService.editarAdmin(req.params.id, req.params.adminId, req.body, actorDe(req))); } catch (e) { next(e); }
+};
+
+const reenviarInvitacionAdmin = async (req, res, next) => {
+  try { res.json(await empresasService.reenviarInvitacionAdmin(req.params.id, req.params.adminId, actorDe(req))); } catch (e) { next(e); }
+};
+
+const cambiarEstadoAdmin = async (req, res, next) => {
+  try { res.json(await empresasService.cambiarEstadoAdmin(req.params.id, req.params.adminId, req.body?.estado, actorDe(req))); } catch (e) { next(e); }
+};
+
+module.exports = { listar, obtener, crear, editar, cambiarEstado, crearPrimerAdmin, editarAdmin, reenviarInvitacionAdmin, cambiarEstadoAdmin };

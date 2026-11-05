@@ -151,6 +151,69 @@ function ModalAdmin({ empresa, onClose, onCreado }) {
   );
 }
 
+// ─── Gestionar al administrador existente ────────────────────────
+function ModalGestionAdmin({ empresa, admin, onClose, onTerminado }) {
+  const [form, setForm] = useState({ nombre: admin.nombre ?? "", email: admin.email ?? "", telefono: admin.telefono ?? "" });
+  const [enviando, setEnviando] = useState("");
+  const [error, setError] = useState("");
+  const set = (campo) => (valor) => setForm((f) => ({ ...f, [campo]: valor }));
+  const base = `/plataforma/empresas/${empresa.id}/admin/${admin.id}`;
+
+  const guardar = async () => {
+    setError("");
+    if (form.nombre.trim().length < 3 || !form.email.trim()) return setError("Completa nombre y correo.");
+    setEnviando("guardar");
+    try {
+      await api.put(base, { nombre: form.nombre.trim(), email: form.email.trim(), telefono: form.telefono.trim() });
+      onTerminado("Datos del administrador actualizados.");
+    } catch (e) {
+      setError(e.message || "No se pudo guardar.");
+    } finally { setEnviando(""); }
+  };
+
+  const reenviar = async () => {
+    setError("");
+    setEnviando("reenviar");
+    try {
+      const r = await api.post(`${base}/invitacion`);
+      onTerminado(r?.invitacion_enviada ? "Correo enviado: podrá elegir su contraseña." : "No se pudo enviar el correo. Revisa la configuración de correo.");
+    } catch (e) {
+      setError(e.message || "No se pudo reenviar el correo.");
+    } finally { setEnviando(""); }
+  };
+
+  const desactivar = async () => {
+    setError("");
+    setEnviando("desactivar");
+    try {
+      await api.patch(`${base}/estado`, { estado: "inactivo" });
+      onTerminado("Administrador desactivado. Ahora puedes crear uno nuevo.");
+    } catch (e) {
+      setError(e.message || "No se pudo desactivar.");
+    } finally { setEnviando(""); }
+  };
+
+  return (
+    <Dialogo titulo="Administrador de gestión" subtitulo={empresa.nombre} onClose={onClose}>
+      <MensajeError>{error}</MensajeError>
+      <div style={{ fontSize: 12, color: T.textMut, marginBottom: 12 }}>
+        RUT: <span style={{ fontFamily: FONT.mono, color: T.textSec }}>{admin.rut}</span> · no se puede modificar, es su usuario de acceso.
+      </div>
+      <Input label="Nombre completo" value={form.nombre} onChange={set("nombre")} maxLength={120} />
+      <Input label="Correo" type="email" value={form.email} onChange={set("email")} maxLength={160} />
+      <Input label="Teléfono (opcional)" value={form.telefono} onChange={set("telefono")} maxLength={30} />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+        <Btn variant="secondary" onClick={reenviar} loading={enviando === "reenviar"}>Reenviar correo de contraseña</Btn>
+        <Btn variant="secondary" onClick={desactivar} loading={enviando === "desactivar"}>Desactivar administrador</Btn>
+      </div>
+      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+        <Btn variant="secondary" onClick={onClose}>Cancelar</Btn>
+        <Btn onClick={guardar} loading={enviando === "guardar"}>Guardar cambios</Btn>
+      </div>
+    </Dialogo>
+  );
+}
+
 // ─── Confirmar suspensión / reactivación ─────────────────────────
 function ModalEstado({ empresa, onClose, onCambiado }) {
   const suspender = empresa.estado === "activa";
@@ -261,7 +324,7 @@ export function EmpresasPanel() {
             </thead>
             <tbody>
               {empresas.map((e) => {
-                const admin = e.administradores?.find((a) => a.estado === "activo") ?? e.administradores?.[0];
+                const admin = e.administradores?.find((a) => a.estado === "activo");
                 return (
                   <tr key={e.id}>
                     <td style={{ ...celda, fontWeight: 600 }}>{e.nombre}</td>
@@ -270,14 +333,16 @@ export function EmpresasPanel() {
                     <td style={celda}><Badge color={e.estado === "activa" ? "accent" : "yellow"}>{e.estado === "activa" ? "Activa" : "Suspendida"}</Badge></td>
                     <td style={celda}>
                       {admin ? <>{admin.nombre}<div style={{ fontSize: 11, color: T.textMut }}>{admin.email}</div></>
-                        : <span style={{ color: T.textMut }}>Sin administrador</span>}
+                        : <span style={{ color: T.textMut }}>Sin administrador activo</span>}
                     </td>
                     <td style={{ ...celda, fontFamily: FONT.mono }}>{e.total_usuarios}</td>
                     <td style={celda}>{fechaCorta(e.created_at)}</td>
                     <td style={celda}>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                         {accion("pencil", "Editar", () => setDialogo({ tipo: "empresa", empresa: e }))}
-                        {!admin && accion("plus", "Crear admin", () => setDialogo({ tipo: "admin", empresa: e }))}
+                        {admin
+                          ? accion("user-round", "Admin", () => setDialogo({ tipo: "gestionAdmin", empresa: e, admin }))
+                          : accion("plus", "Crear admin", () => setDialogo({ tipo: "admin", empresa: e }))}
                         {accion(e.estado === "activa" ? "ban" : "check", e.estado === "activa" ? "Suspender" : "Reactivar", () => setDialogo({ tipo: "estado", empresa: e }))}
                       </div>
                     </td>
@@ -301,6 +366,9 @@ export function EmpresasPanel() {
       )}
       {dialogo?.tipo === "admin" && (
         <ModalAdmin empresa={dialogo.empresa} onClose={() => terminar("")} onCreado={() => terminar("Administrador creado. Recibirá un correo para definir su contraseña.")} />
+      )}
+      {dialogo?.tipo === "gestionAdmin" && (
+        <ModalGestionAdmin empresa={dialogo.empresa} admin={dialogo.admin} onClose={cerrar} onTerminado={terminar} />
       )}
       {dialogo?.tipo === "estado" && (
         <ModalEstado empresa={dialogo.empresa} onClose={cerrar}

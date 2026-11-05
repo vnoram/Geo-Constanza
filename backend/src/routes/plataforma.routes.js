@@ -18,5 +18,8 @@ router.get('/empresas/:id', empresasController.obtener);
 router.put('/empresas/:id', empresasController.editar);
 router.patch('/empresas/:id/estado', empresasController.cambiarEstado);
 router.post('/empresas/:id/admin', empresasController.crearPrimerAdmin);
+router.put('/empresas/:id/admin/:adminId', empresasController.editarAdmin);
+router.post('/empresas/:id/admin/:adminId/invitacion', empresasController.reenviarInvitacionAdmin);
+router.patch('/empresas/:id/admin/:adminId/estado', empresasController.cambiarEstadoAdmin);
 
 module.exports = router;

@@ -485,6 +485,39 @@ suite('Multiempresa con PostgreSQL local', () => {
       expect(await prismaGlobal.auditoria.count({ where: { empresa_id: null, usuario_id: superAdmin.id } })).toBeGreaterThan(0);
     });
 
+    test('gestiona al admin: edita datos, no cambia RUT, desactiva y permite crear uno nuevo', async () => {
+      const creada = await api(token).post('/plataforma/empresas', { nombre: `Empresa D ${sufijo}`, rut: rutNuevo(contador++), plan: 'basico' });
+      const id = creada.body.id ?? creada.body.data?.id;
+      const rut1 = siguienteRut();
+      const a1 = await api(token).post(`/plataforma/empresas/${id}/admin`, { rut: rut1, nombre: 'Admin D1', email: `d1.${rut1}@prueba-${sufijo}.test` });
+      expect(a1.status).toBe(201);
+      const adminId = a1.body.id;
+
+      // edita nombre y correo
+      const ed = await api(token).put(`/plataforma/empresas/${id}/admin/${adminId}`, { nombre: 'Admin D1 Corregido', email: `d1b.${rut1}@prueba-${sufijo}.test` });
+      expect(ed.status).toBe(200);
+      expect(ed.body.nombre).toBe('Admin D1 Corregido');
+      // el RUT no se puede modificar
+      expect((await api(token).put(`/plataforma/empresas/${id}/admin/${adminId}`, { rut: siguienteRut() })).status).toBe(400);
+      // un admin de otra empresa no se puede tocar con el id de esta (404)
+      expect((await api(token).put(`/plataforma/empresas/${E.A.empresa.id}/admin/${adminId}`, { nombre: 'Intruso' })).status).toBe(404);
+      // reenvía la invitación
+      expect((await api(token).post(`/plataforma/empresas/${id}/admin/${adminId}/invitacion`)).status).toBe(200);
+
+      // con un admin activo no se puede crear otro
+      const rut2 = siguienteRut();
+      const cuerpo2 = { rut: rut2, nombre: 'Admin D2', email: `d2.${rut2}@prueba-${sufijo}.test` };
+      expect((await api(token).post(`/plataforma/empresas/${id}/admin`, cuerpo2)).status).toBe(409);
+      // desactiva al primero y ahora sí se puede crear el reemplazo
+      expect((await api(token).patch(`/plataforma/empresas/${id}/admin/${adminId}/estado`, { estado: 'inactivo' })).status).toBe(200);
+      const a2 = await api(token).post(`/plataforma/empresas/${id}/admin`, cuerpo2);
+      expect(a2.status).toBe(201);
+      // reactivar al primero mientras el segundo está activo → 409
+      expect((await api(token).patch(`/plataforma/empresas/${id}/admin/${adminId}/estado`, { estado: 'activo' })).status).toBe(409);
+      // un admin de empresa no puede usar estas rutas
+      expect((await api(E.A.tokenAdmin).put(`/plataforma/empresas/${id}/admin/${a2.body.id}`, { nombre: 'X' })).status).toBe(403);
+    });
+
     test('RUT de empresa repetido → 409', async () => {
       const res = await api(token).post('/plataforma/empresas', { nombre: 'Duplicada', rut: E.A.empresa.rut });
       expect(res.status).toBe(409);
