@@ -1,6 +1,6 @@
 # Estrategia de evolución a multi-tenant (SaaS B2B)
 
-Estado actual: el prototipo atiende a **una sola empresa**. El modelo de datos no tiene el concepto de empresa. Este documento define cómo pasar a varias empresas sin mezclar sus datos. **No está implementado**; se prioriza después de la defensa para no arriesgar el despliegue.
+Estado actual: el prototipo atiende a **una sola empresa**. El modelo de datos no tiene el concepto de empresa. Este documento define cómo pasar a varias empresas sin mezclar sus datos. La **etapa 1 (aislamiento por empresa + rol de plataforma) está implementada en una rama sin desplegar**: ver [MULTIEMPRESA.md](MULTIEMPRESA.md). Lo demás sigue pendiente.
 
 ## Modelo objetivo
 
