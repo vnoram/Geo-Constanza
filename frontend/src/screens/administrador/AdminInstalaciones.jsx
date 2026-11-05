@@ -466,7 +466,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
             {/* Selector de supervisores asignados (el centro operativo lo atiende el Operador Central) */}
             {esCentroOperativo({ tipo_recinto: form.tipo_recinto, nombre: form.nombre }) ? (
               <div style={{ marginBottom: 22, fontSize: 12, color: T.focusText, background: T.focusGhost, border: `1px solid ${T.focus}`, borderRadius: 8, padding: "10px 12px" }}>
-                El centro operativo es la oficina de la empresa: se asigna al Operador Central desde la pantalla Usuarios, no a supervisores.
+                Los centros operativos se asignan a operadores centrales.
               </div>
             ) : (
               <>
