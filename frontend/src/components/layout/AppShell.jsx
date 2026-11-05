@@ -27,6 +27,9 @@ import { SupReportes } from "../../screens/supervisor/SupReportes";
 // ─── Operador central ───
 import { CentralPanel } from "../../screens/operador-central/CentralPanel";
 
+// ─── Plataforma (super admin) ───
+import { EmpresasPanel } from "../../screens/plataforma/EmpresasPanel";
+
 // ─── Administrador ───
 import { AdminPanel } from "../../screens/administrador/AdminPanel";
 import { AdminUsuarios } from "../../screens/administrador/AdminUsuarios";
@@ -71,6 +74,9 @@ function RoleContent({ user, rol, section }) {
     if (section === "panel")      return <AdminPanel />;
     if (section === "incidentes") return <CentralPanel section="incidentes" />;
   }
+  if (rol === ROL.SUPER_ADMIN) {
+    if (section === "empresas") return <EmpresasPanel />;
+  }
   if (rol === ROL.ADMINISTRADOR) {
     // Admin ya no tiene el panel de monitoreo — solo gestión RRHH/config
     if (section === "usuarios")      return <AdminUsuarios />;
@@ -87,7 +93,7 @@ export function AppShell({ user, onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cambiandoPassword, setCambiandoPassword] = useState(false);
 
-  const duracionToken = user.rol === ROL.GGSS_EN_PAUTA || user.rol === ROL.GGSS_LIBRE ? "30 min" : user.rol === ROL.SUPERVISOR ? "2 h" : "4 h";
+  const duracionToken = user.rol === ROL.GGSS_EN_PAUTA || user.rol === ROL.GGSS_LIBRE ? "30 min" : user.rol === ROL.SUPERVISOR ? "2 h" : user.rol === ROL.SUPER_ADMIN ? "1 h" : "4 h";
   const conSegundoFactor = user.segundoFactor === true;
 
   return (
@@ -170,6 +176,12 @@ export function AppShell({ user, onLogout }) {
                 <Icon name={role.icon} size={15} color={T.focusText} />
                 {role.label}
               </div>
+              {user.empresa?.nombre && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textSec, marginTop: 4 }}>
+                  <Icon name="building-2" size={15} color={T.textMut} />
+                  {user.empresa.nombre}
+                </div>
+              )}
               <div style={{ fontSize: 11, color: T.textMut, marginTop: 8, fontFamily: FONT.mono }}>
                 ID {user.id} · RUT •••••{user.id.slice(-2)}
               </div>

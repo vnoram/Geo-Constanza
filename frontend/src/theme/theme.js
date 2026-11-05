@@ -90,6 +90,15 @@ export const ROLES = {
       { id: "incidentes", icon: "triangle-alert", label: "Novedades", badge: null },
     ],
   },
+  [ROL.SUPER_ADMIN]: {
+    label: "Plataforma",
+    icon: "building-2",
+    color: T.focusText,
+    desc: "Alta y administración de empresas clientes",
+    sections: [
+      { id: "empresas", icon: "building-2", label: "Empresas", badge: null },
+    ],
+  },
   [ROL.ADMINISTRADOR]: {
     label: "Administración / RRHH",
     icon: "settings",
