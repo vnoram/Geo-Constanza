@@ -9,6 +9,7 @@ import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 import { direccionDesdeCoordenadas } from "../../services/geocoding";
 import { MapaUbicacion } from "../../components/maps/MapaUbicacion";
+import { esCentroOperativo } from "../../utils/instalaciones";
 import { DireccionAutocomplete } from "../../components/maps/DireccionAutocomplete";
 
 // ─── HELPERS ─────────────────────────────────────────────────────
@@ -26,8 +27,6 @@ const ICONO_RECINTO = {
   Comercial: "store", Corporativo: "building-2", Residencial: "house", Industrial: "factory", Institucional: "landmark",
   "Centro operativo": "monitor",
 };
-// El centro operativo es la sede de la central de monitoreo: se reconoce por su tipo o, en datos antiguos, por su nombre.
-const esCentroOperativo = (inst) => inst?.tipo_recinto === "Centro operativo" || /^\s*centro operativo/i.test(inst?.nombre || "");
 const tipoRecinto = (valor) => (TIPOS_RECINTO.includes(valor) ? valor : TIPO_EQUIVALENTE[valor] || "Comercial");
 const NIVELES_CRITICIDAD = ["Alta", "Media", "Baja"];
 const ESTADOS = [
@@ -290,7 +289,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
       tipo_recinto: form.tipo_recinto || undefined,
       nivel_criticidad: form.nivel_criticidad || "Media",
       estado: form.estado || "activo",
-      supervisorIds: form.supervisorIds,
+      supervisorIds: esCentroOperativo({ tipo_recinto: form.tipo_recinto, nombre: form.nombre }) ? [] : form.supervisorIds,
     };
 
     try {
@@ -464,7 +463,13 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
               />
             </div>
 
-            {/* Selector de supervisores asignados */}
+            {/* Selector de supervisores asignados (el centro operativo lo atiende el Operador Central) */}
+            {esCentroOperativo({ tipo_recinto: form.tipo_recinto, nombre: form.nombre }) ? (
+              <div style={{ marginBottom: 22, fontSize: 12, color: T.focusText, background: T.focusGhost, border: `1px solid ${T.focus}`, borderRadius: 8, padding: "10px 12px" }}>
+                El centro operativo es la oficina de la empresa: se asigna al Operador Central desde la pantalla Usuarios, no a supervisores.
+              </div>
+            ) : (
+              <>
             <div style={{ marginBottom: 22 }}>
               <label
                 style={{
@@ -522,6 +527,8 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                 </div>
               )}
             </div>
+              </>
+            )}
           </div>
 
           {/* ── Columna derecha: mapa ── */}

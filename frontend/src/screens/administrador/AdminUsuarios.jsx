@@ -5,6 +5,7 @@ import { Badge } from "../../components/ui/Badge";
 import { Btn } from "../../components/ui/Btn";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
+import { esCentroOperativo } from "../../utils/instalaciones";
 import { ROLES as ROL } from "../../constants/roles";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -42,7 +43,10 @@ function Field({ label, required, children }) {
 }
 
 // ─── Modal Crear / Editar ─────────────────────────────────────────────────────
-function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
+function UsuarioModal({ inicial, instalaciones: todas, onClose, onSaved }) {
+  // Los centros operativos son de la central; supervisores y guardias solo ven recintos operativos.
+  const instalaciones = todas.filter((i) => !esCentroOperativo(i));
+  const centros = todas.filter(esCentroOperativo);
   const esEdicion    = !!inicial?.id;
   const [form, setForm]       = useState(inicial ?? VACÍO);
   const [loading, setLoading] = useState(false);
@@ -69,7 +73,7 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
     // Construir payload limpio. La contraseña nunca la define el admin: el servidor envía una invitación por correo.
     const payload = { ...form };
     if (payload.rol !== ROL.SUPERVISOR)           delete payload.instalacionIds;
-    if (![ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(payload.rol)) delete payload.instalacion_asignada_id;
+    if (![ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE, ROL.OPERADOR_CENTRAL].includes(payload.rol)) delete payload.instalacion_asignada_id;
 
     setLoading(true);
     try {
@@ -151,6 +155,23 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
               >
                 <option value="">Sin asignar</option>
                 {instalaciones.map((i) => (
+                  <option key={i.id} value={i.id} style={{ background: T.bgCard }}>{i.nombre}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+
+          {/* Centro operativo — solo para el Operador Central */}
+          {form.rol === ROL.OPERADOR_CENTRAL && (
+            <Field label="Centro operativo asignado">
+              <select
+                className="touch-target"
+                style={{ ...inputStyle, appearance: "none", color: form.instalacion_asignada_id ? T.text : T.textMut }}
+                value={form.instalacion_asignada_id}
+                onChange={(e) => set("instalacion_asignada_id", e.target.value)}
+              >
+                <option value="">Sin asignar</option>
+                {centros.map((i) => (
                   <option key={i.id} value={i.id} style={{ background: T.bgCard }}>{i.nombre}</option>
                 ))}
               </select>
@@ -347,6 +368,19 @@ export function AdminUsuarios() {
                       border: `1px solid ${T.focusText}33`,
                     }}>
                       CENTRAL
+                    </span>
+                  </div>
+                )}
+
+                {/* Centro operativo de la central */}
+                {u.rol === ROL.OPERADOR_CENTRAL && u.instalacion_asignada && (
+                  <div style={{ marginTop: 5 }}>
+                    <span style={{
+                      fontSize: 10, background: T.focusGhost, color: T.focusText,
+                      padding: "2px 8px", borderRadius: 4, fontWeight: 600,
+                      border: `1px solid ${T.focusText}33`,
+                    }}>
+                      {u.instalacion_asignada.nombre}
                     </span>
                   </div>
                 )}
