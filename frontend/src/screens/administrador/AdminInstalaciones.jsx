@@ -153,6 +153,11 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
   const [errores, setErrores] = useState({});
   const [supervisores, setSupervisores] = useState([]);
   const [cargandoSup, setCargandoSup] = useState(true);
+  // Operadores centrales: el centro operativo se asigna a ellos (usuario.instalacion_asignada_id).
+  const [operadores, setOperadores] = useState([]);
+  const [cargandoOp, setCargandoOp] = useState(true);
+  const [operadorIds, setOperadorIds] = useState([]);
+  const [operadoresIniciales, setOperadoresIniciales] = useState([]);
 
   const set = (campo) => (val) => setForm((f) => ({ ...f, [campo]: val }));
 
@@ -230,6 +235,26 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api.get("/usuarios?rol=central&limit=200");
+        const lista = Array.isArray(data) ? data : (data.data ?? []);
+        setOperadores(lista);
+        const asignados = lista.filter((o) => inicial?.id && o.instalacion_asignada_id === inicial.id).map((o) => o.id);
+        setOperadorIds(asignados);
+        setOperadoresIniciales(asignados);
+      } catch {
+        /* no bloquea la creación/edición */
+      } finally {
+        setCargandoOp(false);
+      }
+    })();
+  }, [inicial?.id]);
+
+  const toggleOperador = (id) =>
+    setOperadorIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+
   const toggleSupervisor = (id) => {
     setForm((f) => {
       const ya = f.supervisorIds.includes(id);
@@ -289,7 +314,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
       tipo_recinto: form.tipo_recinto || undefined,
       nivel_criticidad: form.nivel_criticidad || "Media",
       estado: form.estado || "activo",
-      supervisorIds: esCentroOperativo({ tipo_recinto: form.tipo_recinto, nombre: form.nombre }) ? [] : form.supervisorIds,
+      supervisorIds: esCentroOperativo({ tipo_recinto: form.tipo_recinto }) ? [] : form.supervisorIds,
     };
 
     try {
@@ -298,6 +323,15 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
         resultado = await api.put(`/instalaciones/${inicial.id}`, payload);
       } else {
         resultado = await api.post("/instalaciones", payload);
+      }
+      // Centro operativo: asigna o libera a los operadores centrales que cambiaron.
+      if (esCentroOperativo({ tipo_recinto: form.tipo_recinto })) {
+        const instalacionId = resultado?.id ?? inicial?.id;
+        const cambios = [
+          ...operadorIds.filter((id) => !operadoresIniciales.includes(id)).map((id) => ({ id, valor: instalacionId })),
+          ...operadoresIniciales.filter((id) => !operadorIds.includes(id)).map((id) => ({ id, valor: null })),
+        ];
+        await Promise.all(cambios.map((c) => api.put(`/usuarios/${c.id}`, { instalacion_asignada_id: c.valor })));
       }
       onGuardada(resultado, esEdicion);
     } catch (err) {
@@ -464,9 +498,33 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
             </div>
 
             {/* Selector de supervisores asignados (el centro operativo lo atiende el Operador Central) */}
-            {esCentroOperativo({ tipo_recinto: form.tipo_recinto, nombre: form.nombre }) ? (
-              <div style={{ marginBottom: 22, fontSize: 12, color: T.focusText, background: T.focusGhost, border: `1px solid ${T.focus}`, borderRadius: 8, padding: "10px 12px" }}>
-                Los centros operativos se asignan a operadores centrales.
+            {esCentroOperativo({ tipo_recinto: form.tipo_recinto }) ? (
+              <div style={{ marginBottom: 22 }}>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: T.focusText, marginBottom: 6, letterSpacing: 1.5, textTransform: "uppercase" }}>
+                  Operadores centrales
+                </label>
+                <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>
+                  Los centros operativos se asignan a operadores centrales.
+                </div>
+                {cargandoOp ? (
+                  <div style={{ fontSize: 12, color: T.textMut }}>Cargando operadores...</div>
+                ) : operadores.length === 0 ? (
+                  <div style={{ fontSize: 12, color: T.textMut }}>No hay operadores centrales registrados todavía.</div>
+                ) : (
+                  <div style={{ border: `1.5px solid ${T.focus}`, borderRadius: 8, padding: "8px 12px", maxHeight: 140, overflowY: "auto", background: T.bgInput }}>
+                    {operadores.map((o) => (
+                      <label key={o.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", fontSize: 13, color: T.text, cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={operadorIds.includes(o.id)}
+                          onChange={() => toggleOperador(o.id)}
+                          style={{ accentColor: T.focus, cursor: "pointer" }}
+                        />
+                        {o.nombre} {o.email ? `(${o.email})` : ""}
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <>
