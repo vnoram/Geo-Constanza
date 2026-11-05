@@ -152,6 +152,8 @@ const editar = async (id, data) => {
 };
 
 const desactivar = async (id) => {
+  const objetivo = await prisma.usuario.findUnique({ where: { id }, select: { rol: true } });
+  if (objetivo?.rol === ROLES.ADMINISTRADOR) throw rechazo('No se puede desactivar a un administrador.');
   return prisma.usuario.update({
     where: { id },
     data: { estado: 'inactivo' },

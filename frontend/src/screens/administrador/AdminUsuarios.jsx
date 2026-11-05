@@ -228,7 +228,8 @@ export function AdminUsuarios() {
         api.get("/usuarios?limit=200"),
         api.get("/instalaciones"),
       ]);
-      setUsuarios(usRes.data ?? []);
+      // Esta pantalla gestiona al personal: los administradores no se listan, editan ni desactivan aquí.
+      setUsuarios((usRes.data ?? []).filter((u) => u.rol !== ROL.ADMINISTRADOR));
       setInstalaciones(Array.isArray(instRes) ? instRes : (instRes.data ?? []));
     } catch { /* mantener estado */ }
     finally { setLoading(false); }

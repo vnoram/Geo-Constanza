@@ -63,7 +63,13 @@ test('editar otro rol no crea asignaciones y rechaza roles inválidos', async ()
   expect(prisma.supervisor_Instalacion.deleteMany).not.toHaveBeenCalled();
   await expect(service.editar('u1', { rol: 'desconocido' })).rejects.toMatchObject({ statusCode: 400 });
 });
+test('no se puede desactivar a un administrador', async () => {
+  prisma.usuario.findUnique.mockResolvedValue({ rol: ROLES.ADMINISTRADOR });
+  await expect(service.desactivar('u1')).rejects.toMatchObject({ statusCode: 400 });
+  expect(prisma.usuario.update).not.toHaveBeenCalled();
+});
 test('desactivación es lógica y su respuesta no expone credenciales', async () => {
+  prisma.usuario.findUnique.mockResolvedValue({ rol: ROLES.GGSS_LIBRE });
   await service.desactivar('u1');
   expect(prisma.usuario.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { estado: ESTADO_USUARIO.INACTIVO },
     select: { id: true, nombre: true, email: true, rol: true, estado: true } });
