@@ -534,7 +534,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                   display: "block",
                   fontSize: 11,
                   fontWeight: 700,
-                  color: T.textSec,
+                  color: T.yellow,
                   marginBottom: 6,
                   letterSpacing: 1.5,
                   textTransform: "uppercase",
@@ -552,7 +552,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
               ) : (
                 <div
                   style={{
-                    border: `1.5px solid ${T.border}`,
+                    border: `1.5px solid ${T.yellow}`,
                     borderRadius: 8,
                     padding: "8px 12px",
                     maxHeight: 140,
@@ -577,7 +577,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                         type="checkbox"
                         checked={form.supervisorIds.includes(s.id)}
                         onChange={() => toggleSupervisor(s.id)}
-                        style={{ accentColor: T.accent, cursor: "pointer" }}
+                        style={{ accentColor: T.yellow, cursor: "pointer" }}
                       />
                       {s.nombre} {s.email ? `(${s.email})` : ""}
                     </label>
