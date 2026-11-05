@@ -112,11 +112,13 @@ const getDashboardHoy = async (user) => {
       novedadesEscaladas,
       totalInstalaciones,
       instalacionesActivas,
+      guardiasEnPauta,
     ] = await Promise.all([
       prisma.novedad.count({ where: { estado: 'abierta' } }),
       prisma.novedad.count({ where: { estado: 'escalada' } }),
       prisma.instalacion.count(),
       prisma.instalacion.count({ where: { estado: 'activo' } }),
+      prisma.usuario.count({ where: { rol: ROLES.GGSS_EN_PAUTA, estado: 'activo' } }),
     ]);
 
     // Cobertura: % de turnos de hoy que tienen asistencia
@@ -144,6 +146,7 @@ const getDashboardHoy = async (user) => {
       novedadesEscaladas,
       totalInstalaciones,
       instalacionesActivas,
+      guardiasEnPauta,
       coberturaDia,
       resumenPorInstalacion: resumenPorInstalacion.map(i => ({
         id: i.id,

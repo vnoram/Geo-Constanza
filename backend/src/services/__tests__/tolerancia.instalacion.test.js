@@ -1,5 +1,5 @@
 jest.mock('../../config/database', () => ({ prisma: {
-  turno: { findMany: jest.fn() }, novedad: { count: jest.fn() },
+  turno: { findMany: jest.fn() }, novedad: { count: jest.fn() }, usuario: { count: jest.fn() },
   instalacion: { findMany: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
   $transaction: jest.fn(),
 } }));
@@ -23,6 +23,7 @@ beforeEach(() => {
   prisma.novedad.count.mockResolvedValue(0); prisma.instalacion.findMany.mockResolvedValue([]); prisma.instalacion.count.mockResolvedValue(1);
   resolverInstalacionesSupervisor.mockResolvedValue(['i1']);
   prisma.$transaction.mockImplementation(fn => fn(prisma));
+  prisma.usuario.count.mockResolvedValue(12);
   prisma.instalacion.create.mockImplementation(({ data }) => Promise.resolve(data));
 });
 afterEach(() => jest.useRealTimers());
@@ -35,6 +36,8 @@ test.each([ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL])('panel %s cuenta puestos s
   const panel = await getDashboardHoy({ id: 's1', rol });
   expect(panel.sinCobertura).toBe(1);
   expect(panel.lista.map(t => t.sin_cobertura)).toEqual([true, false]);
+  // El panel central (no el del supervisor) informa cuántos guardias en pauta hay activos
+  if (rol === ROLES.OPERADOR_CENTRAL) expect(panel.kpis.guardiasEnPauta).toBe(12);
 });
 test('instalaciones nuevas usan default 15 y permiten cero', async () => {
   await expect(instalaciones.crear({ nombre: 'Prueba', latitud: 0, longitud: 0 })).resolves.toHaveProperty('tolerancia_atraso_minutos', 15);
