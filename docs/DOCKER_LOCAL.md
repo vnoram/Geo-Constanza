@@ -43,6 +43,6 @@ En el login, "¿Olvidaste tu contraseña?", pon un correo del seed y abre http:/
 ## Notas
 - Todos los puertos quedan abiertos solo en tu PC (127.0.0.1). Si el puerto 5434 u otro está ocupado, cámbialo en `docker-compose.yml`.
 - Usuarios del seed: el login es con RUT y contraseña `geo2026` (solo datos de demostración locales).
-- Las fotos de reportes usan Azure Blob Storage. Sin cadena de conexión en local, subir fotos no funciona (el resto sí).
+- Las fotos de reportes usan Azure Blob Storage; en local las atiende el emulador Azurite (servicio `azurite`, puerto 127.0.0.1:10000). El servicio `azurite-init` crea el contenedor `reportes` y termina; que figure como "Exited (0)" es normal.
 - Para empezar de cero: `docker compose down -v` (borra la base local).
 - El panel de credenciales demo se muestra en el login porque `VITE_MOSTRAR_DEMO=true` solo en este compose.

@@ -40,9 +40,14 @@ services:
         condition: service_started
     ports:
       - "127.0.0.1:3005:3005"
+      # Azurite (fotos de novedades) comparte la red de la API; se publica aquí su puerto.
+      - "127.0.0.1:10000:10000"
     environment:
       NODE_ENV: development
       PORT: 3005
+      # Fotos: emulador Azurite local (UseDevelopmentStorage = 127.0.0.1:10000, credencial pública de desarrollo).
+      AZURE_STORAGE_CONNECTION_STRING: UseDevelopmentStorage=true
+      AZURE_STORAGE_CONTAINER_NAME: reportes
       DATABASE_URL: postgresql://geo:${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}@db:5432/geo_local
       DATABASE_SSL: disable
       REDIS_URL: redis://redis:6379
@@ -56,6 +61,29 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
       MAIL_FROM: Geo Constanza <no-responder@geo-constanza.local>
+
+  # Emulador de Azure Blob Storage para las fotos de las novedades (solo local).
+  # Comparte la red de la API para que "127.0.0.1:10000" valga igual para la API y para el navegador.
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --loose --skipApiVersionCheck --location /data
+    network_mode: "service:api"
+    depends_on:
+      - api
+    volumes:
+      - azurite_data:/data
+
+  # Crea una sola vez el contenedor "reportes" en Azurite y termina.
+  azurite-init:
+    build: ./backend
+    network_mode: "service:api"
+    depends_on:
+      - azurite
+    restart: "no"
+    environment:
+      AZURE_STORAGE_CONNECTION_STRING: UseDevelopmentStorage=true
+      AZURE_STORAGE_CONTAINER_NAME: reportes
+    command: ["node", "-e", "const {BlobServiceClient}=require('@azure/storage-blob');(async()=>{for(let i=0;i<40;i++){try{await BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING).getContainerClient(process.env.AZURE_STORAGE_CONTAINER_NAME).createIfNotExists();console.log('contenedor listo');return}catch(e){await new Promise(r=>setTimeout(r,1500))}}console.error('no se pudo crear el contenedor');process.exit(1)})()"]
 
   web:
     image: node:22-bookworm-slim
@@ -74,4 +102,5 @@ services:
 
 volumes:
   pgdata:
+  azurite_data:
   web_node_modules:
