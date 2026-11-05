@@ -14,7 +14,7 @@ import { DireccionAutocomplete } from "../../components/maps/DireccionAutocomple
 // ─── HELPERS ─────────────────────────────────────────────────────
 const CRITICIDAD_COLOR = { Alta: "red", Media: "yellow", Baja: "accent" };
 
-const TIPOS_RECINTO = ["Comercial", "Corporativo", "Residencial", "Industrial", "Institucional"];
+const TIPOS_RECINTO = ["Comercial", "Corporativo", "Residencial", "Industrial", "Institucional", "Centro operativo"];
 // Tipos antiguos que ya pueden estar guardados: se muestran con el tipo equivalente al editar.
 const TIPO_EQUIVALENTE = {
   Educacional: "Institucional",
@@ -24,7 +24,10 @@ const TIPO_EQUIVALENTE = {
 // Un ícono por tipo de recinto (Lucide, mismo set del resto de la app).
 const ICONO_RECINTO = {
   Comercial: "store", Corporativo: "building-2", Residencial: "house", Industrial: "factory", Institucional: "landmark",
+  "Centro operativo": "radio-tower",
 };
+// El centro operativo es la sede de la central de monitoreo: se reconoce por su tipo o, en datos antiguos, por su nombre.
+const esCentroOperativo = (inst) => inst?.tipo_recinto === "Centro operativo" || /^\s*centro operativo/i.test(inst?.nombre || "");
 const tipoRecinto = (valor) => (TIPOS_RECINTO.includes(valor) ? valor : TIPO_EQUIVALENTE[valor] || "Comercial");
 const NIVELES_CRITICIDAD = ["Alta", "Media", "Baja"];
 const ESTADOS = [
@@ -653,13 +656,15 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
 function InstCard({ inst, onEditar }) {
   const color = CRITICIDAD_COLOR[inst.nivel_criticidad] || "accent";
   const esActivo = inst.estado === "activa" || inst.estado === "activo";
+  const esCentro = esCentroOperativo(inst);
+  const tipo = esCentro ? "Centro operativo" : tipoRecinto(inst.tipo_recinto);
 
   return (
     <div
       className="admin-card"
       style={{
-        background: T.bgCard,
-        border: `1px solid ${T.border}`,
+        background: esCentro ? T.focusGhost : T.bgCard,
+        border: `1px solid ${esCentro ? T.focus : T.border}`,
         borderRadius: 8,
         padding: "16px 18px",
         marginBottom: 10,
@@ -672,6 +677,7 @@ function InstCard({ inst, onEditar }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontWeight: 800, fontSize: 15, color: T.text }}>{inst.nombre}</span>
             <Badge color={color}>{inst.nivel_criticidad || "Media"}</Badge>
+            {esCentro && <Badge color="focus">CENTRAL</Badge>}
           </div>
           {inst.direccion && (
             <div style={{ fontSize: 12, color: T.textMut, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
@@ -714,9 +720,9 @@ function InstCard({ inst, onEditar }) {
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, fontSize: 11, color: T.textSec }}>
-        {inst.tipo_recinto && (
-          <span style={{ background: T.bgInput, borderRadius: 6, padding: "3px 8px" }}>
-            <Icon name={ICONO_RECINTO[tipoRecinto(inst.tipo_recinto)]} size={16} /> {tipoRecinto(inst.tipo_recinto)}
+        {(inst.tipo_recinto || esCentro) && (
+          <span style={{ background: T.bgInput, borderRadius: 6, padding: "3px 8px", color: esCentro ? T.focusText : undefined }}>
+            <Icon name={ICONO_RECINTO[tipo]} size={16} /> {tipo}
           </span>
         )}
         <span style={{ background: T.bgInput, borderRadius: 6, padding: "3px 8px" }}>
@@ -787,7 +793,7 @@ export function AdminInstalaciones() {
       i.direccion?.toLowerCase().includes(busqueda.toLowerCase()) ||
       i.comuna?.toLowerCase().includes(busqueda.toLowerCase()) ||
       i.tipo_recinto?.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  ).sort((a, b) => Number(esCentroOperativo(b)) - Number(esCentroOperativo(a)));
 
   return (
     <div className="admin-screen">
