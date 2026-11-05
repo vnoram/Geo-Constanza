@@ -539,6 +539,50 @@ suite('Multiempresa con PostgreSQL local', () => {
     });
   });
 
+  // ------------------------------------------------- subida de fotos (multipart)
+  describe('novedad con foto (multipart/form-data)', () => {
+    // multer lee el cuerpo con eventos de stream: sin `restaurarEmpresa` la petición seguía sin contexto
+    // de empresa y la creación fallaba (SIN_CONTEXTO_EMPRESA). Se prueba con la app completa y login real.
+    let guardia; let token; let otraEmpresaFolio;
+    beforeAll(async () => {
+      const { aFechaDB, ahoraChile } = require('../../utils/fechaChile');
+      guardia = await crearUsuario(E.A.empresa.id, 'pauta', { tipo_ggss: 'pauta' });
+      await prismaGlobal.turno.create({
+        data: { empresa_id: E.A.empresa.id, usuario_id: guardia.id, instalacion_id: E.A.instalacion.id, fecha: aFechaDB(ahoraChile().fecha), hora_inicio: '00:00', hora_fin: '23:59' },
+      });
+      token = (await iniciarSesion(guardia)).token;
+      otraEmpresaFolio = (await prismaGlobal.empresa.findUnique({ where: { id: E.B.empresa.id } })).ultimo_folio;
+    });
+
+    test('crea la novedad con foto en la empresa del guardia y con su folio', async () => {
+      const { uploadFotoToAzure } = require('../../utils/azureStorage');
+      uploadFotoToAzure.mockResolvedValue('https://almacenamiento.test/reportes/foto.jpg');
+      const antes = (await prismaGlobal.empresa.findUnique({ where: { id: E.A.empresa.id } })).ultimo_folio;
+
+      const res = await request(app).post('/api/v1/novedades')
+        .set('Authorization', `Bearer ${token}`)
+        .field('tipo', 'otro')
+        .field('descripcion', 'Novedad con foto adjunta')
+        .field('latitud', String(E.A.instalacion.latitud))
+        .field('longitud', String(E.A.instalacion.longitud))
+        .attach('foto', Buffer.alloc(3 * 1024 * 1024, 7), { filename: 'foto.jpg', contentType: 'image/jpeg' }); // varios paquetes, como una foto real de celular
+
+      expect(res.status).toBe(201);
+      expect(uploadFotoToAzure).toHaveBeenCalledTimes(1);
+      const fila = await prismaGlobal.novedad.findUnique({ where: { id: res.body.id } });
+      expect(fila.empresa_id).toBe(E.A.empresa.id);
+      expect(fila.foto_url).toBe('https://almacenamiento.test/reportes/foto.jpg');
+      expect(fila.numero).toBe(antes + 1);
+      // la otra empresa no se altera
+      expect((await prismaGlobal.empresa.findUnique({ where: { id: E.B.empresa.id } })).ultimo_folio).toBe(otraEmpresaFolio);
+    });
+
+    test('sin foto (JSON) sigue funcionando igual', async () => {
+      const res = await api(token).post('/novedades', { tipo: 'otro', descripcion: 'Novedad sin foto adjunta' });
+      expect(res.status).toBe(201);
+    });
+  });
+
   // ----------------------------------------------------------------- auditoría
   describe('auditoría', () => {
     test('una acción del admin de A queda registrada con empresa A', async () => {
