@@ -35,7 +35,7 @@ export function LoginScreen({ onLogin, onForgot }) {
             Plataforma de gestión operacional
           </p>
           <p style={{ margin: "10px 0 0", fontSize: 12, color: T.textMut, fontFamily: FONT.mono }}>
-            v1.0
+            v1.1
           </p>
         </div>
       </aside>
@@ -128,7 +128,7 @@ export function LoginScreen({ onLogin, onForgot }) {
             />
           )}
 
-          <div className="login__footer">Geo Constanza v1.0 · Fase 1 · Abril 2026</div>
+          <div className="login__footer">Geo Constanza v1.1 · Noviembre 2026</div>
         </div>
       </main>
     </div>

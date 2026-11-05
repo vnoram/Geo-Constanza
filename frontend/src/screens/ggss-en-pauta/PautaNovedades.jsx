@@ -1,6 +1,4 @@
-import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect, useRef } from "react";
-import { HistorialNovedad } from "../../components/novedades/HistorialNovedad";
 import { io } from "socket.io-client";
 import { T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
@@ -12,22 +10,12 @@ import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 const TOKEN_KEY    = "gc_token";
 const UMBRAL_PRECISION_NOVEDAD_M = 100;
 
-const TIPOS_NOVEDAD = [
-  "Robo",
-  "Robo en progreso",
-  "Intrusión",
-  "Incendio",
-  "Agresión",
-  "Emergencia médica",
-  "Falla técnica",
-  "Puerta abierta",
-  "Acceso no autorizado",
-  "Vandalismo",
-  "Alarma activada",
-  "Mantenimiento",
-  "Ronda",
-  "Sin novedad",
-  "Cambio de turno",
+// Tipos agrupados por urgencia (la urgencia real la asigna el backend según el tipo:
+// services/priorizacion.service.js). Los tipos antiguos siguen siendo válidos allí.
+const GRUPOS_NOVEDAD = [
+  { grupo: "Emergencia", color: T.red,    tipos: ["Robo", "Intrusión", "Incendio", "Agresión", "Emergencia médica"] },
+  { grupo: "Anomalía",   color: T.yellow, tipos: ["Falla técnica", "Puerta abierta", "Vandalismo"] },
+  { grupo: "Rutina",     color: T.accent, tipos: ["Ronda", "Sin novedad"] },
 ];
 
 const URGENCIA_COLOR = {
@@ -159,7 +147,7 @@ function ReportarModal({ onClose, onSuccess }) {
           <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{
             background: "none", border: "none", color: T.textMut,
             fontSize: 20, cursor: "pointer", lineHeight: 1,
-          }}><Icon name="x" size={16} /></button>
+          }}>✕</button>
         </div>
 
         {/* Indicador GPS */}
@@ -169,10 +157,10 @@ function ReportarModal({ onClose, onSuccess }) {
           background: gpsStyle.bg, border: `1px solid ${gpsStyle.border}`,
         }}>
           <span style={{ fontSize: 13, color: gpsStyle.text }}>
-            {gpsStatus === "loading" && <><Icon name="radio-tower" size={16} />{" Obteniendo ubicación..."}</>}
-            {gpsStatus === "ok"      && <><Icon name="map-pin" size={16} />{" Precisión de tu ubicación: ±"}{precisionGps}{" m"}</>}
-            {gpsStatus === "error"   && <><Icon name="triangle-alert" size={16} />{" GPS no disponible — se reportará sin coordenadas"}</>}
-            {gpsStatus === "idle"    && <><Icon name="radio-tower" size={16} />{" Iniciando GPS..."}</>}
+            {gpsStatus === "loading" && "📡 Obteniendo ubicación..."}
+            {gpsStatus === "ok"      && `📍 Precisión de tu ubicación: ±${precisionGps} m`}
+            {gpsStatus === "error"   && "⚠️ GPS no disponible — se reportará sin coordenadas"}
+            {gpsStatus === "idle"    && "📡 Iniciando GPS..."}
           </span>
         </div>
 
@@ -182,7 +170,7 @@ function ReportarModal({ onClose, onSuccess }) {
             borderRadius: 8, padding: "8px 12px", marginBottom: 16,
             fontSize: 12, color: T.yellow,
           }}>
-            <Icon name="triangle-alert" size={16} /> Tu ubicación en este equipo es imprecisa. Usa tu celular o tablet en la instalación.
+            ⚠️ Tu ubicación en este equipo es imprecisa. Usa tu celular o tablet en la instalación.
           </div>
         )}
 
@@ -205,8 +193,12 @@ function ReportarModal({ onClose, onSuccess }) {
               }}
             >
               <option value="" disabled>Selecciona un tipo...</option>
-              {TIPOS_NOVEDAD.map(t => (
-                <option key={t} value={t} style={{ background: T.bgCard }}>{t}</option>
+              {GRUPOS_NOVEDAD.map(g => (
+                <optgroup key={g.grupo} label={g.grupo} style={{ background: T.bgCard, color: `${g.color}CC` }}>
+                  {g.tipos.map(t => (
+                    <option key={t} value={t} style={{ background: T.bgCard, color: `${g.color}99` }}>{t}</option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>
@@ -385,7 +377,6 @@ export function PautaNovedades({ user }) {
             borderRadius: 8, padding: 14,
           }}>
             <div className="nov-card__body">
-            <div style={{ color: T.textMut, fontSize: 12 }}>{n.folio}</div>
             <div className="guard-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>
               <Badge color={colors.badge}>{urgencia}</Badge>
@@ -401,7 +392,6 @@ export function PautaNovedades({ user }) {
             )}
             </div>
             <div className="nov-card__pie">
-              <HistorialNovedad id={n.id} />
               <div className="nov-card__estado" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                 <Badge color={n.estado === "abierta" ? "yellow" : n.estado === "escalada" ? "red" : "accent"}>
                   {n.estado}
