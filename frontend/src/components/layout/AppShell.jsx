@@ -217,9 +217,6 @@ export function AppShell({ user, onLogout }) {
                   <Icon name={conSegundoFactor ? "check" : "key-round"} size={14} color={conSegundoFactor ? T.accent : "currentColor"} />
                   {conSegundoFactor ? "2FA verificado" : "Autenticación estándar"}
                 </div>
-                <div style={{ fontSize: 11, color: T.textMut, fontFamily: FONT.mono }}>
-                  {new Date().toLocaleTimeString("es-CL", { timeZone: "America/Santiago" })}
-                </div>
               </div>
               <button className="touch-target" onClick={() => setCambiandoPassword(true)} style={{
                 width: "100%", minHeight: 40, padding: "0 14px", marginBottom: 8,
