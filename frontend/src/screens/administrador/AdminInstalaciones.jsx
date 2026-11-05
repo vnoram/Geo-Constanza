@@ -14,15 +14,14 @@ import { DireccionAutocomplete } from "../../components/maps/DireccionAutocomple
 // ─── HELPERS ─────────────────────────────────────────────────────
 const CRITICIDAD_COLOR = { Alta: "red", Media: "yellow", Baja: "accent" };
 
-const TIPOS_RECINTO = ["Comercial", "Residencial", "Industrial", "Institucional", "Otro"];
+const TIPOS_RECINTO = ["Comercial", "Corporativo", "Residencial", "Industrial", "Institucional"];
 // Tipos antiguos que ya pueden estar guardados: se muestran con el tipo equivalente al editar.
 const TIPO_EQUIVALENTE = {
-  Corporativo: "Comercial",
   Educacional: "Institucional",
   Salud: "Institucional",
   Gubernamental: "Institucional",
 };
-const tipoRecinto = (valor) => TIPO_EQUIVALENTE[valor] || valor || "Comercial";
+const tipoRecinto = (valor) => (TIPOS_RECINTO.includes(valor) ? valor : TIPO_EQUIVALENTE[valor] || "Comercial");
 const NIVELES_CRITICIDAD = ["Alta", "Media", "Baja"];
 const ESTADOS = [
   { value: "activo", label: "Activo" },
