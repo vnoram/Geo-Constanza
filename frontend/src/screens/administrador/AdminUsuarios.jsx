@@ -13,10 +13,10 @@ const ROLES_DISPONIBLES = [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE, ROL.SUPERVISOR, RO
 const ROL_LABEL = { [ROL.GGSS_EN_PAUTA]: "GGSS Pauta", [ROL.GGSS_LIBRE]: "GGSS Libre", [ROL.SUPERVISOR]: "Supervisor", [ROL.OPERADOR_CENTRAL]: "Central", [ROL.ADMINISTRADOR]: "Admin" };
 const ROL_BADGE = { [ROL.GGSS_EN_PAUTA]: "accent", [ROL.GGSS_LIBRE]: "accent", [ROL.SUPERVISOR]: "yellow", [ROL.OPERADOR_CENTRAL]: "focus", [ROL.ADMINISTRADOR]: "red" };
 
-// Categorías de la lista, en el orden en que se muestran.
+// Categorías de la lista, de mayor a menor jerarquía: Central > Supervisor > Guardias.
 const GRUPOS = [
-  { clave: "supervisores", roles: [ROL.SUPERVISOR],                       titulo: "Supervisores" },
   { clave: "central",      roles: [ROL.OPERADOR_CENTRAL],                 titulo: "Central de monitoreo" },
+  { clave: "supervisores", roles: [ROL.SUPERVISOR],                       titulo: "Supervisores" },
   { clave: "guardias",     roles: [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE],    titulo: "Guardias (GGSS)" },
 ];
 
