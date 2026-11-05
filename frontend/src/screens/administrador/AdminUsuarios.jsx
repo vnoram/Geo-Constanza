@@ -338,6 +338,19 @@ export function AdminUsuarios() {
                   </div>
                 )}
 
+                {/* Distintivo de la central de monitoreo */}
+                {u.rol === ROL.OPERADOR_CENTRAL && (
+                  <div style={{ marginTop: 5 }}>
+                    <span style={{
+                      fontSize: 10, background: T.focusGhost, color: T.focusText,
+                      padding: "2px 8px", borderRadius: 4, fontWeight: 600,
+                      border: `1px solid ${T.focusText}33`,
+                    }}>
+                      CENTRAL
+                    </span>
+                  </div>
+                )}
+
                 {/* Instalación del guardia */}
                 {[ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(u.rol) && u.instalacion_asignada && (
                   <div className="admin-user-meta" style={{ fontSize: 10, color: T.textMut, marginTop: 3 }}>
