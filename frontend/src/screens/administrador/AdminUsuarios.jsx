@@ -15,10 +15,9 @@ const ROL_BADGE = { [ROL.GGSS_EN_PAUTA]: "accent", [ROL.GGSS_LIBRE]: "accent", [
 
 // Categorías de la lista, en el orden en que se muestran.
 const GRUPOS = [
-  { rol: ROL.SUPERVISOR,        titulo: "Supervisores" },
-  { rol: ROL.OPERADOR_CENTRAL,  titulo: "Central de monitoreo" },
-  { rol: ROL.GGSS_EN_PAUTA,     titulo: "Guardias en pauta" },
-  { rol: ROL.GGSS_LIBRE,        titulo: "Guardias libres" },
+  { clave: "supervisores", roles: [ROL.SUPERVISOR],                       titulo: "Supervisores" },
+  { clave: "central",      roles: [ROL.OPERADOR_CENTRAL],                 titulo: "Central de monitoreo" },
+  { clave: "guardias",     roles: [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE],    titulo: "Guardias (GGSS)" },
 ];
 
 const VACÍO = { rut: "", nombre: "", email: "", telefono: "", rol: ROL.GGSS_EN_PAUTA, instalacionIds: [], instalacion_asignada_id: "" };
@@ -288,17 +287,17 @@ export function AdminUsuarios() {
         </div>
       )}
 
-      {!loading && GRUPOS.map(({ rol, titulo }) => {
-        const delGrupo = usuarios.filter((u) => u.rol === rol);
+      {!loading && GRUPOS.map(({ clave, roles, titulo }) => {
+        const delGrupo = usuarios.filter((u) => roles.includes(u.rol));
         if (delGrupo.length === 0) return null;
         return (
-          <section key={rol} style={{ marginBottom: 22 }}>
+          <section key={clave} style={{ marginBottom: 22 }}>
             <div style={{
               display: "flex", alignItems: "center", gap: 8, margin: "4px 0 8px",
               paddingBottom: 6, borderBottom: `1px solid ${T.border}`,
             }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: T.textSec, letterSpacing: 0.4, textTransform: "uppercase" }}>{titulo}</span>
-              <Badge color={ROL_BADGE[rol] ?? "accent"}>{delGrupo.length}</Badge>
+              <Badge color={ROL_BADGE[roles[0]] ?? "accent"}>{delGrupo.length}</Badge>
             </div>
             {delGrupo.map((u) => {
         const instSup = u.instalaciones_sup ?? [];
