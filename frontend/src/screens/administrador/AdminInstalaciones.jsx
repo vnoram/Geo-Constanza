@@ -24,7 +24,7 @@ const TIPO_EQUIVALENTE = {
 // Un ícono por tipo de recinto (Lucide, mismo set del resto de la app).
 const ICONO_RECINTO = {
   Comercial: "store", Corporativo: "building-2", Residencial: "house", Industrial: "factory", Institucional: "landmark",
-  "Centro operativo": "radio-tower",
+  "Centro operativo": "monitor",
 };
 // El centro operativo es la sede de la central de monitoreo: se reconoce por su tipo o, en datos antiguos, por su nombre.
 const esCentroOperativo = (inst) => inst?.tipo_recinto === "Centro operativo" || /^\s*centro operativo/i.test(inst?.nombre || "");
