@@ -6,6 +6,7 @@ import {
   UserRoundCheck, Users, Wifi, WifiOff, X,
   ArrowUpRight, Ban, Banknote, CircleCheck, FilePen, Globe, GraduationCap,
   Hourglass, Moon, Paperclip, RefreshCw, Siren, Smartphone, Umbrella, Wrench, Zap,
+  Factory, House, Landmark, Store,
 } from "lucide-react";
 
 // Un solo set lineal (Lucide), trazo de 1.5 px. Se importa por nombre para que
@@ -15,6 +16,7 @@ const ICONS = {
   "file-pen": FilePen, globe: Globe, "graduation-cap": GraduationCap, hourglass: Hourglass,
   moon: Moon, paperclip: Paperclip, "refresh-cw": RefreshCw, siren: Siren,
   smartphone: Smartphone, umbrella: Umbrella, wrench: Wrench, zap: Zap,
+  factory: Factory, house: House, landmark: Landmark, store: Store,
   "arrow-left": ArrowLeft, bell: Bell, "building-2": Building2, "calendar-days": CalendarDays,
   camera: Camera, "chart-column": ChartColumn, check: Check, "chevron-down": ChevronDown,
   "chevron-right": ChevronRight, "circle-alert": CircleAlert, "clipboard-check": ClipboardCheck,

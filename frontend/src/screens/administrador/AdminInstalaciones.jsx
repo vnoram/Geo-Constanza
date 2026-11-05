@@ -21,6 +21,10 @@ const TIPO_EQUIVALENTE = {
   Salud: "Institucional",
   Gubernamental: "Institucional",
 };
+// Un ícono por tipo de recinto (Lucide, mismo set del resto de la app).
+const ICONO_RECINTO = {
+  Comercial: "store", Corporativo: "building-2", Residencial: "house", Industrial: "factory", Institucional: "landmark",
+};
 const tipoRecinto = (valor) => (TIPOS_RECINTO.includes(valor) ? valor : TIPO_EQUIVALENTE[valor] || "Comercial");
 const NIVELES_CRITICIDAD = ["Alta", "Media", "Baja"];
 const ESTADOS = [
@@ -712,7 +716,7 @@ function InstCard({ inst, onEditar }) {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, fontSize: 11, color: T.textSec }}>
         {inst.tipo_recinto && (
           <span style={{ background: T.bgInput, borderRadius: 6, padding: "3px 8px" }}>
-            <Icon name="building-2" size={16} /> {inst.tipo_recinto}
+            <Icon name={ICONO_RECINTO[tipoRecinto(inst.tipo_recinto)]} size={16} /> {tipoRecinto(inst.tipo_recinto)}
           </span>
         )}
         <span style={{ background: T.bgInput, borderRadius: 6, padding: "3px 8px" }}>
