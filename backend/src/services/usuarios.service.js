@@ -71,14 +71,17 @@ const listar = async ({ rol, estado, page, limit }) => {
   return { data, total, page, totalPages: Math.ceil(total / limit) };
 };
 
-const crear = async (data) => {
-  const { instalacionIds, comunas, password, ...campos } = data;
-  if (!Object.values(ROLES).includes(campos.rol)) throw Object.assign(new Error('Rol de usuario inválido.'), { statusCode: 400 });
+const rechazo = (mensaje) => Object.assign(new Error(mensaje), { statusCode: 400 });
 
-  // Sin contraseña inicial: se guarda una clave aleatoria que nadie conoce y se envía una invitación
-  // por correo para que la persona elija la suya.
-  const invitar = !password;
-  const password_hash = await bcrypt.hash(invitar ? crypto.randomBytes(32).toString('hex') : password, BCRYPT_ROUNDS);
+// Nadie define la contraseña de otra persona: se guarda una clave aleatoria que nadie conoce y se envía
+// una invitación por correo para que la persona elija la suya. Si llega `password`, se descarta.
+const crear = async (data) => {
+  // eslint-disable-next-line no-unused-vars
+  const { instalacionIds, comunas, password: _descartada, ...campos } = data;
+  if (!Object.values(ROLES).includes(campos.rol)) throw rechazo('Rol de usuario inválido.');
+  if (campos.rol === ROLES.ADMINISTRADOR) throw rechazo('No se pueden crear administradores desde el sistema.');
+
+  const password_hash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), BCRYPT_ROUNDS);
 
   // Guardar comunas de cobertura como JSON si el rol es supervisor
   if (campos.rol === ROLES.SUPERVISOR && Array.isArray(comunas)) {
@@ -101,20 +104,23 @@ const crear = async (data) => {
     return nuevo;
   });
 
-  if (!invitar) return creado;
   let invitacion_enviada = false;
   try { invitacion_enviada = await passwordReset.invitar(creado); } catch (_) { /* el usuario ya existe: se puede reenviar con "Olvidé mi contraseña" */ }
   return { ...creado, invitacion_enviada };
 };
 
 const editar = async (id, data) => {
-  const { instalacionIds, comunas, password, ...campos } = data;
-  if (campos.rol !== undefined && !Object.values(ROLES).includes(campos.rol)) {
-    throw Object.assign(new Error('Rol de usuario inválido.'), { statusCode: 400 });
-  }
-
-  if (password) {
-    campos.password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+  // eslint-disable-next-line no-unused-vars
+  const { instalacionIds, comunas, password: _descartada, ...campos } = data;
+  if (campos.rol !== undefined) {
+    if (!Object.values(ROLES).includes(campos.rol)) throw rechazo('Rol de usuario inválido.');
+    const actual = await prisma.usuario.findUnique({ where: { id }, select: { rol: true } });
+    if (actual?.rol === ROLES.ADMINISTRADOR && campos.rol !== ROLES.ADMINISTRADOR) {
+      throw rechazo('No se puede cambiar el rol de un administrador.');
+    }
+    if (campos.rol === ROLES.ADMINISTRADOR && actual?.rol !== ROLES.ADMINISTRADOR) {
+      throw rechazo('No se puede asignar el rol de administrador.');
+    }
   }
 
   // Actualizar comunas de cobertura si se envió el array (solo supervisores)

@@ -86,7 +86,6 @@
  *             required:
  *               - nombre
  *               - email
- *               - password
  *               - rol
  *             properties:
  *               nombre:
@@ -96,12 +95,10 @@
  *                 type: string
  *                 format: email
  *                 example: "cfuentes@geoconstanza.cl"
- *               password:
- *                 type: string
- *                 format: password
  *               rol:
  *                 type: string
- *                 enum: [pauta, libre, supervisor, central, admin]
+ *                 description: No se pueden crear administradores. La contraseña no se envía; la persona la elige con el enlace de invitación.
+ *                 enum: [pauta, libre, supervisor, central]
  *               instalacionId:
  *                 type: integer
  *                 description: Instalación principal asignada al usuario

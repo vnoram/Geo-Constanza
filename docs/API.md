@@ -19,6 +19,8 @@ de cada uno).
 | POST | `/2fa/enable` | autenticado |
 
 ## Usuarios (`/usuarios`)
+Reglas: el administrador nunca define la contraseña de otra persona (`password` en `POST` o `PUT` se descarta; al crear se envía una invitación por correo, válida 72 h). No se puede crear ni asignar el rol `admin`, ni cambiar el rol de un administrador existente (`400`).
+
 | Método | Ruta | Roles |
 |---|---|---|
 | GET | `/me` | autenticado |

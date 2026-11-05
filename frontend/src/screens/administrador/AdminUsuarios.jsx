@@ -8,11 +8,12 @@ import { api } from "../../services/api";
 import { ROLES as ROL } from "../../constants/roles";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
-const ROLES_DISPONIBLES = [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE, ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL, ROL.ADMINISTRADOR];
+// Admin no se asigna desde la interfaz: las cuentas de administrador se crean fuera del sistema.
+const ROLES_DISPONIBLES = [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE, ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL];
 const ROL_LABEL = { [ROL.GGSS_EN_PAUTA]: "GGSS Pauta", [ROL.GGSS_LIBRE]: "GGSS Libre", [ROL.SUPERVISOR]: "Supervisor", [ROL.OPERADOR_CENTRAL]: "Central", [ROL.ADMINISTRADOR]: "Admin" };
 const ROL_BADGE = { [ROL.GGSS_EN_PAUTA]: "accent", [ROL.GGSS_LIBRE]: "accent", [ROL.SUPERVISOR]: "yellow", [ROL.OPERADOR_CENTRAL]: "accent", [ROL.ADMINISTRADOR]: "red" };
 
-const VACÍO = { rut: "", nombre: "", email: "", telefono: "", password: "", rol: ROL.GGSS_EN_PAUTA, instalacionIds: [], instalacion_asignada_id: "" };
+const VACÍO = { rut: "", nombre: "", email: "", telefono: "", rol: ROL.GGSS_EN_PAUTA, instalacionIds: [], instalacion_asignada_id: "" };
 
 // ─── Helpers de UI ────────────────────────────────────────────────────────────
 const inputStyle = {
@@ -58,9 +59,8 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
       return;
     }
 
-    // Construir payload limpio. Sin contraseña, el servidor envía una invitación por correo.
+    // Construir payload limpio. La contraseña nunca la define el admin: el servidor envía una invitación por correo.
     const payload = { ...form };
-    if (!payload.password) delete payload.password;
     if (payload.rol !== ROL.SUPERVISOR)           delete payload.instalacionIds;
     if (![ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(payload.rol)) delete payload.instalacion_asignada_id;
 
@@ -105,7 +105,9 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
               <input className="touch-target" style={inputStyle} value={form.rut} onChange={(e) => set("rut", e.target.value)} placeholder="12345678-9" />
             </Field>
             <Field label="Rol" required>
-              <select className="touch-target" style={{ ...inputStyle, appearance: "none" }} value={form.rol} onChange={(e) => set("rol", e.target.value)}>
+              <select className="touch-target" style={{ ...inputStyle, appearance: "none" }} value={form.rol} onChange={(e) => set("rol", e.target.value)}
+                disabled={form.rol === ROL.ADMINISTRADOR}>
+                {form.rol === ROL.ADMINISTRADOR && <option value={ROL.ADMINISTRADOR}>{ROL_LABEL[ROL.ADMINISTRADOR]}</option>}
                 {ROLES_DISPONIBLES.map((r) => (
                   <option key={r} value={r} style={{ background: T.bgCard }}>{ROL_LABEL[r]}</option>
                 ))}
@@ -121,16 +123,15 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
             <input className="touch-target" style={inputStyle} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="usuario@geoconstanza.cl" />
           </Field>
 
-          {/* Fila 2: teléfono + contraseña */}
-          <div className="admin-form-grid" style={{ display: "grid", gap: "0 12px" }}>
-            <Field label="Teléfono">
-              <input className="touch-target" style={inputStyle} value={form.telefono} onChange={(e) => set("telefono", e.target.value)} placeholder="+56 9 1234 5678" />
-            </Field>
-            <Field label={esEdicion ? "Nueva contraseña" : "Contraseña (opcional)"}>
-              <input className="touch-target" style={inputStyle} type="password" value={form.password} onChange={(e) => set("password", e.target.value)}
-                placeholder={esEdicion ? "Dejar vacío para no cambiar" : "Vacía: se envía una invitación por correo"} />
-            </Field>
-          </div>
+          {!esEdicion && (
+            <p style={{ fontSize: 12, color: T.textSec, margin: "0 0 14px" }}>
+              La persona recibirá un correo con un enlace (válido 72 horas) para elegir su propia contraseña.
+            </p>
+          )}
+
+          <Field label="Teléfono">
+            <input className="touch-target" style={inputStyle} value={form.telefono} onChange={(e) => set("telefono", e.target.value)} placeholder="+56 9 1234 5678" />
+          </Field>
 
           {/* Instalación única — solo para GGSS */}
           {[ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(form.rol) && (
@@ -245,7 +246,6 @@ export function AdminUsuarios() {
       nombre: u.nombre,
       email: u.email,
       telefono: u.telefono ?? "",
-      password: "",
       rol: u.rol,
       instalacionIds,
       instalacion_asignada_id: u.instalacion_asignada_id ?? "",
