@@ -27,7 +27,8 @@ function AppRouter() {
   // El enlace del correo manda aunque ya haya una sesión abierta en este navegador.
   if (restablecer && (!user || new URLSearchParams(window.location.search).get("token"))) {
     const tokenUrl = new URLSearchParams(window.location.search).get("token");
-    return <ResetPasswordScreen token={tokenUrl} onBack={volverAlLogin} />;
+    const esInvitacion = new URLSearchParams(window.location.search).get("invitacion") === "1";
+    return <ResetPasswordScreen token={tokenUrl} invitacion={esInvitacion} onBack={volverAlLogin} />;
   }
 
   if (!user) {

@@ -49,13 +49,13 @@ const validarPassword = (password) => {
 };
 
 // Token aleatorio de un solo uso; en base solo se guarda su hash. Devuelve el enlace del frontend.
-const crearEnlace = async (usuarioId, vigenciaMs) => {
+const crearEnlace = async (usuarioId, vigenciaMs, { invitacion = false } = {}) => {
   const token = crypto.randomBytes(32).toString('base64url');
   await prismaGlobal.passwordReset.create({
     data: { usuario_id: usuarioId, token_hash: hashSha256(token), expira_en: new Date(Date.now() + vigenciaMs) },
   });
   const base = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
-  return { enlace: `${base}/restablecer?token=${token}` };
+  return { enlace: `${base}/restablecer?token=${token}${invitacion ? '&invitacion=1' : ''}` };
 };
 
 // Siempre resuelve igual exista o no el correo (no revela qué cuentas existen).
@@ -82,7 +82,7 @@ const solicitar = async (email, ip) => {
 // Invitación (usuario creado sin contraseña): el mismo mecanismo del reset, con vigencia de 72 horas.
 // La persona elige su propia contraseña; el administrador nunca la conoce.
 const invitar = async (usuario) => {
-  const { enlace } = await crearEnlace(usuario.id, INVITACION_VIGENCIA_H * 3600 * 1000);
+  const { enlace } = await crearEnlace(usuario.id, INVITACION_VIGENCIA_H * 3600 * 1000, { invitacion: true });
   const texto = `Hola ${usuario.nombre}. Se creó tu cuenta en Geo Constanza. Elige tu contraseña con este enlace (vale ${INVITACION_VIGENCIA_H} horas y solo se puede usar una vez): ${enlace}`;
   const html = `<p>Hola ${usuario.nombre},</p><p>Se creó tu cuenta en Geo Constanza. Elige tu contraseña con este enlace. Vale ${INVITACION_VIGENCIA_H} horas y solo se puede usar una vez:</p><p><a href="${enlace}">Elegir mi contraseña</a></p>`;
   const enviado = await enviarCorreo(usuario.email, 'Tu cuenta de Geo Constanza', html, texto);

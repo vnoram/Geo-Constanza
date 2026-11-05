@@ -9,7 +9,7 @@ import { api } from "../../services/api";
 const PASSWORD_MIN = 10;
 
 // Sin token: pide el correo. Con token (enlace del correo): define la nueva contraseña.
-export function ResetPasswordScreen({ token, onBack }) {
+export function ResetPasswordScreen({ token, invitacion = false, onBack }) {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [pass2, setPass2] = useState("");
@@ -39,7 +39,7 @@ export function ResetPasswordScreen({ token, onBack }) {
     setLoading(true);
     try {
       const res = await api.confirmPasswordReset(token, pass);
-      setMensaje(res.message);
+      setMensaje(invitacion ? "Tu contraseña quedó creada. Ya puedes iniciar sesión con tu RUT." : res.message);
       setHecho(true);
     } catch (err) {
       setError(err.message);
@@ -47,8 +47,8 @@ export function ResetPasswordScreen({ token, onBack }) {
     setLoading(false);
   };
 
-  const titulo = hecho ? (token ? "Contraseña actualizada" : "Revisa tu correo")
-    : token ? "Nueva contraseña" : "Restablecer contraseña";
+  const titulo = hecho ? (token ? (invitacion ? "Contraseña creada" : "Contraseña actualizada") : "Revisa tu correo")
+    : token ? (invitacion ? "Crea tu contraseña" : "Nueva contraseña") : "Restablecer contraseña";
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: T.bg }}>
@@ -65,12 +65,14 @@ export function ResetPasswordScreen({ token, onBack }) {
           <div>
             <p style={{ fontSize: 13, color: T.textSec, margin: "0 0 18px" }}>
               {token
-                ? "Elige una contraseña nueva de al menos 10 caracteres."
+                ? (invitacion
+                  ? "Te damos la bienvenida a Geo Constanza. Elige la contraseña con la que vas a entrar, de al menos 10 caracteres."
+                  : "Elige una contraseña nueva de al menos 10 caracteres.")
                 : "Ingresa el correo de tu cuenta y te enviaremos un enlace válido por 30 minutos."}
             </p>
             {token ? (
               <>
-                <Input label="Nueva contraseña" type="password" icon="key-round" value={pass} onChange={setPass} />
+                <Input label={invitacion ? "Contraseña" : "Nueva contraseña"} type="password" icon="key-round" value={pass} onChange={setPass} />
                 <Input label="Repetir contraseña" type="password" icon="key-round" value={pass2} onChange={setPass2} />
               </>
             ) : (
@@ -89,7 +91,7 @@ export function ResetPasswordScreen({ token, onBack }) {
             <div style={{ display: "flex", gap: 10 }}>
               <Btn variant="secondary" onClick={onBack}>Cancelar</Btn>
               <Btn onClick={token ? confirmar : solicitar} loading={loading} full>
-                {token ? "Cambiar contraseña" : "Enviar enlace"}
+                {token ? (invitacion ? "Crear contraseña" : "Cambiar contraseña") : "Enviar enlace"}
               </Btn>
             </div>
           </div>
