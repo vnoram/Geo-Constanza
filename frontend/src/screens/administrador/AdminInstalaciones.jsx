@@ -14,16 +14,15 @@ import { DireccionAutocomplete } from "../../components/maps/DireccionAutocomple
 // ─── HELPERS ─────────────────────────────────────────────────────
 const CRITICIDAD_COLOR = { Alta: "red", Media: "yellow", Baja: "accent" };
 
-const TIPOS_RECINTO = [
-  "Comercial",
-  "Corporativo",
-  "Residencial",
-  "Industrial",
-  "Educacional",
-  "Salud",
-  "Gubernamental",
-  "Otro",
-];
+const TIPOS_RECINTO = ["Comercial", "Residencial", "Industrial", "Institucional", "Otro"];
+// Tipos antiguos que ya pueden estar guardados: se muestran con el tipo equivalente al editar.
+const TIPO_EQUIVALENTE = {
+  Corporativo: "Comercial",
+  Educacional: "Institucional",
+  Salud: "Institucional",
+  Gubernamental: "Institucional",
+};
+const tipoRecinto = (valor) => TIPO_EQUIVALENTE[valor] || valor || "Comercial";
 const NIVELES_CRITICIDAD = ["Alta", "Media", "Baja"];
 const ESTADOS = [
   { value: "activo", label: "Activo" },
@@ -37,7 +36,7 @@ const FORM_INICIAL = {
   latitud: "",
   longitud: "",
   radio_geofence_m: "100",
-  tipo_recinto: "Corporativo",
+  tipo_recinto: "Comercial",
   nivel_criticidad: "Media",
   estado: "activo",
   supervisorIds: [],
@@ -136,7 +135,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
         latitud: inicial.latitud !== undefined && inicial.latitud !== null ? String(inicial.latitud) : "",
         longitud: inicial.longitud !== undefined && inicial.longitud !== null ? String(inicial.longitud) : "",
         radio_geofence_m: inicial.radio_geofence_m !== undefined && inicial.radio_geofence_m !== null ? String(inicial.radio_geofence_m) : "100",
-        tipo_recinto: inicial.tipo_recinto || "Corporativo",
+        tipo_recinto: tipoRecinto(inicial.tipo_recinto),
         nivel_criticidad: inicial.nivel_criticidad || "Media",
         estado: inicial.estado || "activo",
         supervisorIds: supIds,
