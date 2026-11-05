@@ -1,7 +1,11 @@
-jest.mock('../../config/database', () => ({ prisma: {
-  usuario: { findUnique: jest.fn(), findUniqueOrThrow: jest.fn(), findMany: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
-  supervisor_Instalacion: { createMany: jest.fn(), deleteMany: jest.fn() }, $transaction: jest.fn(),
-} }));
+jest.mock('../../config/database', () => {
+  const prisma = {
+    usuario: { findUnique: jest.fn(), findUniqueOrThrow: jest.fn(), findMany: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
+    supervisor_Instalacion: { createMany: jest.fn(), deleteMany: jest.fn() }, $transaction: jest.fn(),
+  };
+  // El perfil propio se lee por id del token con el cliente global (sirve también al super admin).
+  return { prisma, prismaGlobal: { usuario: prisma.usuario } };
+});
 jest.mock('bcryptjs', () => ({ hash: jest.fn() }));
 jest.mock('../passwordReset.service', () => ({ invitar: jest.fn() }));
 const { prisma } = require('../../config/database');
@@ -30,7 +34,7 @@ test('listado paginado usa filtros de rol/estado y no selecciona credenciales', 
   await service.listar({ page: 1, limit: 20 });
   expect(prisma.usuario.findMany.mock.calls[1][0].where).toEqual({});
 });
-test.each(Object.values(ROLES).filter(r => r !== ROLES.ADMINISTRADOR))('crea rol válido %s con clave aleatoria, sin persistir password plano', async rol => {
+test.each(Object.values(ROLES).filter(r => r !== ROLES.ADMINISTRADOR && r !== ROLES.SUPER_ADMIN))('crea rol válido %s con clave aleatoria, sin persistir password plano', async rol => {
   await service.crear({ ...datos, rol });
   expect(bcrypt.hash).toHaveBeenCalledWith(expect.stringMatching(/^[0-9a-f]{64}$/), 12);
   const consulta = prisma.usuario.create.mock.calls[0][0];
@@ -108,4 +112,11 @@ test('si la invitación falla el usuario igual queda creado e informa que no se 
   passwordReset.invitar.mockRejectedValue(new Error('smtp caído'));
   const sinClave = { ...datos, password: undefined };
   await expect(service.crear(sinClave)).resolves.toMatchObject({ id: 'u9', invitacion_enviada: false });
+});
+
+test('un administrador de empresa NO puede crear ni asignar el rol de plataforma (super_admin)', async () => {
+  await expect(service.crear({ ...datos, rol: ROLES.SUPER_ADMIN })).rejects.toMatchObject({ statusCode: 400 });
+  await expect(service.editar('u1', { rol: ROLES.SUPER_ADMIN })).rejects.toMatchObject({ statusCode: 400 });
+  expect(prisma.usuario.create).not.toHaveBeenCalled();
+  expect(prisma.usuario.update).not.toHaveBeenCalled();
 });

@@ -1,12 +1,12 @@
 const { Router } = require('express');
 const reportesController = require('../controllers/reportes.controller');
 const { authenticate } = require('../middlewares/auth');
-const { authorize } = require('../middlewares/rbac');
+const { authorize, exigirEmpresa } = require('../middlewares/rbac');
 const { ROLES } = require('../constants/roles');
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, exigirEmpresa);
 
 // Datos tabulares
 router.get('/asistencia',        authorize(ROLES.SUPERVISOR, ROLES.ADMINISTRADOR), reportesController.asistencia);

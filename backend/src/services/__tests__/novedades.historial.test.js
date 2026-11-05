@@ -3,7 +3,10 @@ jest.mock('../../config/database', () => ({ prisma: {
   novedad: { create: jest.fn(), update: jest.fn(), findUnique: jest.fn(), findUniqueOrThrow: jest.fn() },
   novedadHistorial: { create: jest.fn(), findMany: jest.fn() },
   usuario: { findUnique: jest.fn() }, turno: { findMany: jest.fn() },
+  empresa: { update: jest.fn() },
 } }));
+// Estas pruebas simulan la base: el contexto de empresa se fija aquí (en producción lo abre authenticate).
+jest.mock('../../config/tenant', () => ({ empresaActual: () => 'e1', conEmpresa: (_e, fn) => fn() }));
 jest.mock('../../socket/socketManager', () => ({ getSocketIO: jest.fn() }));
 jest.mock('../../utils/azureStorage', () => ({ generarUrlLectura: jest.fn() }));
 jest.mock('../../config/logger', () => ({ logger: { error: jest.fn(), warn: jest.fn() } }));
@@ -21,6 +24,7 @@ const supervisor = { id: 's1', rol: ROLES.SUPERVISOR };
 beforeEach(() => {
   jest.resetAllMocks();
   prisma.$transaction.mockImplementation(fn => fn(prisma));
+  prisma.empresa.update.mockResolvedValue({ ultimo_folio: 1 });
   const novedad = { id: 'n1', numero: 1, created_at: new Date(), instalacion_id: 'i1', usuario_id: 'g1', estado: ESTADO_NOVEDAD.ABIERTA };
   prisma.novedad.create.mockResolvedValue(novedad);
   prisma.novedad.update.mockResolvedValue(novedad);

@@ -1,7 +1,8 @@
 process.env.JWT_ACCESS_SECRET = 'secreto-acceso-solo-pruebas';
 process.env.JWT_REFRESH_SECRET = 'secreto-refresh-solo-pruebas';
 
-jest.mock('../../config/database', () => ({ prisma: { usuario: { findUnique: jest.fn() } } }));
+// authenticate corre antes de conocer la empresa: consulta con el cliente global.
+jest.mock('../../config/database', () => { const prisma = { usuario: { findUnique: jest.fn() } }; return { prisma, prismaGlobal: prisma }; });
 jest.mock('../../config/redis', () => ({ getRedis: jest.fn(() => null) }));
 
 const jwt = require('jsonwebtoken');
@@ -15,19 +16,21 @@ const correr = async (token) => {
   await authenticate({ headers: { authorization: `Bearer ${token}` } }, res, next);
   return { res, next };
 };
-const firmar = (extra = {}) => jwt.sign({ id: 'u1', rol: 'supervisor', ...extra }, process.env.JWT_ACCESS_SECRET, { expiresIn: '1h' });
+const firmar = (extra = {}) => jwt.sign({ id: 'u1', rol: 'supervisor', empresaId: 'e1', ...extra }, process.env.JWT_ACCESS_SECRET, { expiresIn: '1h' });
+// Lo que devuelve la base para un usuario activo de la empresa e1
+const vigente = (extra = {}) => ({ estado: 'activo', rol: 'supervisor', empresa_id: 'e1', empresa: { estado: 'activa' }, ...extra });
 
 beforeEach(() => jest.resetAllMocks());
 
 describe('authenticate confirma el estado actual del usuario', () => {
   test('deja pasar a un usuario activo con el mismo rol', async () => {
-    prisma.usuario.findUnique.mockResolvedValue({ estado: 'activo', rol: 'supervisor' });
+    prisma.usuario.findUnique.mockResolvedValue(vigente());
     const { next } = await correr(firmar());
     expect(next).toHaveBeenCalled();
   });
 
   test('un usuario desactivado pierde el acceso aunque su token no haya vencido', async () => {
-    prisma.usuario.findUnique.mockResolvedValue({ estado: 'inactivo', rol: 'supervisor' });
+    prisma.usuario.findUnique.mockResolvedValue(vigente({ estado: 'inactivo' }));
     const { res, next } = await correr(firmar());
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(401);
@@ -36,12 +39,12 @@ describe('authenticate confirma el estado actual del usuario', () => {
   test('un usuario eliminado o con otro rol ya no entra con el token viejo', async () => {
     prisma.usuario.findUnique.mockResolvedValue(null);
     expect((await correr(firmar())).res.status).toHaveBeenCalledWith(401);
-    prisma.usuario.findUnique.mockResolvedValue({ estado: 'activo', rol: 'pauta' });
+    prisma.usuario.findUnique.mockResolvedValue(vigente({ rol: 'pauta' }));
     expect((await correr(firmar())).res.status).toHaveBeenCalledWith(401);
   });
 
   test('el token temporal de 2FA sigue sin servir como sesión', async () => {
-    prisma.usuario.findUnique.mockResolvedValue({ estado: 'activo', rol: 'supervisor' });
+    prisma.usuario.findUnique.mockResolvedValue(vigente());
     const { res, next } = await correr(firmar({ tipo: '2fa_pending' }));
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(401);

@@ -9,7 +9,8 @@
  * Tras ejecutarlo, el usuario vuelve a iniciar sesión solo con contraseña y debe enrolar 2FA de nuevo.
  */
 require('dotenv').config();
-const { prisma } = require('../src/config/database');
+// Script de plataforma (se ejecuta a mano fuera de una petición): usa el cliente global a propósito.
+const { prismaGlobal: prisma } = require('../src/config/database');
 
 const main = async () => {
   const rut = process.argv[2];
@@ -30,6 +31,7 @@ const main = async () => {
   });
   await prisma.auditoria.create({
     data: {
+      empresa_id: usuario.empresa_id,
       usuario_id: usuario.id,
       accion: 'reiniciar_2fa_script',
       tabla_afectada: 'usuarios',

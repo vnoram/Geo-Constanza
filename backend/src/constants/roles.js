@@ -12,6 +12,8 @@ const ROLES = {
   SUPERVISOR: 'supervisor',
   OPERADOR_CENTRAL: 'central',
   ADMINISTRADOR: 'admin',
+  // Nivel de plataforma: no pertenece a ninguna empresa y solo gestiona empresas.
+  SUPER_ADMIN: 'super_admin',
 };
 
 module.exports = { ROLES };

@@ -2,7 +2,9 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { authenticator } = require('otplib');
-const { prisma } = require('../config/database');
+// Cliente global a propósito: estas operaciones trabajan sobre UN usuario identificado por el token
+// (o por el token de un solo uso del correo), muchas veces antes de que exista empresa en el contexto.
+const { prismaGlobal } = require('../config/database');
 const { jwtConfig } = require('../config/jwt');
 const { getRedis } = require('../config/redis');
 const { logger } = require('../config/logger');
@@ -86,20 +88,20 @@ const generarCodigosRecuperacion = () => Array.from({ length: CANTIDAD_CODIGOS_R
 
 // ── Enrolamiento ──────────────────────────────────────────────────────────────
 const iniciarEnrolamiento = async (usuarioId) => {
-  const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId } });
+  const usuario = await prismaGlobal.usuario.findUnique({ where: { id: usuarioId } });
   if (!usuario || usuario.estado !== 'activo') throw error('Usuario no disponible', 404);
   if (!rolExige2FA(usuario.rol)) throw error('Tu rol no utiliza segundo factor.', 403);
   if (usuario.two_factor_enabled) throw error('El segundo factor ya está activo. Pide a un administrador que lo reinicie.', 409);
 
   const secreto = authenticator.generateSecret();
-  await prisma.usuario.update({ where: { id: usuarioId }, data: { two_factor_secret: cifrar(secreto) } });
+  await prismaGlobal.usuario.update({ where: { id: usuarioId }, data: { two_factor_secret: cifrar(secreto) } });
 
   const emisor = process.env.TWO_FACTOR_ISSUER || 'Geo Constanza';
   return { otpauth_url: authenticator.keyuri(usuario.email, emisor, secreto), secreto };
 };
 
 const confirmarEnrolamiento = async (usuarioId, codigo) => {
-  const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId } });
+  const usuario = await prismaGlobal.usuario.findUnique({ where: { id: usuarioId } });
   if (!usuario || usuario.estado !== 'activo') throw error('Usuario no disponible', 404);
   if (usuario.two_factor_enabled) throw error('El segundo factor ya está activo.', 409);
   if (!usuario.two_factor_secret) throw error('Primero inicia el enrolamiento.', 400);
@@ -114,7 +116,7 @@ const confirmarEnrolamiento = async (usuarioId, codigo) => {
   }
 
   const codigos = generarCodigosRecuperacion();
-  await prisma.usuario.update({
+  await prismaGlobal.usuario.update({
     where: { id: usuarioId },
     data: {
       two_factor_enabled: true,
@@ -136,9 +138,12 @@ const verificarLogin = async (tempToken, codigo) => {
   }
   if (payload.tipo !== TIPO_TEMP) throw error('Sesión de verificación inválida.', 401);
 
-  const usuario = await prisma.usuario.findUnique({
+  const usuario = await prismaGlobal.usuario.findUnique({
     where: { id: payload.id },
-    include: { instalacion_asignada: { select: { id: true, nombre: true } } },
+    include: {
+      instalacion_asignada: { select: { id: true, nombre: true } },
+      empresa: { select: { id: true, nombre: true, estado: true } },
+    },
   });
   if (!usuario || usuario.estado !== 'activo' || !usuario.two_factor_enabled || !usuario.two_factor_secret) {
     throw error('Sesión de verificación inválida.', 401);
@@ -156,7 +161,7 @@ const verificarLogin = async (tempToken, codigo) => {
     if (delta !== null) {
       const paso = Math.floor(Date.now() / 30000) + delta;
       // Anti-reutilización: cada paso de 30 s solo sirve una vez.
-      const { count } = await prisma.usuario.updateMany({
+      const { count } = await prismaGlobal.usuario.updateMany({
         where: { id: usuario.id, OR: [{ two_factor_ultimo_paso: null }, { two_factor_ultimo_paso: { lt: paso } }] },
         data: { two_factor_ultimo_paso: paso },
       });
@@ -167,7 +172,7 @@ const verificarLogin = async (tempToken, codigo) => {
     const guardados = Array.isArray(usuario.two_factor_recovery) ? usuario.two_factor_recovery : [];
     if (guardados.includes(hash)) {
       // Un solo uso: se consume de forma condicional para evitar carreras.
-      const { count } = await prisma.usuario.updateMany({
+      const { count } = await prismaGlobal.usuario.updateMany({
         where: { id: usuario.id, two_factor_recovery: { equals: guardados } },
         data: { two_factor_recovery: guardados.filter((h) => h !== hash) },
       });
@@ -185,9 +190,9 @@ const verificarLogin = async (tempToken, codigo) => {
 
 // ── Desactivación por un administrador / script de emergencia ────────────────
 const reiniciar = async (usuarioId) => {
-  const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId } });
+  const usuario = await prismaGlobal.usuario.findUnique({ where: { id: usuarioId } });
   if (!usuario) throw error('Usuario no encontrado', 404);
-  await prisma.usuario.update({
+  await prismaGlobal.usuario.update({
     where: { id: usuarioId },
     data: { two_factor_enabled: false, two_factor_secret: null, two_factor_recovery: null, two_factor_ultimo_paso: null },
   });

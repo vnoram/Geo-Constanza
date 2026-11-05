@@ -1,4 +1,5 @@
-jest.mock('../../config/database', () => ({ prisma: { usuario: { findUnique: jest.fn(), update: jest.fn() } } }));
+// El servicio trabaja por identidad (id del token) con el cliente global; ambos nombres apuntan al mismo doble.
+jest.mock('../../config/database', () => { const prisma = { usuario: { findUnique: jest.fn(), update: jest.fn() } }; return { prisma, prismaGlobal: prisma }; });
 jest.mock('bcryptjs', () => ({ compare: jest.fn(), hash: jest.fn() }));
 jest.mock('../../config/redis', () => ({ getRedis: jest.fn() }));
 jest.mock('../correo.service', () => ({ enviarCorreo: jest.fn() }));

@@ -1,7 +1,9 @@
 // Restablecimiento de contraseña (AB#41): token aleatorio de un solo uso, 30 min, solo se guarda su hash.
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
-const { prisma } = require('../config/database');
+// Cliente global a propósito: estas operaciones trabajan sobre UN usuario identificado por el token
+// (o por el token de un solo uso del correo), muchas veces antes de que exista empresa en el contexto.
+const { prismaGlobal } = require('../config/database');
 const { getRedis } = require('../config/redis');
 const { logger } = require('../config/logger');
 const { hashSha256 } = require('../utils/cifrado');
@@ -49,7 +51,7 @@ const validarPassword = (password) => {
 // Token aleatorio de un solo uso; en base solo se guarda su hash. Devuelve el enlace del frontend.
 const crearEnlace = async (usuarioId, vigenciaMs) => {
   const token = crypto.randomBytes(32).toString('base64url');
-  await prisma.passwordReset.create({
+  await prismaGlobal.passwordReset.create({
     data: { usuario_id: usuarioId, token_hash: hashSha256(token), expira_en: new Date(Date.now() + vigenciaMs) },
   });
   const base = (process.env.FRONTEND_URL || '').replace(/\/$/, '');
@@ -66,7 +68,7 @@ const solicitar = async (email, ip) => {
   if (!correo || correo.length > 254) return { mensaje: MENSAJE_GENERICO };
   if (await superaLimite(`rl:reset:email:${correo}`, LIMITE_POR_EMAIL)) return { mensaje: MENSAJE_GENERICO };
 
-  const usuario = await prisma.usuario.findFirst({ where: { email: { equals: correo, mode: 'insensitive' } } });
+  const usuario = await prismaGlobal.usuario.findFirst({ where: { email: { equals: correo, mode: 'insensitive' } } });
   if (!usuario || usuario.estado !== 'activo') return { mensaje: MENSAJE_GENERICO };
 
   const { enlace } = await crearEnlace(usuario.id, TOKEN_VIGENCIA_MIN * 60 * 1000);
@@ -92,7 +94,7 @@ const confirmar = async (token, password) => {
   validarPassword(password);
   if (typeof token !== 'string' || token.length < 20 || token.length > 200) throw error(400, 'Enlace inválido o vencido');
 
-  const registro = await prisma.passwordReset.findUnique({ where: { token_hash: hashSha256(token) }, include: { usuario: true } });
+  const registro = await prismaGlobal.passwordReset.findUnique({ where: { token_hash: hashSha256(token) }, include: { usuario: true } });
   if (!registro || registro.usado_en || registro.expira_en <= new Date() || registro.usuario.estado !== 'activo') {
     throw error(400, 'Enlace inválido o vencido');
   }
@@ -102,7 +104,7 @@ const confirmar = async (token, password) => {
 
   const ahora = new Date();
   const hash = await bcrypt.hash(password, 12);
-  await prisma.$transaction(async (tx) => {
+  await prismaGlobal.$transaction(async (tx) => {
     // Consumo atómico: si dos solicitudes llegan a la vez, solo una afecta una fila.
     const consumido = await tx.passwordReset.updateMany({ where: { id: registro.id, usado_en: null }, data: { usado_en: ahora } });
     if (consumido.count !== 1) throw error(400, 'Enlace inválido o vencido');
@@ -125,7 +127,7 @@ const confirmar = async (token, password) => {
 // Cambio de contraseña desde "Mi cuenta": exige la actual y revoca las demás sesiones.
 const cambiar = async (usuarioId, actual, nueva) => {
   validarPassword(nueva);
-  const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId } });
+  const usuario = await prismaGlobal.usuario.findUnique({ where: { id: usuarioId } });
   if (!usuario || usuario.estado !== 'activo') throw error(401, 'Sesión inválida');
   if (typeof actual !== 'string' || !(await bcrypt.compare(actual, usuario.password_hash))) {
     throw error(400, 'La contraseña actual no es correcta');
@@ -133,7 +135,7 @@ const cambiar = async (usuarioId, actual, nueva) => {
   if (actual === nueva) throw error(400, 'La nueva contraseña debe ser distinta a la actual');
 
   const ahora = new Date();
-  await prisma.usuario.update({
+  await prismaGlobal.usuario.update({
     where: { id: usuarioId },
     data: { password_hash: await bcrypt.hash(nueva, 12), password_cambiada_en: ahora },
   });

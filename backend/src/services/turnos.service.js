@@ -1,4 +1,6 @@
 const { prisma } = require('../config/database');
+const { salaAdmin, salaCentral } = require('../constants/salas');
+const { empresaActual } = require('../config/tenant');
 const { getSocketIO } = require('../socket/socketManager');
 const { ROLES } = require('../constants/roles');
 const { resolverInstalacionesSupervisor, exigirAlcanceInstalacion } = require('./supervisor.helper');
@@ -87,7 +89,7 @@ const crear = async (data, creadoPor, user) => {
     data: { ...data, fecha: new Date(data.fecha), creado_por: creadoPor },
   });
 
-  try { getSocketIO().emit('admin:dashboard_update', { entity: 'turno' }); } catch (_) {}
+  try { getSocketIO().to([salaAdmin(empresaActual()), salaCentral(empresaActual())]).emit('admin:dashboard_update', { entity: 'turno' }); } catch (_) {}
 
   return turno;
 };
@@ -153,7 +155,7 @@ const editar = async (id, data, user) => {
     },
   });
 
-  try { getSocketIO().emit('admin:dashboard_update', { entity: 'turno' }); } catch (_) {}
+  try { getSocketIO().to([salaAdmin(empresaActual()), salaCentral(empresaActual())]).emit('admin:dashboard_update', { entity: 'turno' }); } catch (_) {}
 
   return { turno, anterior: actual, cambios };
 };
@@ -269,7 +271,7 @@ const crearPauta4x4 = async (data, creadoPor) => {
     turnosACrear.map((turno) => prisma.turno.create({ data: turno })),
   );
 
-  try { getSocketIO().emit('admin:dashboard_update', { entity: 'turno' }); } catch (_) {}
+  try { getSocketIO().to([salaAdmin(empresaActual()), salaCentral(empresaActual())]).emit('admin:dashboard_update', { entity: 'turno' }); } catch (_) {}
 
   return {
     creados: creados.length,

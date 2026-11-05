@@ -108,6 +108,8 @@ app.use('/api/v1/solicitudes', solicitudesRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/reportes', reportesRoutes);
 app.use('/api/v1/auditoria', auditoriaRoutes);
+// Nivel de plataforma (solo SUPER_ADMIN): gestión de empresas
+app.use('/api/v1/plataforma', require('./routes/plataforma.routes'));
 
 // Mantener el contrato JSON también para rutas inexistentes. Así el frontend
 // puede mostrar un error útil si VITE_API_URL quedó mal configurada.

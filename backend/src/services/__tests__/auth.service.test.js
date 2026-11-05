@@ -1,4 +1,5 @@
-jest.mock('../../config/database', () => ({ prisma: { usuario: { findUnique: jest.fn(), findFirst: jest.fn() } } }));
+// Login, renovar sesión y 2FA ocurren antes de conocer la empresa: usan el cliente global.
+jest.mock('../../config/database', () => { const prisma = { usuario: { findUnique: jest.fn(), findFirst: jest.fn() } }; return { prisma, prismaGlobal: prisma }; });
 jest.mock('bcryptjs', () => ({ compare: jest.fn() }));
 jest.mock('jsonwebtoken', () => ({ sign: jest.fn(), verify: jest.fn(), decode: jest.fn() }));
 jest.mock('../../config/redis', () => ({ getRedis: jest.fn() }));
@@ -10,7 +11,8 @@ const auth = require('../auth.service');
 const { ROLES } = require('../../constants/roles');
 const { ESTADO_USUARIO } = require('../../constants/estados');
 const perfil = { id: 'u1', rol: ROLES.GGSS_EN_PAUTA, nombre: 'Prueba', email: 'prueba@example.invalid', estado: ESTADO_USUARIO.ACTIVO,
-  password_hash: 'hash-simulado', two_factor_secret: 'dato-simulado-no-operativo' };
+  password_hash: 'hash-simulado', two_factor_secret: 'dato-simulado-no-operativo',
+  empresa_id: 'e1', empresa: { id: 'e1', nombre: 'Empresa Uno', estado: 'activa' } };
 let redis;
 beforeEach(() => {
   jest.resetAllMocks();

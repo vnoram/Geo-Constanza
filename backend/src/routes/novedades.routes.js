@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const novedadesController = require('../controllers/novedades.controller');
 const { authenticate } = require('../middlewares/auth');
-const { authorize } = require('../middlewares/rbac');
+const { authorize, exigirEmpresa } = require('../middlewares/rbac');
 const { ROLES } = require('../constants/roles');
 const multer = require('multer');
 
@@ -9,7 +9,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, exigirEmpresa);
 
 // ── Listado ───────────────────────────────────────────────────────────────
 // Supervisor ve su instalación, central/admin ven todas (filtro en service)

@@ -1,6 +1,9 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { prisma } = require('../config/database');
+// Cliente global a propósito: login, renovar sesión y el segundo factor ocurren ANTES de conocer la
+// empresa (por eso el RUT es único en toda la plataforma). Después de autenticar, todo usa el contexto.
+const { prismaGlobal } = require('../config/database');
+const { ESTADO_EMPRESA, ESTADO_USUARIO } = require('../constants/estados');
 const { jwtConfig } = require('../config/jwt');
 const { getRedis } = require('../config/redis');
 const twoFactor = require('./twoFactor.service');
@@ -19,11 +22,14 @@ const variantesRut = (rut) => {
 };
 
 const login = async (rut, password, _ip, _userAgent) => {
-  const usuario = await prisma.usuario.findFirst({
+  const usuario = await prismaGlobal.usuario.findFirst({
     where: { rut: { in: variantesRut(rut) } },
-    include: { instalacion_asignada: { select: { id: true, nombre: true } } },
+    include: {
+      instalacion_asignada: { select: { id: true, nombre: true } },
+      empresa: { select: { id: true, nombre: true, estado: true } },
+    },
   });
-  if (!usuario || usuario.estado !== 'activo') {
+  if (!usuario || usuario.estado !== ESTADO_USUARIO.ACTIVO) {
     throw Object.assign(new Error('Credenciales inválidas'), { statusCode: 401 });
   }
 
@@ -55,6 +61,10 @@ const login = async (rut, password, _ip, _userAgent) => {
   // Reset intentos fallidos
   try { if (redis) await redis.del(`login_attempts:${usuario.id}`); } catch (_) { /* ignorar */ }
 
+  // Una empresa suspendida no puede iniciar sesión (se avisa recién con la contraseña correcta,
+  // para no revelar a un tercero el estado de una cuenta).
+  exigirEmpresaActiva(usuario);
+
   // Segundo factor (TOTP) para supervisor y administrador.
   // - Enrolado: se exige el código antes de emitir sesión (devuelve tempToken).
   // - Sin enrolar: el acceso continúa y se avisa para que complete el enrolamiento (nadie queda fuera).
@@ -72,6 +82,7 @@ const login = async (rut, password, _ip, _userAgent) => {
 
 const verify2FA = async (tempToken, code) => {
   const usuario = await twoFactor.verificarLogin(tempToken, code);
+  exigirEmpresaActiva(usuario);
   const tokens = generateTokens(usuario);
   return { usuario: sanitizeUser(usuario), ...tokens };
 };
@@ -84,10 +95,14 @@ const refreshToken = async (token) => {
     // Refresh token mal formado, vencido o firmado con otra clave: es un 401, no un fallo del servidor.
     throw Object.assign(new Error('Token inválido'), { statusCode: 401 });
   }
-  const usuario = await prisma.usuario.findUnique({ where: { id: decoded.id } });
-  if (!usuario || usuario.estado !== 'activo') {
+  const usuario = await prismaGlobal.usuario.findUnique({
+    where: { id: decoded.id },
+    include: { empresa: { select: { id: true, nombre: true, estado: true } } },
+  });
+  if (!usuario || usuario.estado !== ESTADO_USUARIO.ACTIVO) {
     throw Object.assign(new Error('Token inválido'), { statusCode: 401 });
   }
+  exigirEmpresaActiva(usuario);
   // Sesión revocada por cambio de contraseña: el refresh token es anterior al cambio.
   if (usuario.password_cambiada_en && decoded.iat * 1000 < usuario.password_cambiada_en.getTime()) {
     throw Object.assign(new Error('Token inválido'), { statusCode: 401 });
@@ -109,15 +124,28 @@ const logout = async (token, _userId) => {
 const requestPasswordReset = (email, ip) => passwordReset.solicitar(email, ip);
 const confirmPasswordReset = (token, password) => passwordReset.confirmar(token, password);
 
+// Lanza 403 si la empresa del usuario está suspendida. El super admin (sin empresa) no se ve afectado.
+const exigirEmpresaActiva = (usuario) => {
+  if (usuario.empresa_id && usuario.empresa?.estado !== ESTADO_EMPRESA.ACTIVA) {
+    throw Object.assign(
+      new Error('La empresa se encuentra suspendida. Contacta al administrador de la plataforma.'),
+      { statusCode: 403, code: 'EMPRESA_SUSPENDIDA' },
+    );
+  }
+};
+
 const generateTokens = (usuario) => {
   const payload = {
     id: usuario.id,
     email: usuario.email,
     rol: usuario.rol,
     tipo_ggss: usuario.tipo_ggss || null,
+    // La empresa SIEMPRE sale de aquí (del token firmado por el servidor), nunca de lo que envíe el cliente.
+    // Es null solo para el super admin (nivel de plataforma).
+    empresaId: usuario.empresa_id ?? null,
   };
   const accessToken = jwt.sign(payload, jwtConfig.accessSecret, { expiresIn: jwtConfig.expiresIn[usuario.rol] });
-  const refreshToken = jwt.sign({ id: usuario.id }, jwtConfig.refreshSecret, { expiresIn: jwtConfig.refreshExpiresIn });
+  const refreshToken = jwt.sign({ id: usuario.id, empresaId: usuario.empresa_id ?? null }, jwtConfig.refreshSecret, { expiresIn: jwtConfig.refreshExpiresIn });
   return { accessToken, refreshToken };
 };
 
@@ -128,6 +156,7 @@ const sanitizeUser = (usuario) => ({
   rol: usuario.rol,
   tipo_ggss: usuario.tipo_ggss || null,
   instalacion_asignada: usuario.instalacion_asignada || null,
+  empresa: usuario.empresa ? { id: usuario.empresa.id, nombre: usuario.empresa.nombre } : null,
 });
 
 const changePassword = (usuarioId, actual, nueva) => passwordReset.cambiar(usuarioId, actual, nueva);

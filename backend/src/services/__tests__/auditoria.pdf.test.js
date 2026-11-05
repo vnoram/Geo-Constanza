@@ -1,6 +1,6 @@
 jest.mock('../../config/database', () => ({ prisma: { auditoria: { findMany: jest.fn(), count: jest.fn() } } }));
 jest.mock('../../middlewares/auth', () => ({ authenticate: (req, _res, next) => {
-  req.user = { id: 'u1', rol: req.get('x-test-role') || require('../../constants/roles').ROLES.ADMINISTRADOR }; next();
+  req.user = { id: 'u1', empresaId: 'e1', rol: req.get('x-test-role') || require('../../constants/roles').ROLES.ADMINISTRADOR }; next();
 } }));
 jest.mock('../../config/logger', () => ({ logger: { error: jest.fn() } }));
 const express = require('express');

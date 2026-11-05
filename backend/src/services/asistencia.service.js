@@ -2,7 +2,8 @@ const { prisma } = require('../config/database');
 const { getSocketIO } = require('../socket/socketManager');
 const geovalidacion = require('./geovalidacion.service');
 const { ROLES } = require('../constants/roles');
-const { SALAS, salaInstalacion } = require('../constants/salas');
+const { salaInstalacion, salaAdmin, salaCentral } = require('../constants/salas');
+const { empresaActual } = require('../config/tenant');
 const { toleranciaInstalacion } = require('../constants/cobertura');
 
 const { ahoraChile, sumarDias, aFechaDB, inicioDiaChile, finDiaChile, intervaloTurno, turnoVigente, instanteChile } = require('../utils/fechaChile');
@@ -230,7 +231,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
     }
     // Publicar ubicación GPS del guardia para el mapa del admin (solo si hay coords)
     if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
-      io.to([salaInstalacion(instalacion_id), SALAS.ADMIN, SALAS.CENTRAL]).emit('guardia:ubicacion', {
+      io.to([salaInstalacion(instalacion_id), salaAdmin(empresaActual()), salaCentral(empresaActual())]).emit('guardia:ubicacion', {
         guardia_id: usuario_id,
         instalacion_id,
         latitud: lat,
@@ -240,7 +241,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
       });
     }
     // Notificar al panel admin global
-    io.to([SALAS.ADMIN, SALAS.CENTRAL]).emit('admin:dashboard_update', { entity: 'asistencia' });
+    io.to([salaAdmin(empresaActual()), salaCentral(empresaActual())]).emit('admin:dashboard_update', { entity: 'asistencia' });
   } catch (_) {
     // Socket.IO no disponible — el registro se guarda igual
   }
@@ -292,7 +293,7 @@ const registrarSalida = async (data, user) => {
 
   // Notificar al panel admin global
   try {
-    getSocketIO().emit('admin:dashboard_update', { entity: 'asistencia' });
+    getSocketIO().to([salaAdmin(empresaActual()), salaCentral(empresaActual())]).emit('admin:dashboard_update', { entity: 'asistencia' });
   } catch (_) {}
 
   return actualizada;

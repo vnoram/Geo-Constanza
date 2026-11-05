@@ -13,9 +13,10 @@ const { uploadFotoToAzure, generarUrlLectura } = require('../utils/azureStorage'
 const { ROLES } = require('../constants/roles');
 const { ESTADO_NOVEDAD, ESTADO_USUARIO, ESTADO_TURNO } = require('../constants/estados');
 const { URGENCIAS } = require('../constants/urgencias');
-const { conFolio } = require('../utils/folioNovedad');
+const { conFolio, siguienteFolio } = require('../utils/folioNovedad');
 const { ACCION_NOVEDAD } = require('../constants/accionesNovedad');
-const { SALAS } = require('../constants/salas');
+const { salaAdmin, salaCentral } = require('../constants/salas');
+const { empresaActual } = require('../config/tenant');
 const { enviarNotificacion } = require('./notificacion.service');
 const { inicioDiaChile, finDiaChile, turnosDeHoy } = require('../utils/fechaChile');
 
@@ -254,8 +255,10 @@ const crear = async (data, file, user) => {
     }
 
     const novedad = await prisma.$transaction(async (tx) => {
+      const numero = await siguienteFolio(tx);
       const creada = await tx.novedad.create({
       data: {
+        numero,
         usuario_id: user.id,
         instalacion_id: turno.instalacion_id,
         turno_id: turno.id,
@@ -295,10 +298,10 @@ const crear = async (data, file, user) => {
         created_at: novedad.created_at,
       });
 
-      io.to([SALAS.ADMIN, SALAS.CENTRAL]).emit('admin:dashboard_update', { entity: 'novedad' });
+      io.to([salaAdmin(empresaActual()), salaCentral(empresaActual())]).emit('admin:dashboard_update', { entity: 'novedad' });
 
       if (urgencia === URGENCIAS.ROJO && turno.instalacion.nivel_criticidad === 'Alta') {
-        io.to(SALAS.CENTRAL).emit('alerta_critica_central', {
+        io.to(salaCentral(empresaActual())).emit('alerta_critica_central', {
           id: novedad.id,
           tipo,
           urgencia,

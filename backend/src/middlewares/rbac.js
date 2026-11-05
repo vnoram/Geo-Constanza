@@ -27,8 +27,29 @@ const authorize = (...allowedRoles) => {
 };
 
 /**
+ * Las rutas operativas (guardias, turnos, novedades...) pertenecen a una empresa.
+ * El super admin es de nivel de plataforma y no tiene empresa: no puede operar datos de empresas.
+ * Debe usarse después de authenticate.
+ */
+const exigirEmpresa = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'No autenticado' });
+  }
+  if (!req.user.empresaId) {
+    return res.status(403).json({
+      error: 'Esta ruta opera datos de una empresa; el nivel de plataforma no tiene acceso.',
+      rol_actual: req.user.rol,
+    });
+  }
+  next();
+};
+
+/**
  * Verifica que el supervisor tenga asignada la instalación indicada en req.params.instalacionId
  * o en req.body.instalacion_id. Debe usarse después de authenticate + authorize(ROLES.SUPERVISOR).
+ *
+ * Una instalación que no existe en la empresa del token (incluida una de OTRA empresa) responde 404;
+ * una de la empresa pero no asignada al supervisor responde 403.
  */
 const autorizarInstalacionSupervisor = async (req, res, next) => {
   try {
@@ -36,6 +57,12 @@ const autorizarInstalacionSupervisor = async (req, res, next) => {
 
     if (!instalacionId) {
       return next(); // Sin filtro de instalación → continuar (el service filtrará)
+    }
+
+    // El cliente `prisma` ya está limitado a la empresa del token
+    const instalacion = await prisma.instalacion.findUnique({ where: { id: instalacionId }, select: { id: true } });
+    if (!instalacion) {
+      return res.status(404).json({ error: 'Registro no encontrado.' });
     }
 
     const asignacion = await prisma.supervisor_Instalacion.findFirst({
@@ -55,4 +82,4 @@ const autorizarInstalacionSupervisor = async (req, res, next) => {
   }
 };
 
-module.exports = { authorize, autorizarInstalacionSupervisor };
+module.exports = { authorize, exigirEmpresa, autorizarInstalacionSupervisor };

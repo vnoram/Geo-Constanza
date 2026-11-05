@@ -225,7 +225,7 @@
 const { Router } = require('express');
 const usuariosController = require('../controllers/usuarios.controller');
 const { authenticate } = require('../middlewares/auth');
-const { authorize } = require('../middlewares/rbac');
+const { authorize, exigirEmpresa } = require('../middlewares/rbac');
 const { ROLES } = require('../constants/roles');
 
 const router = Router();
@@ -234,6 +234,9 @@ router.use(authenticate);
 
 // ── Perfil propio (cualquier rol autenticado) ──────────────────────────────
 router.get('/me', usuariosController.miInformacion);
+
+// Desde aquí las rutas operan datos de una empresa: el nivel de plataforma (super admin) no entra.
+router.use(exigirEmpresa);
 router.put('/me/token-dispositivo', require('../controllers/notificacion.controller').registrarDispositivo);
 
 // ── CRUD (solo admin, supervisor puede listar) ─────────────────────────────

@@ -1,12 +1,12 @@
 const { Router } = require('express');
 const asistenciaController = require('../controllers/asistencia.controller');
 const { authenticate } = require('../middlewares/auth');
-const { authorize } = require('../middlewares/rbac');
+const { authorize, exigirEmpresa } = require('../middlewares/rbac');
 const { ROLES } = require('../constants/roles');
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, exigirEmpresa);
 
 // ── Rutas sin parámetros → PRIMERO (evitar captura por /:param) ───────────
 

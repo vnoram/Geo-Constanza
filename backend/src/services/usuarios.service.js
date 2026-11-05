@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
-const { prisma } = require('../config/database');
+const { prisma, prismaGlobal } = require('../config/database');
 const { ROLES } = require('../constants/roles');
 const passwordReset = require('./passwordReset.service');
 
@@ -11,7 +11,8 @@ const BCRYPT_ROUNDS = 12;
  * Para supervisores incluye todas las instalaciones asignadas vía Supervisor_Instalacion.
  */
 const miInformacion = async (userId) => {
-  return prisma.usuario.findUniqueOrThrow({
+  // Cliente global a propósito: el id sale del token y el super admin (nivel de plataforma) no tiene empresa.
+  return prismaGlobal.usuario.findUniqueOrThrow({
     where: { id: userId },
     select: {
       id: true,
@@ -35,6 +36,7 @@ const miInformacion = async (userId) => {
         },
       },
       comunas_cobertura: true,
+      empresa: { select: { id: true, nombre: true } },
       created_at: true,
     },
   });
@@ -73,12 +75,15 @@ const listar = async ({ rol, estado, page, limit }) => {
 
 const rechazo = (mensaje) => Object.assign(new Error(mensaje), { statusCode: 400 });
 
+// El rol de plataforma (super_admin) no pertenece a ninguna empresa: nadie puede crearlo ni asignarlo desde aquí.
+const ROLES_DE_EMPRESA = Object.values(ROLES).filter((r) => r !== ROLES.SUPER_ADMIN);
+
 // Nadie define la contraseña de otra persona: se guarda una clave aleatoria que nadie conoce y se envía
 // una invitación por correo para que la persona elija la suya. Si llega `password`, se descarta.
 const crear = async (data) => {
   // eslint-disable-next-line no-unused-vars
   const { instalacionIds, comunas, password: _descartada, ...campos } = data;
-  if (!Object.values(ROLES).includes(campos.rol)) throw rechazo('Rol de usuario inválido.');
+  if (!ROLES_DE_EMPRESA.includes(campos.rol)) throw rechazo('Rol de usuario inválido.');
   if (campos.rol === ROLES.ADMINISTRADOR) throw rechazo('No se pueden crear administradores desde el sistema.');
 
   const password_hash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), BCRYPT_ROUNDS);
@@ -113,7 +118,7 @@ const editar = async (id, data) => {
   // eslint-disable-next-line no-unused-vars
   const { instalacionIds, comunas, password: _descartada, ...campos } = data;
   if (campos.rol !== undefined) {
-    if (!Object.values(ROLES).includes(campos.rol)) throw rechazo('Rol de usuario inválido.');
+    if (!ROLES_DE_EMPRESA.includes(campos.rol)) throw rechazo('Rol de usuario inválido.');
     const actual = await prisma.usuario.findUnique({ where: { id }, select: { rol: true } });
     if (actual?.rol === ROLES.ADMINISTRADOR && campos.rol !== ROLES.ADMINISTRADOR) {
       throw rechazo('No se puede cambiar el rol de un administrador.');
