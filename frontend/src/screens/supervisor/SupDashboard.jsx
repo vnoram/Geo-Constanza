@@ -74,8 +74,8 @@ export function SupDashboard() {
       {/* ── KPIs de novedades del área ────────────────────────────── */}
       {data.kpis && (
         <div className="metrics-grid" style={{ display: "grid", gap: 10, marginBottom: 20 }}>
-          <KPI label="Nov. Abiertas"  value={data.kpis.novedadesAbiertas}  sub="activas"  accent={T.yellow} />
-          <KPI label="Nov. Escaladas" value={data.kpis.novedadesEscaladas} sub="urgentes" accent={T.red}    />
+          <KPI label="Nov. Pendientes" value={data.kpis.novedadesPendientes ?? data.kpis.novedadesAbiertas} sub="sin resolver" accent={T.yellow} />
+          <KPI label="Nov. Recientes"  value={data.kpis.novedadesRecientes ?? 0} sub="últimas 12 h" accent={T.accent} />
         </div>
       )}
 

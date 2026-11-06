@@ -6,6 +6,7 @@ import { Badge } from "../../components/ui/Badge";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 import { SOCKET_URL } from "../../config/api";
+import { esRutina } from "../../utils/novedades";
 
 
 const URGENCIA_COLOR = {
@@ -24,7 +25,7 @@ function formatFechaHora(dateStr) {
 }
 
 // ─── Modal: Resolver con comentario ──────────────────────────────────
-function ResolverModal({ novedad, onClose, onSuccess }) {
+export function ResolverModal({ novedad, onClose, onSuccess }) {
   const [comentario, setComentario] = useState("");
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState(null);
@@ -59,13 +60,13 @@ function ResolverModal({ novedad, onClose, onSuccess }) {
         borderRadius: 8, padding: 24, width: "100%", maxWidth: 400,
       }}>
         <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: T.text }}>Resolver Novedad</span>
+          <span style={{ fontWeight: 700, fontSize: 15, color: T.focusText }}>Resolver Novedad</span>
           <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{
             background: "none", border: "none", color: T.textMut, fontSize: 20, cursor: "pointer",
           }}>✕</button>
         </div>
         <div style={{ fontSize: 13, color: T.textSec, marginBottom: 16 }}>
-          <strong style={{ color: T.text }}>{novedad.tipo}</strong>
+          <strong style={{ color: (URGENCIA_COLOR[novedad.urgencia] ?? URGENCIA_COLOR.verde).border }}>{novedad.tipo}</strong>
           {" — "}{novedad.descripcion}
         </div>
         <form onSubmit={handleSubmit}>
@@ -76,7 +77,7 @@ function ResolverModal({ novedad, onClose, onSuccess }) {
             <textarea
               className="touch-target"
               value={comentario}
-              onChange={e => setComentario(e.target.value)}
+              onChange={e => { setComentario(e.target.value); if (error) setError(null); }}
               placeholder="Describe cómo se resolvió..."
               rows={3}
               style={{
@@ -97,10 +98,109 @@ function ResolverModal({ novedad, onClose, onSuccess }) {
             </div>
           )}
           <div className="action-wrap modal-actions" style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <Btn variant="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn>
-            <Btn loading={loading}>Marcar como resuelta</Btn>
+            <Btn variant="ghost" className="gc-accion-btn gc-accion-btn--naranja" onClick={onClose} disabled={loading}>Cancelar</Btn>
+            <Btn variant="ghost" className="gc-accion-btn gc-accion-btn--verde" loading={loading}>Marcar como resuelta</Btn>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Tarjeta compacta de novedad (una fila); al pulsarla se abre el detalle ───
+export function TarjetaNovedadCompacta({ n, onClick }) {
+  const urgencia = n.urgencia ?? "verde";
+  const colors   = URGENCIA_COLOR[urgencia] ?? URGENCIA_COLOR.verde;
+  const resuelta = n.estado === "resuelta";
+  const escalada = n.estado === "escalada";
+  const instNombre = n.instalacion?.nombre ?? "—";
+  return (
+            <button className="touch-target nov-card-compacta nov-ronda" onClick={onClick}
+              title="Ver detalle" style={{
+                display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
+                "--nov-c": colors.border,
+                background: T.bgCard, borderRadius: 8, border: `2px solid ${esRutina(n) ? T.border : colors.border}`,
+                padding: "10px 14px", cursor: "pointer", fontFamily: "var(--font-ui)", minWidth: 0,
+              }}>
+              <span className="nov-ronda__tipo" style={{ fontWeight: 700, fontSize: 14, color: esRutina(n) ? T.text : colors.border, whiteSpace: "nowrap" }}>{n.tipo}</span>
+              <span style={{ fontSize: 12, color: esRutina(n) ? T.textSec : "#B39BE0", fontWeight: 600, whiteSpace: "nowrap" }}>{instNombre}</span>
+              <span style={{ fontSize: 12, color: T.textSec, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {n.descripcion}
+              </span>
+              {!esRutina(n) && !resuelta && (
+                <Badge color={escalada ? "red" : "yellow"}>{String(n.estado).replace("_", " ")}</Badge>
+              )}
+              {!esRutina(n) && <span className="nov-ronda__badge"><Badge color={colors.badge}>{urgencia}</Badge></span>}
+            </button>
+  );
+}
+
+// ─── Detalle de una novedad (ventana emergente) ─────────────────────
+export function DetalleNovedadModal({ novedad: n, onClose, onResolver, onEscalar, onDerivar, escalando }) {
+  const colors = URGENCIA_COLOR[n.urgencia ?? "verde"] ?? URGENCIA_COLOR.verde;
+  const fila = (etiqueta, valor) => valor ? (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: 11, color: "#9F8FC4", fontWeight: 600, marginBottom: 3 }}>{etiqueta}</div>
+      <div style={{ fontSize: 13, color: T.text, whiteSpace: "pre-wrap" }}>{valor}</div>
+    </div>
+  ) : null;
+  return (
+    <div className="responsive-modal-overlay" onClick={onClose} style={{
+      position: "fixed", inset: 0, zIndex: 100, background: "rgba(14,23,20,0.85)", backdropFilter: "blur(4px)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+    }}>
+      <div className="responsive-modal" onClick={e => e.stopPropagation()} style={{
+        background: T.bgCard, border: `2px solid ${colors.border}`, borderRadius: 8, padding: 24,
+        width: "100%", maxWidth: 760, maxHeight: "90vh", overflowY: "auto",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, gap: 8 }}>
+          <span style={{ fontWeight: 700, fontSize: 16, color: colors.border }}>{n.tipo}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Badge color={colors.badge}>{n.urgencia ?? "verde"}</Badge>
+            <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{
+              background: "none", border: "none", color: T.textMut, fontSize: 20, cursor: "pointer",
+            }}>✕</button>
+          </div>
+        </div>
+        {n.foto_url_firmada && (
+          <img src={n.foto_url_firmada} alt="Foto adjunta a la novedad" style={{
+            display: "block", width: "100%", height: "auto", maxHeight: "50vh", objectFit: "contain",
+            background: T.bgInput, borderRadius: 8, border: `1px solid ${T.border}`, marginBottom: 14,
+          }} />
+        )}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0 28px", alignItems: "start" }}>
+          {/* Datos cortos a la izquierda */}
+          <div>
+            {fila("Instalación", n.instalacion?.nombre)}
+            {fila("Guardia", n.usuario?.nombre)}
+            {fila("Reportada", formatFechaHora(n.created_at))}
+            {fila("Estado", n.estado ? (n.estado.charAt(0).toUpperCase() + n.estado.slice(1)).replace("_", " ") : null)}
+            {n.estado === "resuelta" && fila("Resuelta el", n.fecha_atencion ? formatFechaHora(n.fecha_atencion) : null)}
+            {n.estado === "resuelta" && fila("Resuelta por", n.responsable?.nombre)}
+            {n.estado === "en_atencion" && fila("Derivada a", n.responsable?.nombre)}
+            {n.gps_dentro_rango === false && (
+              <div style={{ marginTop: 4 }}><Badge color="yellow">GPS fuera de rango</Badge></div>
+            )}
+          </div>
+          {/* Textos largos a la derecha: crecen sin empujar el resto */}
+          <div style={{ minWidth: 0, maxHeight: "40vh", overflowY: "auto", overflowWrap: "anywhere" }}>
+            {fila("Descripción", n.descripcion)}
+            {n.estado === "resuelta" && fila("Comentario de cierre", n.comentario_cierre)}
+          </div>
+        </div>
+        {(onResolver || onDerivar) && n.estado !== "resuelta" && !esRutina(n) && (
+          <div className="action-wrap modal-actions" style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
+            {onDerivar && (
+              <Btn variant="ghost" className="gc-accion-btn gc-accion-btn--morado" onClick={onDerivar}>Derivar a supervisor</Btn>
+            )}
+            {onEscalar && n.estado !== "escalada" && (
+              <Btn variant="ghost" className="gc-accion-btn gc-accion-btn--morado" loading={escalando} onClick={onEscalar}>Escalar</Btn>
+            )}
+            {onResolver && (
+              <Btn variant="ghost" className="gc-accion-btn gc-accion-btn--verde" onClick={onResolver}>Resolver</Btn>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -187,7 +287,8 @@ export function SupNovedades({ user }) {
   const [resolverTarget, setResolver] = useState(null); // novedad seleccionada para resolver
   const [actionLoading, setActionLoading] = useState({}); // { [id]: true }
   const [alertaCritica, setAlertaCritica] = useState(null);
-  const [vista, setVista]             = useState("activas"); // "activas" | "resueltas"
+  const [detalle, setDetalle]         = useState(null); // novedad abierta en la ventana de detalle
+  const [vista, setVista]             = useState("pendientes"); // "recientes" | "pendientes" | "resueltas"
   const socketRef = useRef(null);
 
   const cargarNovedades = async () => {
@@ -265,9 +366,17 @@ export function SupNovedades({ user }) {
     setResolver(null);
   };
 
-  const activas   = novedades.filter(n => n.estado !== "resuelta");
-  const resueltas = novedades.filter(n => n.estado === "resuelta");
-  const visibles  = vista === "resueltas" ? resueltas : activas;
+  const hace12h    = Date.now() - 12 * 60 * 60 * 1000;
+  // Rondas y registros de rutina van aparte (Libro de rondas); no cuentan como incidencia
+  const incidencias = novedades.filter(n => !esRutina(n));
+  const rondas      = novedades.filter(n => esRutina(n));
+  const pendientes  = incidencias.filter(n => n.estado !== "resuelta");
+  const resueltas   = incidencias.filter(n => n.estado === "resuelta");
+  const recientes   = incidencias.filter(n => new Date(n.created_at).getTime() >= hace12h);
+  const visibles    = vista === "resueltas" ? resueltas
+                    : vista === "recientes" ? recientes
+                    : vista === "rondas"    ? rondas
+                    : pendientes;
 
   return (
     <div className="operations-screen">
@@ -306,8 +415,10 @@ export function SupNovedades({ user }) {
 
       <div role="tablist" style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
         {[
-          { id: "activas",   label: "Activas",   count: activas.length },
+          { id: "recientes",  label: "Recientes",  count: recientes.length },
+          { id: "pendientes", label: "Pendientes", count: pendientes.length },
           { id: "resueltas", label: "Resueltas", count: resueltas.length },
+          { id: "rondas",     label: "Libro de rondas", count: rondas.length },
         ].map(t => {
           const activo = vista === t.id;
           return (
@@ -315,14 +426,14 @@ export function SupNovedades({ user }) {
               key={t.id}
               role="tab"
               aria-selected={activo}
-              className="touch-target"
+              className="touch-target gc-tab-btn"
               onClick={() => setVista(t.id)}
               style={{
                 padding: "8px 14px", borderRadius: 8, cursor: "pointer",
                 fontSize: 13, fontWeight: 700, fontFamily: "var(--font-ui)",
-                background: activo ? T.bgCard : "transparent",
-                color: activo ? T.text : T.textSec,
-                border: `1px solid ${activo ? T.accent : T.border}`,
+                background: activo ? "rgba(122,78,191,0.22)" : "transparent",
+                color: activo ? "#D2C6EE" : T.textSec,
+                border: `1px solid ${activo ? "rgba(159,131,214,0.75)" : T.border}`,
               }}
             >
               {t.label} ({t.count})
@@ -336,94 +447,31 @@ export function SupNovedades({ user }) {
           textAlign: "center", color: T.textMut, padding: 32, fontSize: 14,
           background: T.bgCard, borderRadius: 8, border: `1px solid ${T.border}`,
         }}>
-          {vista === "resueltas" ? "Aún no hay novedades resueltas." : "No hay novedades activas."}
+          {vista === "resueltas" ? "Aún no hay novedades resueltas."
+            : vista === "recientes" ? "No hay novedades en las últimas 12 h."
+            : vista === "rondas"    ? "Aún no hay rondas registradas."
+            : "No hay novedades pendientes."}
         </div>
       )}
 
       <div className="nov-list">
       {visibles.map(n => {
-        const urgencia = n.urgencia ?? "verde";
-        const colors   = URGENCIA_COLOR[urgencia] ?? URGENCIA_COLOR.verde;
-        const resuelta = n.estado === "resuelta";
-        const escalada = n.estado === "escalada";
-        const guardaNombre = n.usuario?.nombre ?? "—";
-        const instNombre   = n.instalacion?.nombre ?? "—";
-
+        // Todas las novedades: tarjeta compacta; al pulsarla se abre el detalle completo
         return (
-          <div className={`responsive-card nov-card${n.foto_url_firmada ? "" : " nov-card--sinfoto"}`} key={n.id} style={{
-            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
-            borderLeft: `4px solid ${colors.border}`,
-            padding: 14,
-            opacity: resuelta ? 0.6 : 1,
-          }}>
-            <div className="nov-card__body">
-            <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-              <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>
-              <Badge color={colors.badge}>{urgencia}</Badge>
-            </div>
-
-            <div style={{ fontSize: 12, color: T.textMut, marginBottom: 4 }}>
-              {guardaNombre} · {instNombre} · {formatFechaHora(n.created_at)}
-            </div>
-            {resuelta && n.fecha_atencion && (
-              <div style={{ fontSize: 12, color: T.textMut, marginBottom: 4 }}>
-                Resuelta el {formatFechaHora(n.fecha_atencion)}
-              </div>
-            )}
-
-            <div style={{ fontSize: 12, color: T.textSec, marginBottom: 8 }}>
-              {n.descripcion}
-            </div>
-
-            {resuelta && n.comentario_cierre && (
-              <div style={{ fontSize: 12, color: T.textSec, marginBottom: 8 }}>
-                Cierre: {n.comentario_cierre}
-              </div>
-            )}
-
-            </div>
-
-            {n.foto_url_firmada && (
-              <div className="nov-card__foto"><FotoNovedad url={n.foto_url_firmada} /></div>
-            )}
-
-            <div className="nov-card__pie">
-            {/* Badges de estado + GPS */}
-            <div className="nov-card__estado" style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-              <Badge color={resuelta ? "accent" : escalada ? "red" : "yellow"}>
-                {n.estado}
-              </Badge>
-              {n.gps_dentro_rango === false && (
-                <Badge color="yellow">GPS fuera de rango</Badge>
-              )}
-            </div>
-
-            {/* Acciones (sólo si no está resuelta) */}
-            {!resuelta && (
-              <div className="action-wrap" style={{ display: "flex", gap: 8 }}>
-                <Btn
-                  variant="ghost"
-                  onClick={() => setResolver(n)}
-                  disabled={!!actionLoading[n.id]}
-                >
-                  Resolver
-                </Btn>
-                {!escalada && (
-                  <Btn
-                    variant="ghost"
-                    loading={!!actionLoading[n.id]}
-                    onClick={() => handleEscalar(n.id)}
-                  >
-                    Escalar
-                  </Btn>
-                )}
-              </div>
-            )}
-            </div>
-          </div>
+            <TarjetaNovedadCompacta key={n.id} n={n} onClick={() => setDetalle(n)} />
         );
       })}
       </div>
+
+      {detalle && (
+        <DetalleNovedadModal
+          novedad={novedades.find(x => x.id === detalle.id) ?? detalle}
+          onClose={() => setDetalle(null)}
+          escalando={!!actionLoading[detalle.id]}
+          onResolver={() => { const n = detalle; setDetalle(null); setResolver(n); }}
+          onEscalar={async () => { await handleEscalar(detalle.id); setDetalle(null); }}
+        />
+      )}
 
       {resolverTarget && (
         <ResolverModal
