@@ -2,6 +2,7 @@
 const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
+const { SOLO_INCIDENCIAS, TIPOS_RUTINA } = require('./priorizacion.service');
 const { ahoraChile, sumarDias, aFechaDB, inicioDiaChile, finDiaChile } = require('../utils/fechaChile');
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -45,13 +46,16 @@ const reporteAsistencia = async (query, user) => {
 
 // ── Reporte de Novedades ───────────────────────────────────────────
 const reporteIncidentes = async (query, user) => {
-  const { fecha_inicio, fecha_fin, instalacion_id, tipo, urgencia } = query;
+  const { fecha_inicio, fecha_fin, instalacion_id, tipo, urgencia, categoria } = query;
 
   const instFiltro = await resolverInstalaciones(instalacion_id, user);
 
   const where = {};
   if (instFiltro)  where.instalacion_id = instFiltro;
   if (tipo)        where.tipo    = tipo;
+  // categoria=incidencias | rutina (libro de rondas). Sin parámetro: todo, como antes.
+  if (!tipo && categoria === 'incidencias') where.tipo = { notIn: TIPOS_RUTINA };
+  if (!tipo && categoria === 'rutina')      where.tipo = { in: TIPOS_RUTINA };
   if (urgencia)    where.urgencia = urgencia;
   if (fecha_inicio || fecha_fin) {
     where.created_at = {};
@@ -81,7 +85,7 @@ const novedadesPorSemana = async (user) => {
   const hace7dias = inicioDiaChile(sumarDias(hoy, -6));
 
   const novedades = await prisma.novedad.findMany({
-    where: { created_at: { gte: hace7dias }, ...(alcance && { instalacion_id: alcance }) },
+    where: { created_at: { gte: hace7dias }, ...SOLO_INCIDENCIAS, ...(alcance && { instalacion_id: alcance }) },
     select: { created_at: true, urgencia: true },
   });
 
@@ -163,7 +167,7 @@ const resumenMensual = async (mes, anio, user) => {
     }),
     prisma.novedad.groupBy({
       by: ['instalacion_id'],
-      where: { created_at: { gte: inicioInstantes, lt: siguienteInstantes }, ...porInstalacion },
+      where: { created_at: { gte: inicioInstantes, lt: siguienteInstantes }, ...SOLO_INCIDENCIAS, ...porInstalacion },
       _count: { id: true },
     }),
   ]);

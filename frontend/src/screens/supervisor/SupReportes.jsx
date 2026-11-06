@@ -33,7 +33,7 @@ async function cargarLibsPDF() {
 }
 
 // ─── GENERADOR PDF OS-10 ─────────────────────────────────────────
-async function generarPDFOS10({ asistencias, novedades, instNombre, fechaInicio, fechaFin, autorNombre }) {
+async function generarPDFOS10({ asistencias, novedades, rondas = [], instNombre, fechaInicio, fechaFin, autorNombre }) {
   const JsPDF = await cargarLibsPDF();
   const doc   = new JsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const PW    = doc.internal.pageSize.getWidth();
@@ -78,7 +78,7 @@ async function generarPDFOS10({ asistencias, novedades, instNombre, fechaInicio,
   campo("Período:",        `${fechaInicio || "—"} al ${fechaFin || "—"}`);
   campo("Generado:",       hoy);
   campo("Responsable:",    autorNombre    || "Sistema Geo Constanza");
-  campo("N° Registros:",   `${asistencias.length} asistencias · ${novedades.length} novedades`);
+  campo("N° Registros:",   `${asistencias.length} asistencias · ${novedades.length} novedades · ${rondas.length} registros de ronda`);
 
   // ── Sección 1: Asistencia ─────────────────────────────────────
   y += 4;
@@ -137,7 +137,7 @@ async function generarPDFOS10({ asistencias, novedades, instNombre, fechaInicio,
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(0, 229, 176);
-  doc.text("2.  NOVEDADES DEL PERÍODO", 14, y + 5.5);
+  doc.text("2.  NOVEDADES E INCIDENCIAS DEL PERÍODO", 14, y + 5.5);
   y += 12;
 
   if (novedades.length === 0) {
@@ -182,6 +182,41 @@ async function generarPDFOS10({ asistencias, novedades, instNombre, fechaInicio,
       },
       margin: { left: 14, right: 14 },
       tableLineColor: [200, 215, 230], tableLineWidth: 0.2,
+    });
+    y = doc.lastAutoTable.finalY + 8;
+  }
+
+  // ── Sección 3: Libro de rondas (rutina; informativo, sin destacar) ──
+  if (y > 230) { doc.addPage(); y = 20; }
+  doc.setFillColor(40, 52, 70);
+  doc.rect(0, y, PW, 8, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(190, 200, 215);
+  doc.text("3.  LIBRO DE RONDAS Y REGISTROS DE RUTINA", 14, y + 5.5);
+  y += 12;
+
+  if (rondas.length === 0) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.setTextColor(122, 143, 168);
+    doc.text("Sin registros de rutina para el período seleccionado.", 14, y);
+  } else {
+    doc.autoTable({
+      startY: y,
+      head: [["Fecha y hora", "Tipo", "Guardia", "Instalación", "Observación"]],
+      body: rondas.map((n) => [
+        new Date(n.created_at).toLocaleString("es-CL", { timeZone: ZONA_CHILE, dateStyle: "short", timeStyle: "short" }),
+        n.tipo || "—",
+        n.usuario?.nombre || "—",
+        n.instalacion?.nombre || "—",
+        n.descripcion?.substring(0, 70) + (n.descripcion?.length > 70 ? "…" : "") || "—",
+      ]),
+      styles:     { fontSize: 7, cellPadding: 2, font: "helvetica", textColor: [90, 105, 125] },
+      headStyles: { fillColor: [90, 105, 125], textColor: [240, 244, 248], fontStyle: "bold", fontSize: 7 },
+      alternateRowStyles: { fillColor: [250, 251, 253] },
+      margin: { left: 14, right: 14 },
+      tableLineColor: [215, 225, 235], tableLineWidth: 0.2,
     });
   }
 
@@ -394,7 +429,8 @@ export function SupReportes() {
     setError(""); setCargando(true); setDatos(null);
     const endpoint = vistaActiva === "asistencia" ? "asistencia" : "incidentes";
     try {
-      const res  = await fetch(`${API_BASE}/reportes/${endpoint}?${buildQS()}`, {
+      const extra = vistaActiva === "novedades" ? "&categoria=incidencias" : vistaActiva === "rondas" ? "&categoria=rutina" : "";
+      const res  = await fetch(`${API_BASE}/reportes/${endpoint}?${buildQS()}${extra}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
@@ -426,17 +462,19 @@ export function SupReportes() {
     setExportando(true); setError("");
     try {
       // Asegurarse de tener ambos datasets
-      const [resA, resN] = await Promise.all([
+      const [resA, resN, resR] = await Promise.all([
         fetch(`${API_BASE}/reportes/asistencia?${buildQS()}`,  { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_BASE}/reportes/incidentes?${buildQS()}`,  { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/reportes/incidentes?${buildQS()}&categoria=incidencias`,  { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/reportes/incidentes?${buildQS()}&categoria=rutina`,       { headers: { Authorization: `Bearer ${token}` } }),
       ]);
-      const [asistencias, novedades] = await Promise.all([resA.json(), resN.json()]);
+      const [asistencias, novedades, rondas] = await Promise.all([resA.json(), resN.json(), resR.json()]);
 
       const instNombre = instalaciones.find((i) => i.id === instalacionId)?.nombre || "";
 
       await generarPDFOS10({
         asistencias: Array.isArray(asistencias) ? asistencias : [],
         novedades:   Array.isArray(novedades)   ? novedades   : [],
+        rondas:      Array.isArray(rondas)      ? rondas      : [],
         instNombre,
         fechaInicio,
         fechaFin,
@@ -477,6 +515,7 @@ export function SupReportes() {
           {[
             { id: "asistencia", label: <><Icon name="clipboard-list" size={16} />{" Asistencia"}</> },
             { id: "novedades",  label: <><Icon name="siren" size={16} />{" Novedades"}</>  },
+            { id: "rondas",     label: <><Icon name="map-pin" size={16} />{" Libro de rondas"}</> },
           ].map((tab) => (
             <button className="touch-target" key={tab.id} onClick={() => setVistaActiva(tab.id)} style={{
               padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
@@ -491,7 +530,7 @@ export function SupReportes() {
         </div>
 
         <Btn full onClick={consultar} loading={cargando}>
-          Consultar {vistaActiva === "asistencia" ? "Asistencia" : "Novedades"}
+          Consultar {vistaActiva === "asistencia" ? "Asistencia" : vistaActiva === "rondas" ? "Libro de rondas" : "Novedades"}
         </Btn>
       </div>
 

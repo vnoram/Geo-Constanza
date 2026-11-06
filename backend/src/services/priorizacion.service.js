@@ -44,6 +44,14 @@ const evaluarUrgencia = (tipoNovedad) => {
   return MATRIZ_URGENCIA[tipoNovedad] ?? 'amarillo';
 };
 
+// Tipos de rutina (urgencia verde): van al "libro de rondas", no cuentan como incidencia.
+const TIPOS_RUTINA = Object.keys(MATRIZ_URGENCIA).filter((t) => MATRIZ_URGENCIA[t] === 'verde');
+
+/** Filtro Prisma para dejar fuera la rutina (rondas, cambios de turno, sin novedad). */
+const SOLO_INCIDENCIAS = { tipo: { notIn: TIPOS_RUTINA } };
+
 module.exports = {
   evaluarUrgencia,
+  TIPOS_RUTINA,
+  SOLO_INCIDENCIAS,
 };

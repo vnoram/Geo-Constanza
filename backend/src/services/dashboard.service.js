@@ -1,6 +1,7 @@
 const { prisma } = require('../config/database');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { ROLES } = require('../constants/roles');
+const { SOLO_INCIDENCIAS } = require('./priorizacion.service');
 const { sinCobertura } = require('../utils/cobertura');
 const { ahoraChile, aFechaDB, instanteChile, turnosDeHoy } = require('../utils/fechaChile');
 
@@ -78,15 +79,20 @@ const getDashboardHoy = async (user) => {
       ? { instalacion_id: { in: instalacionIds } }
       : { id: 'never-match' };
 
-    const [novedadesAbiertas, novedadesEscaladas, instalacionesDetalle] = await Promise.all([
-      prisma.novedad.count({ where: { ...whereNov, estado: 'abierta'  } }),
-      prisma.novedad.count({ where: { ...whereNov, estado: 'escalada' } }),
+    const hace12h = new Date(Date.now() - 12 * 60 * 60 * 1000);
+    const [novedadesAbiertas, novedadesEscaladas, novedadesPendientes, novedadesRecientes, instalacionesDetalle] = await Promise.all([
+      prisma.novedad.count({ where: { ...whereNov, ...SOLO_INCIDENCIAS, estado: 'abierta'  } }),
+      prisma.novedad.count({ where: { ...whereNov, ...SOLO_INCIDENCIAS, estado: 'escalada' } }),
+      // Pendientes: todo lo que aún no se resuelve (abiertas, en atención y escaladas)
+      prisma.novedad.count({ where: { ...whereNov, ...SOLO_INCIDENCIAS, estado: { not: 'resuelta' } } }),
+      // Recientes: reportadas en las últimas 12 horas
+      prisma.novedad.count({ where: { ...whereNov, ...SOLO_INCIDENCIAS, created_at: { gte: hace12h } } }),
       instalacionIds.length > 0
         ? prisma.instalacion.findMany({
             where: { id: { in: instalacionIds } },
             select: {
               id: true, nombre: true, nivel_criticidad: true, direccion: true,
-              _count: { select: { novedades: { where: { estado: { not: 'resuelta' } } } } },
+              _count: { select: { novedades: { where: { ...SOLO_INCIDENCIAS, estado: { not: 'resuelta' } } } } },
             },
           })
         : [],
@@ -95,6 +101,8 @@ const getDashboardHoy = async (user) => {
     base.kpis = {
       novedadesAbiertas,
       novedadesEscaladas,
+      novedadesPendientes,
+      novedadesRecientes,
       instalacionesAsignadas: instalacionesDetalle.map((i) => ({
         id:               i.id,
         nombre:           i.nombre,
@@ -114,8 +122,8 @@ const getDashboardHoy = async (user) => {
       instalacionesActivas,
       guardiasEnPauta,
     ] = await Promise.all([
-      prisma.novedad.count({ where: { estado: 'abierta' } }),
-      prisma.novedad.count({ where: { estado: 'escalada' } }),
+      prisma.novedad.count({ where: { ...SOLO_INCIDENCIAS, estado: 'abierta' } }),
+      prisma.novedad.count({ where: { ...SOLO_INCIDENCIAS, estado: 'escalada' } }),
       prisma.instalacion.count(),
       prisma.instalacion.count({ where: { estado: 'activo' } }),
       prisma.usuario.count({ where: { rol: ROLES.GGSS_EN_PAUTA, estado: 'activo' } }),
@@ -135,7 +143,7 @@ const getDashboardHoy = async (user) => {
         nivel_criticidad: true,
         _count: {
           select: {
-            novedades: { where: { estado: { not: 'resuelta' } } },
+            novedades: { where: { ...SOLO_INCIDENCIAS, estado: { not: 'resuelta' } } },
           },
         },
       },
