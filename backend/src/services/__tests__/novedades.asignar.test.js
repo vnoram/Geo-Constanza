@@ -61,11 +61,11 @@ test('escalar admite en atención', async () => {
   await escalar('n1', actor);
   expect(prisma.novedad.update.mock.calls[0][0].where.estado).toBe(ESTADO_NOVEDAD.EN_ATENCION);
 });
-test('candidatos expone solo id/nombre de supervisores y centrales activos', async () => {
+test('candidatos consulta solo id/nombre/rol de supervisores y centrales activos', async () => {
   prisma.usuario.findMany.mockResolvedValue([]);
   await responsables('n1', actor);
   expect(prisma.usuario.findMany).toHaveBeenCalledWith(expect.objectContaining({
-    select: { id: true, nombre: true },
+    select: { id: true, nombre: true, rol: true },
     where: { rol: { in: [ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL] }, estado: ESTADO_USUARIO.ACTIVO },
   }));
 });

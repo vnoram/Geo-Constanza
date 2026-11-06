@@ -375,17 +375,40 @@ const escalar = async (id, user) => {
       urgencia: novedad.urgencia,
       instalacion: novedad.instalacion_id,
     });
+
+    // Aviso en vivo a Central: el supervisor sube la novedad al nivel superior.
+    const inst = await prisma.instalacion.findUnique({ where: { id: novedad.instalacion_id }, select: { id: true, nombre: true } });
+    io.to(salaCentral(empresaActual())).emit('novedad:escalada_central', {
+      id: novedad.id,
+      tipo: novedad.tipo,
+      urgencia: novedad.urgencia,
+      descripcion: novedad.descripcion,
+      instalacion: inst ? { id: inst.id, nombre: inst.nombre } : { id: novedad.instalacion_id, nombre: '—' },
+      escalada_por: { id: user.id, nombre: user.nombre },
+      escalada_at: new Date().toISOString(),
+    });
+    io.to([salaAdmin(empresaActual()), salaCentral(empresaActual())]).emit('admin:dashboard_update', { entity: 'novedad' });
   } catch (_) {}
 
   return novedad;
 };
 
 const responsables = async (id, user) => {
-  await exigirGestion(id, user);
-  return prisma.usuario.findMany({
+  const novedad = await exigirGestion(id, user);
+  const candidatos = await prisma.usuario.findMany({
     where: { rol: { in: [ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL] }, estado: ESTADO_USUARIO.ACTIVO },
-    select: { id: true, nombre: true }, orderBy: { nombre: 'asc' },
+    select: { id: true, nombre: true, rol: true }, orderBy: { nombre: 'asc' },
   });
+  // Un supervisor solo puede atender la novedad si la instalación está en su alcance.
+  const validos = [];
+  for (const c of candidatos) {
+    if (c.rol === ROLES.SUPERVISOR) {
+      const ids = await resolverInstalacionesSupervisor({ id: c.id });
+      if (!ids.includes(novedad.instalacion_id)) continue;
+    }
+    validos.push({ id: c.id, nombre: c.nombre, rol: c.rol });
+  }
+  return validos;
 };
 
 const asignar = async (id, responsableId, user) => {
@@ -399,7 +422,7 @@ const asignar = async (id, responsableId, user) => {
     throw Object.assign(new Error('El responsable debe ser supervisor o central activo.'), { statusCode: 400 });
   }
   const novedad = await cambiarEstado(id, user, ACCION_NOVEDAD.ASIGNAR,
-    { asignada_a: responsableId, estado: ESTADO_NOVEDAD.EN_ATENCION }, [ESTADO_NOVEDAD.ABIERTA]);
+    { asignada_a: responsableId, estado: ESTADO_NOVEDAD.EN_ATENCION }, [ESTADO_NOVEDAD.ABIERTA, ESTADO_NOVEDAD.ESCALADA]);
   try {
     getSocketIO().to(`instalacion:${novedad.instalacion_id}`).emit('novedad:asignada', novedad);
   } catch (_) {}
