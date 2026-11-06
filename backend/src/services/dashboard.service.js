@@ -121,12 +121,15 @@ const getDashboardHoy = async (user) => {
       totalInstalaciones,
       instalacionesActivas,
       guardiasEnPauta,
+      pendientesPorUrgencia,
     ] = await Promise.all([
       prisma.novedad.count({ where: { ...SOLO_INCIDENCIAS, estado: 'abierta' } }),
       prisma.novedad.count({ where: { ...SOLO_INCIDENCIAS, estado: 'escalada' } }),
       prisma.instalacion.count(),
       prisma.instalacion.count({ where: { estado: 'activo' } }),
       prisma.usuario.count({ where: { rol: ROLES.GGSS_EN_PAUTA, estado: 'activo' } }),
+      // Novedades pendientes (no resueltas), de cualquier fecha, agrupadas por urgencia
+      prisma.novedad.groupBy({ by: ['urgencia'], where: { ...SOLO_INCIDENCIAS, estado: { not: 'resuelta' } }, _count: { _all: true } }),
     ]);
 
     // Cobertura: % de turnos de hoy que tienen asistencia
@@ -155,6 +158,7 @@ const getDashboardHoy = async (user) => {
       totalInstalaciones,
       instalacionesActivas,
       guardiasEnPauta,
+      pendientesPorUrgencia: Object.fromEntries(pendientesPorUrgencia.map((g) => [g.urgencia, g._count._all])),
       coberturaDia,
       resumenPorInstalacion: resumenPorInstalacion.map(i => ({
         id: i.id,

@@ -1,5 +1,5 @@
 jest.mock('../../config/database', () => ({ prisma: {
-  turno: { findMany: jest.fn() }, novedad: { count: jest.fn() }, usuario: { count: jest.fn() },
+  turno: { findMany: jest.fn() }, novedad: { count: jest.fn(), groupBy: jest.fn() }, usuario: { count: jest.fn() },
   instalacion: { findMany: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
   $transaction: jest.fn(),
 } }));
@@ -24,6 +24,7 @@ beforeEach(() => {
   resolverInstalacionesSupervisor.mockResolvedValue(['i1']);
   prisma.$transaction.mockImplementation(fn => fn(prisma));
   prisma.usuario.count.mockResolvedValue(12);
+  prisma.novedad.groupBy.mockResolvedValue([]);
   prisma.instalacion.create.mockImplementation(({ data }) => Promise.resolve(data));
 });
 afterEach(() => jest.useRealTimers());

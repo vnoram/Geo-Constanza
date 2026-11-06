@@ -29,8 +29,8 @@ const LEAFLET_STYLES = `
     background:#1C2E28 !important;border-color:#2C4038 !important;color:#A8B7AE !important;
   }
   .leaflet-control-zoom a:hover { background:#22372F !important;color:#3E9A72 !important; }
-  .gc-dark-tile, .leaflet-tile-pane .leaflet-tile {
-    filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%) !important;
+  .leaflet-tile-pane .leaflet-tile {
+    filter: invert(100%) hue-rotate(180deg) brightness(78%) contrast(92%) saturate(70%) !important;
   }
 `;
 
@@ -142,20 +142,27 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
   }, [ultimaUbicacion]);
 
   return (
-    <div style={{ position: "relative", marginBottom: 20 }}>
-      {cargando && (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", background: T.bgCard, borderRadius: 8, fontSize: 12, color: T.textMut }}>
-          Cargando mapa...
-        </div>
-      )}
-      <div ref={containerRef} className="central-map" style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }} />
-      <div className="admin-map-legend" style={{ display: "flex", flexWrap: "wrap", gap: 14, marginTop: 8, fontSize: 12, color: T.textSec }}>
-        {Object.entries(COLOR_TIPO).map(([t, c]) => (
-          <span key={t}><span style={{ color: c }}>●</span> {t}</span>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start", marginBottom: 20 }}>
+      {/* Leyenda a la izquierda, ordenada por prioridad */}
+      <div className="admin-map-legend" style={{
+        flex: "0 0 150px", display: "flex", flexDirection: "column", gap: 7, fontSize: 12, color: T.textSec,
+        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px",
+      }}>
+        <div style={{ fontSize: 11, color: T.focusText, letterSpacing: 0.5, textTransform: "uppercase" }}>Instalaciones</div>
+        {ORDEN_TIPOS.map((t) => (
+          <span key={t}><span style={{ color: COLOR_TIPO[t] }}>●</span> {t}</span>
         ))}
-        <span style={{ color: T.textMut }}>|</span>
+        <div style={{ fontSize: 11, color: T.focusText, letterSpacing: 0.5, textTransform: "uppercase", marginTop: 6 }}>Guardias</div>
         <span><span style={{ color: T.accent }}>●</span> A tiempo</span>
         <span><span style={{ color: T.yellow }}>●</span> Tardío</span>
+      </div>
+      <div style={{ position: "relative", flex: "1 1 320px", minWidth: 0 }}>
+        {cargando && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", background: T.bgCard, borderRadius: 8, fontSize: 12, color: T.textMut }}>
+            Cargando mapa...
+          </div>
+        )}
+        <div ref={containerRef} className="central-map" style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }} />
       </div>
     </div>
   );
@@ -170,6 +177,8 @@ const COLOR_TIPO = {
   "Institucional":    "#D9708F",
   "Centro operativo": "#8B7FD6",
 };
+// Orden de la leyenda: de mayor a menor prioridad operativa
+const ORDEN_TIPOS = ["Centro operativo", "Industrial", "Institucional", "Corporativo", "Comercial", "Residencial"];
 const colorTipo = (t) => COLOR_TIPO[t] ?? "#3E9A72";
 
 // ─── GRÁFICO DE BARRAS SVG ───────────────────────────────────────
@@ -206,7 +215,7 @@ function GraficoBarras({ data }) {
 }
 
 // ─── GRÁFICO DONUT SVG ───────────────────────────────────────────
-function GraficoDonut({ presentes = 0, tardios = 0, faltantes = 0, unidad = "GGSS", items = null }) {
+function GraficoDonut({ presentes = 0, tardios = 0, faltantes = 0, unidad = "GGSS", items = null, vacio = "Sin datos" }) {
   const segmentos = (items ?? [
     { label: "A tiempo",  value: presentes,  color: "#3E9A72" },
     { label: "Tardíos",   value: tardios,    color: "#F0A35E" },
@@ -219,7 +228,7 @@ function GraficoDonut({ presentes = 0, tardios = 0, faltantes = 0, unidad = "GGS
   if (total === 0) {
     return (
       <div style={{ textAlign: "center", color: T.textMut, fontSize: 12, paddingTop: 30 }}>
-        Sin datos
+        {vacio}
       </div>
     );
   }
@@ -358,20 +367,16 @@ export function AdminPanel() {
 
   const k = stats?.kpis;
   const n = k?.novedadesAbiertas ?? 0;
-  const novItems = (() => {
-    const d = Array.isArray(analytics) ? analytics : [];
-    const rojo = d.reduce((a, x) => a + (x.rojo || 0), 0);
-    const amar = d.reduce((a, x) => a + (x.amarillo || 0), 0);
-    const tot  = d.reduce((a, x) => a + (x.total || 0), 0);
-    return [
-      { label: "Crítico", value: rojo,                       color: "#E86A2A" },
-      { label: "Medio",   value: amar,                       color: "#F0A35E" },
-      { label: "Bajo",    value: Math.max(tot - rojo - amar, 0), color: "#3E9A72" },
-    ];
-  })();
+  // Solo novedades pendientes (no resueltas), de cualquier fecha, por urgencia
+  const pend = k?.pendientesPorUrgencia ?? {};
+  const novItems = [
+    { label: "Crítico", value: pend.rojo     ?? 0, color: "#E86A2A" },
+    { label: "Medio",   value: pend.amarillo ?? 0, color: "#F0A35E" },
+    { label: "Bajo",    value: pend.verde    ?? 0, color: "#3E9A72" },
+  ];
 
   return (
-    <div className="admin-screen">
+    <div className="admin-screen central-titulos">
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <SectionHeader title="Panel central" sub="Vista general del sistema" />
         <SocketBadge status={socketStatus} />
@@ -391,7 +396,7 @@ export function AdminPanel() {
       {/* El mapa es la pieza principal; los gráficos van en la columna lateral */}
       <div className="central-grid">
         <section aria-label="Instalaciones en el mapa">
-          <SubHeader title="Instalaciones · mapa en vivo" />
+          <div className="central-subtitulo"><SubHeader title="Instalaciones · mapa en vivo" /></div>
           <MapaInstalaciones
             token={token}
             ultimaUbicacion={ultimaUbicacion}
@@ -401,7 +406,7 @@ export function AdminPanel() {
 
         <aside style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
           <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px" }}>
-            <div style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Novedades · últimos 7 días</div>
+            <div className="central-titulo-card" style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Novedades · últimos 7 días</div>
             {analytics ? (
               <GraficoBarras data={analytics} />
             ) : (
@@ -416,16 +421,16 @@ export function AdminPanel() {
             </div>
           </div>
 
-          {analytics && (
+          {k && (
             <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px" }}>
-              <div style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Novedades · por urgencia</div>
-              <GraficoDonut unidad="NOVEDADES" items={novItems} />
+              <div className="central-titulo-card" style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Novedades pendientes · por urgencia</div>
+              <GraficoDonut unidad="PENDIENTES" vacio="Sin novedades pendientes" items={novItems} />
             </div>
           )}
 
           {stats && (
             <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px" }}>
-              <div style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Estado hoy</div>
+              <div className="central-titulo-card" style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Estado hoy</div>
               <GraficoDonut presentes={stats.presentes} tardios={stats.tardios} faltantes={stats.faltantes} />
             </div>
           )}

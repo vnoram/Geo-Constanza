@@ -83,6 +83,17 @@ describe('los contadores no cuentan la rutina', () => {
     expect(prisma.novedad.findMany.mock.calls[0][0].where.tipo).toEqual({ notIn: TIPOS_RUTINA });
   });
 
+  test('el panel central informa las pendientes por urgencia (sin rutina) y los guardias en pauta', async () => {
+    prisma.novedad.groupBy.mockResolvedValue([{ urgencia: 'rojo', _count: { _all: 2 } }, { urgencia: 'verde', _count: { _all: 5 } }]);
+    prisma.usuario.count.mockResolvedValue(9);
+    const panel = await getDashboardHoy({ id: 'c1', rol: ROLES.OPERADOR_CENTRAL });
+    expect(panel.kpis.pendientesPorUrgencia).toEqual({ rojo: 2, verde: 5 });
+    expect(panel.kpis.guardiasEnPauta).toBe(9);
+    const donde = prisma.novedad.groupBy.mock.calls[0][0].where;
+    expect(donde.tipo).toEqual({ notIn: TIPOS_RUTINA });
+    expect(donde.estado).toEqual({ not: 'resuelta' });
+  });
+
   test('el panel central cuenta solo incidencias abiertas y escaladas', async () => {
     await getDashboardHoy({ id: 'c1', rol: ROLES.OPERADOR_CENTRAL });
     const conteos = prisma.novedad.count.mock.calls.map((c) => c[0].where);

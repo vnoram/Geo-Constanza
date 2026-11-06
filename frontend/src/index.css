@@ -628,10 +628,14 @@ code {
   background: var(--code-bg);
 }
 
+/* ─── PANEL CENTRAL: títulos en morado suave (tinte claro del morado de la marca) ─── */
+.central-titulos .fluid-title,
+.central-titulos .central-titulo-card,
+.central-titulos .central-subtitulo > div { color: #B39BE0 !important; }
+
 /* ─── LEAFLET DARK MODE (OpenStreetMap) ─── */
-.gc-dark-tile,
 .leaflet-tile-pane .leaflet-tile {
-  filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%) !important;
+  filter: invert(100%) hue-rotate(180deg) brightness(78%) contrast(92%) saturate(70%) !important;
 }
 
 

@@ -20,8 +20,8 @@ const ESTILOS_MAPA = `
   }
   .gc-map-picker .leaflet-control-zoom a:hover { background:${T.bgCardHover} !important;color:${T.accent} !important; }
   .gc-map-picker.leaflet-container { cursor: crosshair; background:${T.bgInput}; }
-  .gc-dark-tile, .leaflet-tile-pane .leaflet-tile {
-    filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%) !important;
+  .leaflet-tile-pane .leaflet-tile {
+    filter: invert(100%) hue-rotate(180deg) brightness(78%) contrast(92%) saturate(70%) !important;
   }
 `;
 
