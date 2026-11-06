@@ -3,11 +3,10 @@ import { T, FONT } from "../../theme/theme";
 import { Input } from "../../components/ui/Input";
 import { Btn } from "../../components/ui/Btn";
 import { Icon } from "../../components/ui/Icon";
-import { Wordmark } from "../../components/ui/Wordmark";
+import arteLogin from "../../assets/login-ilustracion.webp";
 import { DemoPanel } from "../../components/auth/DemoPanel";
 import { TwoFactorStep } from "../../components/auth/TwoFactorStep";
 import { useLoginForm } from "../../hooks/useLoginForm";
-import arteLogin from "../../assets/login-ilustracion.webp";
 
 // Credenciales de demostración: solo en desarrollo o si se pide explícitamente al compilar.
 const MOSTRAR_DEMO = import.meta.env.DEV || import.meta.env.VITE_MOSTRAR_DEMO === "true";
@@ -26,10 +25,10 @@ export function LoginScreen({ onLogin, onForgot }) {
     <div className="login">
       {/* Marca: panel lateral callado, solo en pantallas anchas */}
       <aside className="login__brand">
-        {/* Ilustración decorativa: la imagen se recorta (cover) para llenar el panel */}
+        {/* Ilustración decorativa: la imagen se ve completa en el panel */}
         <img className="login__art" src={arteLogin} alt="" aria-hidden="true" />
         <div className="login__art-tint" aria-hidden="true" />
-        <Wordmark size={18} markSize={28} />
+        <div />
         <div>
           <p style={{ margin: 0, fontSize: 14, color: T.textSec, maxWidth: 280 }}>
             Plataforma de gestión operacional
@@ -44,7 +43,6 @@ export function LoginScreen({ onLogin, onForgot }) {
         <div className="login__form">
           <div className="login__head">
             <div className="login__head-text">
-              <div className="login__mobile-mark"><Wordmark /></div>
               <div>
                 <h1 className="login__title" style={{ fontSize: 22, fontWeight: 600, color: T.text, letterSpacing: "-0.01em", fontFamily: FONT.ui }}>
                   {step === "login" ? "Iniciar sesión" : "Verificación de seguridad"}

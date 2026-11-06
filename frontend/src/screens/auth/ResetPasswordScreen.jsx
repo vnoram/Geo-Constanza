@@ -2,8 +2,8 @@ import { useState } from "react";
 import { T, FONT } from "../../theme/theme";
 import { Input } from "../../components/ui/Input";
 import { Btn } from "../../components/ui/Btn";
-import { Icon } from "../../components/ui/Icon";
 import { Wordmark } from "../../components/ui/Wordmark";
+import { Icon } from "../../components/ui/Icon";
 import { api } from "../../services/api";
 
 const PASSWORD_MIN = 10;
@@ -53,7 +53,7 @@ export function ResetPasswordScreen({ token, invitacion = false, onBack }) {
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: T.bg }}>
       <div style={{ width: "100%", maxWidth: 400 }}>
-        <div style={{ marginBottom: 20 }}><Wordmark /></div>
+        <div style={{ marginBottom: 20 }}><Wordmark conLogo size={18} /></div>
         <h1 style={{ fontSize: 20, fontWeight: 600, color: T.text, margin: "0 0 6px", fontFamily: FONT.ui }}>{titulo}</h1>
 
         {hecho ? (

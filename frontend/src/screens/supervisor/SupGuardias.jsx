@@ -416,7 +416,7 @@ export function SupGuardias() {
 
       {/* ── Próximos turnos ── */}
       <div className="filter-bar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, margin: "4px 0 10px" }}>
-        <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>Próximos turnos</div>
+        <div style={{ fontWeight: 800, fontSize: 14, color: "#9F8FC4" }}>Próximos turnos</div>
         <select
           className="touch-target filter-control"
           value={filtroGuardia}
@@ -473,11 +473,11 @@ export function SupGuardias() {
                 <Badge color={ESTADO_COLOR[t.estado] || "accent"}>{t.estado}</Badge>
                 {t.estado === "programado" && (
                   <button
-                    className="touch-target"
+                    className="touch-target gc-accion-btn gc-accion-btn--morado"
                     onClick={() => setTurnoEditando(t)}
                     style={{
-                      background: "rgba(122,78,191,0.1)", border: "1px solid rgba(122,78,191,0.3)",
-                      color: "#7A4EBF", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700,
+                      background: "transparent", border: `1px solid ${T.border}`,
+                      color: T.text, borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700,
                       fontFamily: "var(--font-ui)", cursor: "pointer", whiteSpace: "nowrap",
                     }}
                   >
@@ -490,7 +490,7 @@ export function SupGuardias() {
         ))
       )}
 
-      <div style={{ fontWeight: 800, fontSize: 14, color: T.text, margin: "18px 0 10px" }}>Personal</div>
+      <div style={{ fontWeight: 800, fontSize: 14, color: "#9F8FC4", margin: "18px 0 10px" }}>Personal</div>
 
       {cargandoDatos ? (
         <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 20 }}>

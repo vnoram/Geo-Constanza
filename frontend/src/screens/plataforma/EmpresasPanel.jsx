@@ -279,9 +279,9 @@ export function EmpresasPanel() {
   };
 
   const celda = { padding: "10px 12px", fontSize: 13, color: T.text, borderBottom: `1px solid ${T.border}`, verticalAlign: "middle" };
-  const cabecera = { ...celda, fontSize: 11, color: T.textMut, fontWeight: 500, textAlign: "left", whiteSpace: "nowrap" };
-  const accion = (icono, etiqueta, onClick) => (
-    <button className="touch-target" onClick={onClick} title={etiqueta} aria-label={etiqueta} style={{
+  const cabecera = { ...celda, fontSize: 11, color: "#9F8FC4", fontWeight: 500, textAlign: "left", whiteSpace: "nowrap" };
+  const accion = (icono, etiqueta, onClick, tono = "verde") => (
+    <button className={`touch-target gc-accion-btn gc-accion-btn--${tono}`} onClick={onClick} title={etiqueta} aria-label={etiqueta} style={{
       background: "transparent", border: `1px solid ${T.border}`, borderRadius: T.radius, color: T.text,
       minHeight: 34, padding: "0 10px", cursor: "pointer", fontFamily: FONT.ui, fontSize: 12,
       display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
@@ -290,7 +290,7 @@ export function EmpresasPanel() {
 
   return (
     <div>
-      <SectionHeader title="Empresas" sub="Clientes de la plataforma. Aquí no se ven guardias, turnos ni novedades."
+      <SectionHeader title="Empresas"
         action={{ label: "Nueva empresa", onClick: () => setDialogo({ tipo: "empresa" }) }} />
 
       {aviso && (
@@ -339,11 +339,11 @@ export function EmpresasPanel() {
                     <td style={celda}>{fechaCorta(e.created_at)}</td>
                     <td style={celda}>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {accion("pencil", "Editar", () => setDialogo({ tipo: "empresa", empresa: e }))}
+                        {accion("pencil", "Editar", () => setDialogo({ tipo: "empresa", empresa: e }), "verde")}
                         {admin
-                          ? accion("user-round", "Admin", () => setDialogo({ tipo: "gestionAdmin", empresa: e, admin }))
-                          : accion("plus", "Crear admin", () => setDialogo({ tipo: "admin", empresa: e }))}
-                        {accion(e.estado === "activa" ? "ban" : "check", e.estado === "activa" ? "Suspender" : "Reactivar", () => setDialogo({ tipo: "estado", empresa: e }))}
+                          ? accion("user-round", "Admin", () => setDialogo({ tipo: "gestionAdmin", empresa: e, admin }), "morado")
+                          : accion("plus", "Crear admin", () => setDialogo({ tipo: "admin", empresa: e }), "morado")}
+                        {accion(e.estado === "activa" ? "ban" : "check", e.estado === "activa" ? "Suspender" : "Reactivar", () => setDialogo({ tipo: "estado", empresa: e }), e.estado === "activa" ? "naranja" : "verde")}
                       </div>
                     </td>
                   </tr>

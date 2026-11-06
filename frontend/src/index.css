@@ -784,8 +784,9 @@ span[style*='text-transform: uppercase'] { display: inline-block; }
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: 50% 45%;
+  object-fit: contain;          /* la imagen se ve completa (brújula con sus 4 letras) */
+  object-position: 50% 50%;
+  background-color: #383675;    /* mismo azul liso del fondo de la imagen: rellena los costados/arriba */
 }
 .login__art-tint {
   position: absolute;
@@ -885,3 +886,51 @@ span[style*='text-transform: uppercase'] { display: inline-block; }
   }
   .nov-card__estado { margin-bottom: 0 !important; }
 }
+
+/* ─── Botones de acción de tabla: grises en reposo; al pasar el mouse toman su color suave ─── */
+.gc-accion-btn { transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
+.gc-accion-btn--verde:hover,   .gc-accion-btn--verde:focus-visible   { background: rgba(62,154,114,0.16) !important;  border-color: rgba(62,154,114,0.55) !important;  color: #9CCBB4 !important; }
+.gc-accion-btn--morado:hover,  .gc-accion-btn--morado:focus-visible  { background: rgba(122,78,191,0.20) !important;  border-color: rgba(179,155,224,0.55) !important; color: #B9A8E0 !important; }
+.gc-accion-btn--naranja:hover, .gc-accion-btn--naranja:focus-visible { background: rgba(232,106,42,0.16) !important;  border-color: rgba(232,106,42,0.55) !important;  color: #EE9A6B !important; }
+.gc-accion-btn:focus-visible { outline: 2px solid #B39BE0; outline-offset: 1px; }
+
+/* ─── Menú lateral: botones de sesión con color al pasar el mouse ─── */
+.gc-menu-btn { transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
+.gc-menu-btn--verde:hover,
+.gc-menu-btn--verde:focus-visible {
+  background: rgba(62, 154, 114, 0.14) !important;
+  border-color: rgba(62, 154, 114, 0.45) !important;
+  color: #9CCBB4 !important;
+}
+/* Cerrar sesión: naranja que tira a rojo */
+.gc-menu-btn--rojo:hover,
+.gc-menu-btn--rojo:focus-visible {
+  background: rgba(226, 84, 52, 0.16) !important;
+  border-color: rgba(226, 84, 52, 0.55) !important;
+  color: #F0876A !important;
+}
+.gc-menu-btn:focus-visible { outline: 2px solid #B39BE0; outline-offset: 1px; }
+
+/* ─── Navegación lateral: color morado muy suave al pasar el mouse (sección activa no cambia) ─── */
+.gc-nav-btn { transition: background-color 0.15s ease, color 0.15s ease; }
+.gc-nav-btn:not([aria-current]):hover,
+.gc-nav-btn:not([aria-current]):focus-visible { background: rgba(179,155,224,0.08) !important; color: #C3B5E6 !important; }
+.gc-nav-btn:not([aria-current]):hover svg,
+.gc-nav-btn:not([aria-current]):focus-visible svg { color: #B39BE0 !important; stroke: #B39BE0 !important; }
+
+/* ─── Pestañas: morado muy suave al pasar el mouse (la activa no cambia) ─── */
+.gc-tab-btn { transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
+.gc-tab-btn[aria-selected="false"]:hover,
+.gc-tab-btn[aria-selected="false"]:focus-visible { background: rgba(179,155,224,0.08) !important; border-color: rgba(179,155,224,0.40) !important; color: #C3B5E6 !important; }
+
+/* ─── Tarjeta compacta de novedad (resueltas / rondas): leve realce al pasar el mouse ─── */
+.nov-card-compacta { transition: background-color 0.15s ease; }
+.nov-card-compacta:hover, .nov-card-compacta:focus-visible { background: rgba(179,155,224,0.07) !important; }
+
+/* ─── Tarjetas compactas (resueltas / rondas): neutras en reposo, toman el color de su urgencia al pasar el mouse ─── */
+.nov-ronda { transition: background-color 0.15s ease, border-color 0.15s ease; }
+.nov-ronda:hover, .nov-ronda:focus-visible { border-color: var(--nov-c) !important; background: color-mix(in srgb, var(--nov-c) 10%, #1B2B26) !important; }
+.nov-ronda .nov-ronda__tipo { transition: color 0.15s ease; }
+.nov-ronda:hover .nov-ronda__tipo, .nov-ronda:focus-visible .nov-ronda__tipo { color: var(--nov-c) !important; }
+.nov-ronda .nov-ronda__badge { opacity: 0.55; transition: opacity 0.15s ease; }
+.nov-ronda:hover .nov-ronda__badge { opacity: 1; }

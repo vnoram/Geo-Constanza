@@ -4,7 +4,6 @@ import { T, FONT } from "../../theme/theme";
 import { Input } from "../../components/ui/Input";
 import { Btn } from "../../components/ui/Btn";
 import { Icon } from "../../components/ui/Icon";
-import { Wordmark } from "../../components/ui/Wordmark";
 import { api } from "../../services/api";
 
 // Enrolamiento obligatorio del segundo factor (supervisor y administrador).
@@ -67,7 +66,6 @@ export function Enroll2FAScreen({ onDone, onLogout }) {
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: T.bg }}>
       <div style={{ width: "100%", maxWidth: 420 }}>
-        <div style={{ marginBottom: 20 }}><Wordmark /></div>
 
         {paso === "qr" && (
           <div>

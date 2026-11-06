@@ -1,4 +1,5 @@
 import { T, FONT } from "../../theme/theme";
+import logo from "../../assets/logo.png";
 
 // Símbolo: punto dentro de un anillo (una geocerca). Sin escudo.
 export function GeoMark({ size = 24, ring = T.accent, dot = T.accent }) {
@@ -10,11 +11,14 @@ export function GeoMark({ size = 24, ring = T.accent, dot = T.accent }) {
   );
 }
 
-export function Wordmark({ size = 15, markSize = 22 }) {
+// conLogo: el logo de la empresa solo se usa dentro de la sesión; fuera (login, contraseña, 2FA) va el símbolo simple.
+export function Wordmark({ size = 15, markSize = 22, conLogo = false }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 9, whiteSpace: "nowrap" }}>
-      <GeoMark size={markSize} />
-      <span style={{ fontFamily: FONT.ui, fontSize: size, fontWeight: 600, letterSpacing: "-0.01em", color: T.text }}>
+      {conLogo
+        ? <img src={logo} alt="" width={markSize + 8} height={markSize + 8} style={{ flex: "none", objectFit: "contain" }} />
+        : <GeoMark size={markSize} />}
+      <span style={{ fontFamily: FONT.ui, fontSize: size, fontWeight: 600, letterSpacing: "-0.01em", color: conLogo ? T.focusText : T.text }}>
         Geo Constanza
       </span>
     </span>

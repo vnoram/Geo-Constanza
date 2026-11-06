@@ -341,14 +341,14 @@ export function PautaNovedades({ user }) {
               key={t.id}
               role="tab"
               aria-selected={activo}
-              className="touch-target"
+              className="touch-target gc-tab-btn"
               onClick={() => setVista(t.id)}
               style={{
                 padding: "8px 14px", borderRadius: 8, cursor: "pointer",
                 fontSize: 13, fontWeight: 700, fontFamily: "var(--font-ui)",
-                background: activo ? T.bgCard : "transparent",
-                color: activo ? T.text : T.textSec,
-                border: `1px solid ${activo ? T.accent : T.border}`,
+                background: activo ? "rgba(122,78,191,0.22)" : "transparent",
+                color: activo ? "#D2C6EE" : T.textSec,
+                border: `1px solid ${activo ? "rgba(159,131,214,0.75)" : T.border}`,
               }}
             >
               {t.label} ({t.count})

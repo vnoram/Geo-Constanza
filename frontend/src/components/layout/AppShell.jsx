@@ -115,7 +115,7 @@ export function AppShell({ user, onLogout }) {
             background: "none", border: "none", color: T.textSec, cursor: "pointer",
             padding: 4, display: "inline-flex", alignItems: "center",
           }}><Icon name="menu" size={20} /></button>
-          <Wordmark />
+          <Wordmark conLogo />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
           <span className="app-shell__role" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textSec, whiteSpace: "nowrap", minWidth: 0 }}>
@@ -171,8 +171,8 @@ export function AppShell({ user, onLogout }) {
             background: T.surface, borderRight: `1px solid ${T.border}`,
           }}>
             <div style={{ borderBottom: `1px solid ${T.border}`, paddingBottom: 16, marginBottom: 16 }}>
-              <div style={{ fontWeight: 600, fontSize: 15, color: T.text }}>{user.nombre}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textSec, marginTop: 4 }}>
+              <div style={{ fontWeight: 600, fontSize: 15, color: T.focusText }}>{user.nombre}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.focusText, marginTop: 4 }}>
                 <Icon name={role.icon} size={15} color={T.focusText} />
                 {role.label}
               </div>
@@ -193,7 +193,7 @@ export function AppShell({ user, onLogout }) {
             {role.sections.map(s => {
               const activa = activeSection === s.id;
               return (
-                <button className="touch-target" key={s.id}
+                <button className="touch-target gc-nav-btn" key={s.id}
                   onClick={() => { setActiveSection(s.id); setSidebarOpen(false); }}
                   aria-current={activa ? "page" : undefined} style={{
                   display: "flex", alignItems: "center", gap: 10,
@@ -230,7 +230,7 @@ export function AppShell({ user, onLogout }) {
                   {conSegundoFactor ? "2FA verificado" : "Autenticación estándar"}
                 </div>
               </div>
-              <button className="touch-target" onClick={() => setCambiandoPassword(true)} style={{
+              <button className="touch-target gc-menu-btn gc-menu-btn--verde" onClick={() => setCambiandoPassword(true)} style={{
                 width: "100%", minHeight: 40, padding: "0 14px", marginBottom: 8,
                 background: "transparent", border: `1px solid ${T.border}`,
                 borderRadius: T.radius, color: T.text, fontSize: 13, fontWeight: 500,
@@ -239,7 +239,7 @@ export function AppShell({ user, onLogout }) {
               }}>
                 <Icon name="key-round" size={16} /> Cambiar contraseña
               </button>
-              <button className="touch-target" onClick={onLogout} style={{
+              <button className="touch-target gc-menu-btn gc-menu-btn--rojo" onClick={onLogout} style={{
                 width: "100%", minHeight: 40, padding: "0 14px",
                 background: "transparent", border: `1px solid ${T.border}`,
                 borderRadius: T.radius, color: T.text, fontSize: 13, fontWeight: 500,

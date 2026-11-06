@@ -396,11 +396,11 @@ export function AdminUsuarios() {
               {/* Acciones */}
               <div className="admin-actions" style={{ display: "flex", gap: 6, marginLeft: 10, flexShrink: 0 }}>
                 <button
-                  className="touch-target"
+                  className="touch-target gc-accion-btn gc-accion-btn--morado"
                   onClick={() => abrirEditar(u)}
                   style={{
-                    background: T.accentGhost, border: `1px solid ${T.accent}44`,
-                    color: T.accent, fontSize: 11, fontWeight: 700, padding: "5px 10px",
+                    background: "transparent", border: `1px solid ${T.border}`,
+                    color: T.textSec, fontSize: 11, fontWeight: 700, padding: "5px 10px",
                     borderRadius: 7, cursor: "pointer", fontFamily: "var(--font-ui)",
                   }}
                 >
@@ -408,12 +408,12 @@ export function AdminUsuarios() {
                 </button>
                 {u.estado === "activo" && (
                   <button
-                    className="touch-target"
+                    className="touch-target gc-accion-btn gc-accion-btn--naranja"
                     onClick={() => handleDesactivar(u.id)}
                     disabled={desactivando === u.id}
                     style={{
-                      background: T.redGhost, border: `1px solid ${T.red}44`,
-                      color: T.red, fontSize: 11, fontWeight: 700, padding: "5px 10px",
+                      background: "transparent", border: `1px solid ${T.border}`,
+                      color: T.textSec, fontSize: 11, fontWeight: 700, padding: "5px 10px",
                       borderRadius: 7, cursor: "pointer", fontFamily: "var(--font-ui)",
                       opacity: desactivando === u.id ? 0.5 : 1,
                     }}
