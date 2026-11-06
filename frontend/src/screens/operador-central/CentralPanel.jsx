@@ -10,6 +10,8 @@ import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
 import { escaparHtml } from "../../utils/html";
+import { esRutina } from "../../utils/novedades";
+import { TarjetaNovedadCompacta, DetalleNovedadModal, ResolverModal } from "../supervisor/SupNovedades";
 
 // Morado: selección y foco en las vistas de Central
 const C_COLOR = "#7A4EBF";
@@ -33,8 +35,8 @@ const LEAFLET_STYLES = `
     background:#1C2E28 !important;border-color:#2C4038 !important;color:#A8B7AE !important;
   }
   .leaflet-control-zoom a:hover { background:#22372F !important;color:#7A4EBF !important; }
-  .gc-dark-tile, .leaflet-tile-pane .leaflet-tile {
-    filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%) !important;
+  .leaflet-tile-pane .leaflet-tile {
+    filter: invert(100%) hue-rotate(180deg) brightness(78%) contrast(92%) saturate(70%) !important;
   }
 `;
 
@@ -259,20 +261,126 @@ function MiniStat({ value, label, color }) {
   );
 }
 
+// ─── Aviso en vivo: un supervisor escaló una novedad a Central ─────
+function AvisoEscalada({ data, onClose }) {
+  if (!data) return null;
+  return (
+    <div role="alert" style={{
+      background: T.redGhost, border: `1px solid ${T.red}`, borderRadius: 8, padding: 14, marginBottom: 12,
+      display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10,
+    }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ color: T.red, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+          <Icon name="triangle-alert" size={16} /> Novedad escalada — {data.instalacion?.nombre}
+        </div>
+        <div style={{ fontSize: 13, color: T.text }}>{data.tipo}: {data.descripcion}</div>
+        <div style={{ fontSize: 12, color: T.textMut, marginTop: 4 }}>Escalada por {data.escalada_por?.nombre}</div>
+      </div>
+      <button className="touch-target" aria-label="Cerrar aviso" onClick={onClose} style={{
+        background: "none", border: "none", color: T.textMut, fontSize: 18, cursor: "pointer",
+      }}><Icon name="x" size={16} /></button>
+    </div>
+  );
+}
+
+// ─── Modal: derivar una novedad crítica a un supervisor de la instalación ───
+function DerivarModal({ novedad, token, onClose, onSuccess }) {
+  const [opciones, setOpciones] = useState(null);
+  const [elegido, setElegido]   = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/novedades/${novedad.id}/responsables`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => setOpciones((Array.isArray(d) ? d : []).filter((u) => u.rol === "supervisor")))
+      .catch(() => setOpciones([]));
+  }, [novedad.id, token]);
+
+  const derivar = async () => {
+    if (!elegido) { setError("Elige a qué supervisor derivar."); return; }
+    setLoading(true); setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/novedades/${novedad.id}/asignar`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ responsable_id: elegido }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || json.message || "No se pudo derivar la novedad.");
+      onSuccess(novedad.id, opciones.find((o) => o.id === elegido));
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="responsive-modal-overlay" style={{
+      position: "fixed", inset: 0, zIndex: 100, background: "rgba(14,23,20,0.85)", backdropFilter: "blur(4px)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+    }}>
+      <div className="responsive-modal" style={{
+        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 24, width: "100%", maxWidth: 400,
+      }}>
+        <div style={{ fontWeight: 700, fontSize: 15, color: T.focusText, marginBottom: 12 }}>Derivar a supervisor</div>
+        <div style={{ fontSize: 13, color: T.textSec, marginBottom: 14 }}>
+          <strong style={{ color: T.red }}>{novedad.tipo}</strong>{" — "}{novedad.instalacion?.nombre}
+        </div>
+        <label style={{ display: "block", fontSize: 12, color: T.textSec, marginBottom: 6 }}>
+          Supervisores que cubren esta instalación
+        </label>
+        {opciones === null && <div style={{ fontSize: 12, color: T.textMut, marginBottom: 12 }}>Cargando…</div>}
+        {opciones && opciones.length === 0 && (
+          <div style={{ fontSize: 12, color: T.textMut, marginBottom: 12 }}>
+            No hay otros supervisores activos que cubran esta instalación.
+          </div>
+        )}
+        {opciones && opciones.length > 0 && (
+          <select value={elegido} onChange={(e) => { setElegido(e.target.value); setError(null); }} style={{
+            width: "100%", padding: "10px 12px", marginBottom: 12, background: T.bgInput, border: `1px solid ${T.border}`,
+            borderRadius: 8, color: elegido ? T.text : T.textMut, fontSize: 14, fontFamily: "var(--font-ui)",
+          }}>
+            <option value="">Selecciona un supervisor…</option>
+            {opciones.map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
+          </select>
+        )}
+        {error && (
+          <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: 8, background: T.redGhost, color: T.red, fontSize: 13 }}>{error}</div>
+        )}
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button className="touch-target gc-accion-btn gc-accion-btn--naranja" onClick={onClose} disabled={loading} style={{
+            background: "transparent", border: `1px solid ${T.border}`, borderRadius: T.radius, color: T.text,
+            minHeight: 40, padding: "0 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-ui)",
+          }}>Cancelar</button>
+          <button className="touch-target gc-accion-btn gc-accion-btn--morado" onClick={derivar}
+            disabled={loading || !opciones || opciones.length === 0} style={{
+            background: "transparent", border: `1px solid ${T.border}`, borderRadius: T.radius, color: T.text,
+            minHeight: 40, padding: "0 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-ui)",
+          }}>{loading ? "Derivando…" : "Derivar"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── PANEL DE INCIDENTES (sección "incidentes") ───────────────────
-// Central puede ver y gestionar novedades de TODAS las instalaciones.
+// Central ve las novedades de TODAS las instalaciones. Mismo diseño que el supervisor:
+// tarjetas compactas y, al pulsar una, ventana de detalle.
 function IncidentesPanel({ token }) {
   const [novedades, setNovedades] = useState([]);
   const [loading, setLoading]    = useState(true);
-  const [filtro, setFiltro]      = useState("todas"); // todas | abierta | escalada
+  const [vista, setVista]        = useState("escaladas"); // escaladas | criticas | resueltas
+  const [detalle, setDetalle]    = useState(null);
+  const [resolverTarget, setResolver] = useState(null);
+  const [derivarTarget, setDerivar] = useState(null);
+  const [alertaEscalada, setAlertaEscalada] = useState(null);
 
   const cargar = async () => {
     setLoading(true);
     try {
-      const params = filtro !== "todas" ? `?estado=${filtro}` : "";
-      const res  = await fetch(`${API_BASE}/novedades${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res  = await fetch(`${API_BASE}/novedades`, { headers: { Authorization: `Bearer ${token}` } });
       const json = await res.json();
       setNovedades(Array.isArray(json) ? json : (json.data ?? []));
     } catch (e) {
@@ -282,40 +390,59 @@ function IncidentesPanel({ token }) {
     }
   };
 
-  useEffect(() => { cargar(); }, [filtro]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { cargar(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const URGENCIA_COLOR = { verde: T.accent, amarillo: T.yellow, rojo: T.red };
-  const ESTADO_COLOR   = { abierta: T.yellow, escalada: T.red, resuelta: T.accent };
+  // Aviso en vivo cuando un supervisor escala una novedad
+  useEffect(() => {
+    const socket = io(SOCKET_URL, { auth: (cb) => cb({ token: localStorage.getItem("gc_token") || token }), transports: ["websocket"], reconnectionDelay: 2000 });
+    socket.on("novedad:escalada_central", (data) => { setAlertaEscalada(data); cargar(); });
+    return () => { socket.disconnect(); };
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const FILTROS = [
-    { id: "todas",   label: "Todas" },
-    { id: "abierta", label: "Abiertas" },
-    { id: "escalada",label: "Escaladas" },
-    { id: "resuelta", label: "Resueltas" },
+  // Central trabaja las ESCALACIONES de los supervisores; lo demás es de consulta.
+  const incidencias = novedades.filter((n) => !esRutina(n)); // rondas/rutina no son incidentes
+  const grupos = {
+    escaladas: incidencias.filter((n) => n.estado === "escalada"),
+    criticas:  incidencias.filter((n) => n.urgencia === "rojo" && n.estado !== "resuelta" && n.estado !== "escalada"), // las escaladas van en su propia pestaña
+    resueltas: incidencias.filter((n) => n.estado === "resuelta"),
+  };
+  const TABS = [
+    { id: "escaladas", label: "Escaladas" },
+    { id: "criticas",  label: "Críticas" },
+    { id: "resueltas", label: "Resueltas" },
   ];
+  const VACIO = {
+    escaladas: "No hay incidentes escalados por los supervisores.",
+    criticas:  "No hay incidentes críticos pendientes de atención.",
+    resueltas: "Aún no hay incidentes resueltos.",
+  };
+  const visibles = grupos[vista];
 
   return (
     <div className="operations-screen">
-      <SectionHeader title="Incidentes" sub="Todas las instalaciones" />
+      <SectionHeader title="Incidentes" sub="Escalaciones de supervisores y críticos de todas las instalaciones" />
+      <AvisoEscalada data={alertaEscalada} onClose={() => setAlertaEscalada(null)} />
 
-      {/* Filtros */}
-      <div className="filter-bar" style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-        {FILTROS.map(f => (
-          <button className="touch-target" key={f.id} onClick={() => setFiltro(f.id)} style={{
-            padding: "6px 14px", borderRadius: 8, border: `1px solid ${filtro === f.id ? C_COLOR + "66" : T.border}`,
-            background: filtro === f.id ? `${C_COLOR}15` : "transparent",
-            color: filtro === f.id ? C_COLOR : T.textMut,
-            fontSize: 12, fontWeight: filtro === f.id ? 700 : 500,
-            cursor: "pointer", fontFamily: "var(--font-ui)",
-          }}>
-            {f.label}
-          </button>
-        ))}
-        <button className="touch-target filter-bar__end" onClick={cargar} style={{
+      <div role="tablist" style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", alignItems: "center" }}>
+        {TABS.map((t) => {
+          const activo = vista === t.id;
+          return (
+            <button key={t.id} role="tab" aria-selected={activo} className="touch-target gc-tab-btn"
+              onClick={() => setVista(t.id)} style={{
+                padding: "8px 14px", borderRadius: 8, cursor: "pointer",
+                fontSize: 13, fontWeight: 700, fontFamily: "var(--font-ui)",
+                background: activo ? "rgba(122,78,191,0.22)" : "transparent",
+                color: activo ? "#D2C6EE" : T.textSec,
+                border: `1px solid ${activo ? "rgba(159,131,214,0.75)" : T.border}`,
+              }}>
+              {t.label} ({grupos[t.id].length})
+            </button>
+          );
+        })}
+        <button className="touch-target gc-accion-btn gc-accion-btn--morado" onClick={cargar} style={{
           marginLeft: "auto", padding: "6px 12px", borderRadius: 8,
           border: `1px solid ${T.border}`, background: "transparent",
-          color: T.textMut, fontSize: 11, cursor: "pointer",
-          fontFamily: "var(--font-ui)",
+          color: T.textSec, fontSize: 12, cursor: "pointer", fontFamily: "var(--font-ui)",
         }}>
           ↻ Actualizar
         </button>
@@ -327,57 +454,55 @@ function IncidentesPanel({ token }) {
         </div>
       )}
 
-      {!loading && novedades.length === 0 && (
+      {!loading && visibles.length === 0 && (
         <div style={{
           textAlign: "center", color: T.textMut, fontSize: 13,
           background: T.bgCard, border: `1px solid ${T.border}`,
           borderRadius: 8, padding: "32px 16px",
         }}>
-          <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}><Icon name="check" size={28} color={T.accent} /></div>
-          Sin incidentes {filtro !== "todas" ? `en estado "${filtro}"` : "registrados"}
+          {VACIO[vista]}
         </div>
       )}
 
-      {novedades.map((n) => {
-        const urgColor   = URGENCIA_COLOR[n.urgencia]  ?? T.textMut;
-        const estadoColor = ESTADO_COLOR[n.estado]      ?? T.textMut;
-        const hora = new Date(n.created_at).toLocaleString("es-CL", {
-          day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/Santiago",
-        });
-        return (
-          <div className="responsive-card" key={n.id} style={{
-            background: T.bgCard, border: `1px solid ${urgColor}22`,
-            borderLeft: `3px solid ${urgColor}`,
-            borderRadius: 8, padding: "12px 14px", marginBottom: 8,
-          }}>
-            <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-              <span style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{n.tipo}</span>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <span style={{
-                  fontSize: 9, fontWeight: 700, padding: "2px 7px",
-                  borderRadius: 8, background: `${urgColor}22`, color: urgColor,
-                  textTransform: "uppercase",
-                }}>
-                  {n.urgencia}
-                </span>
-                <span style={{
-                  fontSize: 9, fontWeight: 700, padding: "2px 7px",
-                  borderRadius: 8, background: `${estadoColor}22`, color: estadoColor,
-                  textTransform: "uppercase",
-                }}>
-                  {n.estado}
-                </span>
-              </div>
-            </div>
-            <div style={{ fontSize: 12, color: T.textSec, marginBottom: 4 }}>{n.descripcion}</div>
-            <div className="incident-meta" style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.textMut }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="building-2" size={13} /> {n.instalacion?.nombre ?? "—"}</span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="user-round" size={13} /> {n.usuario?.nombre ?? "—"}</span>
-              <span>{hora}</span>
-            </div>
-          </div>
-        );
-      })}
+      <div className="nov-list">
+        {visibles.map((n) => (
+          <TarjetaNovedadCompacta key={n.id} n={n} onClick={() => setDetalle(n)} />
+        ))}
+      </div>
+
+      {detalle && (
+        <DetalleNovedadModal
+          novedad={novedades.find((x) => x.id === detalle.id) ?? detalle}
+          onClose={() => setDetalle(null)}
+          // Central resuelve las escaladas; el resto es solo consulta
+          onResolver={detalle.estado === "escalada" ? () => { const n = detalle; setDetalle(null); setResolver(n); } : undefined}
+          // Escalada, o crítica abierta que nadie atiende (p. ej. supervisor ausente): Central la deriva
+          onDerivar={detalle.estado === "escalada" || (detalle.estado === "abierta" && detalle.urgencia === "rojo") ? () => { const n = detalle; setDetalle(null); setDerivar(n); } : undefined}
+        />
+      )}
+
+      {derivarTarget && (
+        <DerivarModal
+          novedad={derivarTarget}
+          token={token}
+          onClose={() => setDerivar(null)}
+          onSuccess={(id, sup) => {
+            setNovedades((prev) => prev.map((n) => n.id === id ? { ...n, estado: "en_atencion", responsable: sup ? { id: sup.id, nombre: sup.nombre } : n.responsable } : n));
+            setDerivar(null);
+          }}
+        />
+      )}
+
+      {resolverTarget && (
+        <ResolverModal
+          novedad={resolverTarget}
+          onClose={() => setResolver(null)}
+          onSuccess={(id) => {
+            setNovedades((prev) => prev.map((n) => n.id === id ? { ...n, estado: "resuelta", fecha_atencion: new Date().toISOString() } : n));
+            setResolver(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -392,6 +517,7 @@ function MonitoreoPanel({ token }) {
   );
   const [ultimaUbicacion, setUltimaUbicacion] = useState(null);
   const socketRef = useRef(null);
+  const [alertaEscalada, setAlertaEscalada] = useState(null); // novedad que un supervisor acaba de escalar
 
   const fetchStats = async () => {
     try {
@@ -417,6 +543,7 @@ function MonitoreoPanel({ token }) {
     socket.on("reconnect_attempt", () => setSocketStatus("reconnecting"));
 
     socket.on("admin:dashboard_update", () => fetchStats());
+    socket.on("novedad:escalada_central", (data) => { setAlertaEscalada(data); fetchStats(); });
 
     socket.on("guardia:ubicacion", (p) => {
       setUltimaUbicacion(p);
@@ -437,6 +564,8 @@ function MonitoreoPanel({ token }) {
     <div className="operations-screen">
       <SectionHeader title="Monitoreo Central" sub="Vista global de todas las instalaciones" />
       <SocketBadge status={socketStatus} />
+
+      <AvisoEscalada data={alertaEscalada} onClose={() => setAlertaEscalada(null)} />
 
       {/* KPIs de cobertura */}
       <div className="metrics-grid" style={{ display: "grid", gap: 10, marginBottom: 12 }}>
