@@ -103,6 +103,30 @@ describe('reportes agregados', () => {
     }
   });
 
+  // Reporte OS-10 (asistencia e incidentes): usa el mismo alcance del supervisor que dashboard y novedades.
+  // Antes solo miraba las asignaciones directas y salía vacío para quien cubre por comuna o por instalación asignada.
+  test('OS-10: supervisor que cubre por comuna (sin asignaciones directas) ve las instalaciones de su comuna', async () => {
+    prisma.supervisor_Instalacion.findMany.mockResolvedValue([]);
+    prisma.usuario.findUnique.mockResolvedValue({ comunas_cobertura: ['Puente Alto'], instalacion_asignada_id: null });
+    prisma.instalacion.findMany.mockResolvedValue([{ id: 'c1' }, { id: 'c2' }]);
+    await reportes.reporteAsistencia({}, sup);
+    await reportes.reporteIncidentes({}, sup);
+    expect(filtros(prisma.asistencia.findMany)[0].in).toEqual(['c1', 'c2']);
+    expect(filtros(prisma.novedad.findMany)[0].in).toEqual(['c1', 'c2']);
+  });
+
+  test('OS-10: supervisor sin asignaciones ni comunas usa su instalación asignada', async () => {
+    prisma.supervisor_Instalacion.findMany.mockResolvedValue([]);
+    prisma.usuario.findUnique.mockResolvedValue({ comunas_cobertura: null, instalacion_asignada_id: 'propia' });
+    await reportes.reporteAsistencia({}, sup);
+    expect(filtros(prisma.asistencia.findMany)[0].in).toEqual(['propia']);
+  });
+
+  test('OS-10: pedir una instalación fuera de su alcance no la amplía', async () => {
+    await reportes.reporteIncidentes({ instalacion_id: 'ajena' }, sup);
+    expect(filtros(prisma.novedad.findMany)[0]).toEqual({ in: ['mia'] });
+  });
+
   test('administrador ve todo sin filtro de instalación', async () => {
     await reportes.novedadesPorSemana(admin);
     await reportes.estadoGuardias(admin);

@@ -8,11 +8,9 @@ const { ahoraChile, sumarDias, aFechaDB, inicioDiaChile, finDiaChile } = require
 /** Devuelve los instalacion_ids accesibles según el rol del usuario */
 async function resolverInstalaciones(instalacion_id, user) {
   if (user.rol === ROLES.SUPERVISOR) {
-    const asignaciones = await prisma.supervisor_Instalacion.findMany({
-      where: { supervisor_id: user.id },
-      select: { instalacion_id: true },
-    });
-    const ids = asignaciones.map((a) => a.instalacion_id);
+    // Misma regla que dashboard y novedades: asignaciones directas + comunas de cobertura
+    // + instalación asignada como último recurso.
+    const ids = await resolverInstalacionesSupervisor(user);
     // Si pidieron filtro por una instalación concreta, respetar si está en su lista
     return instalacion_id && ids.includes(instalacion_id) ? instalacion_id : { in: ids };
   }
