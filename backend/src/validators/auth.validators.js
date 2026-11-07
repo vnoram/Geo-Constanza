@@ -15,6 +15,7 @@ const verify2FASchema = z.object({
 });
 
 const enable2FASchema = z.object({ code: texto(20) });
+const reenviar2FASchema = z.object({ tempToken: texto(2000) });
 
 const refreshSchema = z.object({ refreshToken: texto(2000) });
 
@@ -39,5 +40,5 @@ const validarBody = (schema) => (req, res, next) => {
 };
 
 module.exports = {
-  loginSchema, verify2FASchema, enable2FASchema, refreshSchema, resetRequestSchema, resetConfirmSchema, changePasswordSchema, validarBody,
+  loginSchema, verify2FASchema, enable2FASchema, reenviar2FASchema, refreshSchema, resetRequestSchema, resetConfirmSchema, changePasswordSchema, validarBody,
 };

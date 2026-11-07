@@ -54,6 +54,9 @@ const errorHandler = (err, req, res, _next) => {
   }
 
   const statusCode = err.statusCode || 500;
+  if (err.code === 'EMAIL_2FA_ENVIO') {
+    return res.status(503).json({ error: 'No pudimos enviar el código de acceso. Intenta iniciar sesión de nuevo.' });
+  }
   // Un 5xx nunca devuelve el mensaje interno (rutas, SQL, trozos de código).
   // El motivo real queda en el log; en desarrollo viaja aparte en "detalle".
   if (statusCode >= 500) {

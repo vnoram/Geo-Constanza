@@ -18,6 +18,7 @@ router.post('/password/change', authenticate, v.validarBody(v.changePasswordSche
 
 // 2FA (Supervisor y Admin)
 router.post('/2fa/verify', v.validarBody(v.verify2FASchema), authController.verify2FA);
+router.post('/2fa/resend', v.validarBody(v.reenviar2FASchema), authController.reenviar2FA);
 router.post('/2fa/setup', authenticate, authController.setup2FA);
 router.post('/2fa/enable', authenticate, v.validarBody(v.enable2FASchema), authController.enable2FA);
 

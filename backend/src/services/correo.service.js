@@ -21,8 +21,9 @@ const obtenerTransporte = () => {
 };
 
 // Devuelve true si el correo salió (o se imprimió en desarrollo), false si no hay forma de enviarlo.
-const enviarCorreo = async (destino, asunto, html, textoPlano) => {
+const enviarCorreo = async (destino, asunto, html, textoPlano, { soloSMTP = false } = {}) => {
   if (!smtpConfigurado()) {
+    if (soloSMTP) return false;
     if (process.env.NODE_ENV !== 'production') {
       // Solo desarrollo/pruebas: permite completar el flujo sin proveedor de correo.
       logger.info(`[correo:dev] Para: ${destino} | ${asunto}\n${textoPlano || html}`);
@@ -32,10 +33,10 @@ const enviarCorreo = async (destino, asunto, html, textoPlano) => {
     return false;
   }
   try {
-    await obtenerTransporte().sendMail({ from: process.env.MAIL_FROM, to: destino, subject: asunto, html, text: textoPlano });
-    return true;
+    const resultado = await obtenerTransporte().sendMail({ from: process.env.MAIL_FROM, to: destino, subject: asunto, html, text: textoPlano });
+    return !soloSMTP || resultado.accepted?.length > 0;
   } catch (error) {
-    logger.error(`Fallo al enviar correo: ${error.message}`);
+    logger.error(soloSMTP ? 'Fallo al enviar correo de verificación.' : `Fallo al enviar correo: ${error.message}`);
     return false;
   }
 };

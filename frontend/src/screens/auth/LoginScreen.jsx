@@ -19,6 +19,7 @@ export function LoginScreen({ onLogin, onForgot }) {
     step, code2fa, setCode2fa,
     locked, lockTime, lockLabel,
     formatRut, handleLogin, handle2FA, resetTo2FA,
+    email2FA, resendAt, resends, handleResend,
   } = useLoginForm({ onLogin });
 
   return (
@@ -123,6 +124,10 @@ export function LoginScreen({ onLogin, onForgot }) {
               loading={loading}
               onVerify={handle2FA}
               onBack={resetTo2FA}
+              email2FA={email2FA}
+              resendAt={resendAt}
+              resends={resends}
+              onResend={handleResend}
             />
           )}
 

@@ -3,7 +3,7 @@ import { T, FONT } from "../../theme/theme";
 import { Icon } from "./Icon";
 
 // `icon`: nombre de un ícono Lucide (ver Icon.jsx). `mono`: para RUT, códigos y coordenadas.
-export function Input({ label, type = "text", value, onChange, icon, error, placeholder, maxLength, mono }) {
+export function Input({ label, type = "text", value, onChange, icon, error, placeholder, maxLength, mono, inputMode, autoComplete }) {
   const [focused, setFocused] = useState(false);
   return (
     <div style={{ marginBottom: 16 }}>
@@ -22,6 +22,8 @@ export function Input({ label, type = "text", value, onChange, icon, error, plac
           onBlur={() => setFocused(false)}
           placeholder={placeholder}
           maxLength={maxLength}
+          inputMode={inputMode}
+          autoComplete={autoComplete}
           style={{
             flex: 1, minWidth: 0, background: "none", border: "none", outline: "none",
             color: T.text, fontSize: 15, padding: "10px 0",

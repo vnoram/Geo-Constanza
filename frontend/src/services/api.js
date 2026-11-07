@@ -70,7 +70,7 @@ export const api = {
     });
     // Con 2FA exigido el backend responde { requires2FA, tempToken } sin tokens de sesión.
     if (data.requires2FA) {
-      return { requires2FA: true, tempToken: data.tempToken };
+      return { requires2FA: true, tempToken: data.tempToken, method: data.method, retryAfter: data.retryAfter };
     }
     // Backend devuelve { usuario, accessToken, refreshToken[, mustEnroll2FA] }
     return {
@@ -105,6 +105,12 @@ export const api = {
   }),
 
   // Enrolamiento (requiere sesión): devuelve { otpauth_url, secreto }.
+  resend2FA: (tempToken) => request('/auth/2fa/resend', {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tempToken }),
+  }),
+
   setup2FA: () => authFetch('/auth/2fa/setup', { method: "POST", body: JSON.stringify({}) }),
   // Confirma con un código y devuelve { codigos_recuperacion } (se muestran una sola vez).
   enable2FA: (code) => authFetch('/auth/2fa/enable', { method: "POST", body: JSON.stringify({ code }) }),

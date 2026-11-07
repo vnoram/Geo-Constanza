@@ -12,6 +12,9 @@ export function useLoginForm({ onLogin }) {
   const [step, setStep] = useState("login"); // "login" | "2fa"
   const [code2fa, setCode2fa] = useState("");
   const [tempToken, setTempToken] = useState(null);
+  const [email2FA, setEmail2FA] = useState(false);
+  const [resendAt, setResendAt] = useState(0);
+  const [resends, setResends] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const [locked, setLocked] = useState(false);
   const [lockTime, setLockTime] = useState(0);
@@ -42,6 +45,9 @@ export function useLoginForm({ onLogin }) {
       const result = await api.login(rut.trim(), pass);
       if (result.requires2FA) {
         setTempToken(result.tempToken);
+        setEmail2FA(result.method === "email");
+        setResendAt(Date.now() + (result.retryAfter ?? 0) * 1000);
+        setResends(0);
         setStep("2fa");
       } else if (result.mustEnroll2FA) {
         // Sesión válida pero el rol exige 2FA: la app muestra el enrolamiento antes de entrar.
@@ -74,6 +80,7 @@ export function useLoginForm({ onLogin }) {
   const handle2FA = async () => {
     setError("");
     const codigo = code2fa.trim();
+    if (email2FA && !/^\d{6}$/.test(codigo)) { setError("Ingrese el código de 6 dígitos"); return; }
     if (codigo.length < 6) { setError("Ingrese el código de 6 dígitos o un código de recuperación"); return; }
     setLoading(true);
     try {
@@ -87,13 +94,30 @@ export function useLoginForm({ onLogin }) {
     setLoading(false);
   };
 
-  const resetTo2FA = () => { setStep("login"); setCode2fa(""); setError(""); setTempToken(null); };
+  const handleResend = async () => {
+    if (loading || resends >= 3 || Date.now() < resendAt) return;
+    setError("");
+    setLoading(true);
+    try {
+      const result = await api.resend2FA(tempToken);
+      setResendAt(Date.now() + result.retryAfter * 1000);
+      setResends(n => n + 1);
+      setCode2fa("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetTo2FA = () => { setStep("login"); setCode2fa(""); setError(""); setTempToken(null); setEmail2FA(false); };
 
   const lockLabel = `${Math.floor(lockTime / 60)}:${String(lockTime % 60).padStart(2, "0")}`;
 
   return {
     rut, pass, setPass, error, loading,
     step, code2fa, setCode2fa,
+    email2FA, resendAt, resends, handleResend,
     locked, lockTime, lockLabel,
     formatRut, handleLogin, handle2FA, resetTo2FA,
   };

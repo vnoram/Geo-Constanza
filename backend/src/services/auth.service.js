@@ -7,6 +7,7 @@ const { ESTADO_EMPRESA, ESTADO_USUARIO } = require('../constants/estados');
 const { jwtConfig } = require('../config/jwt');
 const { getRedis } = require('../config/redis');
 const twoFactor = require('./twoFactor.service');
+const twoFactorEmail = require('./twoFactorEmail.service');
 const passwordReset = require('./passwordReset.service');
 
 const MAX_LOGIN_ATTEMPTS = 5;
@@ -65,6 +66,13 @@ const login = async (rut, password, _ip, _userAgent) => {
   // para no revelar a un tercero el estado de una cuenta).
   exigirEmpresaActiva(usuario);
 
+  if (twoFactorEmail.habilitado()) {
+    if (twoFactorEmail.exigido() && twoFactor.rolExige2FA(usuario.rol)) {
+      return twoFactorEmail.iniciar(usuario, { ip: _ip, userAgent: _userAgent });
+    }
+    return { usuario: sanitizeUser(usuario), ...generateTokens(usuario) };
+  }
+
   // Segundo factor (TOTP) para supervisor y administrador.
   // - Enrolado: se exige el código antes de emitir sesión (devuelve tempToken).
   // - Sin enrolar: el acceso continúa y se avisa para que complete el enrolamiento (nadie queda fuera).
@@ -80,7 +88,34 @@ const login = async (rut, password, _ip, _userAgent) => {
   return { usuario: sanitizeUser(usuario), ...tokens };
 };
 
-const verify2FA = async (tempToken, code) => {
+const obtenerUsuarioEmail = async (tempToken) => {
+  if (!twoFactorEmail.habilitado()) throw Object.assign(new Error('Código o desafío inválido.'), { statusCode: 401 });
+  const desafio = twoFactorEmail.obtenerDesafio(tempToken);
+  const usuario = await prismaGlobal.usuario.findUnique({
+    where: { id: desafio.id },
+    include: {
+      instalacion_asignada: { select: { id: true, nombre: true } },
+      empresa: { select: { id: true, nombre: true, estado: true } },
+    },
+  });
+  if (!usuario || usuario.estado !== ESTADO_USUARIO.ACTIVO || !twoFactor.rolExige2FA(usuario.rol)) {
+    throw Object.assign(new Error('Código o desafío inválido.'), { statusCode: 401 });
+  }
+  exigirEmpresaActiva(usuario);
+  return { usuario, desafio };
+};
+
+const reenviar2FA = async (tempToken, contexto) => {
+  const { usuario, desafio } = await obtenerUsuarioEmail(tempToken);
+  return twoFactorEmail.reenviar(usuario, desafio, contexto);
+};
+
+const verify2FA = async (tempToken, code, contexto) => {
+  if (twoFactorEmail.habilitado()) {
+    const { usuario, desafio } = await obtenerUsuarioEmail(tempToken);
+    await twoFactorEmail.verificar(usuario, desafio, code, contexto);
+    return { usuario: sanitizeUser(usuario), ...generateTokens(usuario) };
+  }
   const usuario = await twoFactor.verificarLogin(tempToken, code);
   exigirEmpresaActiva(usuario);
   const tokens = generateTokens(usuario);
@@ -161,4 +196,4 @@ const sanitizeUser = (usuario) => ({
 
 const changePassword = (usuarioId, actual, nueva) => passwordReset.cambiar(usuarioId, actual, nueva);
 
-module.exports = { changePassword, login, verify2FA, refreshToken, logout, requestPasswordReset, confirmPasswordReset };
+module.exports = { changePassword, login, verify2FA, reenviar2FA, refreshToken, logout, requestPasswordReset, confirmPasswordReset };

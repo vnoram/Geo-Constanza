@@ -58,6 +58,7 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?define JWT_REFRESH_SECRET en .env}
       TWO_FACTOR_ENCRYPTION_KEY: ${TWO_FACTOR_ENCRYPTION_KEY:-}
       REQUIRE_2FA: ${REQUIRE_2FA:-false}
+      TWO_FACTOR_METHOD: ${TWO_FACTOR_METHOD:-totp}
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
       MAIL_FROM: Geo Constanza <no-responder@geo-constanza.local>

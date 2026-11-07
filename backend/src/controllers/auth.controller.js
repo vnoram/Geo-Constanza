@@ -49,7 +49,7 @@ const logout = async (req, res, next) => {
 const verify2FA = async (req, res, next) => {
   try {
     const { tempToken, code } = req.body;
-    const result = await authService.verify2FA(tempToken, code);
+    const result = await authService.verify2FA(tempToken, code, { ip: req.ip, userAgent: req.get('user-agent') });
 
     await registrarAuditoria({
       usuarioId: result.usuario.id,
@@ -61,6 +61,14 @@ const verify2FA = async (req, res, next) => {
     });
 
     res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const reenviar2FA = async (req, res, next) => {
+  try {
+    res.json(await authService.reenviar2FA(req.body.tempToken, { ip: req.ip, userAgent: req.get('user-agent') }));
   } catch (error) {
     next(error);
   }
@@ -147,4 +155,4 @@ const changePassword = async (req, res, next) => {
   }
 };
 
-module.exports = { changePassword, login, refreshToken, logout, verify2FA, setup2FA, enable2FA, resetPassword, confirmResetPassword };
+module.exports = { changePassword, login, refreshToken, logout, verify2FA, reenviar2FA, setup2FA, enable2FA, resetPassword, confirmResetPassword };
