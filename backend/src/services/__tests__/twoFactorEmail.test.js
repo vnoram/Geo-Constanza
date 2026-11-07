@@ -65,7 +65,16 @@ test('envía seis dígitos y entrega sesión solo después de verificar una vez'
   expect(body).toMatchObject({ requires2FA: true, method: 'email', retryAfter: 60 });
   expect(body.accessToken).toBeUndefined();
   expect(body.refreshToken).toBeUndefined();
-  expect(enviarCorreo).toHaveBeenCalledWith(usuario.email, expect.any(String), undefined, expect.stringContaining('10 minutos'), { soloSMTP: true });
+  const texto = [
+    'Hola,',
+    'Tu código de Geo Constanza es:',
+    codigo(),
+    'Vence 10 minutos después de iniciar sesión.',
+    'Si no lo solicitaste, ignora este correo.',
+  ].join('\n\n');
+  expect(enviarCorreo).toHaveBeenCalledWith(
+    usuario.email, 'Código de acceso - Geo Constanza', undefined, texto, { soloSMTP: true },
+  );
   const respuestas = await Promise.all([verificar(body.tempToken, codigo()), verificar(body.tempToken, codigo())]);
   expect(respuestas.map(r => r.status).sort()).toEqual([200, 401]);
   const sesion = respuestas.find(r => r.status === 200).body;

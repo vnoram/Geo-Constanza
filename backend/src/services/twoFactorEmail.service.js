@@ -85,7 +85,7 @@ const generarCodigo = (desafio, hashAnterior) => {
 };
 
 const enviar = async (usuario, codigo, datos, store, contexto) => {
-  const texto = `Tu código de Geo Constanza es ${codigo}. Vence 10 minutos después de iniciar sesión. Si no lo solicitaste, ignora este correo.`;
+  const texto = `Hola,\n\nTu código de Geo Constanza es:\n\n${codigo}\n\nVence 10 minutos después de iniciar sesión.\n\nSi no lo solicitaste, ignora este correo.`;
   const pendiente = JSON.stringify(datos);
   let enviado = false;
   try {
