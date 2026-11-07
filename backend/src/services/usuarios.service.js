@@ -1,6 +1,8 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
-const { prisma } = require('../config/database');
+const { prisma, prismaGlobal } = require('../config/database');
 const { ROLES } = require('../constants/roles');
+const passwordReset = require('./passwordReset.service');
 
 const BCRYPT_ROUNDS = 12;
 
@@ -9,7 +11,8 @@ const BCRYPT_ROUNDS = 12;
  * Para supervisores incluye todas las instalaciones asignadas vía Supervisor_Instalacion.
  */
 const miInformacion = async (userId) => {
-  return prisma.usuario.findUniqueOrThrow({
+  // Cliente global a propósito: el id sale del token y el super admin (nivel de plataforma) no tiene empresa.
+  return prismaGlobal.usuario.findUniqueOrThrow({
     where: { id: userId },
     select: {
       id: true,
@@ -33,6 +36,7 @@ const miInformacion = async (userId) => {
         },
       },
       comunas_cobertura: true,
+      empresa: { select: { id: true, nombre: true } },
       created_at: true,
     },
   });
@@ -69,17 +73,27 @@ const listar = async ({ rol, estado, page, limit }) => {
   return { data, total, page, totalPages: Math.ceil(total / limit) };
 };
 
-const crear = async (data) => {
-  const { instalacionIds, comunas, password, ...campos } = data;
+const rechazo = (mensaje) => Object.assign(new Error(mensaje), { statusCode: 400 });
 
-  const password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+// El rol de plataforma (super_admin) no pertenece a ninguna empresa: nadie puede crearlo ni asignarlo desde aquí.
+const ROLES_DE_EMPRESA = Object.values(ROLES).filter((r) => r !== ROLES.SUPER_ADMIN);
+
+// Nadie define la contraseña de otra persona: se guarda una clave aleatoria que nadie conoce y se envía
+// una invitación por correo para que la persona elija la suya. Si llega `password`, se descarta.
+const crear = async (data) => {
+  // eslint-disable-next-line no-unused-vars
+  const { instalacionIds, comunas, password: _descartada, ...campos } = data;
+  if (!ROLES_DE_EMPRESA.includes(campos.rol)) throw rechazo('Rol de usuario inválido.');
+  if (campos.rol === ROLES.ADMINISTRADOR) throw rechazo('No se pueden crear administradores desde el sistema.');
+
+  const password_hash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), BCRYPT_ROUNDS);
 
   // Guardar comunas de cobertura como JSON si el rol es supervisor
   if (campos.rol === ROLES.SUPERVISOR && Array.isArray(comunas)) {
     campos.comunas_cobertura = comunas.filter((c) => typeof c === 'string' && c.trim());
   }
 
-  return prisma.$transaction(async (tx) => {
+  const creado = await prisma.$transaction(async (tx) => {
     const nuevo = await tx.usuario.create({
       data: { ...campos, password_hash },
       select: { id: true, nombre: true, email: true, rol: true, estado: true },
@@ -94,13 +108,24 @@ const crear = async (data) => {
 
     return nuevo;
   });
+
+  let invitacion_enviada = false;
+  try { invitacion_enviada = await passwordReset.invitar(creado); } catch (_) { /* el usuario ya existe: se puede reenviar con "Olvidé mi contraseña" */ }
+  return { ...creado, invitacion_enviada };
 };
 
 const editar = async (id, data) => {
-  const { instalacionIds, comunas, password, ...campos } = data;
-
-  if (password) {
-    campos.password_hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+  // eslint-disable-next-line no-unused-vars
+  const { instalacionIds, comunas, password: _descartada, ...campos } = data;
+  if (campos.rol !== undefined) {
+    if (!ROLES_DE_EMPRESA.includes(campos.rol)) throw rechazo('Rol de usuario inválido.');
+    const actual = await prisma.usuario.findUnique({ where: { id }, select: { rol: true } });
+    if (actual?.rol === ROLES.ADMINISTRADOR && campos.rol !== ROLES.ADMINISTRADOR) {
+      throw rechazo('No se puede cambiar el rol de un administrador.');
+    }
+    if (campos.rol === ROLES.ADMINISTRADOR && actual?.rol !== ROLES.ADMINISTRADOR) {
+      throw rechazo('No se puede asignar el rol de administrador.');
+    }
   }
 
   // Actualizar comunas de cobertura si se envió el array (solo supervisores)
@@ -132,9 +157,12 @@ const editar = async (id, data) => {
 };
 
 const desactivar = async (id) => {
+  const objetivo = await prisma.usuario.findUnique({ where: { id }, select: { rol: true } });
+  if (objetivo?.rol === ROLES.ADMINISTRADOR) throw rechazo('No se puede desactivar a un administrador.');
   return prisma.usuario.update({
     where: { id },
     data: { estado: 'inactivo' },
+    select: { id: true, nombre: true, email: true, rol: true, estado: true },
   });
 };
 

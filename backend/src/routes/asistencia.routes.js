@@ -1,12 +1,12 @@
 const { Router } = require('express');
 const asistenciaController = require('../controllers/asistencia.controller');
 const { authenticate } = require('../middlewares/auth');
-const { authorize } = require('../middlewares/rbac');
+const { authorize, exigirEmpresa } = require('../middlewares/rbac');
 const { ROLES } = require('../constants/roles');
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, exigirEmpresa);
 
 // ── Rutas sin parámetros → PRIMERO (evitar captura por /:param) ───────────
 
@@ -26,7 +26,7 @@ router.post('/entrada',  authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.
 router.post('/salida',   authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.ADMINISTRADOR), asistenciaController.registrarSalida);
 
 // Sincronización offline
-router.post('/sync', asistenciaController.sincronizarOffline);
+router.post('/sync', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE), asistenciaController.sincronizarOffline);
 
 // ── Rutas con parámetros ──────────────────────────────────────────────────
 router.get('/hoy/:instalacionId',   authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), asistenciaController.obtenerHoy);

@@ -1,17 +1,27 @@
+import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect } from "react";
 import { T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
 import { Btn } from "../../components/ui/Btn";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
+import { esCentroOperativo } from "../../utils/instalaciones";
 import { ROLES as ROL } from "../../constants/roles";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
-const ROLES_DISPONIBLES = [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE, ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL, ROL.ADMINISTRADOR];
+// Admin no se asigna desde la interfaz: las cuentas de administrador se crean fuera del sistema.
+const ROLES_DISPONIBLES = [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE, ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL];
 const ROL_LABEL = { [ROL.GGSS_EN_PAUTA]: "GGSS Pauta", [ROL.GGSS_LIBRE]: "GGSS Libre", [ROL.SUPERVISOR]: "Supervisor", [ROL.OPERADOR_CENTRAL]: "Central", [ROL.ADMINISTRADOR]: "Admin" };
-const ROL_BADGE = { [ROL.GGSS_EN_PAUTA]: "accent", [ROL.GGSS_LIBRE]: "accent", [ROL.SUPERVISOR]: "yellow", [ROL.OPERADOR_CENTRAL]: "accent", [ROL.ADMINISTRADOR]: "red" };
+const ROL_BADGE = { [ROL.GGSS_EN_PAUTA]: "accent", [ROL.GGSS_LIBRE]: "accent", [ROL.SUPERVISOR]: "yellow", [ROL.OPERADOR_CENTRAL]: "focus", [ROL.ADMINISTRADOR]: "red" };
 
-const VACÍO = { rut: "", nombre: "", email: "", telefono: "", password: "", rol: ROL.GGSS_EN_PAUTA, instalacionIds: [], instalacion_asignada_id: "" };
+// Categorías de la lista, de mayor a menor jerarquía: Central > Supervisor > Guardias.
+const GRUPOS = [
+  { clave: "central",      roles: [ROL.OPERADOR_CENTRAL],                 titulo: "Central de monitoreo" },
+  { clave: "supervisores", roles: [ROL.SUPERVISOR],                       titulo: "Supervisores" },
+  { clave: "guardias",     roles: [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE],    titulo: "Guardias (GGSS)" },
+];
+
+const VACÍO = { rut: "", nombre: "", email: "", telefono: "", rol: ROL.GGSS_EN_PAUTA, instalacionIds: [], instalacion_asignada_id: "" };
 
 // ─── Helpers de UI ────────────────────────────────────────────────────────────
 const inputStyle = {
@@ -33,7 +43,10 @@ function Field({ label, required, children }) {
 }
 
 // ─── Modal Crear / Editar ─────────────────────────────────────────────────────
-function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
+function UsuarioModal({ inicial, instalaciones: todas, onClose, onSaved }) {
+  // Los centros operativos son de la central; supervisores y guardias solo ven recintos operativos.
+  const instalaciones = todas.filter((i) => !esCentroOperativo(i));
+  const centros = todas.filter(esCentroOperativo);
   const esEdicion    = !!inicial?.id;
   const [form, setForm]       = useState(inicial ?? VACÍO);
   const [loading, setLoading] = useState(false);
@@ -56,16 +69,11 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
       setError("RUT, nombre y email son obligatorios.");
       return;
     }
-    if (!esEdicion && !form.password.trim()) {
-      setError("La contraseña es obligatoria al crear un usuario.");
-      return;
-    }
 
-    // Construir payload limpio
+    // Construir payload limpio. La contraseña nunca la define el admin: el servidor envía una invitación por correo.
     const payload = { ...form };
-    if (esEdicion && !payload.password) delete payload.password;
     if (payload.rol !== ROL.SUPERVISOR)           delete payload.instalacionIds;
-    if (![ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(payload.rol)) delete payload.instalacion_asignada_id;
+    if (![ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE, ROL.OPERADOR_CENTRAL].includes(payload.rol)) delete payload.instalacion_asignada_id;
 
     setLoading(true);
     try {
@@ -98,7 +106,7 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
           <span style={{ fontWeight: 700, fontSize: 16, color: T.text }}>
             {esEdicion ? "Editar Usuario" : "Crear Usuario"}
           </span>
-          <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{ background: "none", border: "none", color: T.textMut, fontSize: 20, cursor: "pointer" }}>✕</button>
+          <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{ background: "none", border: "none", color: T.textMut, fontSize: 20, cursor: "pointer" }}><Icon name="x" size={16} /></button>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -108,7 +116,9 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
               <input className="touch-target" style={inputStyle} value={form.rut} onChange={(e) => set("rut", e.target.value)} placeholder="12345678-9" />
             </Field>
             <Field label="Rol" required>
-              <select className="touch-target" style={{ ...inputStyle, appearance: "none" }} value={form.rol} onChange={(e) => set("rol", e.target.value)}>
+              <select className="touch-target" style={{ ...inputStyle, appearance: "none" }} value={form.rol} onChange={(e) => set("rol", e.target.value)}
+                disabled={form.rol === ROL.ADMINISTRADOR}>
+                {form.rol === ROL.ADMINISTRADOR && <option value={ROL.ADMINISTRADOR}>{ROL_LABEL[ROL.ADMINISTRADOR]}</option>}
                 {ROLES_DISPONIBLES.map((r) => (
                   <option key={r} value={r} style={{ background: T.bgCard }}>{ROL_LABEL[r]}</option>
                 ))}
@@ -124,16 +134,15 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
             <input className="touch-target" style={inputStyle} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="usuario@geoconstanza.cl" />
           </Field>
 
-          {/* Fila 2: teléfono + contraseña */}
-          <div className="admin-form-grid" style={{ display: "grid", gap: "0 12px" }}>
-            <Field label="Teléfono">
-              <input className="touch-target" style={inputStyle} value={form.telefono} onChange={(e) => set("telefono", e.target.value)} placeholder="+56 9 1234 5678" />
-            </Field>
-            <Field label={esEdicion ? "Nueva contraseña" : "Contraseña"} required={!esEdicion}>
-              <input className="touch-target" style={inputStyle} type="password" value={form.password} onChange={(e) => set("password", e.target.value)}
-                placeholder={esEdicion ? "Dejar vacío para no cambiar" : "••••••••"} />
-            </Field>
-          </div>
+          {!esEdicion && (
+            <p style={{ fontSize: 12, color: T.textSec, margin: "0 0 14px" }}>
+              La persona recibirá un correo con un enlace (válido 72 horas) para elegir su propia contraseña.
+            </p>
+          )}
+
+          <Field label="Teléfono">
+            <input className="touch-target" style={inputStyle} value={form.telefono} onChange={(e) => set("telefono", e.target.value)} placeholder="+56 9 1234 5678" />
+          </Field>
 
           {/* Instalación única — solo para GGSS */}
           {[ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(form.rol) && (
@@ -146,6 +155,23 @@ function UsuarioModal({ inicial, instalaciones, onClose, onSaved }) {
               >
                 <option value="">Sin asignar</option>
                 {instalaciones.map((i) => (
+                  <option key={i.id} value={i.id} style={{ background: T.bgCard }}>{i.nombre}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+
+          {/* Centro operativo — solo para el Operador Central */}
+          {form.rol === ROL.OPERADOR_CENTRAL && (
+            <Field label="Centro operativo asignado">
+              <select
+                className="touch-target"
+                style={{ ...inputStyle, appearance: "none", color: form.instalacion_asignada_id ? T.text : T.textMut }}
+                value={form.instalacion_asignada_id}
+                onChange={(e) => set("instalacion_asignada_id", e.target.value)}
+              >
+                <option value="">Sin asignar</option>
+                {centros.map((i) => (
                   <option key={i.id} value={i.id} style={{ background: T.bgCard }}>{i.nombre}</option>
                 ))}
               </select>
@@ -230,7 +256,8 @@ export function AdminUsuarios() {
         api.get("/usuarios?limit=200"),
         api.get("/instalaciones"),
       ]);
-      setUsuarios(usRes.data ?? []);
+      // Esta pantalla gestiona al personal: los administradores no se listan, editan ni desactivan aquí.
+      setUsuarios((usRes.data ?? []).filter((u) => u.rol !== ROL.ADMINISTRADOR));
       setInstalaciones(Array.isArray(instRes) ? instRes : (instRes.data ?? []));
     } catch { /* mantener estado */ }
     finally { setLoading(false); }
@@ -248,7 +275,6 @@ export function AdminUsuarios() {
       nombre: u.nombre,
       email: u.email,
       telefono: u.telefono ?? "",
-      password: "",
       rol: u.rol,
       instalacionIds,
       instalacion_asignada_id: u.instalacion_asignada_id ?? "",
@@ -282,7 +308,19 @@ export function AdminUsuarios() {
         </div>
       )}
 
-      {!loading && usuarios.map((u) => {
+      {!loading && GRUPOS.map(({ clave, roles, titulo }) => {
+        const delGrupo = usuarios.filter((u) => roles.includes(u.rol));
+        if (delGrupo.length === 0) return null;
+        return (
+          <section key={clave} style={{ marginBottom: 22 }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8, margin: "4px 0 8px",
+              paddingBottom: 6, borderBottom: `1px solid ${T.border}`,
+            }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: T.textSec, letterSpacing: 0.4, textTransform: "uppercase" }}>{titulo}</span>
+              <Badge color={ROL_BADGE[roles[0]] ?? "accent"}>{delGrupo.length}</Badge>
+            </div>
+            {delGrupo.map((u) => {
         const instSup = u.instalaciones_sup ?? [];
         return (
           <div className="admin-card" key={u.id} style={{
@@ -321,10 +359,36 @@ export function AdminUsuarios() {
                   </div>
                 )}
 
+                {/* Distintivo de la central de monitoreo */}
+                {u.rol === ROL.OPERADOR_CENTRAL && (
+                  <div style={{ marginTop: 5 }}>
+                    <span style={{
+                      fontSize: 10, background: T.focusGhost, color: T.focusText,
+                      padding: "2px 8px", borderRadius: 4, fontWeight: 600,
+                      border: `1px solid ${T.focusText}33`,
+                    }}>
+                      CENTRAL
+                    </span>
+                  </div>
+                )}
+
+                {/* Centro operativo de la central */}
+                {u.rol === ROL.OPERADOR_CENTRAL && u.instalacion_asignada && (
+                  <div style={{ marginTop: 5 }}>
+                    <span style={{
+                      fontSize: 10, background: T.focusGhost, color: T.focusText,
+                      padding: "2px 8px", borderRadius: 4, fontWeight: 600,
+                      border: `1px solid ${T.focusText}33`,
+                    }}>
+                      {u.instalacion_asignada.nombre}
+                    </span>
+                  </div>
+                )}
+
                 {/* Instalación del guardia */}
                 {[ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(u.rol) && u.instalacion_asignada && (
                   <div className="admin-user-meta" style={{ fontSize: 10, color: T.textMut, marginTop: 3 }}>
-                    <span className="admin-user-meta__text">📍 {u.instalacion_asignada.nombre}</span>
+                    <span className="admin-user-meta__text"><Icon name="map-pin" size={16} /> {u.instalacion_asignada.nombre}</span>
                   </div>
                 )}
               </div>
@@ -332,11 +396,11 @@ export function AdminUsuarios() {
               {/* Acciones */}
               <div className="admin-actions" style={{ display: "flex", gap: 6, marginLeft: 10, flexShrink: 0 }}>
                 <button
-                  className="touch-target"
+                  className="touch-target gc-accion-btn gc-accion-btn--morado"
                   onClick={() => abrirEditar(u)}
                   style={{
-                    background: T.accentGhost, border: `1px solid ${T.accent}44`,
-                    color: T.accent, fontSize: 11, fontWeight: 700, padding: "5px 10px",
+                    background: "transparent", border: `1px solid ${T.border}`,
+                    color: T.textSec, fontSize: 11, fontWeight: 700, padding: "5px 10px",
                     borderRadius: 7, cursor: "pointer", fontFamily: "var(--font-ui)",
                   }}
                 >
@@ -344,12 +408,12 @@ export function AdminUsuarios() {
                 </button>
                 {u.estado === "activo" && (
                   <button
-                    className="touch-target"
+                    className="touch-target gc-accion-btn gc-accion-btn--naranja"
                     onClick={() => handleDesactivar(u.id)}
                     disabled={desactivando === u.id}
                     style={{
-                      background: T.redGhost, border: `1px solid ${T.red}44`,
-                      color: T.red, fontSize: 11, fontWeight: 700, padding: "5px 10px",
+                      background: "transparent", border: `1px solid ${T.border}`,
+                      color: T.textSec, fontSize: 11, fontWeight: 700, padding: "5px 10px",
                       borderRadius: 7, cursor: "pointer", fontFamily: "var(--font-ui)",
                       opacity: desactivando === u.id ? 0.5 : 1,
                     }}
@@ -360,6 +424,9 @@ export function AdminUsuarios() {
               </div>
             </div>
           </div>
+        );
+            })}
+          </section>
         );
       })}
 

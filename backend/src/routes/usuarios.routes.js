@@ -86,7 +86,6 @@
  *             required:
  *               - nombre
  *               - email
- *               - password
  *               - rol
  *             properties:
  *               nombre:
@@ -96,12 +95,10 @@
  *                 type: string
  *                 format: email
  *                 example: "cfuentes@geoconstanza.cl"
- *               password:
- *                 type: string
- *                 format: password
  *               rol:
  *                 type: string
- *                 enum: [pauta, libre, supervisor, central, admin]
+ *                 description: No se pueden crear administradores. La contraseña no se envía; la persona la elige con el enlace de invitación.
+ *                 enum: [pauta, libre, supervisor, central]
  *               instalacionId:
  *                 type: integer
  *                 description: Instalación principal asignada al usuario
@@ -228,7 +225,7 @@
 const { Router } = require('express');
 const usuariosController = require('../controllers/usuarios.controller');
 const { authenticate } = require('../middlewares/auth');
-const { authorize } = require('../middlewares/rbac');
+const { authorize, exigirEmpresa } = require('../middlewares/rbac');
 const { ROLES } = require('../constants/roles');
 
 const router = Router();
@@ -238,10 +235,15 @@ router.use(authenticate);
 // ── Perfil propio (cualquier rol autenticado) ──────────────────────────────
 router.get('/me', usuariosController.miInformacion);
 
+// Desde aquí las rutas operan datos de una empresa: el nivel de plataforma (super admin) no entra.
+router.use(exigirEmpresa);
+router.put('/me/token-dispositivo', require('../controllers/notificacion.controller').registrarDispositivo);
+
 // ── CRUD (solo admin, supervisor puede listar) ─────────────────────────────
 router.get('/', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), usuariosController.listar);
 router.post('/', authorize(ROLES.ADMINISTRADOR), usuariosController.crear);
 router.put('/:id', authorize(ROLES.ADMINISTRADOR), usuariosController.editar);
 router.patch('/:id/desactivar', authorize(ROLES.ADMINISTRADOR), usuariosController.desactivar);
+router.post('/:id/2fa/reset', authorize(ROLES.ADMINISTRADOR), usuariosController.reiniciar2FA);
 
 module.exports = router;

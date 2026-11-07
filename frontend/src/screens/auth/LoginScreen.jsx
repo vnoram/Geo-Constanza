@@ -3,18 +3,20 @@ import { T, FONT } from "../../theme/theme";
 import { Input } from "../../components/ui/Input";
 import { Btn } from "../../components/ui/Btn";
 import { Icon } from "../../components/ui/Icon";
-import { Wordmark } from "../../components/ui/Wordmark";
+import arteLogin from "../../assets/login-ilustracion.webp";
 import { DemoPanel } from "../../components/auth/DemoPanel";
 import { TwoFactorStep } from "../../components/auth/TwoFactorStep";
 import { useLoginForm } from "../../hooks/useLoginForm";
-import arteLogin from "../../assets/login-ilustracion.webp";
 
-export function LoginScreen({ onLogin }) {
+// Credenciales de demostración: solo en desarrollo o si se pide explícitamente al compilar.
+const MOSTRAR_DEMO = import.meta.env.DEV || import.meta.env.VITE_MOSTRAR_DEMO === "true";
+
+export function LoginScreen({ onLogin, onForgot }) {
   const [showDemo, setShowDemo] = useState(false);
 
   const {
     rut, pass, setPass, error, loading,
-    step, code2fa, setCode2fa, pendingUser,
+    step, code2fa, setCode2fa,
     locked, lockTime, lockLabel,
     formatRut, handleLogin, handle2FA, resetTo2FA,
   } = useLoginForm({ onLogin });
@@ -23,16 +25,16 @@ export function LoginScreen({ onLogin }) {
     <div className="login">
       {/* Marca: panel lateral callado, solo en pantallas anchas */}
       <aside className="login__brand">
-        {/* Ilustración decorativa: la imagen se recorta (cover) para llenar el panel */}
+        {/* Ilustración decorativa: la imagen se ve completa en el panel */}
         <img className="login__art" src={arteLogin} alt="" aria-hidden="true" />
         <div className="login__art-tint" aria-hidden="true" />
-        <Wordmark size={18} markSize={28} />
+        <div />
         <div>
           <p style={{ margin: 0, fontSize: 14, color: T.textSec, maxWidth: 280 }}>
             Plataforma de gestión operacional
           </p>
           <p style={{ margin: "10px 0 0", fontSize: 12, color: T.textMut, fontFamily: FONT.mono }}>
-            v1.0
+            v1.1
           </p>
         </div>
       </aside>
@@ -41,7 +43,6 @@ export function LoginScreen({ onLogin }) {
         <div className="login__form">
           <div className="login__head">
             <div className="login__head-text">
-              <div className="login__mobile-mark"><Wordmark /></div>
               <div>
                 <h1 className="login__title" style={{ fontSize: 22, fontWeight: 600, color: T.text, letterSpacing: "-0.01em", fontFamily: FONT.ui }}>
                   {step === "login" ? "Iniciar sesión" : "Verificación de seguridad"}
@@ -86,6 +87,16 @@ export function LoginScreen({ onLogin }) {
                 {locked ? `Bloqueado (${lockLabel})` : "Iniciar sesión"}
               </Btn>
 
+              {onForgot && (
+                <div style={{ marginTop: 14, textAlign: "center" }}>
+                  <button onClick={onForgot} className="login__demo-toggle">
+                    <Icon name="key-round" size={14} />
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
+              )}
+
+              {MOSTRAR_DEMO && (
               <div style={{ marginTop: 18 }}>
                 <button
                   onClick={() => setShowDemo(v => !v)}
@@ -96,8 +107,9 @@ export function LoginScreen({ onLogin }) {
                   Credenciales de demostración
                 </button>
               </div>
+              )}
 
-              {showDemo && (
+              {MOSTRAR_DEMO && showDemo && (
                 <DemoPanel onSelect={(rut, pwd) => { formatRut(rut); setPass(pwd); }} />
               )}
             </div>
@@ -109,13 +121,12 @@ export function LoginScreen({ onLogin }) {
               setCode2fa={setCode2fa}
               error={error}
               loading={loading}
-              pendingUser={pendingUser}
               onVerify={handle2FA}
               onBack={resetTo2FA}
             />
           )}
 
-          <div className="login__footer">Geo Constanza v1.0 · Fase 1 · Abril 2026</div>
+          <div className="login__footer">Geo Constanza v1.1 · Noviembre 2026</div>
         </div>
       </main>
     </div>

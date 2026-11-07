@@ -10,22 +10,12 @@ import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 const TOKEN_KEY    = "gc_token";
 const UMBRAL_PRECISION_NOVEDAD_M = 100;
 
-const TIPOS_NOVEDAD = [
-  "Robo",
-  "Robo en progreso",
-  "Intrusión",
-  "Incendio",
-  "Agresión",
-  "Emergencia médica",
-  "Falla técnica",
-  "Puerta abierta",
-  "Acceso no autorizado",
-  "Vandalismo",
-  "Alarma activada",
-  "Mantenimiento",
-  "Ronda",
-  "Sin novedad",
-  "Cambio de turno",
+// Tipos agrupados por urgencia (la urgencia real la asigna el backend según el tipo:
+// services/priorizacion.service.js). Los tipos antiguos siguen siendo válidos allí.
+const GRUPOS_NOVEDAD = [
+  { grupo: "Emergencia", color: T.red,    tipos: ["Robo", "Intrusión", "Incendio", "Agresión", "Emergencia médica"] },
+  { grupo: "Anomalía",   color: T.yellow, tipos: ["Falla técnica", "Puerta abierta", "Vandalismo"] },
+  { grupo: "Rutina",     color: T.accent, tipos: ["Ronda", "Sin novedad"] },
 ];
 
 const URGENCIA_COLOR = {
@@ -203,8 +193,12 @@ function ReportarModal({ onClose, onSuccess }) {
               }}
             >
               <option value="" disabled>Selecciona un tipo...</option>
-              {TIPOS_NOVEDAD.map(t => (
-                <option key={t} value={t} style={{ background: T.bgCard }}>{t}</option>
+              {GRUPOS_NOVEDAD.map(g => (
+                <optgroup key={g.grupo} label={g.grupo} style={{ background: T.bgCard, color: `${g.color}CC` }}>
+                  {g.tipos.map(t => (
+                    <option key={t} value={t} style={{ background: T.bgCard, color: `${g.color}99` }}>{t}</option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>
@@ -300,7 +294,7 @@ export function PautaNovedades({ user }) {
   useEffect(() => {
     cargarNovedades();
 
-    const socket = io(SOCKET_URL, { transports: ["websocket"] });
+    const socket = io(SOCKET_URL, { auth: (cb) => cb({ token: localStorage.getItem("gc_token") }), transports: ["websocket"] });
     socketRef.current = socket;
 
     if (user?.instalacion_asignada_id) {
@@ -347,14 +341,14 @@ export function PautaNovedades({ user }) {
               key={t.id}
               role="tab"
               aria-selected={activo}
-              className="touch-target"
+              className="touch-target gc-tab-btn"
               onClick={() => setVista(t.id)}
               style={{
                 padding: "8px 14px", borderRadius: 8, cursor: "pointer",
                 fontSize: 13, fontWeight: 700, fontFamily: "var(--font-ui)",
-                background: activo ? T.bgCard : "transparent",
-                color: activo ? T.text : T.textSec,
-                border: `1px solid ${activo ? T.accent : T.border}`,
+                background: activo ? "rgba(122,78,191,0.22)" : "transparent",
+                color: activo ? "#D2C6EE" : T.textSec,
+                border: `1px solid ${activo ? "rgba(159,131,214,0.75)" : T.border}`,
               }}
             >
               {t.label} ({t.count})

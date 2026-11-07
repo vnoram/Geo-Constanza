@@ -312,18 +312,11 @@ npm run test:watch        # Modo observación
 
 ## 🚢 Deployment
 
-### Producción (Railway + Vercel)
+### Producción (Azure + Vercel)
 
-```bash
-# 1. Backend en Railway
-git push railway main
-
-# 2. Frontend en Vercel
-vercel --prod
-
-# 3. Database migrations (automáticas)
-npx prisma migrate deploy
-```
+Pasos, variables de entorno y verificación en [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md). En resumen:
+el backend corre en Azure Container Apps, construido con `backend/Dockerfile` (aplica las migraciones de
+Prisma al iniciar), y el frontend en Vercel, que lo compila con `npm run build` usando `VITE_API_URL`.
 
 ### Docker (Local o Cloud)
 
@@ -382,10 +375,10 @@ docker-compose up -d
 - **Maps**: Leaflet + OpenStreetMap
 
 ### Infraestructura
-- **API**: Railway
+- **API**: Azure Container Apps
 - **Frontend**: Vercel
-- **Database**: Supabase (PostgreSQL)
-- **File Storage**: AWS S3
+- **Database**: PostgreSQL
+- **File Storage**: Azure Blob Storage (fotos de novedades, URLs firmadas)
 - **Push Notifications**: Firebase Cloud Messaging
 - **Monitoring**: (Por definir)
 

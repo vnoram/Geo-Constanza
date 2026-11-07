@@ -188,12 +188,12 @@
 const { Router } = require('express');
 const instalacionesController = require('../controllers/instalaciones.controller');
 const { authenticate } = require('../middlewares/auth');
-const { authorize } = require('../middlewares/rbac');
+const { authorize, exigirEmpresa } = require('../middlewares/rbac');
 const { ROLES } = require('../constants/roles');
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, exigirEmpresa);
 
 router.get('/', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), instalacionesController.listar);
 router.post('/', authorize(ROLES.ADMINISTRADOR), instalacionesController.crear);

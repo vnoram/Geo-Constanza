@@ -1,3 +1,4 @@
+import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect, useRef } from "react";
 import { T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
@@ -8,21 +9,25 @@ import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 import { direccionDesdeCoordenadas } from "../../services/geocoding";
 import { MapaUbicacion } from "../../components/maps/MapaUbicacion";
+import { esCentroOperativo } from "../../utils/instalaciones";
 import { DireccionAutocomplete } from "../../components/maps/DireccionAutocomplete";
 
 // ─── HELPERS ─────────────────────────────────────────────────────
 const CRITICIDAD_COLOR = { Alta: "red", Media: "yellow", Baja: "accent" };
 
-const TIPOS_RECINTO = [
-  "Comercial",
-  "Corporativo",
-  "Residencial",
-  "Industrial",
-  "Educacional",
-  "Salud",
-  "Gubernamental",
-  "Otro",
-];
+const TIPOS_RECINTO = ["Comercial", "Corporativo", "Residencial", "Industrial", "Institucional", "Centro operativo"];
+// Tipos antiguos que ya pueden estar guardados: se muestran con el tipo equivalente al editar.
+const TIPO_EQUIVALENTE = {
+  Educacional: "Institucional",
+  Salud: "Institucional",
+  Gubernamental: "Institucional",
+};
+// Un ícono por tipo de recinto (Lucide, mismo set del resto de la app).
+const ICONO_RECINTO = {
+  Comercial: "store", Corporativo: "building-2", Residencial: "house", Industrial: "factory", Institucional: "landmark",
+  "Centro operativo": "monitor",
+};
+const tipoRecinto = (valor) => (TIPOS_RECINTO.includes(valor) ? valor : TIPO_EQUIVALENTE[valor] || "Comercial");
 const NIVELES_CRITICIDAD = ["Alta", "Media", "Baja"];
 const ESTADOS = [
   { value: "activo", label: "Activo" },
@@ -36,7 +41,7 @@ const FORM_INICIAL = {
   latitud: "",
   longitud: "",
   radio_geofence_m: "100",
-  tipo_recinto: "Corporativo",
+  tipo_recinto: "Comercial",
   nivel_criticidad: "Media",
   estado: "activo",
   supervisorIds: [],
@@ -135,7 +140,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
         latitud: inicial.latitud !== undefined && inicial.latitud !== null ? String(inicial.latitud) : "",
         longitud: inicial.longitud !== undefined && inicial.longitud !== null ? String(inicial.longitud) : "",
         radio_geofence_m: inicial.radio_geofence_m !== undefined && inicial.radio_geofence_m !== null ? String(inicial.radio_geofence_m) : "100",
-        tipo_recinto: inicial.tipo_recinto || "Corporativo",
+        tipo_recinto: tipoRecinto(inicial.tipo_recinto),
         nivel_criticidad: inicial.nivel_criticidad || "Media",
         estado: inicial.estado || "activo",
         supervisorIds: supIds,
@@ -148,6 +153,11 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
   const [errores, setErrores] = useState({});
   const [supervisores, setSupervisores] = useState([]);
   const [cargandoSup, setCargandoSup] = useState(true);
+  // Operadores centrales: el centro operativo se asigna a ellos (usuario.instalacion_asignada_id).
+  const [operadores, setOperadores] = useState([]);
+  const [cargandoOp, setCargandoOp] = useState(true);
+  const [operadorIds, setOperadorIds] = useState([]);
+  const [operadoresIniciales, setOperadoresIniciales] = useState([]);
 
   const set = (campo) => (val) => setForm((f) => ({ ...f, [campo]: val }));
 
@@ -225,6 +235,26 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
     })();
   }, []);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api.get("/usuarios?rol=central&limit=200");
+        const lista = Array.isArray(data) ? data : (data.data ?? []);
+        setOperadores(lista);
+        const asignados = lista.filter((o) => inicial?.id && o.instalacion_asignada_id === inicial.id).map((o) => o.id);
+        setOperadorIds(asignados);
+        setOperadoresIniciales(asignados);
+      } catch {
+        /* no bloquea la creación/edición */
+      } finally {
+        setCargandoOp(false);
+      }
+    })();
+  }, [inicial?.id]);
+
+  const toggleOperador = (id) =>
+    setOperadorIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+
   const toggleSupervisor = (id) => {
     setForm((f) => {
       const ya = f.supervisorIds.includes(id);
@@ -284,7 +314,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
       tipo_recinto: form.tipo_recinto || undefined,
       nivel_criticidad: form.nivel_criticidad || "Media",
       estado: form.estado || "activo",
-      supervisorIds: form.supervisorIds,
+      supervisorIds: esCentroOperativo({ tipo_recinto: form.tipo_recinto }) ? [] : form.supervisorIds,
     };
 
     try {
@@ -293,6 +323,15 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
         resultado = await api.put(`/instalaciones/${inicial.id}`, payload);
       } else {
         resultado = await api.post("/instalaciones", payload);
+      }
+      // Centro operativo: asigna o libera a los operadores centrales que cambiaron.
+      if (esCentroOperativo({ tipo_recinto: form.tipo_recinto })) {
+        const instalacionId = resultado?.id ?? inicial?.id;
+        const cambios = [
+          ...operadorIds.filter((id) => !operadoresIniciales.includes(id)).map((id) => ({ id, valor: instalacionId })),
+          ...operadoresIniciales.filter((id) => !operadorIds.includes(id)).map((id) => ({ id, valor: null })),
+        ];
+        await Promise.all(cambios.map((c) => api.put(`/usuarios/${c.id}`, { instalacion_asignada_id: c.valor })));
       }
       onGuardada(resultado, esEdicion);
     } catch (err) {
@@ -355,7 +394,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
               lineHeight: 1,
             }}
           >
-            ✕
+            <Icon name="x" size={16} />
           </button>
         </div>
 
@@ -385,7 +424,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
               onChange={set("nombre")}
               placeholder="Ej: Centro Comercial Arauco"
               error={errores.nombre}
-              icon="🏢"
+              icon="building-2"
             />
 
             <div className="gc-inst-2col" style={{ display: "grid", gridTemplateColumns: "1.3fr 0.7fr", gap: 12 }}>
@@ -402,7 +441,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                 value={form.comuna}
                 onChange={set("comuna")}
                 placeholder="Ej: Santiago"
-                icon="🗺️"
+                icon="map"
               />
             </div>
 
@@ -433,7 +472,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                 onChange={set("radio_geofence_m")}
                 placeholder="100"
                 error={errores.radio_geofence_m}
-                icon="📡"
+                icon="radio-tower"
               />
               <Select
                 label="Estado"
@@ -458,14 +497,44 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
               />
             </div>
 
-            {/* Selector de supervisores asignados */}
+            {/* Selector de supervisores asignados (el centro operativo lo atiende el Operador Central) */}
+            {esCentroOperativo({ tipo_recinto: form.tipo_recinto }) ? (
+              <div style={{ marginBottom: 22 }}>
+                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: T.focusText, marginBottom: 6, letterSpacing: 1.5, textTransform: "uppercase" }}>
+                  Operadores centrales
+                </label>
+                <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>
+                  Los centros operativos se asignan a operadores centrales.
+                </div>
+                {cargandoOp ? (
+                  <div style={{ fontSize: 12, color: T.textMut }}>Cargando operadores...</div>
+                ) : operadores.length === 0 ? (
+                  <div style={{ fontSize: 12, color: T.textMut }}>No hay operadores centrales registrados todavía.</div>
+                ) : (
+                  <div style={{ border: `1.5px solid ${T.focus}`, borderRadius: 8, padding: "8px 12px", maxHeight: 140, overflowY: "auto", background: T.bgInput }}>
+                    {operadores.map((o) => (
+                      <label key={o.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", fontSize: 13, color: T.text, cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={operadorIds.includes(o.id)}
+                          onChange={() => toggleOperador(o.id)}
+                          style={{ accentColor: T.focus, cursor: "pointer" }}
+                        />
+                        {o.nombre} {o.email ? `(${o.email})` : ""}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
             <div style={{ marginBottom: 22 }}>
               <label
                 style={{
                   display: "block",
                   fontSize: 11,
                   fontWeight: 700,
-                  color: T.textSec,
+                  color: T.yellow,
                   marginBottom: 6,
                   letterSpacing: 1.5,
                   textTransform: "uppercase",
@@ -483,7 +552,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
               ) : (
                 <div
                   style={{
-                    border: `1.5px solid ${T.border}`,
+                    border: `1.5px solid ${T.yellow}`,
                     borderRadius: 8,
                     padding: "8px 12px",
                     maxHeight: 140,
@@ -508,7 +577,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                         type="checkbox"
                         checked={form.supervisorIds.includes(s.id)}
                         onChange={() => toggleSupervisor(s.id)}
-                        style={{ accentColor: T.accent, cursor: "pointer" }}
+                        style={{ accentColor: T.yellow, cursor: "pointer" }}
                       />
                       {s.nombre} {s.email ? `(${s.email})` : ""}
                     </label>
@@ -516,6 +585,8 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                 </div>
               )}
             </div>
+              </>
+            )}
           </div>
 
           {/* ── Columna derecha: mapa ── */}
@@ -591,7 +662,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                   onClick={() => setSugerenciaPin(null)}
                   style={{ background: "none", border: "none", color: T.textMut, cursor: "pointer", fontSize: 14 }}
                 >
-                  ✕
+                  <Icon name="x" size={16} />
                 </button>
               </div>
             )}
@@ -624,7 +695,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                   flexShrink: 0,
                 }}
               >
-                📡
+                <Icon name="radio-tower" size={16} />
               </div>
               <div style={{ fontSize: 11, color: T.textMut }}>
                 Geocerca de <span style={{ color: T.accent, fontWeight: 700 }}>{form.radio_geofence_m || 100}m</span> de tolerancia para marcajes de asistencia y reporte de novedades.
@@ -650,13 +721,15 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
 function InstCard({ inst, onEditar }) {
   const color = CRITICIDAD_COLOR[inst.nivel_criticidad] || "accent";
   const esActivo = inst.estado === "activa" || inst.estado === "activo";
+  const esCentro = esCentroOperativo(inst);
+  const tipo = esCentro ? "Centro operativo" : tipoRecinto(inst.tipo_recinto);
 
   return (
     <div
       className="admin-card"
       style={{
-        background: T.bgCard,
-        border: `1px solid ${T.border}`,
+        background: esCentro ? T.focusGhost : T.bgCard,
+        border: `1px solid ${esCentro ? T.focus : T.border}`,
         borderRadius: 8,
         padding: "16px 18px",
         marginBottom: 10,
@@ -669,10 +742,11 @@ function InstCard({ inst, onEditar }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontWeight: 800, fontSize: 15, color: T.text }}>{inst.nombre}</span>
             <Badge color={color}>{inst.nivel_criticidad || "Media"}</Badge>
+            {esCentro && <Badge color="focus">CENTRAL</Badge>}
           </div>
           {inst.direccion && (
             <div style={{ fontSize: 12, color: T.textMut, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
-              <span>📍 {inst.direccion}</span>
+              <span><Icon name="map-pin" size={16} /> {inst.direccion}</span>
               {inst.comuna && <span style={{ color: T.textSec }}>({inst.comuna})</span>}
             </div>
           )}
@@ -706,22 +780,22 @@ function InstCard({ inst, onEditar }) {
             e.currentTarget.style.borderColor = "rgba(122,78,191,0.3)";
           }}
         >
-          <span>✏️</span> Editar
+          <span><Icon name="pencil" size={16} /></span> Editar
         </button>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, fontSize: 11, color: T.textSec }}>
-        {inst.tipo_recinto && (
-          <span style={{ background: T.bgInput, borderRadius: 6, padding: "3px 8px" }}>
-            🏢 {inst.tipo_recinto}
+        {(inst.tipo_recinto || esCentro) && (
+          <span style={{ background: T.bgInput, borderRadius: 6, padding: "3px 8px", color: esCentro ? T.focusText : undefined }}>
+            <Icon name={ICONO_RECINTO[tipo]} size={16} /> {tipo}
           </span>
         )}
         <span style={{ background: T.bgInput, borderRadius: 6, padding: "3px 8px" }}>
-          📡 Geocerca: {inst.radio_geofence_m ?? 100}m
+          <Icon name="radio-tower" size={16} /> Geocerca: {inst.radio_geofence_m ?? 100}m
         </span>
         {inst.latitud !== undefined && inst.longitud !== undefined && (
           <span style={{ background: T.bgInput, borderRadius: 6, padding: "3px 8px", fontFamily: "monospace", fontSize: 10 }}>
-            🌐 {parseFloat(inst.latitud).toFixed(4)}, {parseFloat(inst.longitud).toFixed(4)}
+            <Icon name="globe" size={16} /> {parseFloat(inst.latitud).toFixed(4)}, {parseFloat(inst.longitud).toFixed(4)}
           </span>
         )}
         <span
@@ -770,10 +844,10 @@ export function AdminInstalaciones() {
       setInstalaciones((prev) =>
         prev.map((i) => (i.id === instalacionGuardada.id ? { ...i, ...instalacionGuardada } : i))
       );
-      setConfirmacion(`✅ Instalación "${instalacionGuardada.nombre}" actualizada correctamente`);
+      setConfirmacion(<><Icon name="circle-check" size={16} />{" Instalación \""}{instalacionGuardada.nombre}{"\" actualizada correctamente"}</>);
     } else {
       setInstalaciones((prev) => [instalacionGuardada, ...prev]);
-      setConfirmacion(`✅ Instalación "${instalacionGuardada.nombre}" creada correctamente`);
+      setConfirmacion(<><Icon name="circle-check" size={16} />{" Instalación \""}{instalacionGuardada.nombre}{"\" creada correctamente"}</>);
     }
     setTimeout(() => setConfirmacion(""), 4000);
   };
@@ -784,7 +858,7 @@ export function AdminInstalaciones() {
       i.direccion?.toLowerCase().includes(busqueda.toLowerCase()) ||
       i.comuna?.toLowerCase().includes(busqueda.toLowerCase()) ||
       i.tipo_recinto?.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  ).sort((a, b) => Number(esCentroOperativo(b)) - Number(esCentroOperativo(a)));
 
   return (
     <div className="admin-screen">
@@ -845,7 +919,7 @@ export function AdminInstalaciones() {
         </div>
       ) : listaFiltrada.length === 0 ? (
         <div style={{ textAlign: "center", padding: 40 }}>
-          <div style={{ fontSize: 36, marginBottom: 10 }}>🏢</div>
+          <div style={{ fontSize: 36, marginBottom: 10 }}><Icon name="building-2" size={36} /></div>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 6 }}>
             {busqueda ? "Sin resultados" : "Sin instalaciones registradas"}
           </div>

@@ -451,12 +451,12 @@
 const { Router } = require('express');
 const turnosController = require('../controllers/turnos.controller');
 const { authenticate } = require('../middlewares/auth');
-const { authorize } = require('../middlewares/rbac');
+const { authorize, exigirEmpresa } = require('../middlewares/rbac');
 const { ROLES } = require('../constants/roles');
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, exigirEmpresa);
 
 // ── GGSS Libre: ver turnos disponibles en su instalación asignada ──────────
 router.get('/disponibles', authorize(ROLES.GGSS_LIBRE), turnosController.listarDisponibles);

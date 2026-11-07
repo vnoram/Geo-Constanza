@@ -1,0 +1,6 @@
+const TIPO_SOLICITUD = {
+  VACACIONES: 'vacaciones', DIAS_LIBRES: 'dias_libres', TURNO_EXTRA: 'turno_extra',
+  TRASLADO: 'traslado', TURNO: 'turno', COBERTURA: 'cobertura',
+};
+const TIPOS_COBERTURA = [TIPO_SOLICITUD.TURNO, TIPO_SOLICITUD.TURNO_EXTRA, TIPO_SOLICITUD.COBERTURA];
+module.exports = { TIPO_SOLICITUD, TIPOS_COBERTURA };

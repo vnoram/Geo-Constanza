@@ -1,11 +1,12 @@
 jest.mock('../../config/database', () => ({ prisma: {
-  turno: { findMany: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn(), update: jest.fn() },
+  turno: { findMany: jest.fn(), findUnique: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn(), update: jest.fn() },
   asistencia: { findMany: jest.fn(), create: jest.fn(), findUniqueOrThrow: jest.fn(), update: jest.fn() },
   solicitud: { findFirst: jest.fn() },
+  novedad: { count: jest.fn() },
   $transaction: jest.fn(), $executeRaw: jest.fn(),
 } }));
 jest.mock('../../socket/socketManager', () => ({ getSocketIO: jest.fn() }));
-jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn() }));
+jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn(), exigirAlcanceInstalacion: jest.fn() }));
 const { prisma } = require('../../config/database');
 const { instanteChile } = require('../../utils/fechaChile');
 const turnos = require('../turnos.service');
@@ -13,6 +14,7 @@ const asistencia = require('../asistencia.service');
 const solicitudes = require('../solicitudes.service');
 const { getDashboardHoy } = require('../dashboard.service');
 const { getSocketIO } = require('../../socket/socketManager');
+const { TIPOS_COBERTURA } = require('../../constants/solicitudes');
 
 const inst = { id: 'i', nombre: 'Instalación Norte' };
 const turno = (id, fecha, hora_inicio, hora_fin, extra = {}) => ({
@@ -34,6 +36,7 @@ beforeEach(() => {
   prisma.turno.findMany.mockResolvedValue([]);
   prisma.asistencia.findMany.mockResolvedValue([]);
   prisma.solicitud.findFirst.mockResolvedValue(null);
+  prisma.novedad.count.mockResolvedValue(1);
   prisma.asistencia.create.mockImplementation(async ({ data }) => ({ id: 'nueva', ...data }));
   prisma.asistencia.update.mockImplementation(async ({ data }) => data);
   prisma.turno.create.mockImplementation(async ({ data }) => data);
@@ -82,7 +85,7 @@ test('pauta 4x4 omite choque con nocturno de ayer', async () => {
   expect(resultado.detalles_omitidos[0].motivo).toContain('2026-09-26');
 });
 
-test.each([['00:21', 21, 'tardio'], ['00:10', 10, 'normal'], ['00:11', 11, 'tardio']])('entrada %s calcula %i minutos', async (hora, minutos, estado) => {
+test.each([['00:21', 21, 'tardio'], ['00:15', 15, 'normal'], ['00:16', 16, 'tardio']])('entrada %s calcula %i minutos', async (hora, minutos, estado) => {
   jest.setSystemTime(instanteChile('2026-09-27', hora));
   prisma.turno.findMany.mockResolvedValue([b]);
   await expect(entrada()).resolves.toMatchObject({ turno_id: 'B', minutos_retraso: minutos, estado });
@@ -113,7 +116,7 @@ test('solicitud aprobada consulta el 3-oct a las 22:00 Chile, no el día UTC sig
   prisma.solicitud.findFirst.mockResolvedValue({ id: 'solicitud' });
   await expect(solicitudes.tieneturnoAprobadoHoy('u')).resolves.toBe(true);
   expect(prisma.solicitud.findFirst).toHaveBeenCalledWith({ where: {
-    usuario_id: 'u', tipo: { in: ['turno', 'turno_extra'] }, estado: 'aprobada',
+    usuario_id: 'u', tipo: { in: TIPOS_COBERTURA }, estado: 'aprobada',
     fecha_desde: { lte: new Date('2026-10-03T00:00:00.000Z') },
     OR: [{ fecha_hasta: null }, { fecha_hasta: { gte: new Date('2026-10-03T00:00:00.000Z') } }],
   } });
@@ -195,6 +198,14 @@ test('salida nocturna a 08:30 suma media hora extra', async () => {
   prisma.asistencia.findUniqueOrThrow.mockResolvedValue(abierta(a));
   await expect(asistencia.registrarSalida({ asistencia_id: 'as-A', metodo: 'tablet' }, { id: 'u' })).resolves.toMatchObject({ horas_extra: 0.5, horas_trabajadas: 12.5 });
 });
+test('salida sin reporte del turno: 409 y no cierra la asistencia', async () => {
+  prisma.asistencia.findUniqueOrThrow.mockResolvedValue(abierta(a));
+  prisma.novedad.count.mockResolvedValue(0);
+  await expect(asistencia.registrarSalida({ asistencia_id: 'as-A', metodo: 'tablet' }, { id: 'u' }))
+    .rejects.toMatchObject({ statusCode: 409, message: expect.stringContaining('reporte del turno') });
+  expect(prisma.novedad.count).toHaveBeenCalledWith({ where: { turno_id: 'A' } });
+  expect(prisma.asistencia.update).not.toHaveBeenCalled();
+});
 test('estado cierra la entrada olvidada, informa el cierre y devuelve el turno vigente', async () => {
   const vieja = turno('vieja', '2026-09-25', '20:00', '08:00');
   prisma.asistencia.findMany.mockResolvedValue([abierta(vieja), abierta(a)]);
@@ -242,15 +253,46 @@ test('dashboard conserva una fila del nocturno con su asistencia correcta', asyn
   expect(resultado.lista).toEqual([expect.objectContaining({ turno_id: 'A', guardia: 'Víctor', hora_entrada: abierta(a).hora_entrada, estado: 'tardio' })]);
 });
 
+test('entrada respeta tolerancia de su instalación en lugar de un margen global', async () => {
+  prisma.turno.findMany.mockResolvedValue([{ ...b, instalacion: { ...inst, tolerancia_atraso_minutos: 30 } }]);
+  await expect(entrada()).resolves.toMatchObject({ minutos_retraso: 21, estado: 'normal' });
+});
+
 test('sincronización offline no puede abrir otro turno ni duplicar un reintento', async () => {
+  prisma.turno.findUnique.mockImplementation(async ({ where }) => ({ id: where.id, usuario_id: 'u', instalacion_id: 'i1' }));
   prisma.asistencia.findMany.mockResolvedValue([abierta(a)]);
   const resultado = await asistencia.sincronizarBatch([
-    { usuario_id: 'u', turno_id: 'B', hora_salida: null },
-    { usuario_id: 'u', turno_id: 'A', hora_salida: null },
-  ]);
+    { turno_id: 'B', hora_entrada: '2026-09-27T09:00:00Z', hora_salida: null },
+    { turno_id: 'A', hora_entrada: '2026-09-27T09:00:00Z', hora_salida: null },
+  ], { id: 'u' });
   expect(resultado).toEqual([
     { success: false, error: expect.stringContaining('entrada abierta') },
     { success: true, id: 'as-A' },
   ]);
   expect(prisma.asistencia.create).not.toHaveBeenCalled();
+});
+
+test('sincronización offline: ignora usuario ajeno, campos extra y exige turno propio', async () => {
+  prisma.turno.findUnique.mockImplementation(async ({ where }) => (
+    where.id === 'AJENO' ? { id: 'AJENO', usuario_id: 'otro', instalacion_id: 'i9' } : { id: 'PROPIO', usuario_id: 'u', instalacion_id: 'i1' }
+  ));
+  prisma.asistencia.findMany.mockResolvedValue([]);
+  prisma.asistencia.create.mockResolvedValue({ id: 'nuevo' });
+  const resultado = await asistencia.sincronizarBatch([
+    { turno_id: 'AJENO', hora_entrada: '2026-09-27T09:00:00Z' },
+    { turno_id: 'PROPIO', usuario_id: 'otro', instalacion_id: 'i9', id: 'forzado', horas_extra: 99, verificacion_gps: 'verificado', hora_entrada: '2026-09-27T09:00:00Z' },
+    { turno_id: 'PROPIO', hora_entrada: 'no-es-fecha' },
+  ], { id: 'u' });
+  expect(resultado.map((r) => r.success)).toEqual([false, true, false]);
+  expect(resultado[0].error).toMatch(/no pertenece/);
+  const data = prisma.asistencia.create.mock.calls[0][0].data;
+  expect(data).toMatchObject({ usuario_id: 'u', instalacion_id: 'i1', turno_id: 'PROPIO', verificacion_gps: 'por_revisar' });
+  expect(data).not.toHaveProperty('id');
+  expect(data).not.toHaveProperty('horas_extra');
+});
+
+test('sincronización offline rechaza listas vacías, enormes o que no son listas', async () => {
+  for (const malo of [undefined, 'x', {}, [], new Array(201).fill({})]) {
+    await expect(asistencia.sincronizarBatch(malo, { id: 'u' })).rejects.toMatchObject({ statusCode: 400 });
+  }
 });

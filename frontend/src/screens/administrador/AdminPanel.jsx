@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, memo } from "react";
 import { io } from "socket.io-client";
 import { T, FONT } from "../../theme/theme";
-import { Icon } from "../../components/ui/Icon";
 import { KPI } from "../../components/ui/KPI";
 import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
@@ -9,6 +8,7 @@ import { useAuth } from "../../context/AuthContext";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
+import { escaparHtml } from "../../utils/html";
 
 // ─── ESTILOS POPUP LEAFLET ───────────────────────────────────────
 const LEAFLET_STYLES = `
@@ -29,8 +29,8 @@ const LEAFLET_STYLES = `
     background:#1C2E28 !important;border-color:#2C4038 !important;color:#A8B7AE !important;
   }
   .leaflet-control-zoom a:hover { background:#22372F !important;color:#3E9A72 !important; }
-  .gc-dark-tile, .leaflet-tile-pane .leaflet-tile {
-    filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%) !important;
+  .leaflet-tile-pane .leaflet-tile {
+    filter: invert(100%) hue-rotate(180deg) brightness(78%) contrast(92%) saturate(70%) !important;
   }
 `;
 
@@ -84,16 +84,17 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
         lista.forEach((inst) => {
           if (!inst.latitud || !inst.longitud) return;
           pts.push([inst.latitud, inst.longitud]);
+          const col = colorTipo(inst.tipo_recinto);
           const icon = L.divIcon({
-            html: `<div style="width:14px;height:14px;background:#3E9A72;border:2.5px solid #0E1714;border-radius:50%;box-shadow:0 0 10px #3E9A72,0 0 20px #00E5B022;"></div>`,
+            html: `<div style="width:14px;height:14px;background:${col};border:2.5px solid #0E1714;border-radius:50%;box-shadow:0 0 10px ${col};"></div>`,
             className: "", iconSize: [14, 14], iconAnchor: [7, 7],
           });
           L.marker([inst.latitud, inst.longitud], { icon })
             .addTo(map)
-            .bindPopup(`<b>${inst.nombre}</b><br><span style="color:#A8B7AE;font-size:11px">${inst.direccion || "—"}</span><br><span style="color:#3E9A72;font-size:11px">Radio: ${inst.radio_geofence_m ?? 100}m</span>`, { className: "gc-popup" });
+            .bindPopup(`<b>${escaparHtml(inst.nombre)}</b><br><span style="color:#A8B7AE;font-size:11px">${escaparHtml(inst.direccion || "—")}</span><br><span style="color:${col};font-size:11px">${escaparHtml(inst.tipo_recinto || "Sin tipo")} · Radio: ${inst.radio_geofence_m ?? 100}m</span>`, { className: "gc-popup" });
           L.circle([inst.latitud, inst.longitud], {
-            radius: inst.radio_geofence_m ?? 100, color: "#3E9A72",
-            fillColor: "#3E9A72", fillOpacity: 0.06, weight: 1.5, dashArray: "4 4",
+            radius: inst.radio_geofence_m ?? 100, color: col,
+            fillColor: col, fillOpacity: 0.06, weight: 1.5, dashArray: "4 4",
           }).addTo(map);
         });
         if (pts.length) map.fitBounds(pts, { padding: [40, 40], maxZoom: 14 });
@@ -141,21 +142,44 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
   }, [ultimaUbicacion]);
 
   return (
-    <div style={{ position: "relative", marginBottom: 20 }}>
-      {cargando && (
-        <div style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", background: T.bgCard, borderRadius: 8, fontSize: 12, color: T.textMut }}>
-          Cargando mapa...
-        </div>
-      )}
-      <div ref={containerRef} className="central-map" style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }} />
-      <div className="admin-map-legend" style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 12, color: T.textSec }}>
-        <span><span style={{ color: T.accent }}>●</span> Instalación y geocerca</span>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start", marginBottom: 20 }}>
+      {/* Leyenda a la izquierda, ordenada por prioridad */}
+      <div className="admin-map-legend" style={{
+        flex: "0 0 150px", display: "flex", flexDirection: "column", gap: 7, fontSize: 12, color: T.textSec,
+        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px",
+      }}>
+        <div style={{ fontSize: 11, color: T.focusText, letterSpacing: 0.5, textTransform: "uppercase" }}>Instalaciones</div>
+        {ORDEN_TIPOS.map((t) => (
+          <span key={t}><span style={{ color: COLOR_TIPO[t] }}>●</span> {t}</span>
+        ))}
+        <div style={{ fontSize: 11, color: T.focusText, letterSpacing: 0.5, textTransform: "uppercase", marginTop: 6 }}>Guardias</div>
         <span><span style={{ color: T.accent }}>●</span> A tiempo</span>
         <span><span style={{ color: T.yellow }}>●</span> Tardío</span>
+      </div>
+      <div style={{ position: "relative", flex: "1 1 320px", minWidth: 0 }}>
+        {cargando && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", background: T.bgCard, borderRadius: 8, fontSize: 12, color: T.textMut }}>
+            Cargando mapa...
+          </div>
+        )}
+        <div ref={containerRef} className="central-map" style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }} />
       </div>
     </div>
   );
 });
+
+// Color del punto según tipo de recinto (paleta suave)
+const COLOR_TIPO = {
+  "Comercial":        "#4FA3D9",
+  "Corporativo":      "#C9C4B5",
+  "Residencial":      "#3E9A72",
+  "Industrial":       "#E0A24A",
+  "Institucional":    "#D9708F",
+  "Centro operativo": "#8B7FD6",
+};
+// Orden de la leyenda: de mayor a menor prioridad operativa
+const ORDEN_TIPOS = ["Centro operativo", "Industrial", "Institucional", "Corporativo", "Comercial", "Residencial"];
+const colorTipo = (t) => COLOR_TIPO[t] ?? "#3E9A72";
 
 // ─── GRÁFICO DE BARRAS SVG ───────────────────────────────────────
 function GraficoBarras({ data }) {
@@ -191,12 +215,12 @@ function GraficoBarras({ data }) {
 }
 
 // ─── GRÁFICO DONUT SVG ───────────────────────────────────────────
-function GraficoDonut({ presentes = 0, tardios = 0, faltantes = 0 }) {
-  const segmentos = [
-    { label: "Presentes", value: presentes,  color: "#3E9A72" },
+function GraficoDonut({ presentes = 0, tardios = 0, faltantes = 0, unidad = "GGSS", items = null, vacio = "Sin datos" }) {
+  const segmentos = (items ?? [
+    { label: "A tiempo",  value: presentes,  color: "#3E9A72" },
     { label: "Tardíos",   value: tardios,    color: "#F0A35E" },
     { label: "Ausentes",  value: faltantes,  color: "#E86A2A" },
-  ].filter((s) => s.value > 0);
+  ]).filter((s) => s.value > 0);
 
   const total = segmentos.reduce((s, d) => s + d.value, 0);
   const CX = 55, CY = 55, R = 45, r = 28;
@@ -204,19 +228,19 @@ function GraficoDonut({ presentes = 0, tardios = 0, faltantes = 0 }) {
   if (total === 0) {
     return (
       <div style={{ textAlign: "center", color: T.textMut, fontSize: 12, paddingTop: 30 }}>
-        Sin datos hoy
+        {vacio}
       </div>
     );
   }
 
-  let angle = -Math.PI / 2;
   const pol = (a) => ({ x: CX + R * Math.cos(a), y: CY + R * Math.sin(a) });
   const ipl = (a) => ({ x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) });
 
-  const paths = segmentos.map((seg) => {
+  const paths = segmentos.map((seg, i) => {
+    // Ángulo de inicio = suma de los segmentos anteriores (sin reasignar variables durante el render)
+    const previo = segmentos.slice(0, i).reduce((suma, s) => suma + s.value, 0);
     const sweep = (seg.value / total) * 2 * Math.PI;
-    const a0 = angle, a1 = angle + sweep;
-    angle = a1;
+    const a0 = -Math.PI / 2 + (previo / total) * 2 * Math.PI, a1 = a0 + sweep;
     const p0 = pol(a0), p1 = pol(a1);
     const q0 = ipl(a0), q1 = ipl(a1);
     const lg = sweep > Math.PI ? 1 : 0;
@@ -230,7 +254,7 @@ function GraficoDonut({ presentes = 0, tardios = 0, faltantes = 0 }) {
         {paths.map((p, i) => <path key={i} d={p.d} fill={p.color} opacity={0.9} />)}
         <circle cx={CX} cy={CY} r={r - 2} fill="#0E1714" />
         <text x={CX} y={CY - 5} textAnchor="middle" fontSize="15" fontWeight="800" fill="#F3EFE6">{total}</text>
-        <text x={CX} y={CY + 9} textAnchor="middle" fontSize="7" fill="#7C8F85">TURNOS</text>
+        <text x={CX} y={CY + 9} textAnchor="middle" fontSize="7" fill="#7C8F85">{unidad}</text>
       </svg>
       <div style={{ marginTop: 6 }}>
         {segmentos.map((s) => (
@@ -267,14 +291,6 @@ function MiniStat({ value, label, color }) {
     </div>
   );
 }
-
-const ACCIONES = [
-  { label: "Crear usuario",          icon: "user-round" },
-  { label: "Nueva instalación",      icon: "building-2" },
-  { label: "Importar turnos (lote)", icon: "download" },
-  { label: "Auditoría de cambios",   icon: "search" },
-  { label: "Configuración",          icon: "settings" },
-];
 
 // ─── PANTALLA PRINCIPAL ──────────────────────────────────────────
 export function AdminPanel() {
@@ -320,7 +336,7 @@ export function AdminPanel() {
     fetchStats();
     fetchAnalytics();
 
-    const socket = io(SOCKET_URL, { auth: { token }, transports: ["websocket"], reconnectionDelay: 2000 });
+    const socket = io(SOCKET_URL, { auth: (cb) => cb({ token: localStorage.getItem("gc_token") || token }), transports: ["websocket"], reconnectionDelay: 2000 });
     socketRef.current = socket;
 
     socket.on("connect",          ()  => { console.log("[AdminPanel] Socket:", socket.id); setSocketStatus("connected"); });
@@ -349,11 +365,18 @@ export function AdminPanel() {
     return () => { socket.disconnect(); };
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const s = stats?.adminStats;
-  const n = s?.novedadesAbiertas ?? 0;
+  const k = stats?.kpis;
+  const n = k?.novedadesAbiertas ?? 0;
+  // Solo novedades pendientes (no resueltas), de cualquier fecha, por urgencia
+  const pend = k?.pendientesPorUrgencia ?? {};
+  const novItems = [
+    { label: "Crítico", value: pend.rojo     ?? 0, color: "#E86A2A" },
+    { label: "Medio",   value: pend.amarillo ?? 0, color: "#F0A35E" },
+    { label: "Bajo",    value: pend.verde    ?? 0, color: "#3E9A72" },
+  ];
 
   return (
-    <div className="admin-screen">
+    <div className="admin-screen central-titulos">
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <SectionHeader title="Panel central" sub="Vista general del sistema" />
         <SocketBadge status={socketStatus} />
@@ -361,26 +384,19 @@ export function AdminPanel() {
 
       {/* Indicadores: datos cacheados al instante; "—" solo si aún no hay nada */}
       <div className="central-kpis">
-        <KPI label="Guardias"      value={s?.totalGuardias      ?? (loading ? "…" : "—")} sub="activos" />
-        <KPI label="Instalaciones" value={s?.totalInstalaciones ?? (loading ? "…" : "—")} sub="operativas" />
-        <KPI label="Turnos hoy"    value={stats?.total          ?? (loading ? "…" : "—")} sub="programados" />
-        <KPI label="Cobertura"     value={s ? `${s.coberturaMensual ?? 0}%` : (loading ? "…" : "—")} sub="mensual" accent={T.accent} />
-        {stats && <MiniStat value={stats.presentes} label="Presentes" color={T.accent} />}
-        {stats && <MiniStat value={stats.tardios}   label="Tardíos"   color={T.yellow} />}
+        <KPI label="Guardias"      value={k?.guardiasEnPauta     ?? (loading ? "…" : "—")} sub="en pauta" />
+        <KPI label="Instalaciones" value={k?.instalacionesActivas ?? (loading ? "…" : "—")} sub="operativas" />
+        <KPI label="Novedades"     value={k?.novedadesAbiertas   ?? (loading ? "…" : "—")} sub="abiertas" accent={n > 0 ? T.alert : undefined} />
+        <KPI label="Cobertura"     value={k ? `${k.coberturaDia ?? 0}%` : (loading ? "…" : "—")} sub="hoy" accent={T.accent} />
+        {stats && <MiniStat value={(stats.presentes ?? 0) + (stats.tardios ?? 0)} label="Presentes" color={T.accent} />}
+        {stats && <MiniStat value={stats.tardios}   label="Con retraso" color={T.yellow} />}
         {stats && <MiniStat value={stats.faltantes} label="Faltantes" color={T.alert} />}
       </div>
-
-      {n > 0 && (
-        <div style={{ background: T.alertGhost, border: `1px solid ${T.alert}`, borderRadius: T.radius, padding: "10px 14px", marginBottom: 12, fontSize: 13, color: T.text, display: "flex", alignItems: "center", gap: 10 }}>
-          <Icon name="triangle-alert" size={18} color={T.alert} />
-          {n} novedad{n !== 1 ? "es" : ""} abierta{n !== 1 ? "s" : ""} sin resolver
-        </div>
-      )}
 
       {/* El mapa es la pieza principal; los gráficos van en la columna lateral */}
       <div className="central-grid">
         <section aria-label="Instalaciones en el mapa">
-          <SubHeader title="Instalaciones · mapa en vivo" />
+          <div className="central-subtitulo"><SubHeader title="Instalaciones · mapa en vivo" /></div>
           <MapaInstalaciones
             token={token}
             ultimaUbicacion={ultimaUbicacion}
@@ -390,7 +406,7 @@ export function AdminPanel() {
 
         <aside style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
           <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px" }}>
-            <div style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Novedades · últimos 7 días</div>
+            <div className="central-titulo-card" style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Novedades · últimos 7 días</div>
             {analytics ? (
               <GraficoBarras data={analytics} />
             ) : (
@@ -405,23 +421,19 @@ export function AdminPanel() {
             </div>
           </div>
 
-          {stats && (
+          {k && (
             <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px" }}>
-              <div style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Estado hoy</div>
-              <GraficoDonut presentes={stats.presentes} tardios={stats.tardios} faltantes={stats.faltantes} />
+              <div className="central-titulo-card" style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Novedades pendientes · por urgencia</div>
+              <GraficoDonut unidad="PENDIENTES" vacio="Sin novedades pendientes" items={novItems} />
             </div>
           )}
 
-          <div>
-            <SubHeader title="Acciones rápidas" />
-            {ACCIONES.map((a, i) => (
-              <div key={i} style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, minHeight: 40, padding: "0 12px", marginBottom: 6, display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-                <Icon name={a.icon} size={17} color={T.textSec} />
-                <span style={{ fontWeight: 500, fontSize: 13, flex: 1 }}>{a.label}</span>
-                <Icon name="chevron-right" size={15} color={T.textMut} />
-              </div>
-            ))}
-          </div>
+          {stats && (
+            <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px" }}>
+              <div className="central-titulo-card" style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Estado hoy</div>
+              <GraficoDonut presentes={stats.presentes} tardios={stats.tardios} faltantes={stats.faltantes} />
+            </div>
+          )}
         </aside>
       </div>
 

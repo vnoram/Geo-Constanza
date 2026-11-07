@@ -1,18 +1,10 @@
 const { prisma } = require('../config/database');
-const { inicioDiaChile, finDiaChile } = require('../utils/fechaChile');
+const { filtrosAuditoria, exportarPDF } = require('../services/auditoria.service');
 
 const listar = async (req, res, next) => {
   try {
-    const { usuario_id, accion, fecha_inicio, fecha_fin, page = 1, limit = 50 } = req.query;
-
-    const where = {};
-    if (usuario_id) where.usuario_id = usuario_id;
-    if (accion) where.accion = accion;
-    if (fecha_inicio || fecha_fin) {
-      where.created_at = {};
-      if (fecha_inicio) where.created_at.gte = inicioDiaChile(fecha_inicio);
-      if (fecha_fin) where.created_at.lte = finDiaChile(fecha_fin);
-    }
+    const { page = 1, limit = 50 } = req.query;
+    const where = filtrosAuditoria(req.query);
 
     const [registros, total] = await Promise.all([
       prisma.auditoria.findMany({
@@ -31,4 +23,12 @@ const listar = async (req, res, next) => {
   }
 };
 
-module.exports = { listar };
+const exportar = async (req, res, next) => {
+  try {
+    const pdf = await exportarPDF(req.query);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="bitacora-auditoria.pdf"');
+    res.send(pdf);
+  } catch (error) { next(error); }
+};
+module.exports = { listar, exportar };

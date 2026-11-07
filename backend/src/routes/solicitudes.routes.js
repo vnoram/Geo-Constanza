@@ -234,12 +234,14 @@
 const { Router } = require('express');
 const solicitudesController = require('../controllers/solicitudes.controller');
 const { authenticate } = require('../middlewares/auth');
-const { authorize } = require('../middlewares/rbac');
+const { authorize, exigirEmpresa } = require('../middlewares/rbac');
 const { ROLES } = require('../constants/roles');
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, exigirEmpresa);
+router.get('/vacantes', authorize(ROLES.GGSS_LIBRE), require('../controllers/vacantes.controller').listar);
+router.post('/cobertura', authorize(ROLES.GGSS_LIBRE), require('../controllers/vacantes.controller').solicitar);
 
 // ── GGSS: ver y crear sus propias solicitudes ─────────────────────────────
 router.get('/',  authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), solicitudesController.listar);

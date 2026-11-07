@@ -24,6 +24,12 @@ const errorHandler = (err, req, res, _next) => {
     return res.status(409).json({ error: 'El registro ya existe (dato duplicado).' });
   }
 
+  // Una clave foránea compuesta (empresa_id, id) rechazó la referencia: el registro apuntado no existe
+  // en la empresa del usuario (o es de otra). Se responde igual que un id inexistente.
+  if (err.code === 'P2003' && /empresa_id/.test(`${err.message} ${JSON.stringify(err.meta ?? {})}`)) {
+    return res.status(404).json({ error: 'Registro no encontrado.' });
+  }
+
   if (err.code === 'P2025') {
     return res.status(404).json({ error: 'Registro no encontrado.' });
   }

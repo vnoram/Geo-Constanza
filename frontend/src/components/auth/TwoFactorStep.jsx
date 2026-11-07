@@ -1,9 +1,9 @@
-import { T, FONT, ROLES } from "../../theme/theme";
+import { T } from "../../theme/theme";
 import { Input } from "../ui/Input";
 import { Btn } from "../ui/Btn";
 import { Icon } from "../ui/Icon";
 
-export function TwoFactorStep({ code2fa, setCode2fa, error, loading, pendingUser, onVerify, onBack }) {
+export function TwoFactorStep({ code2fa, setCode2fa, error, loading, onVerify, onBack }) {
   return (
     <div>
       <div style={{ marginBottom: 18 }}>
@@ -11,10 +11,7 @@ export function TwoFactorStep({ code2fa, setCode2fa, error, loading, pendingUser
           Ingresa el código de tu app authenticator
         </div>
         <div style={{ fontSize: 12, color: T.textSec, marginTop: 4 }}>
-          Requerido para{" "}
-          <span style={{ color: T.focusText }}>
-            {ROLES[pendingUser?.user?.rol]?.label}
-          </span>
+          También puedes usar un código de recuperación
         </div>
       </div>
 
@@ -23,9 +20,9 @@ export function TwoFactorStep({ code2fa, setCode2fa, error, loading, pendingUser
         icon="key-round"
         mono
         value={code2fa}
-        onChange={v => setCode2fa(v.replace(/\D/g, ""))}
+        onChange={v => setCode2fa(v.replace(/[^0-9a-zA-Z-]/g, "").toUpperCase())}
         placeholder="123456"
-        maxLength={6}
+        maxLength={11}
       />
 
       {error && (
@@ -44,13 +41,6 @@ export function TwoFactorStep({ code2fa, setCode2fa, error, loading, pendingUser
         <Btn onClick={onVerify} loading={loading} full>Verificar</Btn>
       </div>
 
-      <div style={{
-        marginTop: 16, border: `1px solid ${T.border}`, borderRadius: T.radius,
-        padding: "10px 12px", fontSize: 12, color: T.textSec, display: "flex", gap: 8, alignItems: "center",
-      }}>
-        <Icon name="info" size={15} />
-        <span>Demo: usa el código <span style={{ fontFamily: FONT.mono, color: T.text }}>123456</span></span>
-      </div>
     </div>
   );
 }

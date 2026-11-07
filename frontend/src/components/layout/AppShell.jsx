@@ -4,6 +4,7 @@ import { Icon } from "../ui/Icon";
 import { Wordmark } from "../ui/Wordmark";
 import { ROLES as ROL } from "../../constants/roles";
 import { Placeholder } from "../ui/Placeholder";
+import { CambiarPasswordModal } from "./CambiarPasswordModal";
 
 // ─── GGSS en pauta ───
 import { PautaTurno } from "../../screens/ggss-en-pauta/PautaTurno";
@@ -26,6 +27,9 @@ import { SupReportes } from "../../screens/supervisor/SupReportes";
 // ─── Operador central ───
 import { CentralPanel } from "../../screens/operador-central/CentralPanel";
 
+// ─── Plataforma (super admin) ───
+import { EmpresasPanel } from "../../screens/plataforma/EmpresasPanel";
+
 // ─── Administrador ───
 import { AdminPanel } from "../../screens/administrador/AdminPanel";
 import { AdminUsuarios } from "../../screens/administrador/AdminUsuarios";
@@ -38,7 +42,7 @@ function RoleContent({ user, rol, section }) {
   if (!allowed.includes(section)) {
     return (
       <div style={{ textAlign: "center", padding: 40 }}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>🚫</div>
+        <div style={{ fontSize: 48, marginBottom: 12 }}><Icon name="ban" size={48} /></div>
         <div style={{ color: T.red, fontWeight: 700, fontSize: 16 }}>Acceso Denegado</div>
         <div style={{ color: T.textMut, fontSize: 13, marginTop: 6 }}>
           Tu rol ({ROLES[rol]?.label}) no tiene permisos para esta sección.
@@ -70,6 +74,9 @@ function RoleContent({ user, rol, section }) {
     if (section === "panel")      return <AdminPanel />;
     if (section === "incidentes") return <CentralPanel section="incidentes" />;
   }
+  if (rol === ROL.SUPER_ADMIN) {
+    if (section === "empresas") return <EmpresasPanel />;
+  }
   if (rol === ROL.ADMINISTRADOR) {
     // Admin ya no tiene el panel de monitoreo — solo gestión RRHH/config
     if (section === "usuarios")      return <AdminUsuarios />;
@@ -84,9 +91,10 @@ export function AppShell({ user, onLogout }) {
   const role = ROLES[user.rol];
   const [activeSection, setActiveSection] = useState(role.sections[0].id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [cambiandoPassword, setCambiandoPassword] = useState(false);
 
-  const duracionToken = user.rol === ROL.GGSS_EN_PAUTA || user.rol === ROL.GGSS_LIBRE ? "30 min" : user.rol === ROL.SUPERVISOR ? "2 h" : "4 h";
-  const conSegundoFactor = user.rol === ROL.SUPERVISOR || user.rol === ROL.ADMINISTRADOR;
+  const duracionToken = user.rol === ROL.GGSS_EN_PAUTA || user.rol === ROL.GGSS_LIBRE ? "30 min" : user.rol === ROL.SUPERVISOR ? "2 h" : user.rol === ROL.SUPER_ADMIN ? "1 h" : "4 h";
+  const conSegundoFactor = user.segundoFactor === true;
 
   return (
     <div className="app-shell" style={{
@@ -107,7 +115,7 @@ export function AppShell({ user, onLogout }) {
             background: "none", border: "none", color: T.textSec, cursor: "pointer",
             padding: 4, display: "inline-flex", alignItems: "center",
           }}><Icon name="menu" size={20} /></button>
-          <Wordmark />
+          <Wordmark conLogo />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
           <span className="app-shell__role" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textSec, whiteSpace: "nowrap", minWidth: 0 }}>
@@ -163,11 +171,17 @@ export function AppShell({ user, onLogout }) {
             background: T.surface, borderRight: `1px solid ${T.border}`,
           }}>
             <div style={{ borderBottom: `1px solid ${T.border}`, paddingBottom: 16, marginBottom: 16 }}>
-              <div style={{ fontWeight: 600, fontSize: 15, color: T.text }}>{user.nombre}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textSec, marginTop: 4 }}>
+              <div style={{ fontWeight: 600, fontSize: 15, color: T.focusText }}>{user.nombre}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.focusText, marginTop: 4 }}>
                 <Icon name={role.icon} size={15} color={T.focusText} />
                 {role.label}
               </div>
+              {user.empresa?.nombre && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textSec, marginTop: 4 }}>
+                  <Icon name="building-2" size={15} color={T.textMut} />
+                  {user.empresa.nombre}
+                </div>
+              )}
               <div style={{ fontSize: 11, color: T.textMut, marginTop: 8, fontFamily: FONT.mono }}>
                 ID {user.id} · RUT •••••{user.id.slice(-2)}
               </div>
@@ -179,7 +193,7 @@ export function AppShell({ user, onLogout }) {
             {role.sections.map(s => {
               const activa = activeSection === s.id;
               return (
-                <button className="touch-target" key={s.id}
+                <button className="touch-target gc-nav-btn" key={s.id}
                   onClick={() => { setActiveSection(s.id); setSidebarOpen(false); }}
                   aria-current={activa ? "page" : undefined} style={{
                   display: "flex", alignItems: "center", gap: 10,
@@ -215,11 +229,17 @@ export function AppShell({ user, onLogout }) {
                   <Icon name={conSegundoFactor ? "check" : "key-round"} size={14} color={conSegundoFactor ? T.accent : "currentColor"} />
                   {conSegundoFactor ? "2FA verificado" : "Autenticación estándar"}
                 </div>
-                <div style={{ fontSize: 11, color: T.textMut, fontFamily: FONT.mono }}>
-                  {new Date().toLocaleTimeString("es-CL", { timeZone: "America/Santiago" })}
-                </div>
               </div>
-              <button className="touch-target" onClick={onLogout} style={{
+              <button className="touch-target gc-menu-btn gc-menu-btn--verde" onClick={() => setCambiandoPassword(true)} style={{
+                width: "100%", minHeight: 40, padding: "0 14px", marginBottom: 8,
+                background: "transparent", border: `1px solid ${T.border}`,
+                borderRadius: T.radius, color: T.text, fontSize: 13, fontWeight: 500,
+                cursor: "pointer", fontFamily: FONT.ui,
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+              }}>
+                <Icon name="key-round" size={16} /> Cambiar contraseña
+              </button>
+              <button className="touch-target gc-menu-btn gc-menu-btn--rojo" onClick={onLogout} style={{
                 width: "100%", minHeight: 40, padding: "0 14px",
                 background: "transparent", border: `1px solid ${T.border}`,
                 borderRadius: T.radius, color: T.text, fontSize: 13, fontWeight: 500,
@@ -241,6 +261,9 @@ export function AppShell({ user, onLogout }) {
           <RoleContent user={user} rol={user.rol} section={activeSection} />
         </main>
       </div>
+      {cambiandoPassword && (
+        <CambiarPasswordModal onClose={() => setCambiandoPassword(false)} onDone={onLogout} />
+      )}
     </div>
   );
 }

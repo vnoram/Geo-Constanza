@@ -9,7 +9,7 @@
 ## Vista general
 
 ```
-frontend (Vite + React, Vercel)  ──HTTP/JSON + WebSocket──▶  backend (Express, Railway)
+frontend (Vite + React, Vercel)  ──HTTP/JSON + WebSocket──▶  backend (Express, Azure Container Apps)
                                                                         │
                                                               ┌─────────┴─────────┐
                                                               │                   │

@@ -1,5 +1,10 @@
 const usuariosService = require('../services/usuarios.service');
+const { prisma } = require('../config/database');
 const { registrarAuditoria } = require('../middlewares/auditLog');
+const twoFactorService = require('./../services/twoFactor.service');
+
+// Nunca se registra la contraseña en la auditoría.
+const sinPassword = (cuerpo) => Object.fromEntries(Object.entries(cuerpo || {}).filter(([k]) => k !== 'password'));
 
 /**
  * GET /usuarios/me — perfil del usuario autenticado (cualquier rol)
@@ -32,7 +37,7 @@ const crear = async (req, res, next) => {
       accion: 'crear',
       tablaAfectada: 'usuarios',
       registroId: usuario.id,
-      valoresDespues: req.body,
+      valoresDespues: sinPassword(req.body),
       ip: req.ip,
       userAgent: req.get('user-agent'),
     });
@@ -53,7 +58,7 @@ const editar = async (req, res, next) => {
       accion: 'editar',
       tablaAfectada: 'usuarios',
       registroId: id,
-      valoresDespues: req.body,
+      valoresDespues: sinPassword(req.body),
       ip: req.ip,
       userAgent: req.get('user-agent'),
     });
@@ -84,4 +89,34 @@ const desactivar = async (req, res, next) => {
   }
 };
 
-module.exports = { miInformacion, listar, crear, editar, desactivar };
+/**
+ * POST /usuarios/:id/2fa/reset — un administrador desactiva el 2FA de OTRO usuario (nunca el propio).
+ */
+const reiniciar2FA = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (id === req.user.id) {
+      return res.status(403).json({ error: 'No puedes reiniciar tu propio segundo factor.' });
+    }
+    // twoFactorService trabaja sin alcance de empresa (lo usan también los scripts): el usuario debe existir en la empresa del token.
+    if (!await prisma.usuario.findUnique({ where: { id }, select: { id: true } })) {
+      return res.status(404).json({ error: 'Registro no encontrado.' });
+    }
+    const result = await twoFactorService.reiniciar(id);
+
+    await registrarAuditoria({
+      usuarioId: req.user.id,
+      accion: 'reiniciar_2fa',
+      tablaAfectada: 'usuarios',
+      registroId: id,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { miInformacion, listar, crear, editar, desactivar, reiniciar2FA };

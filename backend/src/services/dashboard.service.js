@@ -1,6 +1,8 @@
 const { prisma } = require('../config/database');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { ROLES } = require('../constants/roles');
+const { SOLO_INCIDENCIAS } = require('./priorizacion.service');
+const { sinCobertura } = require('../utils/cobertura');
 const { ahoraChile, aFechaDB, instanteChile, turnosDeHoy } = require('../utils/fechaChile');
 
 /**
@@ -29,7 +31,7 @@ const getDashboardHoy = async (user) => {
     },
     include: {
       usuario: { select: { id: true, nombre: true, rol: true } },
-      instalacion: { select: { id: true, nombre: true } },
+      instalacion: { select: { id: true, nombre: true, tolerancia_atraso_minutos: true } },
       // La asistencia ya pertenece al turno: no filtrar por fecha, porque en un
       // turno nocturno la entrada se marca el día anterior
       asistencias: {
@@ -48,7 +50,7 @@ const getDashboardHoy = async (user) => {
     }
     return {
       turno_id: t.id,
-      guardia: t.usuario.nombre,
+      guardia: t.usuario?.nombre ?? 'Sin asignar',
       instalacion: t.instalacion.nombre,
       instalacion_id: t.instalacion.id,
       hora_inicio: t.hora_inicio,
@@ -59,6 +61,7 @@ const getDashboardHoy = async (user) => {
       distancia_entrada_m: asistencia?.distancia_entrada_m ?? null,
       precision_entrada_m: asistencia?.precision_entrada_m ?? null,
       estado: estadoActual,
+      sin_cobertura: sinCobertura(t),
     };
   });
 
@@ -67,7 +70,8 @@ const getDashboardHoy = async (user) => {
   const faltantes = lista.filter(t => t.estado === 'faltante').length;
   const fallbacks = lista.filter(t => t.es_fallback).length;
 
-  const base = { total: turnos.length, presentes, tardios, faltantes, fallbacks, lista };
+  const sinCoberturaTotal = lista.filter(t => t.sin_cobertura).length;
+  const base = { total: turnos.length, presentes, tardios, faltantes, fallbacks, lista, sinCobertura: sinCoberturaTotal };
 
   // ── KPIs para Supervisor (sus instalaciones asignadas) ─────────────────────
   if (user.rol === ROLES.SUPERVISOR && instalacionIds) {
@@ -75,15 +79,20 @@ const getDashboardHoy = async (user) => {
       ? { instalacion_id: { in: instalacionIds } }
       : { id: 'never-match' };
 
-    const [novedadesAbiertas, novedadesEscaladas, instalacionesDetalle] = await Promise.all([
-      prisma.novedad.count({ where: { ...whereNov, estado: 'abierta'  } }),
-      prisma.novedad.count({ where: { ...whereNov, estado: 'escalada' } }),
+    const hace12h = new Date(Date.now() - 12 * 60 * 60 * 1000);
+    const [novedadesAbiertas, novedadesEscaladas, novedadesPendientes, novedadesRecientes, instalacionesDetalle] = await Promise.all([
+      prisma.novedad.count({ where: { ...whereNov, ...SOLO_INCIDENCIAS, estado: 'abierta'  } }),
+      prisma.novedad.count({ where: { ...whereNov, ...SOLO_INCIDENCIAS, estado: 'escalada' } }),
+      // Pendientes: todo lo que aún no se resuelve (abiertas, en atención y escaladas)
+      prisma.novedad.count({ where: { ...whereNov, ...SOLO_INCIDENCIAS, estado: { not: 'resuelta' } } }),
+      // Recientes: reportadas en las últimas 12 horas
+      prisma.novedad.count({ where: { ...whereNov, ...SOLO_INCIDENCIAS, created_at: { gte: hace12h } } }),
       instalacionIds.length > 0
         ? prisma.instalacion.findMany({
             where: { id: { in: instalacionIds } },
             select: {
               id: true, nombre: true, nivel_criticidad: true, direccion: true,
-              _count: { select: { novedades: { where: { estado: { not: 'resuelta' } } } } },
+              _count: { select: { novedades: { where: { ...SOLO_INCIDENCIAS, estado: { not: 'resuelta' } } } } },
             },
           })
         : [],
@@ -92,6 +101,8 @@ const getDashboardHoy = async (user) => {
     base.kpis = {
       novedadesAbiertas,
       novedadesEscaladas,
+      novedadesPendientes,
+      novedadesRecientes,
       instalacionesAsignadas: instalacionesDetalle.map((i) => ({
         id:               i.id,
         nombre:           i.nombre,
@@ -109,11 +120,16 @@ const getDashboardHoy = async (user) => {
       novedadesEscaladas,
       totalInstalaciones,
       instalacionesActivas,
+      guardiasEnPauta,
+      pendientesPorUrgencia,
     ] = await Promise.all([
-      prisma.novedad.count({ where: { estado: 'abierta' } }),
-      prisma.novedad.count({ where: { estado: 'escalada' } }),
+      prisma.novedad.count({ where: { ...SOLO_INCIDENCIAS, estado: 'abierta' } }),
+      prisma.novedad.count({ where: { ...SOLO_INCIDENCIAS, estado: 'escalada' } }),
       prisma.instalacion.count(),
       prisma.instalacion.count({ where: { estado: 'activo' } }),
+      prisma.usuario.count({ where: { rol: ROLES.GGSS_EN_PAUTA, estado: 'activo' } }),
+      // Novedades pendientes (no resueltas), de cualquier fecha, agrupadas por urgencia
+      prisma.novedad.groupBy({ by: ['urgencia'], where: { ...SOLO_INCIDENCIAS, estado: { not: 'resuelta' } }, _count: { _all: true } }),
     ]);
 
     // Cobertura: % de turnos de hoy que tienen asistencia
@@ -130,7 +146,7 @@ const getDashboardHoy = async (user) => {
         nivel_criticidad: true,
         _count: {
           select: {
-            novedades: { where: { estado: { not: 'resuelta' } } },
+            novedades: { where: { ...SOLO_INCIDENCIAS, estado: { not: 'resuelta' } } },
           },
         },
       },
@@ -141,6 +157,8 @@ const getDashboardHoy = async (user) => {
       novedadesEscaladas,
       totalInstalaciones,
       instalacionesActivas,
+      guardiasEnPauta,
+      pendientesPorUrgencia: Object.fromEntries(pendientesPorUrgencia.map((g) => [g.urgencia, g._count._all])),
       coberturaDia,
       resumenPorInstalacion: resumenPorInstalacion.map(i => ({
         id: i.id,

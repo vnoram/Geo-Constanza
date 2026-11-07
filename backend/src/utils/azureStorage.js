@@ -41,6 +41,21 @@ function validarConfiguracion() {
 }
 
 /**
+ * Detecta el tipo real de una imagen por su firma (no confía en lo que declara el cliente).
+ * @param {Buffer} buffer
+ * @returns {'image/jpeg'|'image/png'|'image/webp'|null}
+ */
+function detectarTipoImagen(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 12) return null;
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'image/jpeg';
+  if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
+  if (buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') return 'image/webp';
+  return null;
+}
+
+const EXTENSION_POR_TIPO = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+
+/**
  * Valida el buffer de archivo
  * @param {Buffer} buffer - Buffer del archivo
  * @param {string} mimetype - Tipo MIME del archivo
@@ -76,6 +91,16 @@ function validarArchivo(buffer, mimetype, filesize) {
     throw error;
   }
 
+  // ✅ El contenido real debe ser una imagen del tipo declarado
+  const real = detectarTipoImagen(buffer);
+  const declarado = mimetype === 'image/jpg' ? 'image/jpeg' : mimetype;
+  if (filesize > 0 && real !== declarado) {
+    const error = new Error('El contenido del archivo no corresponde a una imagen JPEG, PNG o WebP válida');
+    error.code = 'INVALID_CONTENT';
+    error.statusCode = 400;
+    throw error;
+  }
+
   // ✅ Validar que no esté vacío
   if (filesize === 0) {
     const error = new Error('El archivo está vacío');
@@ -90,8 +115,9 @@ function validarArchivo(buffer, mimetype, filesize) {
  * @param {string} originalName - Nombre original
  * @returns {string} Nombre sanitizado
  */
-function sanitizarNombre(originalName) {
-  const ext = originalName.split('.').pop().toLowerCase();
+function sanitizarNombre(originalName, tipo) {
+  // La extensión sale del tipo detectado, no del nombre que manda el cliente.
+  const ext = EXTENSION_POR_TIPO[tipo] || 'bin';
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 9);
   return `novedades-${timestamp}-${random}.${ext}`;
@@ -160,7 +186,7 @@ async function uploadFotoToAzure(fotoBuffer, nombreArchivo, metadata = {}) {
 
     validarArchivo(fotoBuffer, metadata.mimetype || 'image/jpeg', fotoBuffer.length);
 
-    const nombreSanitizado = sanitizarNombre(nombreArchivo);
+    const nombreSanitizado = sanitizarNombre(nombreArchivo, detectarTipoImagen(fotoBuffer));
 
     const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
     const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME;
@@ -313,4 +339,6 @@ module.exports = {
   obtenerPropiedadesBlob,
   eliminarBlob,
   CONFIG,
+  validarArchivo,
+  detectarTipoImagen,
 };

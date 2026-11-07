@@ -8,10 +8,34 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ─── 0. EMPRESAS (inquilinos de la plataforma) ───
+// Cada empresa cliente es un inquilino aislado: todo dato operativo cuelga de una Empresa.
+// El rol 'super_admin' no pertenece a ninguna (Usuario.empresa_id = null) y solo gestiona empresas.
+model Empresa {
+  id            String   @id @default(uuid())
+  nombre        String
+  rut           String   @unique
+  estado        String   @default("activa")   // 'activa' | 'suspendida'
+  plan          String   @default("estandar") // 'basico' | 'estandar' | 'premium'
+  ultimo_folio  Int      @default(0)          // contador atómico de folios de novedades POR empresa
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  usuarios                 Usuario[]
+  instalaciones            Instalacion[]
+  supervisores_instalacion Supervisor_Instalacion[]
+  turnos                   Turno[]
+  asistencias              Asistencia[]
+  novedades                Novedad[]
+  novedades_historial      NovedadHistorial[]
+  solicitudes              Solicitud[]
+  auditorias               Auditoria[]
+}
+
 // ─── 1. USUARIOS (Guardias, Supervisores, Central, Admins) ───
 // Roles del informe (ver backend/src/constants/roles.js):
 //   'pauta' = GGSS_EN_PAUTA | 'libre' = GGSS_LIBRE | 'supervisor' = SUPERVISOR
-//   'central' = OPERADOR_CENTRAL | 'admin' = ADMINISTRADOR
+//   'central' = OPERADOR_CENTRAL | 'admin' = ADMINISTRADOR | 'super_admin' = SUPER_ADMIN (plataforma)
 model Usuario {
   id                       String     @id @default(uuid())
   rut                      String     @unique
@@ -19,9 +43,16 @@ model Usuario {
   email                    String     @unique
   telefono                 String?
   password_hash            String
-  rol                      String     // 'pauta', 'libre', 'supervisor', 'central', 'admin'
+  rol                      String     // 'pauta', 'libre', 'supervisor', 'central', 'admin', 'super_admin'
+  // Empresa a la que pertenece. Solo el super_admin la tiene nula (restricción CHECK en la migración).
+  empresa_id               String?
   estado                   String     @default("activo") // 'activo', 'inactivo'
-  two_factor_secret        String?
+  two_factor_secret        String?    // cifrado AES-256-GCM (ver utils/cifrado.js); nunca se expone por API
+  two_factor_enabled       Boolean    @default(false)
+  two_factor_recovery      Json?      // hashes SHA-256 de los códigos de recuperación vigentes
+  two_factor_ultimo_paso   Int?       // último paso TOTP aceptado (anti-reutilización)
+  fcm_token                String?
+  password_cambiada_en     DateTime?  // invalida refresh tokens emitidos antes (reset de contraseña)
 
   // Para GGSS: diferencia en_pauta (pauta fija 4x4) vs libre (eventual)
   tipo_ggss                String?    // 'pauta' | 'libre' — solo aplica a rol 'pauta' o 'libre'
@@ -42,17 +73,25 @@ model Usuario {
   // Relaciones
   turnos                   Turno[]
   asistencias              Asistencia[]
-  novedades                Novedad[]
+  novedades                Novedad[] @relation("NovedadAutor")
+  novedades_asignadas       Novedad[] @relation("NovedadResponsable")
+  historial_novedades       NovedadHistorial[]
   auditorias               Auditoria[]
+  password_resets          PasswordReset[]
   instalaciones_sup        Supervisor_Instalacion[]
   solicitudes              Solicitud[] @relation("UsuarioSolicita")
   solicitudes_rev          Solicitud[] @relation("SupervisorRevisa")
-  instalacion_asignada     Instalacion? @relation("ggss_asignado", fields: [instalacion_asignada_id], references: [id])
+  empresa                  Empresa?     @relation(fields: [empresa_id], references: [id], onDelete: Restrict)
+  instalacion_asignada     Instalacion? @relation("ggss_asignado", fields: [empresa_id, instalacion_asignada_id], references: [empresa_id, id], onDelete: Restrict)
+
+  @@unique([empresa_id, id])
+  @@index([empresa_id])
 }
 
 // ─── 2. INSTALACIONES (Recintos a proteger) ───
 model Instalacion {
   id                  String     @id @default(uuid())
+  empresa_id          String
   nombre              String
   direccion           String?
   // Geocerca del recinto (ver geovalidacion.service.js). Se mantienen como
@@ -62,6 +101,7 @@ model Instalacion {
   latitud             Float
   longitud            Float
   radio_geofence_m    Int        @default(100) // Metros de tolerancia para GPS
+  tolerancia_atraso_minutos Int  @default(15)
   tipo_recinto        String?
   nivel_criticidad    String     @default("Media") // Alta, Media, Baja
   comuna              String?    // Comuna donde se ubica la instalación (para cobertura de supervisor)
@@ -75,25 +115,33 @@ model Instalacion {
   novedades           Novedad[]
   supervisores        Supervisor_Instalacion[]
   ggss_asignados      Usuario[]    @relation("ggss_asignado")
+  empresa             Empresa      @relation(fields: [empresa_id], references: [id], onDelete: Restrict)
+
+  @@unique([empresa_id, id])
+  @@index([empresa_id])
 }
 
 // ─── 3. TABLA INTERMEDIA: SUPERVISOR - INSTALACIÓN ───
 model Supervisor_Instalacion {
   id               String      @id @default(uuid())
+  empresa_id       String
   supervisor_id    String
   instalacion_id   String
-  
-  supervisor       Usuario     @relation(fields: [supervisor_id], references: [id])
-  instalacion      Instalacion @relation(fields: [instalacion_id], references: [id])
+
+  empresa          Empresa     @relation(fields: [empresa_id], references: [id], onDelete: Restrict)
+  supervisor       Usuario     @relation(fields: [empresa_id, supervisor_id], references: [empresa_id, id], onDelete: Restrict)
+  instalacion      Instalacion @relation(fields: [empresa_id, instalacion_id], references: [empresa_id, id], onDelete: Restrict)
 
   @@unique([supervisor_id, instalacion_id])
+  @@index([empresa_id])
 }
 
 // ─── 4. TURNOS (Planificación) ───
 // El algoritmo de turnos 4x4 para GGSS_EN_PAUTA vive en turnos.service.js.
 model Turno {
   id                  String       @id @default(uuid())
-  usuario_id          String
+  empresa_id          String
+  usuario_id          String?
   instalacion_id      String
   fecha               DateTime     @db.Date
   hora_inicio         String       // Ej: "06:00"
@@ -105,10 +153,15 @@ model Turno {
   created_at          DateTime     @default(now())
   updated_at          DateTime     @updatedAt
 
-  usuario             Usuario      @relation(fields: [usuario_id], references: [id])
-  instalacion         Instalacion  @relation(fields: [instalacion_id], references: [id])
+  empresa             Empresa      @relation(fields: [empresa_id], references: [id], onDelete: Restrict)
+  usuario             Usuario?     @relation(fields: [empresa_id, usuario_id], references: [empresa_id, id], onDelete: Restrict)
+  instalacion         Instalacion  @relation(fields: [empresa_id, instalacion_id], references: [empresa_id, id], onDelete: Restrict)
   asistencias         Asistencia[]
   novedades           Novedad[]
+  solicitudes_cobertura Solicitud[] @relation("VacanteSolicitada")
+
+  @@unique([empresa_id, id])
+  @@index([empresa_id])
 }
 
 // ─── 5. ASISTENCIA (Marcajes reales) ───
@@ -116,6 +169,7 @@ model Turno {
 // (ver geovalidacion.service.js, sección "Validación de geocerca" del informe).
 model Asistencia {
   id                  String       @id @default(uuid())
+  empresa_id          String
   usuario_id          String
   turno_id            String
   instalacion_id      String
@@ -139,9 +193,12 @@ model Asistencia {
   distancia_entrada_m   Int?       // metros a la instalación al marcar
   precision_entrada_m   Int?       // error estimado de la lectura, en metros
 
-  usuario             Usuario      @relation(fields: [usuario_id], references: [id])
-  turno               Turno        @relation(fields: [turno_id], references: [id])
-  instalacion         Instalacion  @relation(fields: [instalacion_id], references: [id])
+  empresa             Empresa      @relation(fields: [empresa_id], references: [id], onDelete: Restrict)
+  usuario             Usuario      @relation(fields: [empresa_id, usuario_id], references: [empresa_id, id], onDelete: Restrict)
+  turno               Turno        @relation(fields: [empresa_id, turno_id], references: [empresa_id, id], onDelete: Restrict)
+  instalacion         Instalacion  @relation(fields: [empresa_id, instalacion_id], references: [empresa_id, id], onDelete: Restrict)
+
+  @@index([empresa_id])
 }
 
 // ─── 6. NOVEDADES ───
@@ -150,6 +207,9 @@ model Asistencia {
 // de si el guardia estaba dentro de la geocerca al reportar.
 model Novedad {
   id                  String       @id @default(uuid())
+  empresa_id          String
+  // Folio correlativo POR empresa: se asigna con Empresa.ultimo_folio (incremento atómico)
+  numero              Int
   usuario_id          String
   instalacion_id      String
   turno_id            String
@@ -163,36 +223,69 @@ model Novedad {
   gps_dentro_rango    Boolean?     @default(true)      // false = guardia fuera del radio al reportar
   comentario_cierre   String?
   atendida_por        String?
+  asignada_a          String?
   fecha_atencion      DateTime?
   created_at          DateTime     @default(now())
 
-  usuario             Usuario      @relation(fields: [usuario_id], references: [id])
-  instalacion         Instalacion  @relation(fields: [instalacion_id], references: [id])
-  turno               Turno        @relation(fields: [turno_id], references: [id])
+  empresa             Empresa      @relation(fields: [empresa_id], references: [id], onDelete: Restrict)
+  usuario             Usuario      @relation("NovedadAutor", fields: [empresa_id, usuario_id], references: [empresa_id, id], onDelete: Restrict)
+  responsable         Usuario?     @relation("NovedadResponsable", fields: [empresa_id, asignada_a], references: [empresa_id, id], onDelete: Restrict)
+  historial           NovedadHistorial[]
+  instalacion         Instalacion  @relation(fields: [empresa_id, instalacion_id], references: [empresa_id, id], onDelete: Restrict)
+  turno               Turno        @relation(fields: [empresa_id, turno_id], references: [empresa_id, id], onDelete: Restrict)
+
+  @@unique([empresa_id, id])
+  @@unique([empresa_id, numero])
+  @@index([empresa_id])
 }
 
 // ─── 7. SOLICITUDES (Vacaciones, Permisos, Traslados, Turnos) ───
 // tipos: 'vacaciones' | 'dias_libres' | 'turno_extra' | 'traslado' | 'turno'
+model NovedadHistorial {
+  id              String   @id @default(uuid())
+  empresa_id      String
+  novedad_id      String
+  usuario_id      String
+  accion          String
+  estado_anterior String?
+  estado_nuevo    String
+  comentario      String?
+  created_at      DateTime @default(now())
+  empresa         Empresa @relation(fields: [empresa_id], references: [id], onDelete: Restrict)
+  novedad         Novedad @relation(fields: [empresa_id, novedad_id], references: [empresa_id, id], onDelete: Restrict)
+  usuario         Usuario @relation(fields: [empresa_id, usuario_id], references: [empresa_id, id], onDelete: Restrict)
+  @@index([novedad_id, created_at])
+  @@index([empresa_id])
+}
+
 model Solicitud {
   id                  String       @id @default(uuid())
+  empresa_id          String
   usuario_id          String
   tipo                String       // 'vacaciones', 'dias_libres', 'turno_extra', 'traslado', 'turno'
   fecha_desde         DateTime     @db.Date
   fecha_hasta         DateTime?    @db.Date
   motivo              String?
+  vacante_turno_id     String?
+  vacante             Turno?       @relation("VacanteSolicitada", fields: [empresa_id, vacante_turno_id], references: [empresa_id, id], onDelete: Restrict)
   estado              String       @default("pendiente") // 'pendiente', 'aprobada', 'rechazada'
   revisada_por        String?
   comentario_revision String?
   created_at          DateTime     @default(now())
   updated_at          DateTime     @updatedAt
 
-  usuario             Usuario      @relation("UsuarioSolicita", fields: [usuario_id], references: [id])
-  revisor             Usuario?     @relation("SupervisorRevisa", fields: [revisada_por], references: [id])
+  empresa             Empresa      @relation(fields: [empresa_id], references: [id], onDelete: Restrict)
+  usuario             Usuario      @relation("UsuarioSolicita", fields: [empresa_id, usuario_id], references: [empresa_id, id], onDelete: Restrict)
+  revisor             Usuario?     @relation("SupervisorRevisa", fields: [empresa_id, revisada_por], references: [empresa_id, id], onDelete: Restrict)
+
+  @@index([empresa_id])
 }
 
 // ─── 8. AUDITORÍA (Seguridad Inmutable) ───
 model Auditoria {
   id                  String       @id @default(uuid())
+  // Nula en acciones de plataforma (super admin); en el resto, la empresa del actor.
+  empresa_id          String?
   usuario_id          String
   accion              String       // 'LOGIN', 'CREAR_TURNO', 'APROBAR_SOL'
   tabla_afectada      String
@@ -203,5 +296,22 @@ model Auditoria {
   user_agent          String?
   created_at          DateTime     @default(now())
 
+  empresa             Empresa?     @relation(fields: [empresa_id], references: [id], onDelete: Restrict)
   usuario             Usuario      @relation(fields: [usuario_id], references: [id])
+
+  @@index([empresa_id])
+}
+
+// ─── 9. RESET DE CONTRASEÑA (token de un solo uso; solo se guarda su hash) ───
+model PasswordReset {
+  id          String    @id @default(uuid())
+  usuario_id  String
+  token_hash  String    @unique // SHA-256 del token enviado por correo
+  expira_en   DateTime
+  usado_en    DateTime?
+  created_at  DateTime  @default(now())
+
+  usuario     Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@index([usuario_id])
 }

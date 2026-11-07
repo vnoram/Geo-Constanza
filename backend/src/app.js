@@ -24,15 +24,15 @@ const reportesRoutes = require('./routes/reportes.routes');
 const auditoriaRoutes = require('./routes/auditoria.routes');
 
 const app = express();
-// Railway coloca la app detrás de un proxy inverso que agrega el header
-// X-Forwarded-For. Sin esto, Express no confía en ese header y
+// En producción la app corre detrás de un proxy inverso (balanceador de Azure) que
+// agrega el header X-Forwarded-For. Sin esto, Express no confía en ese header y
 // express-rate-limit lanza ERR_ERL_UNEXPECTED_X_FORWARDED_FOR en cada
 // request, sin poder identificar la IP real de cada usuario para el rate limit.
 app.set('trust proxy', 1);
 
 // CORS debe ir ANTES de helmet para que los headers no sean sobreescritos
 const frontendOrigin = process.env.NODE_ENV === 'production'
-  ? (process.env.FRONTEND_URL || 'https://geo-constanza.vercel.app').replace(/\/$/, '')
+  ? process.env.FRONTEND_URL.replace(/\/$/, '')
   : true;
 
 const corsOptions = {
@@ -70,10 +70,9 @@ const swaggerOptions = {
         url: 'http://localhost:3005',
         description: 'Servidor de Desarrollo Local',
       },
-      {
-        url: 'https://geo-constanza-production.up.railway.app',
-        description: 'Servidor de Producción (Railway)',
-      },
+      ...(process.env.PUBLIC_API_URL
+        ? [{ url: process.env.PUBLIC_API_URL.replace(/\/$/, ''), description: 'Servidor de Producción (Azure)' }]
+        : []),
     ],
     components: {
       securitySchemes: {
@@ -96,9 +95,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 // =========================================================================
 
 // Health check
-app.get('/api/v1/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+app.use('/api/v1/health', require('./routes/health.routes'));
 
 // Rutas API v1
 app.use('/api/v1/auth', authRoutes);
@@ -111,6 +108,8 @@ app.use('/api/v1/solicitudes', solicitudesRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/reportes', reportesRoutes);
 app.use('/api/v1/auditoria', auditoriaRoutes);
+// Nivel de plataforma (solo SUPER_ADMIN): gestión de empresas
+app.use('/api/v1/plataforma', require('./routes/plataforma.routes'));
 
 // Mantener el contrato JSON también para rutas inexistentes. Así el frontend
 // puede mostrar un error útil si VITE_API_URL quedó mal configurada.

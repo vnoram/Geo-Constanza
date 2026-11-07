@@ -21,7 +21,7 @@ const incidentes = async (req, res, next) => {
 
 const semana = async (req, res, next) => {
   try {
-    const result = await reportesService.novedadesPorSemana();
+    const result = await reportesService.novedadesPorSemana(req.user);
     res.json(result);
   } catch (error) {
     next(error);
@@ -30,7 +30,7 @@ const semana = async (req, res, next) => {
 
 const estadoHoy = async (req, res, next) => {
   try {
-    const result = await reportesService.estadoGuardias();
+    const result = await reportesService.estadoGuardias(req.user);
     res.json(result);
   } catch (error) {
     next(error);
@@ -42,7 +42,7 @@ const mensual = async (req, res, next) => {
     const [anioChile, mesChile] = ahoraChile().fecha.split('-').map(Number);
     const mes  = parseInt(req.query.mes,  10) || mesChile;
     const anio = parseInt(req.query.anio, 10) || anioChile;
-    const result = await reportesService.resumenMensual(mes, anio);
+    const result = await reportesService.resumenMensual(mes, anio, req.user);
     res.json(result);
   } catch (error) {
     next(error);

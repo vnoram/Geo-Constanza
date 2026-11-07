@@ -2,11 +2,12 @@ const { prisma } = require('../config/database');
 const { getSocketIO } = require('../socket/socketManager');
 const geovalidacion = require('./geovalidacion.service');
 const { ROLES } = require('../constants/roles');
+const { salaInstalacion, salaAdmin, salaCentral } = require('../constants/salas');
+const { empresaActual } = require('../config/tenant');
+const { toleranciaInstalacion } = require('../constants/cobertura');
 
 const { ahoraChile, sumarDias, aFechaDB, inicioDiaChile, finDiaChile, intervaloTurno, turnoVigente, instanteChile } = require('../utils/fechaChile');
 
-const TOLERANCIA_MINUTOS = 15;
-const ATRASO_MINUTOS = 10;
 
 // La misma selección alimenta el marcaje y la pantalla del guardia.
 const ordenarTurnos = (a, b) => intervaloTurno(a).inicio - intervaloTurno(b).inicio
@@ -26,7 +27,7 @@ const buscarTurnos = (db, usuario_id, ahora, instalacion_id) => {
 };
 
 const seleccionarVigente = (turnos, abiertas, ahora) => {
-  const vigentes = turnos.filter((t) => turnoVigente(t, ahora, TOLERANCIA_MINUTOS));
+  const vigentes = turnos.filter((t) => turnoVigente(t, ahora, toleranciaInstalacion(t.instalacion)));
   if (vigentes.length > 1) console.warn('[Asistencia] Varios turnos elegibles:', vigentes.map((t) => t.id));
   return vigentes.sort((a, b) =>
     Number(abiertas.some((x) => x.turno_id === b.id)) - Number(abiertas.some((x) => x.turno_id === a.id))
@@ -162,7 +163,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
     const { inicio: inicioTurno } = intervaloTurno(turno);
     const diffMin = Math.floor((ahora - inicioTurno) / 60000);
     const minutosRetraso = Math.max(0, diffMin);
-    const estado = minutosRetraso > ATRASO_MINUTOS ? 'tardio' : 'normal';
+    const estado = minutosRetraso > toleranciaInstalacion(turno.instalacion) ? 'tardio' : 'normal';
 
     const esFallback = esFallbackOverride !== null
       ? esFallbackOverride
@@ -230,7 +231,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
     }
     // Publicar ubicación GPS del guardia para el mapa del admin (solo si hay coords)
     if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
-      io.emit('guardia:ubicacion', {
+      io.to([salaInstalacion(instalacion_id), salaAdmin(empresaActual()), salaCentral(empresaActual())]).emit('guardia:ubicacion', {
         guardia_id: usuario_id,
         instalacion_id,
         latitud: lat,
@@ -240,7 +241,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
       });
     }
     // Notificar al panel admin global
-    io.emit('admin:dashboard_update', { entity: 'asistencia' });
+    io.to([salaAdmin(empresaActual()), salaCentral(empresaActual())]).emit('admin:dashboard_update', { entity: 'asistencia' });
   } catch (_) {
     // Socket.IO no disponible — el registro se guarda igual
   }
@@ -250,7 +251,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
 };
 
 const registrarSalida = async (data, user) => {
-  const { asistencia_id, metodo, latitud, longitud } = data;
+  const { asistencia_id, metodo } = data;
 
   const asistencia = await prisma.asistencia.findUniqueOrThrow({ where: { id: asistencia_id }, include: { turno: true } });
 
@@ -261,6 +262,16 @@ const registrarSalida = async (data, user) => {
   if (asistencia.hora_salida) {
     const detalle = asistencia.metodo_salida === METODO_CIERRE_AUTOMATICO ? ' (cerrada automáticamente)' : '';
     throw Object.assign(new Error(`Esta asistencia ya tiene salida registrada${detalle}`), { statusCode: 409 });
+  }
+
+  // Regla de negocio (RF-05/06): un turno no se cierra sin un reporte asociado.
+  // El reporte es una novedad del turno; "Sin novedad" también cuenta.
+  const reportes = await prisma.novedad.count({ where: { turno_id: asistencia.turno_id } });
+  if (reportes === 0) {
+    throw Object.assign(
+      new Error('Antes de marcar la salida debes dejar el reporte del turno (una novedad o «Sin novedad»).'),
+      { statusCode: 409 },
+    );
   }
 
   const ahora = new Date();
@@ -282,7 +293,7 @@ const registrarSalida = async (data, user) => {
 
   // Notificar al panel admin global
   try {
-    getSocketIO().emit('admin:dashboard_update', { entity: 'asistencia' });
+    getSocketIO().to([salaAdmin(empresaActual()), salaCentral(empresaActual())]).emit('admin:dashboard_update', { entity: 'asistencia' });
   } catch (_) {}
 
   return actualizada;
@@ -362,10 +373,42 @@ const obtenerEstadoActual = async (usuarioId) => {
   return { activo: false, turno, instalacion: turno?.instalacion || null, cerradas_automaticamente };
 };
 
-const sincronizarBatch = async (registros) => {
+const MAX_REGISTROS_SYNC = 200;
+// Solo estos campos se aceptan del cliente; usuario_id e instalacion_id salen del servidor.
+const CAMPOS_SYNC = [
+  'turno_id', 'hora_entrada', 'hora_salida', 'metodo_entrada', 'metodo_salida', 'estado',
+  'minutos_retraso', 'latitud_entrada', 'longitud_entrada', 'es_fallback', 'dispositivo_usado',
+];
+
+const sincronizarBatch = async (registros, user) => {
+  if (!user?.id) throw Object.assign(new Error('No autenticado'), { statusCode: 401 });
+  if (!Array.isArray(registros) || registros.length === 0 || registros.length > MAX_REGISTROS_SYNC) {
+    throw Object.assign(new Error(`registros debe ser una lista de 1 a ${MAX_REGISTROS_SYNC} elementos`), { statusCode: 400 });
+  }
   const resultados = [];
-  for (const registro of registros) {
+  for (const crudo of registros) {
     try {
+      if (!crudo || typeof crudo !== 'object' || typeof crudo.turno_id !== 'string') {
+        throw Object.assign(new Error('Registro inválido'), { statusCode: 400 });
+      }
+      // El turno debe ser del propio usuario: de ahí salen el dueño y la instalación.
+      const turno = await prisma.turno.findUnique({ where: { id: crudo.turno_id } });
+      if (!turno || turno.usuario_id !== user.id) {
+        throw Object.assign(new Error('El turno no pertenece al usuario'), { statusCode: 403 });
+      }
+      const registro = { usuario_id: user.id, instalacion_id: turno.instalacion_id };
+      for (const campo of CAMPOS_SYNC) if (crudo[campo] !== undefined) registro[campo] = crudo[campo];
+      for (const campo of ['hora_entrada', 'hora_salida']) {
+        if (registro[campo] != null) {
+          registro[campo] = new Date(registro[campo]);
+          if (Number.isNaN(registro[campo].getTime())) throw Object.assign(new Error(`${campo} inválida`), { statusCode: 400 });
+        }
+      }
+      if (!registro.hora_entrada) throw Object.assign(new Error('hora_entrada es obligatoria'), { statusCode: 400 });
+      if (registro.estado !== undefined && !['normal', 'tardio'].includes(registro.estado)) throw Object.assign(new Error('estado inválido'), { statusCode: 400 });
+      if (registro.metodo_entrada !== undefined && !['totem', 'fallback_telefono'].includes(registro.metodo_entrada)) throw Object.assign(new Error('metodo_entrada inválido'), { statusCode: 400 });
+      // Un registro sincronizado no pasó la validación de geocerca del servidor: queda para revisión.
+      registro.verificacion_gps = 'por_revisar';
       // La sincronización también puede abrir entradas: respeta el mismo bloqueo.
       const result = await prisma.$transaction(async (db) => {
         await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${registro.usuario_id}))`;
