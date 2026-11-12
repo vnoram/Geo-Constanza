@@ -237,6 +237,21 @@ const { authenticate } = require('../middlewares/auth');
 const { authorize, exigirEmpresa } = require('../middlewares/rbac');
 const { ROLES } = require('../constants/roles');
 
+const multer = require('multer');
+const { conEmpresa } = require('../config/tenant');
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
+// multer continúa fuera del contexto de empresa de `authenticate`: se vuelve a abrir con la del token.
+const restaurarEmpresa = (req, res, next) => (
+  req.user?.empresaId ? conEmpresa(req.user.empresaId, () => next()) : next()
+);
+const subirAdjunto = (req, res, next) => upload.single('adjunto')(req, res, (err) => {
+  if (!err) return next();
+  err.statusCode = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+  if (err.code === 'LIMIT_FILE_SIZE') err.message = 'El adjunto supera el máximo de 5 MB';
+  next(err);
+});
+
 const router = Router();
 
 router.use(authenticate, exigirEmpresa);
@@ -245,7 +260,7 @@ router.post('/cobertura', authorize(ROLES.GGSS_LIBRE), require('../controllers/v
 
 // ── GGSS: ver y crear sus propias solicitudes ─────────────────────────────
 router.get('/',  authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), solicitudesController.listar);
-router.post('/', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE), solicitudesController.crear);
+router.post('/', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE), subirAdjunto, restaurarEmpresa, solicitudesController.crear);
 
 // ── Supervisor/Admin: aprobar y rechazar ──────────────────────────────────
 router.patch('/:id/aprobar',  authorize(ROLES.SUPERVISOR, ROLES.ADMINISTRADOR), solicitudesController.aprobar);

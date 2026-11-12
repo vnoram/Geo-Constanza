@@ -333,7 +333,46 @@ async function generarUrlLectura(blobUrl, minutos = CONFIG.SAS_MINUTOS) {
   }
 }
 
+const ADJUNTO_MAX_MB = 5;
+const EXTENSION_ADJUNTO = { ...EXTENSION_POR_TIPO, 'application/pdf': 'pdf' };
+
+/** Tipo real de un adjunto (imagen JPEG/PNG/WebP o PDF) por su firma, sin confiar en el cliente. */
+function detectarTipoAdjunto(buffer) {
+  const imagen = detectarTipoImagen(buffer);
+  if (imagen) return imagen;
+  if (Buffer.isBuffer(buffer) && buffer.length > 5 && buffer.toString('ascii', 0, 5) === '%PDF-') return 'application/pdf';
+  return null;
+}
+
+/**
+ * Sube el adjunto de una solicitud (imagen o PDF, hasta 5 MB) al mismo contenedor privado
+ * de las fotos. En la base de datos solo se guarda la URL; la lectura va con link temporal.
+ * @returns {Promise<string>} URL del blob
+ */
+async function uploadAdjuntoToAzure(buffer, { usuarioId, prefijo = 'solicitudes' } = {}) {
+  validarConfiguracion();
+  const tipo = detectarTipoAdjunto(buffer);
+  if (!tipo) {
+    throw Object.assign(new Error('El adjunto debe ser una imagen JPEG, PNG, WebP o un PDF válido'), { statusCode: 400 });
+  }
+  if (buffer.length > ADJUNTO_MAX_MB * 1024 * 1024) {
+    throw Object.assign(new Error(`El adjunto supera el máximo de ${ADJUNTO_MAX_MB} MB`), { statusCode: 413 });
+  }
+  const nombre = `${prefijo}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${EXTENSION_ADJUNTO[tipo]}`;
+  const blockBlobClient = BlobServiceClient
+    .fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING)
+    .getContainerClient(process.env.AZURE_STORAGE_CONTAINER_NAME)
+    .getBlockBlobClient(nombre);
+  await intentarSubida(blockBlobClient, buffer, {
+    metadata: { uploadedAt: new Date().toISOString(), usuarioId: usuarioId || 'unknown', tipo: prefijo },
+    blobHTTPHeaders: { blobContentType: tipo },
+  });
+  return blockBlobClient.url;
+}
+
 module.exports = {
+  uploadAdjuntoToAzure,
+  detectarTipoAdjunto,
   uploadFotoToAzure,
   generarUrlLectura,
   obtenerPropiedadesBlob,

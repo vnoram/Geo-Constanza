@@ -277,3 +277,7 @@ El enlace usa `FRONTEND_URL/#/enrolar?t=…`. Tras confirmar, el cliente envía 
 Con `DEVICE_POLICY=on`, el cliente envía `X-Device-Token` al iniciar sesión, verificar 2FA, renovar y llamar a rutas protegidas. Socket.IO recibe `deviceToken` en su autenticación. El JWT y el perfil incluyen `dispositivo`. En HTTP, `X-Device-Class` indica la clasificación vigente para actualizar el menú. La API comprueba el token contra el equipo activo de la empresa y contra el equipo vinculado a la sesión.
 
 El guardia personal puede consultar sus turnos, crear y leer sus solicitudes y consultar su propio perfil. La sección Documentos reutiliza la vista existente del frontend. Asistencia, novedades, vacantes y demás operaciones quedan reservadas a equipos corporativos. Supervisor, Central y Administración reciben 403 en equipos personales. `super_admin` conserva su acceso a plataforma.
+
+### Adjuntos en solicitudes
+
+`POST /solicitudes` acepta también `multipart/form-data` con los campos `tipo`, `fecha_desde`, `motivo` y un archivo opcional `adjunto` (imagen JPEG/PNG/WebP o PDF, hasta 5 MB; el tipo se valida por su firma, no por la extensión). El archivo se guarda en el mismo contenedor privado de Azure Blob que las fotos de novedades y la base de datos conserva solo la URL (`adjunto_url`) y el nombre original. Las respuestas incluyen `adjunto_url_firmada`, un link de lectura temporal de 60 minutos, y nunca la URL guardada. Un adjunto inválido responde 400, uno demasiado grande 413 y una falla de almacenamiento 503 (la solicitud no se crea sin su adjunto).

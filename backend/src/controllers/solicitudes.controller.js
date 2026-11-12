@@ -19,7 +19,7 @@ const listar = async (req, res, next) => {
 
 const crear = async (req, res, next) => {
   try {
-    const solicitud = await solicitudesService.crear(req.body, req.user.id);
+    const solicitud = await solicitudesService.crear(req.body, req.user.id, req.file);
     res.status(201).json(solicitud);
   } catch (error) {
     next(error);

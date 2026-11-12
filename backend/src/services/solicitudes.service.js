@@ -6,6 +6,13 @@ const { enviarNotificacion } = require('./notificacion.service');
 const { exigirAlcanceInstalacion } = require('./supervisor.helper');
 const { TIPOS_COBERTURA } = require('../constants/solicitudes');
 const { ahoraChile, aFechaDB } = require('../utils/fechaChile');
+const { uploadAdjuntoToAzure, generarUrlLectura } = require('../utils/azureStorage');
+
+// El contenedor es privado: el cliente recibe un link temporal, nunca la URL guardada.
+const conAdjuntoFirmado = async ({ adjunto_url, ...resto }) => ({
+  ...resto,
+  adjunto_url_firmada: adjunto_url ? await generarUrlLectura(adjunto_url) : null,
+});
 
 const TIPOS_VALIDOS = ['vacaciones', 'dias_libres', 'turno_extra', 'traslado', 'turno'];
 
@@ -60,13 +67,13 @@ const listar = async (query, user) => {
     prisma.solicitud.count({ where }),
   ]);
 
-  return { data, total, page: +page, totalPages: Math.ceil(total / +limit) };
+  return { data: await Promise.all(data.map(conAdjuntoFirmado)), total, page: +page, totalPages: Math.ceil(total / +limit) };
 };
 
 /**
  * Crea una solicitud. Solo para GGSS libre o pauta.
  */
-const crear = async (body, userId) => {
+const crear = async (body, userId, archivo) => {
   const { tipo, fecha_desde, fecha_hasta, motivo } = body;
 
   if (!tipo || !fecha_desde) {
@@ -80,9 +87,21 @@ const crear = async (body, userId) => {
     );
   }
 
-  return prisma.solicitud.create({
+  let adjunto_url = null;
+  if (archivo) {
+    try {
+      adjunto_url = await uploadAdjuntoToAzure(archivo.buffer, { usuarioId: userId });
+    } catch (err) {
+      if (err.statusCode) throw err;
+      throw Object.assign(new Error('No se pudo guardar el adjunto. Intenta nuevamente.'), { statusCode: 503 });
+    }
+  }
+
+  const creada = await prisma.solicitud.create({
     data: {
       usuario_id: userId,
+      adjunto_url,
+      adjunto_nombre: archivo ? String(archivo.originalname || 'adjunto').slice(0, 100) : null,
       tipo,
       fecha_desde: new Date(fecha_desde),
       fecha_hasta: fecha_hasta ? new Date(fecha_hasta) : null,
@@ -93,6 +112,7 @@ const crear = async (body, userId) => {
       usuario: { select: { id: true, nombre: true, rut: true } },
     },
   });
+  return conAdjuntoFirmado(creada);
 };
 
 /**

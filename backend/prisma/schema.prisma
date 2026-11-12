@@ -308,6 +308,8 @@ model Solicitud {
   fecha_desde         DateTime     @db.Date
   fecha_hasta         DateTime?    @db.Date
   motivo              String?
+  adjunto_url         String?
+  adjunto_nombre      String?
   vacante_turno_id     String?
   vacante             Turno?       @relation("VacanteSolicitada", fields: [empresa_id, vacante_turno_id], references: [empresa_id, id], onDelete: Restrict)
   estado              String       @default("pendiente") // 'pendiente', 'aprobada', 'rechazada'
