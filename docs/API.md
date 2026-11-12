@@ -246,3 +246,18 @@ Lint y tests se ejecutan dentro de Docker con Node 20. La integración PostgreSQ
 Ejecutar dentro del backend del contenedor: `npm run lint` y `npm test -- --runInBand --silent`; migraciones solo locales mediante `npx prisma migrate dev --name <nombre>` y regeneración del cliente. Firebase se simula; Azure/GPS físicos y volúmenes masivos de PDF quedan fuera de la verificación local. Consulta [ADR](ADR/README.md) y [estado de historias](HISTORIAS_DE_USUARIO.md).
 
 Las tablas se mantienen manualmente a partir de `backend/src/routes/*.routes.js`. Actualizarlas junto con cada cambio de contrato.
+
+## Dispositivos corporativos
+
+Rutas bajo `/api/v1`. Las operaciones de gestión requieren un administrador de la empresa, con dispositivo corporativo cuando la política esté activa.
+
+| Método y ruta | Solicitud y respuesta |
+| --- | --- |
+| `POST /dispositivos` | `{ "nombre": "PC de recepción" }`. Devuelve 201 con los datos del registro y el campo `codigo` en claro una sola vez. |
+| `POST /dispositivos/canjear` | Pública. Recibe `{ "codigo": "..." }` y devuelve `{ "token": "..." }`. El código vence en 15 minutos, se consume de forma atómica y responde 400 si es inválido, usado, revocado o vencido. |
+| `GET /dispositivos` | Lista los equipos de la empresa. Incluye estado, vencimiento del código pendiente y último uso, sin hashes. |
+| `PATCH /dispositivos/:id/revocar` | Devuelve `{ "estado": "revocado" }` e invalida el código y el token. Un ID ajeno o inexistente devuelve 404. |
+
+Con `DEVICE_POLICY=on`, el cliente envía `X-Device-Token` al iniciar sesión, verificar 2FA, renovar y llamar a rutas protegidas. Socket.IO recibe `deviceToken` en su autenticación. El JWT y el perfil incluyen `dispositivo`. En HTTP, `X-Device-Class` indica la clasificación vigente para actualizar el menú. La API comprueba el token contra el equipo activo de la empresa y contra el equipo vinculado a la sesión.
+
+El guardia personal puede consultar sus turnos, crear y leer sus solicitudes y consultar su propio perfil. La sección Documentos reutiliza la vista existente del frontend. Asistencia, novedades, vacantes y demás operaciones quedan reservadas a equipos corporativos. Supervisor, Central y Administración reciben 403 en equipos personales. `super_admin` conserva su acceso a plataforma.

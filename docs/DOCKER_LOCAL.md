@@ -70,3 +70,13 @@ Consume bastante RAM y CPU: apágalo cuando no lo uses.
 - Las fotos de reportes usan Azure Blob Storage; en local las atiende el emulador Azurite (servicio `azurite`, puerto 127.0.0.1:10000). El servicio `azurite-init` crea el contenedor `reportes` y termina; que figure como "Exited (0)" es normal.
 - Para empezar de cero: `docker compose down -v` (borra la base local).
 - El panel de credenciales demo se muestra en el login porque `VITE_MOSTRAR_DEMO=true` solo en este compose.
+
+## Demo de dispositivos corporativos
+
+1. Con `DEVICE_POLICY=off` (valor predeterminado), ejecuta `docker compose up -d --build api` para aplicar la migración en la base local. Después inicia sesión en el PC con un administrador de la empresa del guardia. En **Dispositivos**, genera un código con una etiqueta como «PC de demo».
+2. Cierra sesión en ese navegador. Abre **Enrolar dispositivo corporativo** en el login y pega el código dentro de sus 15 minutos. Usa el mismo navegador y origen (por ejemplo `http://localhost:5173`) en el resto de la demo.
+3. Cuando quieras activar la política, agrega `DEVICE_POLICY=on` al `.env` local y ejecuta `docker compose up -d --build api`. El arranque de la API aplica la migración aditiva a la base local.
+4. Inicia sesión como el guardia en el PC y en Chrome del Android virtual en `http://localhost:5173`. En el emulador deja el navegador sin enrolar. El PC mostrará **Dispositivo corporativo** con la operación habitual. Android mostrará **Dispositivo personal** con **Mi pauta**, **Solicitudes** y **Documentos**.
+5. Desde un equipo corporativo, Administración puede revocar el equipo registrado. Para apagar la política, vuelve a `DEVICE_POLICY=off`, recrea la API y vuelve a iniciar sesión en los dos equipos.
+
+El administrador puede preparar equipos con la política apagada. Si se activa antes del primer enrolamiento o se revoca el último equipo, apaga la política en el entorno local para generar otro código. En web la identidad del dispositivo es blanda: el token se guarda en el navegador y depende del perfil y del origen. Una garantía fuerte requiere MDM o una app nativa con identidad de dispositivo.
