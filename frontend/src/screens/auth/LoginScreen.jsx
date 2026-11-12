@@ -12,7 +12,7 @@ import { useLoginForm } from "../../hooks/useLoginForm";
 // Credenciales de demostración: solo en desarrollo o si se pide explícitamente al compilar.
 const MOSTRAR_DEMO = import.meta.env.DEV || import.meta.env.VITE_MOSTRAR_DEMO === "true";
 
-export function LoginScreen({ onLogin, onForgot }) {
+export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacion }) {
   const [showDemo, setShowDemo] = useState(false);
 
   const {
@@ -21,7 +21,7 @@ export function LoginScreen({ onLogin, onForgot }) {
     locked, lockTime, lockLabel,
     formatRut, handleLogin, handle2FA, resetTo2FA,
     email2FA, resendAt, resends, handleResend,
-  } = useLoginForm({ onLogin });
+  } = useLoginForm({ onLogin, invitacion });
 
   return (
     <div className="login">
@@ -98,7 +98,9 @@ export function LoginScreen({ onLogin, onForgot }) {
                 </div>
               )}
 
-              <EnrolarDispositivo />
+              {invitacion
+                ? <Btn variant="outline" onClick={onCancelarInvitacion} disabled={loading}>Cancelar enrolamiento</Btn>
+                : <EnrolarDispositivo />}
 
               {MOSTRAR_DEMO && (
               <div style={{ marginTop: 18 }}>

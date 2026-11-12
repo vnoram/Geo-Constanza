@@ -61,15 +61,18 @@ async function authFetch(path, options = {}) {
 
 // ─── API ─────────────────────────────────────────────────────────
 export const api = {
+  confirmarInvitacionDispositivo: (token) => request('/dispositivos/invitaciones/confirmar', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }),
+  }),
   canjearDispositivo: (codigo) => request('/dispositivos/canjear', {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ codigo }),
   }),
   // ── Auth (sin token) ──────────────────────────────────────────
-  login: async (rut, password) => {
+  login: async (rut, password, invitacion) => {
     const data = await request('/auth/login', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rut, password }),
+      body: JSON.stringify({ rut, password, invitacion: invitacion || undefined }),
     });
     // Con 2FA exigido el backend responde { requires2FA, tempToken } sin tokens de sesión.
     if (data.requires2FA) {
@@ -81,6 +84,7 @@ export const api = {
       token: data.accessToken,
       refreshToken: data.refreshToken,
       mustEnroll2FA: Boolean(data.mustEnroll2FA),
+      tokenDispositivo: data.tokenDispositivo,
     };
   },
 
@@ -91,7 +95,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tempToken, code }),
     });
-    return { user: data.usuario, token: data.accessToken, refreshToken: data.refreshToken };
+    return { user: data.usuario, token: data.accessToken, refreshToken: data.refreshToken, tokenDispositivo: data.tokenDispositivo };
   },
 
   // Restablecer contraseña (público): la respuesta es la misma exista o no el correo.

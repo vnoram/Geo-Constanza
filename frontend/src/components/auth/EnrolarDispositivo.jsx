@@ -29,7 +29,7 @@ export function EnrolarDispositivo() {
 
   return (
     <div style={{ marginTop: 12 }}>
-      <Btn variant="outline" aria-expanded={abierto} onClick={() => setAbierto(!abierto)}>Enrolar dispositivo corporativo</Btn>
+      <Btn variant="outline" aria-expanded={abierto} onClick={() => setAbierto(!abierto)}>Usar código manual de enrolamiento</Btn>
       {abierto && <>
         <Input label="Código de enrolamiento" value={codigo} onChange={setCodigo} maxLength={24} mono />
         <Btn onClick={canjear} loading={ocupado} disabled={codigo.trim().length !== 24}>Canjear código</Btn>

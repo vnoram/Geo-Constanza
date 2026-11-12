@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { api } from "../services/api";
+import { guardarDeviceToken } from "../services/dispositivos";
 
 const LOCK_ATTEMPTS = 5;
 const LOCK_DURATION = 900; // 15 min en segundos
 
-export function useLoginForm({ onLogin }) {
+export function useLoginForm({ onLogin, invitacion }) {
   const [rut, setRut] = useState("");
   const [pass, setPass] = useState("");
   const [error, setError] = useState("");
@@ -42,7 +43,8 @@ export function useLoginForm({ onLogin }) {
 
     setLoading(true);
     try {
-      const result = await api.login(rut.trim(), pass);
+      const result = await api.login(rut.trim(), pass, invitacion);
+      if (result.tokenDispositivo) guardarDeviceToken(result.tokenDispositivo);
       if (result.requires2FA) {
         setTempToken(result.tempToken);
         setEmail2FA(result.method === "email");
@@ -85,6 +87,7 @@ export function useLoginForm({ onLogin }) {
     setLoading(true);
     try {
       const result = await api.verify2FA(tempToken, codigo);
+      if (result.tokenDispositivo) guardarDeviceToken(result.tokenDispositivo);
       onLogin({ ...result.user, segundoFactor: true }, result.token, result.refreshToken);
     } catch (err) {
       setError(err.message);
