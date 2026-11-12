@@ -5,7 +5,7 @@ import {
   Pencil, Plus, RadioTower, ScrollText, Search, Settings, TriangleAlert, UserRound,
   UserRoundCheck, Users, Wifi, WifiOff, X,
   ArrowUpRight, Ban, Banknote, CircleCheck, FilePen, Globe, GraduationCap,
-  Hourglass, Moon, Paperclip, RefreshCw, Siren, Smartphone, Umbrella, Wrench, Zap,
+  Hourglass, Moon, Paperclip, RefreshCw, Siren, Smartphone, Sun, Umbrella, Wrench, Zap,
   Factory, House, Landmark, Monitor, Store,
 } from "lucide-react";
 
@@ -14,7 +14,7 @@ import {
 const ICONS = {
   "arrow-up-right": ArrowUpRight, ban: Ban, banknote: Banknote, "circle-check": CircleCheck,
   "file-pen": FilePen, globe: Globe, "graduation-cap": GraduationCap, hourglass: Hourglass,
-  moon: Moon, paperclip: Paperclip, "refresh-cw": RefreshCw, siren: Siren,
+  moon: Moon, sun: Sun, paperclip: Paperclip, "refresh-cw": RefreshCw, siren: Siren,
   smartphone: Smartphone, umbrella: Umbrella, wrench: Wrench, zap: Zap,
   factory: Factory, house: House, landmark: Landmark, monitor: Monitor, store: Store,
   "arrow-left": ArrowLeft, bell: Bell, "building-2": Building2, "calendar-days": CalendarDays,

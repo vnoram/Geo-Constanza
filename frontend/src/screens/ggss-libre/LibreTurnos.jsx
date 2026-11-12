@@ -61,7 +61,7 @@ const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "
 const hoyIso = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Santiago" });
 const corto = (h) => h.slice(0, 5);
 
-/** Vista mensual: cada día con turno se pinta (verde = diurno, morado = nocturno). */
+/** Vista mensual: cada día con turno se pinta (morado; sol = diurno, luna = nocturno). */
 function PautaMensual({ turnos }) {
   const hoy = hoyIso();
   const porDia = new Map();
@@ -100,7 +100,7 @@ function PautaMensual({ turnos }) {
           const nocturno = t && t.hora_fin < t.hora_inicio;
           const esHoy = iso === hoy;
           const activo = elegido === iso;
-          const color = nocturno ? T.focus : T.accent;
+
           return (
             <button type="button" key={iso} disabled={!t} onClick={() => setElegido(activo ? null : iso)} aria-pressed={activo}
               aria-label={t ? `${iso}: turno ${corto(t.hora_inicio)} a ${corto(t.hora_fin)}` : iso}
@@ -108,22 +108,27 @@ function PautaMensual({ turnos }) {
               style={{
                 minHeight: 74, borderRadius: 8, padding: "6px 4px", textAlign: "center", fontFamily: "var(--font-ui)",
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between",
-                background: t ? (nocturno ? T.focusGhost : T.accentGhost) : T.bgCard,
-                border: `1px solid ${activo ? T.borderFocus : t ? `${color}88` : esHoy ? T.textMut : T.border}`,
-                color: t ? (nocturno ? T.focusText : T.accent) : T.textMut,
+                background: t ? (activo ? "rgba(122,78,191,0.34)" : "rgba(122,78,191,0.22)") : T.bgCard,
+                border: `1px solid ${activo ? T.focusText : t ? `${T.focus}aa` : esHoy ? T.textMut : T.border}`,
+                color: t ? T.focusText : T.textMut,
                 cursor: t ? "pointer" : "default", opacity: t ? 1 : 0.7,
               }}>
               <span style={{ fontSize: 14, fontWeight: esHoy || t ? 700 : 500, color: t ? undefined : esHoy ? T.text : T.textMut }}>{Number(iso.slice(8))}</span>
-              {t ? <span style={{ fontSize: 10, lineHeight: 1.2 }}>{nocturno && <Icon name="moon" size={11} />}<br />{corto(t.hora_inicio)}–{corto(t.hora_fin)}</span> : <span />}
+              {t ? (
+                <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, fontSize: 10, lineHeight: 1.2 }}>
+                  <Icon name={nocturno ? "moon" : "sun"} size={15} />
+                  {corto(t.hora_inicio)}–{corto(t.hora_fin)}
+                </span>
+              ) : <span />}
             </button>
           );
         })}
       </div>
 
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", margin: "12px 0", fontSize: 11, color: T.textMut }}>
-        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, background: T.accentGhost, border: `1px solid ${T.accent}88`, marginRight: 5 }} />Turno diurno</span>
-        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, background: T.focusGhost, border: `1px solid ${T.focus}88`, marginRight: 5 }} />Turno nocturno</span>
-        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, border: `1px solid ${T.textMut}`, marginRight: 5 }} />Hoy</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="sun" size={13} color={T.focusText} />Turno diurno</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="moon" size={13} color={T.focusText} />Turno nocturno</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, border: `1px solid ${T.textMut}` }} />Hoy</span>
       </div>
 
       {seleccionado && <TurnoRow turno={seleccionado} />}
