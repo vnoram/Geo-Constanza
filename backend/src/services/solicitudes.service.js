@@ -3,7 +3,7 @@
 const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
 const { enviarNotificacion } = require('./notificacion.service');
-const { exigirAlcanceInstalacion } = require('./supervisor.helper');
+const { exigirAlcanceInstalacion, resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { TIPOS_COBERTURA } = require('../constants/solicitudes');
 const { ahoraChile, aFechaDB } = require('../utils/fechaChile');
 const { uploadAdjuntoToAzure, generarUrlLectura } = require('../utils/azureStorage');
@@ -61,17 +61,17 @@ const listar = async (query, user) => {
     // Guardia solo ve sus propias solicitudes
     where.usuario_id = user.id;
   } else if (user.rol === ROLES.SUPERVISOR) {
-    // Supervisor ve solicitudes de GGSS de su(s) instalación(es)
-    const asignaciones = await prisma.supervisor_Instalacion.findMany({
-      where: { supervisor_id: user.id },
-      select: { instalacion_id: true },
-    });
-    const instalacionIds = asignaciones.map(a => a.instalacion_id);
+    // Supervisor ve solicitudes de GGSS de su(s) instalación(es): las mismas que ve en el resto de la app
+    // (asignaciones directas, cobertura por comunas o instalación propia)
+    const instalacionIds = await resolverInstalacionesSupervisor(user);
 
     // GGSS que trabajan en esas instalaciones
     const guardias = await prisma.usuario.findMany({
       where: {
-        instalacion_asignada_id: { in: instalacionIds },
+        OR: [
+          { instalacion_asignada_id: { in: instalacionIds } },
+          { turnos: { some: { instalacion_id: { in: instalacionIds } } } },
+        ],
         rol: { in: [ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE] },
       },
       select: { id: true },
