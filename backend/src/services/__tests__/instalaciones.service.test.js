@@ -1,5 +1,6 @@
 jest.mock('../../config/database', () => ({ prisma: {
   instalacion: { findMany: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn(), update: jest.fn() },
+  turno: { count: jest.fn() },
   supervisor_Instalacion: { createMany: jest.fn(), deleteMany: jest.fn() }, $transaction: jest.fn(),
 } }));
 jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn(), exigirAlcanceInstalacion: jest.fn() }));
@@ -58,4 +59,14 @@ test.each([
 test('permite coordenadas límite y radio por defecto', async () => {
   await service.crear({ nombre: 'Polo', latitud: 90, longitud: -180 });
   expect(prisma.instalacion.create.mock.calls[0][0].data.radio_geofence_m).toBe(100);
+});
+
+test('no se desactiva una instalación con turnos programados y sí cuando no tiene', async () => {
+  prisma.turno.count.mockResolvedValue(2);
+  await expect(service.editar('i1', { estado: 'inactivo' })).rejects.toMatchObject({ statusCode: 409 });
+  expect(prisma.instalacion.update).not.toHaveBeenCalled();
+  prisma.turno.count.mockResolvedValue(0);
+  await service.editar('i1', { estado: 'inactivo' });
+  expect(prisma.instalacion.update.mock.calls[0][0].data.estado).toBe('inactivo');
+  await expect(service.editar('i1', { estado: 'borrada' })).rejects.toMatchObject({ statusCode: 400 });
 });

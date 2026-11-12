@@ -2,6 +2,7 @@ const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { TOLERANCIA_POR_DEFECTO_MINUTOS } = require('../constants/cobertura');
+const { ESTADO_TURNO } = require('../constants/estados');
 
 const validarTolerancia = (valor) => {
   const numero = Number(valor);
@@ -92,9 +93,30 @@ const obtenerPorId = async (id) => {
   });
 };
 
+const ESTADOS_INSTALACION = ['activo', 'inactivo'];
+
 const editar = async (id, data) => {
   const { supervisorIds, ...campos } = data;
   validarGeocerca(campos);
+
+  if (campos.estado !== undefined) {
+    if (!ESTADOS_INSTALACION.includes(campos.estado)) {
+      throw Object.assign(new Error('El estado debe ser activo o inactivo.'), { statusCode: 400 });
+    }
+    // Una instalación con turnos por cumplir no se desactiva: primero se cancelan o reasignan.
+    if (campos.estado === 'inactivo') {
+      const hoy = new Date(new Date().toISOString().slice(0, 10));
+      const pendientes = await prisma.turno.count({
+        where: { instalacion_id: id, estado: ESTADO_TURNO.PROGRAMADO, fecha: { gte: hoy } },
+      });
+      if (pendientes > 0) {
+        throw Object.assign(
+          new Error(`No se puede desactivar: tiene ${pendientes} turno(s) programado(s). Cancélalos o reasígnalos primero.`),
+          { statusCode: 409 },
+        );
+      }
+    }
+  }
 
   const dataToUpdate = { ...campos };
   if (campos.tolerancia_atraso_minutos !== undefined) {

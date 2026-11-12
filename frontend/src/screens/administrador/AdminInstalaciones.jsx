@@ -2,6 +2,7 @@ import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect, useRef } from "react";
 import { T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
+import { Dialogo } from "../../components/ui/Dialogo";
 import { Input } from "../../components/ui/Input";
 import { Badge } from "../../components/ui/Badge";
 import { SubHeader } from "../../components/ui/SubHeader";
@@ -718,7 +719,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
 }
 
 // ─── CARD DE INSTALACIÓN ─────────────────────────────────────────
-function InstCard({ inst, onEditar }) {
+function InstCard({ inst, onEditar, onCambiarEstado }) {
   const color = CRITICIDAD_COLOR[inst.nivel_criticidad] || "accent";
   const esActivo = inst.estado === "activa" || inst.estado === "activo";
   const esCentro = esCentroOperativo(inst);
@@ -752,6 +753,18 @@ function InstCard({ inst, onEditar }) {
           )}
         </div>
 
+        <div style={{ display: "flex", gap: 8, flex: "none" }}>
+        <button
+          className={`touch-target gc-accion-btn ${esActivo ? "gc-accion-btn--naranja" : "gc-accion-btn--verde"}`}
+          onClick={() => onCambiarEstado(inst)}
+          style={{
+            background: "transparent", border: `1px solid ${T.border}`, color: T.textSec,
+            borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700,
+            fontFamily: "var(--font-ui)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+          }}
+        >
+          {esActivo ? "Desactivar" : "Activar"}
+        </button>
         {/* Botón Editar */}
         <button
           className="touch-target gc-accion-btn gc-accion-btn--morado"
@@ -764,6 +777,7 @@ function InstCard({ inst, onEditar }) {
         >
           <Icon name="pencil" size={16} /> Editar
         </button>
+        </div>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, fontSize: 11, color: T.textSec }}>
@@ -803,6 +817,16 @@ export function AdminInstalaciones() {
   const [modalData, setModalData] = useState(null); // null | { inicial: null | objeto }
   const [confirmacion, setConfirmacion] = useState("");
   const [busqueda, setBusqueda] = useState("");
+  const [cambiandoEstado, setCambiandoEstado] = useState(null); // instalación a activar/desactivar
+
+  const confirmarEstado = async () => {
+    const inst = cambiandoEstado;
+    const nuevo = inst.estado === "inactivo" ? "activo" : "inactivo";
+    const guardada = await api.put(`/instalaciones/${inst.id}`, { estado: nuevo }); // si falla, el diálogo muestra el motivo
+    setInstalaciones((prev) => prev.map((i) => (i.id === inst.id ? { ...i, ...guardada, estado: nuevo } : i)));
+    setCambiandoEstado(null);
+    setConfirmacion(`Instalación "${inst.nombre}" ${nuevo === "activo" ? "activada" : "desactivada"}`);
+  };
 
   const cargar = async () => {
     setCargando(true);
@@ -920,9 +944,23 @@ export function AdminInstalaciones() {
               key={inst.id}
               inst={inst}
               onEditar={(instalacionSeleccionada) => setModalData({ inicial: instalacionSeleccionada })}
+              onCambiarEstado={setCambiandoEstado}
             />
           ))}
         </>
+      )}
+
+      {cambiandoEstado && (
+        <Dialogo
+          titulo={cambiandoEstado.estado === "inactivo" ? "Activar instalación" : "Desactivar instalación"}
+          mensaje={cambiandoEstado.estado === "inactivo"
+            ? `«${cambiandoEstado.nombre}» volverá a estar disponible para turnos y guardias.`
+            : `«${cambiandoEstado.nombre}» dejará de estar disponible. Se conserva todo su historial y podrás activarla de nuevo.`}
+          confirmarLabel={cambiandoEstado.estado === "inactivo" ? "Activar" : "Desactivar"}
+          variante={cambiandoEstado.estado === "inactivo" ? "aprobar" : "rechazar"}
+          onConfirmar={confirmarEstado}
+          onCancelar={() => setCambiandoEstado(null)}
+        />
       )}
 
       {/* Modal Crear / Editar */}
