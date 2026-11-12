@@ -6,7 +6,9 @@ Todo cambio visual nuevo debe cumplir esta lista. Si algo se decide en una panta
 
 | Tipo | Cómo se usa | Cómo se ve |
 |---|---|---|
-| Acción principal | `<Btn>` (variant `primary`) | Naranja `T.alert`. En hover se aclara un poco (`gc-btn-principal`), no cambia de color. |
+| Aprobar / aceptar / confirmar positivo | `<Btn variant="aprobar">` | Verde oscuro `T.accentDim`, texto claro. |
+| Rechazar / destructivo | `<Btn variant="rechazar">` | Naranja `T.alert`. Aprobar y rechazar siempre van juntos con estos colores. |
+| Acción principal neutra (Enviar, Guardar, Consultar) | `<Btn>` (variant `primary`) | Naranja `T.alert`. |
 | Secundaria / contorno | `<Btn variant="outline">` | Borde neutro. En hover se decolora a morado suave. |
 | Ghost (sin borde) | `<Btn variant="ghost">` | Sin borde. En hover se decolora a morado suave. |
 | Acción en tarjeta / lista | `<button className="touch-target gc-accion-btn gc-accion-btn--morado">` | Transparente con borde `T.border`. |
@@ -17,7 +19,8 @@ Todo cambio visual nuevo debe cumplir esta lista. Si algo se decide en una panta
 Reglas:
 - `Btn` ya aplica el hover correcto: usarlo siempre que se pueda. Acepta `style` para ajustar tamaño.
 - Un botón sin función real no se deja: se quita.
-- Solo hay UNA acción principal naranja por vista o tarjeta.
+- Semántica de color: verde = aprobar/aceptar, naranja = rechazar/destructivo o acción principal. Un par aprobar/rechazar nunca se pinta con el mismo color.
+- Todos los botones rellenos se aclaran un poco en hover (`gc-btn-principal`) sin cambiar de color.
 - Nunca usar `<button>` sin estilo del navegador.
 
 ## 2. Avisos y confirmaciones

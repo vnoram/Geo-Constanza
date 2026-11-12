@@ -299,7 +299,7 @@ export function AdminUsuarios() {
   return (
     <div className="admin-screen">
       {confirmandoDesactivar && (
-        <Dialogo titulo="Desactivar usuario" mensaje="El usuario ya no podrá iniciar sesión. Podrás verlo como inactivo en la lista." confirmarLabel="Desactivar"
+        <Dialogo titulo="Desactivar usuario" mensaje="El usuario ya no podrá iniciar sesión. Podrás verlo como inactivo en la lista." confirmarLabel="Desactivar" variante="rechazar"
           onConfirmar={desactivarConfirmado} onCancelar={() => setConfirmandoDesactivar(null)} />
       )}
       <SectionHeader

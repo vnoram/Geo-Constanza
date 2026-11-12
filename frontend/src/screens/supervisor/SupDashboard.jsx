@@ -89,7 +89,7 @@ export function SupDashboard() {
   return (
     <div className="operations-screen">
       {rechazando && (
-        <Dialogo titulo="Rechazar marcaje" mensaje={`Marcaje de ${rechazando.guardia}. El motivo queda registrado y se le notifica al guardia.`} pedirMotivo confirmarLabel="Rechazar marcaje"
+        <Dialogo titulo="Rechazar marcaje" mensaje={`Marcaje de ${rechazando.guardia}. El motivo queda registrado y se le notifica al guardia.`} pedirMotivo variante="rechazar" confirmarLabel="Rechazar marcaje"
           onConfirmar={rechazarConMotivo} onCancelar={() => setRechazando(null)} />
       )}
       {errorRevision && <Dialogo titulo="No se pudo registrar la revisión" mensaje={errorRevision} soloMensaje onCancelar={() => setErrorRevision("")} />}
@@ -197,8 +197,8 @@ export function SupDashboard() {
             )}
             {g.asistencia_id && !g.revision_estado && (g.verificacion_gps === "por_revisar" || g.verificacion_gps === "sin_ubicacion") && (
               <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                <Btn onClick={() => revisar(g, "aprobar")} loading={revisando === g.asistencia_id} style={{ minHeight: 32, padding: "0 12px", fontSize: 12 }}>Aprobar</Btn>
-                <Btn variant="ghost" onClick={() => revisar(g, "rechazar")} disabled={revisando === g.asistencia_id} style={{ minHeight: 32, padding: "0 12px", fontSize: 12 }}>Rechazar</Btn>
+                <Btn variant="aprobar" onClick={() => revisar(g, "aprobar")} loading={revisando === g.asistencia_id} style={{ minHeight: 32, padding: "0 12px", fontSize: 12 }}>Aprobar</Btn>
+                <Btn variant="rechazar" onClick={() => revisar(g, "rechazar")} disabled={revisando === g.asistencia_id} style={{ minHeight: 32, padding: "0 12px", fontSize: 12 }}>Rechazar</Btn>
               </div>
             )}
             {g.revision_estado === "rechazado" && g.comentario_revision && (

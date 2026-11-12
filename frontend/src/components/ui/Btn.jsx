@@ -4,7 +4,9 @@ import { Icon } from "./Icon";
 // Estándar (docs/ESTANDAR_UI.md): primary = acción principal (naranja, se aclara al pasar el mouse)
 // · secondary = contorno neutro · ghost = sin borde. Secondary y ghost se decoloran a morado en hover.
 export function Btn({ children, onClick, loading, variant = "primary", disabled, full, className = "", icon, style: estilo, ...props }) {
-  const isPrimary = variant === "primary";
+  // aprobar = verde oscuro (confirmar/aceptar) · rechazar = naranja (rechazar/destructivo) · primary = naranja (acción principal)
+  const isAprobar = variant === "aprobar";
+  const isPrimary = variant === "primary" || variant === "rechazar" || isAprobar;
   const isGhost = variant === "ghost";
   const inactivo = loading || disabled;
   return (
@@ -18,8 +20,8 @@ export function Btn({ children, onClick, loading, variant = "primary", disabled,
         display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
         minHeight: 40,
         padding: "0 18px",
-        background: disabled ? T.border : isPrimary ? T.alert : "transparent",
-        color: disabled ? T.textMut : isPrimary ? T.ink : T.text,
+        background: disabled ? T.border : isAprobar ? T.accentDim : isPrimary ? T.alert : "transparent",
+        color: disabled ? T.textMut : isAprobar ? T.white : isPrimary ? T.ink : T.text,
         border: isPrimary || isGhost ? "1px solid transparent" : `1px solid ${T.border}`,
         borderRadius: T.radius, fontSize: 14, fontWeight: 600,
         cursor: disabled ? "not-allowed" : "pointer",

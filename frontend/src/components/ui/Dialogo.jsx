@@ -6,10 +6,11 @@ import { Btn } from "./Btn";
  * Diálogo estándar de la app (reemplaza window.confirm / prompt / alert).
  *  - confirmar: título + mensaje + Cancelar / confirmar
  *  - motivo:    igual, con cuadro de texto obligatorio (`pedirMotivo`)
+ *  - `variante`: "aprobar" (verde) o "rechazar" (naranja) para colorear el botón de confirmar
  *  - mensaje:   solo informa (`soloMensaje`), un único botón «Entendido»
  * `onConfirmar(motivo)` puede ser async; si lanza un error, se muestra dentro del diálogo.
  */
-export function Dialogo({ titulo, mensaje, confirmarLabel = "Confirmar", pedirMotivo = false, soloMensaje = false, onConfirmar, onCancelar }) {
+export function Dialogo({ titulo, mensaje, confirmarLabel = "Confirmar", pedirMotivo = false, soloMensaje = false, variante = "primary", onConfirmar, onCancelar }) {
   const [motivo, setMotivo] = useState("");
   const [error, setError] = useState("");
   const [ocupado, setOcupado] = useState(false);
@@ -45,7 +46,7 @@ export function Dialogo({ titulo, mensaje, confirmarLabel = "Confirmar", pedirMo
             ? <Btn onClick={onCancelar}>Entendido</Btn>
             : <>
                 <Btn variant="outline" onClick={onCancelar} disabled={ocupado}>Cancelar</Btn>
-                <Btn onClick={confirmar} loading={ocupado}>{confirmarLabel}</Btn>
+                <Btn variant={variante} onClick={confirmar} loading={ocupado}>{confirmarLabel}</Btn>
               </>}
         </div>
       </div>

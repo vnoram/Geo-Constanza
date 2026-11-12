@@ -117,14 +117,14 @@ export function SupSolicitudes() {
                     borderRadius: 8, padding: "8px 10px", fontSize: 12, fontFamily: "var(--font-ui)", resize: "vertical", outline: "none",
                   }} />
                 <div className="action-wrap" style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                  <Btn onClick={() => resolver(s, "rechazar")} loading={ocupado === s.id}>Confirmar rechazo</Btn>
+                  <Btn variant="rechazar" onClick={() => resolver(s, "rechazar")} loading={ocupado === s.id}>Confirmar rechazo</Btn>
                   <Btn variant="ghost" onClick={() => { setRechazando(null); setComentario(""); setError(""); }} disabled={ocupado === s.id}>Cancelar</Btn>
                 </div>
               </div>
             ) : (
               <div className="action-wrap" style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                <Btn onClick={() => resolver(s, "aprobar")} loading={ocupado === s.id}>Aprobar</Btn>
-                <Btn variant="ghost" onClick={() => { setRechazando(s.id); setComentario(""); setError(""); }} disabled={ocupado === s.id}>Rechazar</Btn>
+                <Btn variant="aprobar" onClick={() => resolver(s, "aprobar")} loading={ocupado === s.id}>Aprobar</Btn>
+                <Btn variant="rechazar" onClick={() => { setRechazando(s.id); setComentario(""); setError(""); }} disabled={ocupado === s.id}>Rechazar</Btn>
               </div>
             ))}
           </div>
