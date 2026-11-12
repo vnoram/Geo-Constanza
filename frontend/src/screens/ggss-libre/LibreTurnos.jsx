@@ -60,6 +60,7 @@ const DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const hoyIso = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Santiago" });
 const corto = (h) => h.slice(0, 5);
+const VERDE_BOSQUE = "#3F8F66"; // verde de bosque viejo para los íconos de día y noche
 
 /** Vista mensual: cada día con turno se pinta (morado; sol = diurno, luna = nocturno). */
 function PautaMensual({ turnos }) {
@@ -116,7 +117,7 @@ function PautaMensual({ turnos }) {
               <span style={{ fontSize: 14, fontWeight: esHoy || t ? 700 : 500, color: esHoy ? "#EE9A6B" : t ? undefined : T.textMut }}>{Number(iso.slice(8))}</span>
               {t ? (
                 <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, fontSize: 10, lineHeight: 1.2 }}>
-                  <Icon name={nocturno ? "moon" : "sun"} size={15} />
+                  <Icon name={nocturno ? "moon" : "sun"} size={15} color={VERDE_BOSQUE} />
                   {corto(t.hora_inicio)}–{corto(t.hora_fin)}
                 </span>
               ) : <span />}
@@ -126,8 +127,8 @@ function PautaMensual({ turnos }) {
       </div>
 
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", margin: "12px 0", fontSize: 11, color: T.textMut }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="sun" size={13} color={T.focusText} />Turno diurno</span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="moon" size={13} color={T.focusText} />Turno nocturno</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="sun" size={13} color={VERDE_BOSQUE} />Turno diurno</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="moon" size={13} color={VERDE_BOSQUE} />Turno nocturno</span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, background: "rgba(232,106,42,0.10)", border: "2px solid rgba(238,154,107,0.75)" }} />Hoy</span>
       </div>
 
