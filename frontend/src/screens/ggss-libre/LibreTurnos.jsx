@@ -108,12 +108,12 @@ function PautaMensual({ turnos }) {
               style={{
                 minHeight: 74, borderRadius: 8, padding: "6px 4px", textAlign: "center", fontFamily: "var(--font-ui)",
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between",
-                background: t ? (activo ? "rgba(122,78,191,0.34)" : "rgba(122,78,191,0.22)") : T.bgCard,
-                border: `1px solid ${activo ? T.focusText : t ? `${T.focus}aa` : esHoy ? T.textMut : T.border}`,
+                background: t ? (activo ? "rgba(122,78,191,0.34)" : "rgba(122,78,191,0.22)") : esHoy ? "rgba(232,106,42,0.10)" : T.bgCard,
+                border: `${esHoy ? 2 : 1}px solid ${esHoy ? "rgba(238,154,107,0.75)" : activo ? T.focusText : t ? `${T.focus}aa` : T.border}`,
                 color: t ? T.focusText : T.textMut,
                 cursor: t ? "pointer" : "default", opacity: t ? 1 : 0.7,
               }}>
-              <span style={{ fontSize: 14, fontWeight: esHoy || t ? 700 : 500, color: t ? undefined : esHoy ? T.text : T.textMut }}>{Number(iso.slice(8))}</span>
+              <span style={{ fontSize: 14, fontWeight: esHoy || t ? 700 : 500, color: esHoy ? "#EE9A6B" : t ? undefined : T.textMut }}>{Number(iso.slice(8))}</span>
               {t ? (
                 <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, fontSize: 10, lineHeight: 1.2 }}>
                   <Icon name={nocturno ? "moon" : "sun"} size={15} />
@@ -128,7 +128,7 @@ function PautaMensual({ turnos }) {
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", margin: "12px 0", fontSize: 11, color: T.textMut }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="sun" size={13} color={T.focusText} />Turno diurno</span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="moon" size={13} color={T.focusText} />Turno nocturno</span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, border: `1px solid ${T.textMut}` }} />Hoy</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, background: "rgba(232,106,42,0.10)", border: "2px solid rgba(238,154,107,0.75)" }} />Hoy</span>
       </div>
 
       {seleccionado && <TurnoRow turno={seleccionado} />}
