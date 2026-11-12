@@ -8,6 +8,7 @@ import { api } from "../../services/api";
 import { ROLES } from "../../constants/roles";
 import { ahoraChile, sumarDias } from "../../utils/fechaChile";
 import { SemanaTurnos, lunesDe } from "./SemanaTurnos";
+import { CalendarioRango } from "../../components/ui/CalendarioRango";
 
 const hoyLocal = () => ahoraChile().fecha;
 
@@ -197,7 +198,7 @@ export function SupGuardias() {
   const [form, setForm] = useState({
     usuario_id: "",
     instalacion_id: "",
-    fecha: hoyLocal(),
+    fechas: [],
     hora_inicio: "06:00",
     hora_fin: "14:00",
   });
@@ -273,30 +274,48 @@ export function SupGuardias() {
     .filter((t) => idsInstalaciones.has(t.instalacion_id))
     .filter((t) => !filtroGuardia || t.usuario_id === filtroGuardia);
 
+  // Los turnos extra se marcan día a día: tocar de nuevo un día lo quita.
+  const alternarFecha = (iso) => setForm((f) => ({
+    ...f,
+    fechas: f.fechas.includes(iso) ? f.fechas.filter((x) => x !== iso) : [...f.fechas, iso].sort(),
+  }));
+
   const crearTurno = async () => {
-    if (!form.usuario_id || !form.instalacion_id || !form.fecha) {
-      setMsg("Completa todos los campos obligatorios.");
+    if (!form.usuario_id || !form.instalacion_id || !form.fechas.length) {
+      setMsg("Elige guardia, instalación y al menos un día en el calendario.");
       return;
     }
     setLoading(true);
     setMsg("");
-    try {
-      await api.post("/turnos", form);
-      setMsg("Turno creado exitosamente");
+    const fallidas = [];
+    let creados = 0;
+    for (const fecha of form.fechas) {
+      try {
+        await api.post("/turnos", { usuario_id: form.usuario_id, instalacion_id: form.instalacion_id, hora_inicio: form.hora_inicio, hora_fin: form.hora_fin, fecha });
+        creados += 1;
+      } catch (e) {
+        fallidas.push(`${fecha.slice(8)}/${fecha.slice(5, 7)}: ${e.message || "error"}`);
+      }
+    }
+    if (creados) cargarTurnos();
+    if (fallidas.length) {
+      // Los días que sí se crearon salen del calendario; quedan marcados solo los que fallaron.
+      setForm((f) => ({ ...f, fechas: f.fechas.filter((x) => fallidas.some((m) => m.startsWith(`${x.slice(8)}/${x.slice(5, 7)}:`))) }));
+      setMsg(`${creados ? `${creados} turno(s) creado(s). ` : ""}No se pudo crear: ${fallidas.join(" · ")}`);
+    } else {
+      setMsg("");
+      setAviso(<><Icon name="circle-check" size={16} />{creados === 1 ? " Turno extra creado correctamente" : ` ${creados} turnos extra creados correctamente`}</>);
+      setTimeout(() => setAviso(""), 4000);
       setMostrarForm(false);
-      cargarTurnos();
       setForm({
         usuario_id: "",
         instalacion_id: instalaciones.length === 1 ? instalaciones[0].id : "",
-        fecha: hoyLocal(),
+        fechas: [],
         hora_inicio: "06:00",
         hora_fin: "14:00",
       });
-    } catch (e) {
-      setMsg(e.message || "Error al crear turno");
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const inputStyle = {
@@ -311,7 +330,7 @@ export function SupGuardias() {
         title="Guardias"
         sub="Personal asignado a tus instalaciones"
         action={{
-          label: mostrarForm ? "Cerrar Formulario" : "+ Crear Turno",
+          label: mostrarForm ? "Cerrar Formulario" : "+ Turno extra",
           onClick: () => {
             setMostrarForm((v) => !v);
             setMsg("");
@@ -322,7 +341,7 @@ export function SupGuardias() {
       {mostrarForm && (
         <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 18, marginBottom: 16 }}>
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, color: T.text }}>
-            Nuevo Turno
+            Nuevo turno extra
           </div>
 
           <div style={etiquetaStyle}>GUARDIA *</div>
@@ -355,14 +374,16 @@ export function SupGuardias() {
             ))}
           </select>
 
-          <div style={etiquetaStyle}>FECHA DE INICIO *</div>
-          <input
-            className="touch-target"
-            type="date"
-            style={inputStyle}
-            value={form.fecha}
-            onChange={(e) => setForm((f) => ({ ...f, fecha: e.target.value }))}
-          />
+          <div style={etiquetaStyle}>DÍAS DEL TURNO EXTRA *</div>
+          <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>
+            Marca cada día en que el guardia hará turno extra; vuelve a tocar para quitarlo.
+          </div>
+          <CalendarioRango marcados={form.fechas} destacados={form.fechas} onElegir={alternarFecha} />
+          <div style={{ fontSize: 12, color: form.fechas.length ? T.focusText : T.textMut, margin: "12px 0 16px" }}>
+            {form.fechas.length
+              ? `${form.fechas.length} ${form.fechas.length === 1 ? "día" : "días"}: ${form.fechas.map((f) => `${f.slice(8)}/${f.slice(5, 7)}`).join(", ")}`
+              : "Aún no has elegido días."}
+          </div>
 
           <div className="form-grid-2" style={{ display: "grid", gap: 10 }}>
             <div>
@@ -387,7 +408,7 @@ export function SupGuardias() {
             </div>
           </div>
 
-          <AvisoNocturno form={form} />
+          <AvisoNocturno form={{ ...form, fecha: form.fechas[0] }} />
 
           {msg && (
             <div style={{
@@ -404,7 +425,7 @@ export function SupGuardias() {
           )}
 
           <Btn onClick={crearTurno} disabled={loading} full>
-            {loading ? "Creando..." : "Confirmar Turno"}
+            {loading ? "Creando..." : form.fechas.length > 1 ? `Confirmar ${form.fechas.length} turnos` : "Confirmar turno"}
           </Btn>
         </div>
       )}
