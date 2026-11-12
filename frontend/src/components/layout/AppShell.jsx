@@ -111,6 +111,8 @@ function RoleContent({ user, rol, section }) {
 export function AppShell({ user, onLogout }) {
   const role = ROLES[user.rol];
   const sections = seccionesPara(user);
+  // En un equipo personal el guardia ve su vista de GGSS libre: la etiqueta es solo «GGSS».
+  const etiquetaRol = user.dispositivo === "personal" && [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(user.rol) ? "GGSS" : role.label;
   const [seleccion, setActiveSection] = useState(sections[0].id);
   const activeSection = sections.some(s => s.id === seleccion) ? seleccion : sections[0].id;
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -143,7 +145,7 @@ export function AppShell({ user, onLogout }) {
         <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
           <span className="app-shell__role" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textSec, whiteSpace: "nowrap", minWidth: 0 }}>
             <span style={{ width: 8, height: 8, borderRadius: 2, background: T.focus, flex: "none" }} />
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{role.label}</span>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{etiquetaRol}</span>
           </span>
           {user.dispositivo && <span style={{ color: T.textSec, fontSize: 11 }}>Dispositivo {user.dispositivo}</span>}
           <span className="app-shell__user" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textMut, whiteSpace: "nowrap" }}>
@@ -198,7 +200,7 @@ export function AppShell({ user, onLogout }) {
               <div style={{ fontWeight: 600, fontSize: 15, color: T.focusText }}>{user.nombre}</div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.focusText, marginTop: 4 }}>
                 <Icon name={role.icon} size={15} color={T.focusText} />
-                {role.label}
+                {etiquetaRol}
               </div>
               {user.empresa?.nombre && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textSec, marginTop: 4 }}>
