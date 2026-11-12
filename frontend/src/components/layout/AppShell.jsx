@@ -32,13 +32,25 @@ import { EmpresasPanel } from "../../screens/plataforma/EmpresasPanel";
 
 // ─── Administrador ───
 import { AdminPanel } from "../../screens/administrador/AdminPanel";
+import { AdminDispositivos } from "../../screens/administrador/AdminDispositivos";
+import { SolicitudesPersonales } from "../../screens/ggss-libre/SolicitudesPersonales";
 import { AdminUsuarios } from "../../screens/administrador/AdminUsuarios";
 import { AdminInstalaciones } from "../../screens/administrador/AdminInstalaciones";
 import { AdminTurnos } from "../../screens/administrador/AdminTurnos";
 import { AdminAuditoria } from "../../screens/administrador/AdminAuditoria";
 
+function seccionesPara(user) {
+  if (user.dispositivo === "personal" && [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(user.rol)) {
+    return ROLES[ROL.GGSS_LIBRE].sections.map(s => s.id === "turnos" ? { ...s, label: "Mi pauta" } : s);
+  }
+  const secciones = ROLES[user.rol].sections;
+  return user.rol === ROL.ADMINISTRADOR
+    ? [...secciones, { id: "dispositivos", icon: "key-round", label: "Dispositivos" }]
+    : secciones;
+}
+
 function RoleContent({ user, rol, section }) {
-  const allowed = ROLES[rol]?.sections.map(s => s.id) || [];
+  const allowed = seccionesPara(user).map(s => s.id);
   if (!allowed.includes(section)) {
     return (
       <div style={{ textAlign: "center", padding: 40 }}>
@@ -49,6 +61,12 @@ function RoleContent({ user, rol, section }) {
         </div>
       </div>
     );
+  }
+
+  if (user.dispositivo === "personal" && [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(rol)) {
+    if (section === "turnos") return <LibreTurnos />;
+    if (section === "solicitudes") return <SolicitudesPersonales />;
+    if (section === "docs") return <LibreDocs />;
   }
 
   if (rol === ROL.GGSS_EN_PAUTA) {
@@ -79,6 +97,7 @@ function RoleContent({ user, rol, section }) {
   }
   if (rol === ROL.ADMINISTRADOR) {
     // Admin ya no tiene el panel de monitoreo — solo gestión RRHH/config
+    if (section === "dispositivos") return <AdminDispositivos />;
     if (section === "usuarios")      return <AdminUsuarios />;
     if (section === "instalaciones") return <AdminInstalaciones />;
     if (section === "turnos")        return <AdminTurnos />;
@@ -89,7 +108,9 @@ function RoleContent({ user, rol, section }) {
 
 export function AppShell({ user, onLogout }) {
   const role = ROLES[user.rol];
-  const [activeSection, setActiveSection] = useState(role.sections[0].id);
+  const sections = seccionesPara(user);
+  const [seleccion, setActiveSection] = useState(sections[0].id);
+  const activeSection = sections.some(s => s.id === seleccion) ? seleccion : sections[0].id;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cambiandoPassword, setCambiandoPassword] = useState(false);
 
@@ -122,6 +143,7 @@ export function AppShell({ user, onLogout }) {
             <span style={{ width: 8, height: 8, borderRadius: 2, background: T.focus, flex: "none" }} />
             <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{role.label}</span>
           </span>
+          {user.dispositivo && <span style={{ color: T.textSec, fontSize: 11 }}>Dispositivo {user.dispositivo}</span>}
           <span className="app-shell__user" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textMut, whiteSpace: "nowrap" }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.accent, flex: "none" }} />
             {user.nombre.split(" ")[0]}
@@ -136,7 +158,7 @@ export function AppShell({ user, onLogout }) {
         borderBottom: `1px solid ${T.border}`,
         WebkitOverflowScrolling: "touch",
       }}>
-        {role.sections.map(s => {
+        {sections.map(s => {
           const activa = activeSection === s.id;
           return (
             <button className="touch-target" key={s.id} onClick={() => setActiveSection(s.id)}
@@ -190,7 +212,7 @@ export function AppShell({ user, onLogout }) {
             <div style={{ fontSize: 11, color: T.textMut, marginBottom: 6, fontWeight: 500 }}>
               Navegación
             </div>
-            {role.sections.map(s => {
+            {sections.map(s => {
               const activa = activeSection === s.id;
               return (
                 <button className="touch-target gc-nav-btn" key={s.id}
@@ -230,7 +252,7 @@ export function AppShell({ user, onLogout }) {
                   {conSegundoFactor ? "2FA verificado" : "Autenticación estándar"}
                 </div>
               </div>
-              <button className="touch-target gc-menu-btn gc-menu-btn--verde" onClick={() => setCambiandoPassword(true)} style={{
+              {user.dispositivo !== "personal" || user.rol === ROL.SUPER_ADMIN ? <button className="touch-target gc-menu-btn gc-menu-btn--verde" onClick={() => setCambiandoPassword(true)} style={{
                 width: "100%", minHeight: 40, padding: "0 14px", marginBottom: 8,
                 background: "transparent", border: `1px solid ${T.border}`,
                 borderRadius: T.radius, color: T.text, fontSize: 13, fontWeight: 500,
@@ -238,7 +260,7 @@ export function AppShell({ user, onLogout }) {
                 display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
               }}>
                 <Icon name="key-round" size={16} /> Cambiar contraseña
-              </button>
+              </button> : null}
               <button className="touch-target gc-menu-btn gc-menu-btn--rojo" onClick={onLogout} style={{
                 width: "100%", minHeight: 40, padding: "0 14px",
                 background: "transparent", border: `1px solid ${T.border}`,
@@ -261,7 +283,7 @@ export function AppShell({ user, onLogout }) {
           <RoleContent user={user} rol={user.rol} section={activeSection} />
         </main>
       </div>
-      {cambiandoPassword && (
+      {cambiandoPassword && (user.dispositivo !== 'personal' || user.rol === ROL.SUPER_ADMIN) && (
         <CambiarPasswordModal onClose={() => setCambiandoPassword(false)} onDone={onLogout} />
       )}
     </div>

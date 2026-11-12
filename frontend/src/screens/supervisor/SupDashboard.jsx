@@ -2,6 +2,7 @@ import { Icon } from "../../components/ui/Icon";
 import { Badge } from "../../components/ui/Badge";
 import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
+import { leerDeviceToken } from "../../services/dispositivos";
 import { T } from "../../theme/theme";
 import { KPI } from "../../components/ui/KPI";
 import { SectionHeader } from "../../components/ui/SectionHeader";
@@ -33,7 +34,7 @@ export function SupDashboard() {
   useEffect(() => {
     fetchData();
     try {
-      const socket = io(SOCKET_URL, { auth: (cb) => cb({ token: localStorage.getItem("gc_token") || token }), transports: ["websocket"] });
+      const socket = io(SOCKET_URL, { auth: (cb) => cb({ deviceToken: leerDeviceToken(), token: localStorage.getItem("gc_token") || token }), transports: ["websocket"] });
       socketRef.current = socket;
       socket.on("guardia:entrada",  fetchData);
       socket.on("guardia:atraso",   fetchData);

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { cacheClearAll } from "../utils/cache";
-import { SESION_EXPIRADA } from "../services/sesion";
+import { DISPOSITIVO_ACTUAL, SESION_EXPIRADA } from "../services/sesion";
+import { ROLES } from "../constants/roles";
 
 // ─── STORAGE KEYS ───────────────────────────────────────────────
 const TOKEN_KEY = "gc_token";
@@ -56,6 +57,23 @@ export function AuthProvider({ children }) {
     window.addEventListener(SESION_EXPIRADA, logout);
     return () => window.removeEventListener(SESION_EXPIRADA, logout);
   }, [logout]);
+
+  useEffect(() => {
+    const actualizar = ({ detail }) => {
+      const dispositivo = detail === 'off' ? undefined : detail;
+      if (!user || user.dispositivo === dispositivo) return;
+      if (detail === "personal" && ![ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE].includes(user.rol)) {
+        logout();
+        return;
+      }
+      cacheClearAll();
+      const actualizado = { ...user, dispositivo };
+      localStorage.setItem(USER_KEY, JSON.stringify(actualizado));
+      setUser(actualizado);
+    };
+    window.addEventListener(DISPOSITIVO_ACTUAL, actualizar);
+    return () => window.removeEventListener(DISPOSITIVO_ACTUAL, actualizar);
+  }, [user, logout]);
 
   return (
     <AuthCtx.Provider value={{ user, token, login, logout, ready }}>

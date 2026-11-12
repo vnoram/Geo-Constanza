@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
+import { leerDeviceToken } from "../../services/dispositivos";
 import { T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
 import { Btn } from "../../components/ui/Btn";
@@ -294,7 +295,7 @@ export function PautaNovedades({ user }) {
   useEffect(() => {
     cargarNovedades();
 
-    const socket = io(SOCKET_URL, { auth: (cb) => cb({ token: localStorage.getItem("gc_token") }), transports: ["websocket"] });
+    const socket = io(SOCKET_URL, { auth: (cb) => cb({ deviceToken: leerDeviceToken(), token: localStorage.getItem("gc_token") }), transports: ["websocket"] });
     socketRef.current = socket;
 
     if (user?.instalacion_asignada_id) {

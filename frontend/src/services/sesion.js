@@ -6,18 +6,32 @@
 //      y repite la petición;
 //   3) si no se puede renovar, avisa para cerrar la sesión en vez de dejar la app fallando en silencio.
 import { API_URL } from "../config/api";
+import { leerDeviceToken } from "./dispositivos";
 
 const TOKEN_KEY = "gc_token";
 const REFRESH_KEY = "gc_refresh";
 export const SESION_EXPIRADA = "gc:sesion-expirada";
+export const DISPOSITIVO_ACTUAL = "gc:dispositivo-actual";
 
 // Rutas de autenticación que nunca se renuevan ni se repiten.
-const RUTA_PUBLICA = /\/auth\/(login|refresh|2fa\/verify|password\/)/;
+const RUTA_PUBLICA = /\/auth\/(login|refresh|2fa\/(verify|resend)|password\/)/;
 
 let renovando = null;
 
 const leer = (clave) => { try { return localStorage.getItem(clave); } catch { return null; } };
 const guardar = (clave, valor) => { try { localStorage.setItem(clave, valor); } catch { /* sin almacenamiento */ } };
+
+const encabezadoDispositivo = () => {
+  const token = leerDeviceToken();
+  return token ? { "X-Device-Token": token } : {};
+};
+
+function publicarDispositivo(respuesta, token) {
+  const dispositivo = respuesta.headers.get("X-Device-Class");
+  if (dispositivo && token && token === leer(TOKEN_KEY)) {
+    window.dispatchEvent(new CustomEvent(DISPOSITIVO_ACTUAL, { detail: dispositivo }));
+  }
+}
 
 async function renovar(fetchOriginal) {
   const refresh = leer(REFRESH_KEY);
@@ -25,7 +39,7 @@ async function renovar(fetchOriginal) {
   try {
     const res = await fetchOriginal(`${API_URL}/auth/refresh`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...encabezadoDispositivo() },
       body: JSON.stringify({ refreshToken: refresh }),
     });
     if (!res.ok) return null;
@@ -46,10 +60,14 @@ export function instalarRenovacionDeSesion() {
 
   window.fetch = async (input, init = {}) => {
     const url = typeof input === "string" ? input : input?.url || "";
-    if (!url.startsWith(API_URL) || RUTA_PUBLICA.test(url)) return original(input, init);
+    if (!url.startsWith(API_URL + '/')) return original(input, init);
+    const headers = new Headers(init.headers || input?.headers);
+    const equipo = encabezadoDispositivo()['X-Device-Token'];
+    if (equipo) headers.set('X-Device-Token', equipo);
+    init = { ...init, headers };
+    if (RUTA_PUBLICA.test(url)) return original(input, init);
 
-    const encabezados = new Headers(init.headers || {});
-    const llevabaToken = encabezados.has("Authorization");
+    const llevabaToken = headers.has("Authorization");
     const conToken = (token) => {
       const h = new Headers(init.headers || {});
       h.set("Authorization", `Bearer ${token}`);
@@ -58,6 +76,7 @@ export function instalarRenovacionDeSesion() {
 
     const vigente = leer(TOKEN_KEY);
     const res = await original(input, llevabaToken && vigente ? conToken(vigente) : init);
+    if (llevabaToken) publicarDispositivo(res, vigente);
     if (res.status !== 401 || !llevabaToken) return res;
 
     if (!renovando) renovando = renovar(original).finally(() => { renovando = null; });
@@ -66,6 +85,8 @@ export function instalarRenovacionDeSesion() {
       window.dispatchEvent(new Event(SESION_EXPIRADA));
       return res;
     }
-    return original(input, conToken(nuevo));
+    const repetida = await original(input, conToken(nuevo));
+    publicarDispositivo(repetida, nuevo);
+    return repetida;
   };
 }

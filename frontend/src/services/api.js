@@ -61,6 +61,9 @@ async function authFetch(path, options = {}) {
 
 // ─── API ─────────────────────────────────────────────────────────
 export const api = {
+  canjearDispositivo: (codigo) => request('/dispositivos/canjear', {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ codigo }),
+  }),
   // ── Auth (sin token) ──────────────────────────────────────────
   login: async (rut, password) => {
     const data = await request('/auth/login', {
