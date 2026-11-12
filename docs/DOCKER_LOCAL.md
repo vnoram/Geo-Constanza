@@ -40,6 +40,30 @@ Entra como supervisor o admin: la app te lleva a enrolar con el QR (Google Authe
 ## Probar recuperar contraseña
 En el login, "¿Olvidaste tu contraseña?", pon un correo del seed y abre http://localhost:8025: ahí llega el enlace.
 
+## Android virtual (opcional)
+Un Galaxy S10 virtual (imagen `budtmo/docker-android`) para ver la web local como en un celular. No arranca con `docker compose up`: usa el perfil `android`.
+
+**Requisitos (Windows 11 + WSL2/Docker Desktop, una sola vez)**
+- Virtualización activada en la BIOS (SVM en AMD / VT-x en Intel).
+- Característica de Windows **Plataforma del hipervisor** habilitada (PowerShell como administrador): `Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -NoRestart` y reiniciar.
+- `%USERPROFILE%\.wslconfig` con `[wsl2]` y `nestedVirtualization=true` (luego `wsl --shutdown`).
+
+**Uso**
+1. `docker compose up -d` (proyecto normal) y luego `docker compose --profile android up -d`.
+2. Abre http://localhost:6080, pulsa **Conectar** y espera a que Android termine de arrancar (varios minutos la primera vez; la imagen pesa varios GB).
+3. En Chrome del emulador entra a **http://localhost:5173** (no `10.0.2.2`: dentro del emulador esa dirección apunta al contenedor del emulador, no a tu PC).
+4. Para apagarlo: `docker compose --profile android down` (no borra la base).
+
+**Cómo funciona**
+- `android-kvm` carga el módulo `kvm_amd`/`kvm_intel` en el kernel de WSL (el módulo se pierde al reiniciar WSL/PC; por eso se carga en cada arranque del perfil) y termina.
+- `android` es el emulador.
+- `android-bridge` comparte su red: reenvía los puertos 5173 y 3005 hacia `web` y `api` (socat) y ejecuta `adb reverse` cuando Android ya arrancó, para que `localhost:5173` y `localhost:3005` dentro del teléfono lleguen a la app y a la API.
+
+**Si no hay /dev/kvm** (`android-kvm` muestra el aviso en sus logs: `docker compose --profile android logs android-kvm`): carga el módulo a mano y repite el paso 1:
+`wsl -d docker-desktop -u root -e modprobe kvm_amd`
+
+Consume bastante RAM y CPU: apágalo cuando no lo uses.
+
 ## Notas
 - Todos los puertos quedan abiertos solo en tu PC (127.0.0.1). Si el puerto 5434 u otro está ocupado, cámbialo en `docker-compose.yml`.
 - Usuarios del seed: el login es con RUT y contraseña `geo2026` (solo datos de demostración locales).
