@@ -80,6 +80,8 @@ model Usuario {
   auditorias               Auditoria[]
   password_resets          PasswordReset[]
   dispositivos_creados     Dispositivo[]
+  dispositivos_invitados   Dispositivo[] @relation("DispositivoInvitado")
+  dispositivos_enrolados   Dispositivo[] @relation("DispositivoEnrolado")
   instalaciones_sup        Supervisor_Instalacion[]
   solicitudes              Solicitud[] @relation("UsuarioSolicita")
   solicitudes_rev          Solicitud[] @relation("SupervisorRevisa")
@@ -102,8 +104,14 @@ model Dispositivo {
   estado                   String   @default("activo")
   creado_por               String
   ultimo_uso               DateTime?
+  invitado_usuario_id      String?
+  enrolado_por             String?
+  invitacion_hash          String?  @unique
+  invitacion_expira_en     DateTime?
   empresa                  Empresa  @relation(fields: [empresa_id], references: [id], onDelete: Restrict)
   creador                  Usuario  @relation(fields: [empresa_id, creado_por], references: [empresa_id, id], onDelete: Restrict)
+  invitado                 Usuario? @relation("DispositivoInvitado", fields: [empresa_id, invitado_usuario_id], references: [empresa_id, id], onDelete: Restrict)
+  enrolador                Usuario? @relation("DispositivoEnrolado", fields: [empresa_id, enrolado_por], references: [empresa_id, id], onDelete: Restrict)
 
   @@index([empresa_id])
 }

@@ -11,7 +11,11 @@ const REVOCADO = 'revocado';
 const habilitada = () => process.env.DEVICE_POLICY === 'on';
 const hash = (valor) => createHash('sha256').update(valor).digest('hex');
 const error = (statusCode, message) => Object.assign(new Error(message), { statusCode });
-const vista = { id: true, nombre: true, tipo: true, estado: true, codigo_expira_en: true, ultimo_uso: true };
+const vista = {
+  id: true, nombre: true, tipo: true, estado: true, codigo_expira_en: true, ultimo_uso: true,
+  invitacion_expira_en: true, invitado_usuario_id: true,
+  enrolador: { select: { nombre: true } },
+};
 
 const crear = async (nombre, usuarioId) => {
   const codigo = randomBytes(12).toString('hex');
@@ -51,7 +55,7 @@ const canjear = async (codigo) => {
 const revocar = async (id) => {
   const { count } = await prisma.dispositivo.updateMany({
     where: { id },
-    data: { estado: REVOCADO, token_hash: null, codigo_enrolamiento_hash: null, codigo_expira_en: null },
+    data: { estado: REVOCADO, token_hash: null, codigo_enrolamiento_hash: null, codigo_expira_en: null, invitacion_hash: null, invitacion_expira_en: null },
   });
   if (!count) throw error(404, 'Dispositivo no encontrado.');
 };
