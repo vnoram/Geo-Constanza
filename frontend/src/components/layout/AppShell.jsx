@@ -41,10 +41,11 @@ import { MisDispositivos } from "../../screens/MisDispositivos";
 import { AdminDocumentos } from "../../screens/administrador/AdminDocumentos";
 
 function seccionesPara(user) {
-  if (user.rol === ROL.GGSS_LIBRE || (user.dispositivo === "personal" && user.rol === ROL.GGSS_EN_PAUTA)) {
+  if (user.dispositivo === "personal" && [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(user.rol)) {
     return ROLES[ROL.GGSS_LIBRE].sections.map(s => s.id === "turnos" ? { ...s, label: "Mi pauta" } : s);
   }
-  const secciones = ROLES[user.rol].sections;
+  // En equipo corporativo el guardia libre usa las mismas pantallas operativas que el guardia en pauta.
+  const secciones = user.rol === ROL.GGSS_LIBRE ? ROLES[ROL.GGSS_EN_PAUTA].sections : ROLES[user.rol].sections;
   const extra = [];
   if (user.rol === ROL.ADMINISTRADOR) extra.push({ id: "documentos", icon: "folder", label: "Documentos" });
   if ([ROL.ADMINISTRADOR, ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL].includes(user.rol)) extra.push({ id: "dispositivos", icon: "key-round", label: "Dispositivos" });
@@ -71,16 +72,11 @@ function RoleContent({ user, rol, section }) {
     if (section === "docs") return <LibreDocs />;
   }
 
-  if (rol === ROL.GGSS_EN_PAUTA) {
+  if (rol === ROL.GGSS_EN_PAUTA || rol === ROL.GGSS_LIBRE) {
     if (section === "turno") return <PautaTurno user={user} />;
     if (section === "novedades") return <PautaNovedades user={user} />;
     if (section === "historial") return <PautaHistorial user={user} />;
     if (section === "alertas") return <PautaAlertas />;
-  }
-  if (rol === ROL.GGSS_LIBRE) {
-    if (section === "turnos") return <LibreTurnos />;
-    if (section === "solicitudes") return <SolicitudesPersonales />;
-    if (section === "docs") return <LibreDocs />;
   }
   if (section === "dispositivos" && [ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL].includes(rol)) return <MisDispositivos user={user} />;
   if (rol === ROL.SUPERVISOR) {
@@ -114,7 +110,7 @@ export function AppShell({ user, onLogout }) {
   const role = ROLES[user.rol];
   const sections = seccionesPara(user);
   // En un equipo personal el guardia ve su vista de GGSS libre: la etiqueta es solo «GGSS».
-  const etiquetaRol = user.rol === ROL.GGSS_LIBRE || (user.dispositivo === "personal" && user.rol === ROL.GGSS_EN_PAUTA) ? "GGSS" : role.label;
+  const etiquetaRol = user.dispositivo === "personal" && [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(user.rol) ? "GGSS" : role.label;
   const [seleccion, setActiveSection] = useState(sections[0].id);
   const activeSection = sections.some(s => s.id === seleccion) ? seleccion : sections[0].id;
   const [sidebarOpen, setSidebarOpen] = useState(false);
