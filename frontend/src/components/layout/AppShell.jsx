@@ -110,6 +110,7 @@ function RoleContent({ user, rol, section }) {
 export function AppShell({ user, onLogout }) {
   const role = ROLES[user.rol];
   const [pendientes, setPendientes] = useState(0);
+  const [novedadesPend, setNovedadesPend] = useState(0);
   // Insignia real de solicitudes pendientes para el supervisor (se refresca cada minuto y al resolver una)
   useEffect(() => {
     if (user.rol !== ROL.SUPERVISOR) return undefined;
@@ -117,14 +118,27 @@ export function AppShell({ user, onLogout }) {
     const cargar = () => api.get("/solicitudes?estado=pendiente&limit=1")
       .then((res) => { if (vigente) setPendientes(Number(res?.total) || 0); })
       .catch(() => {});
-    cargar();
-    const timer = setInterval(cargar, 60000);
+    // Novedades sin resolver (abiertas, en atención o escaladas): mismo criterio que la pestaña «Pendientes».
+    const cargarNovedades = () => Promise.all(["abierta", "en_atencion", "escalada"].map((e) => api.get(`/novedades?estado=${e}&limit=1`)))
+      .then((r) => { if (vigente) setNovedadesPend(r.reduce((n, x) => n + (Number(x?.total) || 0), 0)); })
+      .catch(() => {});
+    const todo = () => { cargar(); cargarNovedades(); };
+    todo();
+    const timer = setInterval(todo, 60000);
     window.addEventListener("gc:solicitudes-cambio", cargar);
-    return () => { vigente = false; clearInterval(timer); window.removeEventListener("gc:solicitudes-cambio", cargar); };
+    window.addEventListener("gc:novedades-cambio", cargarNovedades);
+    return () => {
+      vigente = false; clearInterval(timer);
+      window.removeEventListener("gc:solicitudes-cambio", cargar);
+      window.removeEventListener("gc:novedades-cambio", cargarNovedades);
+    };
   }, [user.rol]);
-  const sections = seccionesPara(user).map((s) => (
-    user.rol === ROL.SUPERVISOR && s.id === "solicitudes" ? { ...s, badge: pendientes > 0 ? String(pendientes) : null } : s
-  ));
+  const sections = seccionesPara(user).map((s) => {
+    if (user.rol !== ROL.SUPERVISOR) return s;
+    if (s.id === "solicitudes") return { ...s, badge: pendientes > 0 ? String(pendientes) : null };
+    if (s.id === "novedades") return { ...s, badge: novedadesPend > 0 ? String(novedadesPend) : null };
+    return s;
+  });
   // Todo guardia (en pauta o libre, en cualquier equipo) se muestra solo como «GGSS».
   const etiquetaRol = [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(user.rol) ? "GGSS" : role.label;
   const [seleccion, setActiveSection] = useState(sections[0].id);

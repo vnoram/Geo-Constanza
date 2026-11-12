@@ -53,7 +53,7 @@ export const ROLES = {
       { id: "turno", icon: "map-pin", label: "Mi Turno", badge: null },
       { id: "novedades", icon: "triangle-alert", label: "Novedades", badge: null },
       { id: "historial", icon: "clipboard-list", label: "Historial", badge: null },
-      { id: "alertas", icon: "bell", label: "Alertas", badge: "1" },
+      { id: "alertas", icon: "bell", label: "Alertas", badge: null },
     ],
   },
   [ROL.GGSS_LIBRE]: {
@@ -73,9 +73,9 @@ export const ROLES = {
     color: T.focusText,
     desc: "Panel de supervisión",
     sections: [
-      { id: "dashboard", icon: "layout-dashboard", label: "Dashboard", badge: "3" },
-      { id: "novedades", icon: "triangle-alert", label: "Novedades", badge: "2" },
-      { id: "solicitudes", icon: "file-text", label: "Solicitudes", badge: "1" },
+      { id: "dashboard", icon: "layout-dashboard", label: "Dashboard", badge: null },
+      { id: "novedades", icon: "triangle-alert", label: "Novedades", badge: null },
+      { id: "solicitudes", icon: "file-text", label: "Solicitudes", badge: null },
       { id: "guardias", icon: "users", label: "Guardias", badge: null },
       { id: "reportes", icon: "chart-column", label: "Reportes", badge: null },
     ],

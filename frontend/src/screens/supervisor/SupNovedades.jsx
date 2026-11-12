@@ -299,6 +299,7 @@ export function SupNovedades({ user }) {
     try {
       const res = await api.get("/novedades");
       setNovedades(res.data ?? []);
+      window.dispatchEvent(new Event("gc:novedades-cambio")); // refresca la insignia del menú
     } catch {
       // Mantener lista actual si hay error de red
     } finally {
