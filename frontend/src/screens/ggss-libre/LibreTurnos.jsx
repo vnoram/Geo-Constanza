@@ -12,30 +12,6 @@ function formatHorario(inicio, fin) {
   return `${inicio} — ${fin}${nocturno ? " (+1)" : ""}`;
 }
 
-// Agrupa turnos consecutivos del mismo ciclo 4x4 para mostrar el bloque
-function agruparCiclos(turnos) {
-  if (!turnos.length) return [];
-  // Ordena por fecha (ya vienen ordenados del backend, pero por si acaso)
-  const ordenados = [...turnos].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-  const grupos = [];
-  let bloque = [ordenados[0]];
-
-  for (let i = 1; i < ordenados.length; i++) {
-    const prev = new Date(ordenados[i - 1].fecha);
-    const curr = new Date(ordenados[i].fecha);
-    const diffDias = Math.round((curr - prev) / 86400000);
-    // Si la diferencia es ≤ 4 días, pertenece al mismo bloque de trabajo
-    if (diffDias <= 4) {
-      bloque.push(ordenados[i]);
-    } else {
-      grupos.push(bloque);
-      bloque = [ordenados[i]];
-    }
-  }
-  grupos.push(bloque);
-  return grupos;
-}
-
 function TurnoRow({ turno }) {
   const fecha = new Date(turno.fecha);
   const fechaStr = fecha.toLocaleDateString("es-CL", {
@@ -80,25 +56,77 @@ function TurnoRow({ turno }) {
   );
 }
 
-function BloqueCard({ turnos, numeroCiclo }) {
-  const primera = new Date(turnos[0].fecha);
-  const ultima  = new Date(turnos[turnos.length - 1].fecha);
-  const rangoStr = `${primera.toLocaleDateString("es-CL", { day: "numeric", month: "short", timeZone: "UTC" })} → ${ultima.toLocaleDateString("es-CL", { day: "numeric", month: "short", timeZone: "UTC" })}`;
+const DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+const hoyIso = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Santiago" });
+const corto = (h) => h.slice(0, 5);
 
+/** Vista mensual: cada día con turno se pinta (verde = diurno, morado = nocturno). */
+function PautaMensual({ turnos }) {
+  const hoy = hoyIso();
+  const porDia = new Map();
+  for (const t of turnos) porDia.set(String(t.fecha).slice(0, 10), t);
+
+  const inicial = turnos.find(t => String(t.fecha).slice(0, 10) >= hoy) ?? turnos[0];
+  const base = (inicial ? String(inicial.fecha).slice(0, 10) : hoy);
+  const [vista, setVista] = useState({ a: Number(base.slice(0, 4)), m: Number(base.slice(5, 7)) - 1 });
+  const [elegido, setElegido] = useState(null);
+
+  const primero = new Date(Date.UTC(vista.a, vista.m, 1));
+  const huecos = (primero.getUTCDay() + 6) % 7;
+  const total = new Date(Date.UTC(vista.a, vista.m + 1, 0)).getUTCDate();
+  const celdas = [...Array(huecos).fill(null), ...Array.from({ length: total }, (_, i) => new Date(Date.UTC(vista.a, vista.m, i + 1)).toISOString().slice(0, 10))];
+  const mover = (d) => setVista(({ a, m }) => { const f = new Date(Date.UTC(a, m + d, 1)); return { a: f.getUTCFullYear(), m: f.getUTCMonth() }; });
+  const delMes = turnos.filter(t => { const f = String(t.fecha).slice(0, 7); return f === `${vista.a}-${String(vista.m + 1).padStart(2, "0")}`; });
+  const seleccionado = elegido ? porDia.get(elegido) : null;
+
+  const flecha = { background: "none", border: `1px solid ${T.border}`, borderRadius: 6, color: T.textSec, cursor: "pointer", padding: "6px 10px", display: "inline-flex" };
   return (
-    <div style={{ marginBottom: 20 }}>
-      <div className="guard-block-header" style={{
-        display: "flex", alignItems: "center", gap: 8, marginBottom: 8,
-      }}>
-        <div style={{
-          background: T.accentGhost, borderRadius: 6, padding: "3px 10px",
-          fontSize: 11, fontWeight: 700, color: T.accent, letterSpacing: 0.8,
-        }}>
-          BLOQUE {numeroCiclo}
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 8 }}>
+        <button type="button" aria-label="Mes anterior" onClick={() => mover(-1)} style={flecha} className="gc-accion-btn gc-accion-btn--morado"><Icon name="arrow-left" size={16} /></button>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: T.text, textTransform: "capitalize" }}>{MESES[vista.m]} {vista.a}</div>
+          <div style={{ fontSize: 11, color: T.textMut }}>{delMes.length} {delMes.length === 1 ? "turno" : "turnos"} este mes</div>
         </div>
-        <span style={{ fontSize: 11, color: T.textMut }}>{rangoStr} · {turnos.length} días de trabajo</span>
+        <button type="button" aria-label="Mes siguiente" onClick={() => mover(1)} style={{ ...flecha, transform: "scaleX(-1)" }} className="gc-accion-btn gc-accion-btn--morado"><Icon name="arrow-left" size={16} /></button>
       </div>
-      {turnos.map((t) => <TurnoRow key={t.id} turno={t} />)}
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 4 }}>
+        {DIAS.map(d => <div key={d} style={{ textAlign: "center", fontSize: 11, color: T.textMut, padding: "4px 0" }}>{d}</div>)}
+        {celdas.map((iso, i) => {
+          if (!iso) return <div key={`h${i}`} />;
+          const t = porDia.get(iso);
+          const nocturno = t && t.hora_fin < t.hora_inicio;
+          const esHoy = iso === hoy;
+          const activo = elegido === iso;
+          const color = nocturno ? T.focus : T.accent;
+          return (
+            <button type="button" key={iso} disabled={!t} onClick={() => setElegido(activo ? null : iso)} aria-pressed={activo}
+              aria-label={t ? `${iso}: turno ${corto(t.hora_inicio)} a ${corto(t.hora_fin)}` : iso}
+              className={t ? "gc-accion-btn gc-accion-btn--morado" : undefined}
+              style={{
+                minHeight: 74, borderRadius: 8, padding: "6px 4px", textAlign: "center", fontFamily: "var(--font-ui)",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between",
+                background: t ? (nocturno ? T.focusGhost : T.accentGhost) : T.bgCard,
+                border: `1px solid ${activo ? T.borderFocus : t ? `${color}88` : esHoy ? T.textMut : T.border}`,
+                color: t ? (nocturno ? T.focusText : T.accent) : T.textMut,
+                cursor: t ? "pointer" : "default", opacity: t ? 1 : 0.7,
+              }}>
+              <span style={{ fontSize: 14, fontWeight: esHoy || t ? 700 : 500, color: t ? undefined : esHoy ? T.text : T.textMut }}>{Number(iso.slice(8))}</span>
+              {t ? <span style={{ fontSize: 10, lineHeight: 1.2 }}>{nocturno && <Icon name="moon" size={11} />}<br />{corto(t.hora_inicio)}–{corto(t.hora_fin)}</span> : <span />}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", margin: "12px 0", fontSize: 11, color: T.textMut }}>
+        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, background: T.accentGhost, border: `1px solid ${T.accent}88`, marginRight: 5 }} />Turno diurno</span>
+        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, background: T.focusGhost, border: `1px solid ${T.focus}88`, marginRight: 5 }} />Turno nocturno</span>
+        <span><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, border: `1px solid ${T.textMut}`, marginRight: 5 }} />Hoy</span>
+      </div>
+
+      {seleccionado && <TurnoRow turno={seleccionado} />}
     </div>
   );
 }
@@ -132,13 +160,11 @@ export function LibreTurnos() {
     cargar();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const ciclos = agruparCiclos(turnos);
-
   return (
     <div className="guard-screen">
       <SectionHeader
-        title="Mis Turnos"
-        sub={turnos.length > 0 ? `${turnos.length} turno${turnos.length !== 1 ? "s" : ""} programado${turnos.length !== 1 ? "s" : ""}` : "Próximos 60 días"}
+        title="Mi pauta"
+        sub="Toca un día con turno para ver el detalle"
       />
 
       {cargando && (
@@ -168,13 +194,7 @@ export function LibreTurnos() {
         </div>
       )}
 
-      {!cargando && !error && ciclos.length > 0 && (
-        <div>
-          {ciclos.map((bloque, idx) => (
-            <BloqueCard key={idx} turnos={bloque} numeroCiclo={idx + 1} />
-          ))}
-        </div>
-      )}
+      {!cargando && !error && turnos.length > 0 && <PautaMensual turnos={turnos} />}
     </div>
   );
 }
