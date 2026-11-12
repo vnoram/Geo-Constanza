@@ -125,8 +125,8 @@ export function AppShell({ user, onLogout }) {
   const sections = seccionesPara(user).map((s) => (
     user.rol === ROL.SUPERVISOR && s.id === "solicitudes" ? { ...s, badge: pendientes > 0 ? String(pendientes) : null } : s
   ));
-  // En un equipo personal el guardia ve su vista de GGSS libre: la etiqueta es solo «GGSS».
-  const etiquetaRol = user.dispositivo === "personal" && [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(user.rol) ? "GGSS" : role.label;
+  // Todo guardia (en pauta o libre, en cualquier equipo) se muestra solo como «GGSS».
+  const etiquetaRol = [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(user.rol) ? "GGSS" : role.label;
   const [seleccion, setActiveSection] = useState(sections[0].id);
   const activeSection = sections.some(s => s.id === seleccion) ? seleccion : sections[0].id;
   const [sidebarOpen, setSidebarOpen] = useState(false);
