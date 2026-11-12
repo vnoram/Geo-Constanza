@@ -6,7 +6,7 @@ import { SectionHeader } from "../../components/ui/SectionHeader";
 export function SupSolicitudes() {
   const sols = [
     { guardia: "V. Norambuena", tipo: "Vacaciones", fechas: "21-25 Abr", estado: "Pendiente" },
-    { guardia: "M. López", tipo: "Turno Extra", fechas: "13 Abr", estado: "Pendiente" },
+    { guardia: "L. Aucapan", tipo: "Turno Extra", fechas: "13 Abr", estado: "Pendiente" },
   ];
   return (
     <div className="operations-screen">

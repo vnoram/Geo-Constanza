@@ -117,7 +117,7 @@ async function main() {
   });
   await prisma.usuario.create({
     data: {
-      empresa_id: empresaA.id, rut: '19234567-8', nombre: 'M. López', email: 'libre@geoconstanza.cl', password_hash: hashGeo,
+      empresa_id: empresaA.id, rut: '19234567-8', nombre: 'Leftraru N. Aucapan', email: 'libre@geoconstanza.cl', password_hash: hashGeo,
       rol: ROLES.GGSS_LIBRE, tipo_ggss: 'libre', instalacion_asignada_id: instalacionA.id, dispositivo_principal: 'mobil_personal', estado: 'activo',
     },
   });

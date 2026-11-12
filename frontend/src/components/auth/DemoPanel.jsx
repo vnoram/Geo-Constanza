@@ -6,7 +6,7 @@ const DEMO_USERS = [
   { rut: "12812223-0", rol: "ADMIN (Gestión)",     name: "C. González"    },
   { rut: "15678901-2", rol: "Supervisor",          name: "A. Martínez"    },
   { rut: "20570418-3", rol: "GGSS Víctor",        name: "V. Norambuena"  },
-  { rut: "19234567-8", rol: "GGSS Leftraru",      name: "M. López"       },
+  { rut: "19234567-8", rol: "GGSS Leftraru",      name: "L. Aucapan"      },
   { rut: "21000001-1", rol: "Beta · Admin",       name: "Admin Beta"     },
   { rut: "21000002-K", rol: "Beta · Supervisor",  name: "C. Ruiz"        },
   { rut: "21000003-8", rol: "Beta · GGSS Rodrigo", name: "R. Vera"        },
