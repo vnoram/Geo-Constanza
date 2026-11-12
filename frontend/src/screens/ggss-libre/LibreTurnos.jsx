@@ -107,7 +107,7 @@ function PautaMensual({ turnos }) {
               aria-label={t ? `${iso}: turno ${corto(t.hora_inicio)} a ${corto(t.hora_fin)}` : iso}
               className={t ? "gc-accion-btn gc-accion-btn--morado" : undefined}
               style={{
-                minHeight: 74, borderRadius: 8, padding: "6px 4px", textAlign: "center", fontFamily: "var(--font-ui)",
+                minHeight: 86, borderRadius: 8, padding: "6px 4px", textAlign: "center", fontFamily: "var(--font-ui)",
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between",
                 background: t ? (activo ? "rgba(122,78,191,0.34)" : "rgba(122,78,191,0.22)") : esHoy ? "rgba(232,106,42,0.10)" : T.bgCard,
                 border: `${esHoy ? 2 : 1}px solid ${esHoy ? "rgba(238,154,107,0.75)" : activo ? T.focusText : t ? `${T.focus}aa` : T.border}`,
@@ -117,7 +117,7 @@ function PautaMensual({ turnos }) {
               <span style={{ fontSize: 14, fontWeight: esHoy || t ? 700 : 500, color: esHoy ? "#EE9A6B" : t ? undefined : T.textMut }}>{Number(iso.slice(8))}</span>
               {t ? (
                 <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, fontSize: 10, lineHeight: 1.2 }}>
-                  <Icon name={nocturno ? "moon" : "sun"} size={15} color={VERDE_NEON} />
+                  <Icon name={nocturno ? "moon" : "sun"} size={22} color={VERDE_NEON} />
                   {corto(t.hora_inicio)}–{corto(t.hora_fin)}
                 </span>
               ) : <span />}
@@ -127,8 +127,8 @@ function PautaMensual({ turnos }) {
       </div>
 
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", margin: "12px 0", fontSize: 11, color: T.textMut }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="sun" size={13} color={VERDE_NEON} />Turno diurno</span>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="moon" size={13} color={VERDE_NEON} />Turno nocturno</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="sun" size={16} color={VERDE_NEON} />Turno diurno</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="moon" size={16} color={VERDE_NEON} />Turno nocturno</span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 3, background: "rgba(232,106,42,0.10)", border: "2px solid rgba(238,154,107,0.75)" }} />Hoy</span>
       </div>
 
