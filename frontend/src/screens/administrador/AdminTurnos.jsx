@@ -8,6 +8,9 @@ import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 import { ROLES } from "../../constants/roles";
+import { ahoraChile, sumarDias as sumarDiasChile } from "../../utils/fechaChile";
+import { SemanaTurnos, lunesDe } from "../supervisor/SemanaTurnos";
+import { ModalEditarTurno } from "../supervisor/SupGuardias";
 
 // ─── SELECTOR GENÉRICO ───────────────────────────────────────────
 function Select({ label, value, onChange, options, placeholder }) {
@@ -265,130 +268,140 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
   );
 }
 
-// ─── CARD DE TURNO ───────────────────────────────────────────────
-function TurnoCard({ turno }) {
-  const estadoColor = {
-    programado: T.accent,
-    completado: "#7A4EBF",
-    cancelado: T.red,
-  }[turno.estado] || T.textMut;
-
-  return (
-    <div className="admin-card admin-turn-card" style={{
-      background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
-      padding: "12px 16px", marginBottom: 8,
-      display: "grid", alignItems: "center", gap: 12,
-    }}>
-      <div className="admin-list-row__main">
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>
-            {turno.usuario?.nombre || "—"}
-          </span>
-          {turno.hora_fin < turno.hora_inicio && (
-            <span style={{ fontSize: 10, color: T.focusText, background: T.bgCard, borderRadius: 4, padding: "1px 5px" }}>
-              <Icon name="moon" size={16} />
-            </span>
-          )}
-        </div>
-        <div style={{ fontSize: 12, color: T.textMut, marginTop: 2 }}>
-          {turno.instalacion?.nombre} · {turno.hora_inicio} – {turno.hora_fin}
-          {turno.hora_fin < turno.hora_inicio && <span style={{ color: T.focusText }}> (+1d)</span>}
-        </div>
-        <div style={{ fontSize: 11, color: T.textSec, marginTop: 3 }}>
-          {new Date(turno.fecha).toLocaleDateString("es-CL", {
-            weekday: "short", year: "numeric", month: "short", day: "numeric",
-            timeZone: "UTC",
-          })}
-        </div>
-      </div>
-      <div style={{
-        fontSize: 11, fontWeight: 700, color: estadoColor,
-        background: `${estadoColor}18`, borderRadius: 6, padding: "4px 10px",
-        textTransform: "uppercase", letterSpacing: 0.8,
-      }}>
-        {turno.estado}
-      </div>
-    </div>
-  );
-}
-
-// ─── PANTALLA PRINCIPAL ──────────────────────────────────────────
 export function AdminTurnos() {
   const [turnos, setTurnos] = useState([]);
   const [guardias, setGuardias] = useState([]);
   const [instalaciones, setInstalaciones] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [lunes, setLunes] = useState(() => lunesDe(ahoraChile().fecha));
+  const [filtroInstalacion, setFiltroInstalacion] = useState("");
+  const [filtroGuardia, setFiltroGuardia] = useState("");
+  const [turnoEditando, setTurnoEditando] = useState(null);
+  const [aviso, setAviso] = useState("");
 
-  const cargarDatos = async () => {
+  const cargarTurnos = async () => {
     setCargando(true);
     try {
-      const [listaTurnos, listaUsuarios, listaInstalaciones] = await Promise.all([
-        api.get("/turnos"),
-        api.get("/usuarios?limit=200"),   // paginado → { data: [], total, ... }
-        api.get("/instalaciones"),
-      ]);
-      setTurnos(listaTurnos);
-      // La API de usuarios devuelve { data: [], total, page, totalPages }
-      const usuarios = Array.isArray(listaUsuarios) ? listaUsuarios : (listaUsuarios.data ?? []);
-      setGuardias(usuarios.filter((u) => [ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE].includes(u.rol)));
-      setInstalaciones(Array.isArray(listaInstalaciones) ? listaInstalaciones : (listaInstalaciones.data ?? []));
+      const data = await api.get(`/turnos?desde=${lunes}&hasta=${sumarDiasChile(lunes, 6)}`);
+      setTurnos(Array.isArray(data) ? data : (data.data ?? []));
     } catch (e) {
-      console.error("Error cargando datos:", e);
+      console.error("Error cargando turnos:", e);
     } finally {
       setCargando(false);
     }
   };
 
-  useEffect(() => { cargarDatos(); }, []);
+  const cargarRecursos = async () => {
+    try {
+      const [listaUsuarios, listaInstalaciones] = await Promise.all([
+        api.get("/usuarios?limit=200"),
+        api.get("/instalaciones"),
+      ]);
+      const usuarios = Array.isArray(listaUsuarios) ? listaUsuarios : (listaUsuarios.data ?? []);
+      setGuardias(usuarios.filter((u) => [ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE].includes(u.rol)));
+      setInstalaciones(Array.isArray(listaInstalaciones) ? listaInstalaciones : (listaInstalaciones.data ?? []));
+    } catch (e) {
+      console.error("Error cargando recursos:", e);
+    }
+  };
 
-  const handlePautaExitosa = () => { cargarDatos(); };
+  useEffect(() => { cargarRecursos(); }, []);
+  useEffect(() => { cargarTurnos(); }, [lunes]);
+
+  const onTurnoGuardado = () => {
+    setTurnoEditando(null);
+    setAviso("Turno actualizado correctamente");
+    setTimeout(() => setAviso(""), 4000);
+    cargarTurnos();
+  };
+
+  const { fecha: hoy } = ahoraChile();
+  const visibles = turnos
+    .filter((t) => t.estado !== "cancelado")
+    .filter((t) => !filtroInstalacion || t.instalacion_id === filtroInstalacion)
+    .filter((t) => !filtroGuardia || t.usuario_id === filtroGuardia);
+
+  const selStyle = {
+    background: T.bgCard, color: T.text, border: `1px solid ${T.border}`, borderRadius: 8,
+    padding: "8px 10px", fontSize: 12, fontFamily: "var(--font-ui)", minWidth: 160, maxWidth: 240,
+  };
+  const inputStyle = {
+    width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`,
+    background: T.bgCard, color: T.text, fontSize: 13, marginBottom: 10, boxSizing: "border-box",
+    outline: "none", fontFamily: "var(--font-ui)",
+  };
 
   return (
     <div className="admin-screen">
       <SectionHeader
         title="Turnos"
-        sub="Gestión masiva de horarios"
+        sub="Programación semanal de todas las instalaciones"
         action={{ label: <><Icon name="zap" size={16} />{" Generar Pauta 4×4"}</>, onClick: () => setModalAbierto(true) }}
       />
 
-      {/* Tarjeta de importación CSV */}
-      <div style={{
-        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
-        padding: 20, textAlign: "center", marginBottom: 20,
-      }}>
-        <div style={{ fontSize: 40, marginBottom: 10 }}><Icon name="download" size={40} /></div>
-        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Importar Turnos</div>
-        <div style={{ fontSize: 12, color: T.textMut, marginBottom: 14 }}>
-          Sube un archivo CSV o Excel con los turnos programados
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", margin: "4px 0 12px" }}>
+        <select value={filtroInstalacion} onChange={(e) => setFiltroInstalacion(e.target.value)} style={selStyle}>
+          <option value="">Todas las instalaciones</option>
+          {instalaciones.map((i) => <option key={i.id} value={i.id}>{i.nombre}</option>)}
+        </select>
+        <select value={filtroGuardia} onChange={(e) => setFiltroGuardia(e.target.value)} style={selStyle}>
+          <option value="">Todos los guardias</option>
+          {guardias.map((g) => <option key={g.id} value={g.id}>{g.nombre}</option>)}
+        </select>
+        <div style={{ fontSize: 12, color: T.textMut, marginLeft: "auto" }}>
+          {visibles.length} turno{visibles.length === 1 ? "" : "s"} esta semana
         </div>
-        <Btn>Seleccionar Archivo</Btn>
       </div>
 
-      {/* Lista de turnos */}
-      <SubHeader title={`Todos los Turnos (${turnos.length})`} />
-
-      {cargando ? (
-        <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 30 }}>
-          Cargando turnos...
-        </div>
-      ) : turnos.length === 0 ? (
-        <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 30 }}>
-          No hay turnos registrados.
-        </div>
-      ) : (
-        <div>
-          {turnos.map((t) => <TurnoCard key={t.id} turno={t} />)}
+      {aviso && (
+        <div style={{ background: T.bgCard, color: T.accent, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 600, marginBottom: 10 }}>
+          <Icon name="circle-check" size={16} />{" "}{aviso}
         </div>
       )}
 
-      {/* Modal Pauta 4x4 */}
+      {cargando && turnos.length === 0 ? (
+        <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 30 }}>Cargando turnos...</div>
+      ) : (
+        <SemanaTurnos
+          lunes={lunes}
+          hoy={hoy}
+          turnos={visibles}
+          onCambiarSemana={setLunes}
+          onEditar={setTurnoEditando}
+        />
+      )}
+
+      <div style={{
+        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
+        padding: "12px 16px", marginTop: 18, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+      }}>
+        <Icon name="download" size={22} />
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <div style={{ fontWeight: 700, fontSize: 13 }}>Importar turnos</div>
+          <div style={{ fontSize: 11, color: T.textMut }}>CSV o Excel con los turnos programados (próximamente)</div>
+        </div>
+        <Btn variant="outline" disabled>Seleccionar archivo</Btn>
+      </div>
+
       {modalAbierto && (
         <ModalPauta4x4
           onClose={() => setModalAbierto(false)}
-          onSuccess={handlePautaExitosa}
+          onSuccess={cargarTurnos}
           guardias={guardias}
           instalaciones={instalaciones}
+        />
+      )}
+
+      {turnoEditando && (
+        <ModalEditarTurno
+          turno={turnoEditando}
+          turnos={turnos}
+          guardias={guardias}
+          instalaciones={instalaciones}
+          inputStyle={inputStyle}
+          onClose={() => setTurnoEditando(null)}
+          onGuardado={onTurnoGuardado}
         />
       )}
     </div>

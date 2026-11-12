@@ -49,7 +49,7 @@ const ESTADO_COLOR = { programado: "accent", completado: "yellow", cancelado: "r
 const etiquetaStyle = { fontSize: 11, color: T.textMut, marginBottom: 4, fontWeight: 600 };
 
 // ─── MODAL EDITAR TURNO ──────────────────────────────────────────
-function ModalEditarTurno({ turno, turnos, guardias, instalaciones, inputStyle, onClose, onGuardado }) {
+export function ModalEditarTurno({ turno, turnos, guardias, instalaciones, inputStyle, onClose, onGuardado }) {
   const [form, setForm] = useState({
     usuario_id: turno.usuario_id,
     instalacion_id: turno.instalacion_id,
