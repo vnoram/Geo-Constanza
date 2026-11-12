@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "../../services/api";
 import { T, FONT, ROLES } from "../../theme/theme";
 import { Icon } from "../ui/Icon";
 import { Wordmark } from "../ui/Wordmark";
@@ -108,7 +109,22 @@ function RoleContent({ user, rol, section }) {
 
 export function AppShell({ user, onLogout }) {
   const role = ROLES[user.rol];
-  const sections = seccionesPara(user);
+  const [pendientes, setPendientes] = useState(0);
+  // Insignia real de solicitudes pendientes para el supervisor (se refresca cada minuto y al resolver una)
+  useEffect(() => {
+    if (user.rol !== ROL.SUPERVISOR) return undefined;
+    let vigente = true;
+    const cargar = () => api.get("/solicitudes?estado=pendiente&limit=1")
+      .then((res) => { if (vigente) setPendientes(Number(res?.total) || 0); })
+      .catch(() => {});
+    cargar();
+    const timer = setInterval(cargar, 60000);
+    window.addEventListener("gc:solicitudes-cambio", cargar);
+    return () => { vigente = false; clearInterval(timer); window.removeEventListener("gc:solicitudes-cambio", cargar); };
+  }, [user.rol]);
+  const sections = seccionesPara(user).map((s) => (
+    user.rol === ROL.SUPERVISOR && s.id === "solicitudes" ? { ...s, badge: pendientes > 0 ? String(pendientes) : null } : s
+  ));
   // En un equipo personal el guardia ve su vista de GGSS libre: la etiqueta es solo «GGSS».
   const etiquetaRol = user.dispositivo === "personal" && [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(user.rol) ? "GGSS" : role.label;
   const [seleccion, setActiveSection] = useState(sections[0].id);

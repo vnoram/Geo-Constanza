@@ -52,6 +52,7 @@ export function SupSolicitudes() {
         accion === "aprobar" ? {} : { motivo: comentario.trim() });
       setAviso(`Solicitud de ${s.usuario?.nombre || "guardia"} ${accion === "aprobar" ? "aprobada" : "rechazada"}.`);
       setRechazando(null); setComentario("");
+      window.dispatchEvent(new Event("gc:solicitudes-cambio"));
       await cargar();
     } catch (err) { setError(err.message); }
     finally { setOcupado(""); }
