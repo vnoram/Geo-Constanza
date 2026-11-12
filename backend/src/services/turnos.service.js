@@ -222,6 +222,12 @@ const porReasignar = async (user) => {
 const crearPauta4x4 = async (data, creadoPor) => {
   const { usuario_id, instalacion_id, fecha_inicio, hora_inicio, hora_fin, reemplazar = false } = data;
 
+  // Un guardia con instalación asignada solo puede tener su pauta en esa instalación
+  const guardia = await prisma.usuario.findUnique({ where: { id: usuario_id }, select: { instalacion_asignada_id: true } });
+  if (guardia?.instalacion_asignada_id && guardia.instalacion_asignada_id !== instalacion_id) {
+    throw Object.assign(new Error('El guardia está asignado a otra instalación. Cambia su asignación en Usuarios antes de generar la pauta.'), { statusCode: 400 });
+  }
+
   const inicio = aFechaDB(fecha_inicio);
 
   // Detectar si es turno nocturno (hora_fin < hora_inicio → termina al día siguiente)

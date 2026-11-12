@@ -61,6 +61,13 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
   const [error, setError] = useState("");
 
   const set = (key) => (val) => setForm((f) => ({ ...f, [key]: val }));
+  // Al elegir guardia, se fija su instalación asignada (si tiene)
+  const elegirGuardia = (id) => {
+    const g = guardias.find((x) => x.id === id);
+    setForm((f) => ({ ...f, usuario_id: id, instalacion_id: g?.instalacion_asignada_id || "" }));
+  };
+  const guardiaSel = guardias.find((x) => x.id === form.usuario_id);
+  const asignadaId = guardiaSel?.instalacion_asignada_id || null;
   const setCheck = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.checked }));
 
   // Detectar turno nocturno para mostrar aviso informativo
@@ -168,7 +175,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
             <Select
               label="Guardia (GGSS)"
               value={form.usuario_id}
-              onChange={set("usuario_id")}
+              onChange={elegirGuardia}
               placeholder="Seleccionar guardia..."
               options={guardias.map((g) => ({
                 value: g.id,
@@ -181,11 +188,16 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
               value={form.instalacion_id}
               onChange={set("instalacion_id")}
               placeholder="Seleccionar instalación..."
-              options={instalaciones.map((i) => ({
+              options={(asignadaId ? instalaciones.filter((i) => i.id === asignadaId) : instalaciones).map((i) => ({
                 value: i.id,
                 label: i.nombre,
               }))}
             />
+            {asignadaId && (
+              <div style={{ fontSize: 11, color: T.textMut, margin: "-10px 0 14px" }}>
+                Este guardia está asignado a esta instalación. Para otra, cambia su asignación en Usuarios.
+              </div>
+            )}
 
             <div style={{ fontSize: 12, fontWeight: 500, color: T.textSec, marginBottom: 6 }}>Primer día de la pauta</div>
             <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>
