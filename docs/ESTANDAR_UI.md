@@ -6,9 +6,9 @@ Todo cambio visual nuevo debe cumplir esta lista. Si algo se decide en una panta
 
 | Tipo | Cómo se usa | Cómo se ve |
 |---|---|---|
-| Aprobar / aceptar / confirmar positivo | `<Btn variant="aprobar">` | Verde oscuro `T.accentDim`, texto claro. |
-| Rechazar / destructivo | `<Btn variant="rechazar">` | Naranja `T.alert`. Aprobar y rechazar siempre van juntos con estos colores. |
-| Acción principal neutra (Enviar, Guardar, Consultar) | `<Btn>` (variant `primary`) | Naranja `T.alert`. |
+| Aprobar / aceptar / confirmar positivo | `<Btn variant="aprobar">` | Suave en reposo (tinte verde, borde verde); al pasar el mouse se rellena de verde oscuro `T.accentDim`. |
+| Rechazar / destructivo | `<Btn variant="rechazar">` | Suave en reposo (tinte naranja, borde naranja); al pasar el mouse se rellena de naranja `T.alert`. Aprobar y rechazar siempre van juntos con estos colores. |
+| Acción principal neutra (Enviar, Guardar, Consultar, «+ Nuevo») | `<Btn>` (variant `primary`) o la acción de `SectionHeader` | Igual que rechazar: suave en reposo y naranja pleno en hover. |
 | Secundaria / contorno | `<Btn variant="outline">` | Borde neutro. En hover se decolora a morado suave. |
 | Ghost (sin borde) | `<Btn variant="ghost">` | Sin borde. En hover se decolora a morado suave. |
 | Acción en tarjeta / lista | `<button className="touch-target gc-accion-btn gc-accion-btn--morado">` | Transparente con borde `T.border`. |
@@ -20,7 +20,7 @@ Reglas:
 - `Btn` ya aplica el hover correcto: usarlo siempre que se pueda. Acepta `style` para ajustar tamaño.
 - Un botón sin función real no se deja: se quita.
 - Semántica de color: verde = aprobar/aceptar, naranja = rechazar/destructivo o acción principal. Un par aprobar/rechazar nunca se pinta con el mismo color.
-- Todos los botones rellenos se aclaran un poco en hover (`gc-btn-principal`) sin cambiar de color.
+- Ningún botón es llamativo en reposo: todos los rellenos son suaves (tinte + borde) y toman el color pleno solo al pasar el mouse. Las clases viven en `index.css` (`gc-btn-principal`, `gc-btn-rechazar`, `gc-btn-aprobar`); un botón suelto las usa en vez de pintar su propio fondo.
 - Nunca usar `<button>` sin estilo del navegador.
 
 ## 2. Avisos y confirmaciones

@@ -893,11 +893,16 @@ span[style*='text-transform: uppercase'] { display: inline-block; }
 .gc-accion-btn--morado:hover,  .gc-accion-btn--morado:focus-visible  { background: rgba(122,78,191,0.20) !important;  border-color: rgba(179,155,224,0.55) !important; color: #B9A8E0 !important; }
 .gc-accion-btn--naranja:hover, .gc-accion-btn--naranja:focus-visible { background: rgba(232,106,42,0.16) !important;  border-color: rgba(232,106,42,0.55) !important;  color: #EE9A6B !important; }
 .gc-accion-btn:focus-visible { outline: 2px solid #B39BE0; outline-offset: 1px; }
-/* Acción principal (naranja): se aclara un poco al pasar el mouse; no cambia de color */
-.gc-btn-principal { transition: filter 0.15s ease, transform 0.15s ease; }
-.gc-btn-principal:hover:not(:disabled), .gc-btn-principal:focus-visible:not(:disabled) { filter: brightness(1.12); }
-.gc-btn-principal:active:not(:disabled) { transform: translateY(1px); }
-.gc-btn-principal:focus-visible { outline: 2px solid #B39BE0; outline-offset: 1px; }
+/* Botones rellenos (estándar): en reposo van suaves (tinte + borde del color) y al pasar el mouse
+   se rellenan con el color pleno. Naranja = principal / rechazar · Verde oscuro = aprobar. */
+.gc-btn-principal, .gc-btn-rechazar, .gc-btn-aprobar { transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease; }
+.gc-btn-principal:not(:disabled), .gc-btn-rechazar:not(:disabled) { background: rgba(232,106,42,0.14) !important; border: 1px solid rgba(232,106,42,0.45) !important; color: #EE9A6B !important; }
+.gc-btn-principal:hover:not(:disabled), .gc-btn-principal:focus-visible:not(:disabled),
+.gc-btn-rechazar:hover:not(:disabled),  .gc-btn-rechazar:focus-visible:not(:disabled) { background: #E86A2A !important; border-color: #E86A2A !important; color: #0E1714 !important; }
+.gc-btn-aprobar:not(:disabled) { background: rgba(62,154,114,0.16) !important; border: 1px solid rgba(62,154,114,0.5) !important; color: #9CCBB4 !important; }
+.gc-btn-aprobar:hover:not(:disabled), .gc-btn-aprobar:focus-visible:not(:disabled) { background: #2F7757 !important; border-color: #2F7757 !important; color: #F3EFE6 !important; }
+.gc-btn-principal:active:not(:disabled), .gc-btn-rechazar:active:not(:disabled), .gc-btn-aprobar:active:not(:disabled) { transform: translateY(1px); }
+.gc-btn-principal:focus-visible, .gc-btn-rechazar:focus-visible, .gc-btn-aprobar:focus-visible { outline: 2px solid #B39BE0; outline-offset: 1px; }
 
 /* ─── Menú lateral: botones de sesión con color al pasar el mouse ─── */
 .gc-menu-btn { transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; }

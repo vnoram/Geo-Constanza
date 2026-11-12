@@ -1,7 +1,8 @@
 import { T, FONT } from "../../theme/theme";
 import { Icon } from "./Icon";
 
-// Estándar (docs/ESTANDAR_UI.md): primary = acción principal (naranja, se aclara al pasar el mouse)
+// Estándar (docs/ESTANDAR_UI.md): los rellenos (primary / aprobar / rechazar) van suaves en reposo y se
+// rellenan del color al pasar el mouse (ver index.css). primary = acción principal (naranja)
 // · secondary = contorno neutro · ghost = sin borde. Secondary y ghost se decoloran a morado en hover.
 export function Btn({ children, onClick, loading, variant = "primary", disabled, full, className = "", icon, style: estilo, ...props }) {
   // aprobar = verde oscuro (confirmar/aceptar) · rechazar = naranja (rechazar/destructivo) · primary = naranja (acción principal)
@@ -12,7 +13,7 @@ export function Btn({ children, onClick, loading, variant = "primary", disabled,
   return (
     <button
       {...props}
-      className={`touch-target ${isPrimary ? "gc-btn-principal" : "gc-accion-btn gc-accion-btn--morado"} ${className}`.trim()}
+      className={`touch-target ${isAprobar ? "gc-btn-aprobar" : variant === "rechazar" ? "gc-btn-rechazar" : isPrimary ? "gc-btn-principal" : "gc-accion-btn gc-accion-btn--morado"} ${className}`.trim()}
       onClick={onClick}
       disabled={inactivo}
       style={{
