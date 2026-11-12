@@ -5,7 +5,6 @@ import { Btn } from "../../components/ui/Btn";
 import { Icon } from "../../components/ui/Icon";
 import arteLogin from "../../assets/login-ilustracion.webp";
 import { DemoPanel } from "../../components/auth/DemoPanel";
-import { EnrolarDispositivo } from "../../components/auth/EnrolarDispositivo";
 import { TwoFactorStep } from "../../components/auth/TwoFactorStep";
 import { useLoginForm } from "../../hooks/useLoginForm";
 
@@ -98,9 +97,7 @@ export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacio
                 </div>
               )}
 
-              {invitacion
-                ? <Btn variant="outline" onClick={onCancelarInvitacion} disabled={loading}>Cancelar enrolamiento</Btn>
-                : <EnrolarDispositivo />}
+              {invitacion && <Btn variant="outline" onClick={onCancelarInvitacion} disabled={loading}>Cancelar enrolamiento</Btn>}
 
               {MOSTRAR_DEMO && (
               <div style={{ marginTop: 18 }}>

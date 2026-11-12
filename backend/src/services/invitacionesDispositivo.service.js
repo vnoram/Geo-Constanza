@@ -143,7 +143,33 @@ function separarSegundoFactor(token) {
   } catch (_) { throw invalida(); }
 }
 
+const misInvitaciones = async usuario => {
+  if (!ROLES_INVITABLES.includes(usuario.rol)) return [];
+  return prisma.dispositivo.findMany({
+    where: { invitado_usuario_id: usuario.id, estado: 'activo', token_hash: null, invitacion_hash: { not: null }, invitacion_expira_en: { gt: new Date() } },
+    select: { id: true, nombre: true, invitacion_expira_en: true, instalacion: { select: { id: true, nombre: true } } },
+    orderBy: { invitacion_expira_en: 'desc' },
+  });
+};
+
+// El usuario ya está autenticado: acepta la invitación dirigida a él sin volver a iniciar sesión.
+async function aceptar(usuario, id) {
+  if (!usuario.empresa_id || !ROLES_INVITABLES.includes(usuario.rol)) throw invalida();
+  const tokenDispositivo = randomBytes(32).toString('hex');
+  const { count } = await prisma.dispositivo.updateMany({
+    where: {
+      id, invitado_usuario_id: usuario.id, estado: 'activo', token_hash: null, invitacion_hash: { not: null },
+      invitacion_expira_en: { gt: new Date() }, invitado: { is: FILTRO_DESTINATARIO },
+    },
+    data: { token_hash: hash(tokenDispositivo), enrolado_por: usuario.id, invitacion_hash: null, invitacion_expira_en: null, ultimo_uso: new Date() },
+  });
+  if (!count) throw invalida();
+  await auditar('enrolar_dispositivo', id, usuario.id, usuario.empresa_id);
+  return { token: tokenDispositivo };
+}
+
 module.exports = {
+  misInvitaciones, aceptar,
   destinatarios, invitar, reenviar, confirmar, validarParaUsuario, consumir,
   vincularSegundoFactor, separarSegundoFactor,
 };

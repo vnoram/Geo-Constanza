@@ -371,6 +371,22 @@ suite('Dispositivos corporativos con PostgreSQL local', () => {
     });
   });
 
+  test('el destinatario acepta su invitación desde su panel y nadie más puede hacerlo', async () => {
+    const admin2 = await sesionAdmin();
+    const { body } = await invitar(admin2, cuenta.central).expect(201);
+    const central = (await login(cuenta.central, token).expect(200)).body.accessToken;
+    const supervisor = (await login(cuenta.supervisor, token).expect(200)).body.accessToken;
+    const mias = await autenticar(request(app).get('/api/v1/dispositivos/mis-invitaciones'), central, token).expect(200);
+    expect(mias.body.map(e => e.id)).toContain(body.id);
+    expect((await autenticar(request(app).get('/api/v1/dispositivos/mis-invitaciones'), supervisor, token).expect(200)).body.map(e => e.id)).not.toContain(body.id);
+    await autenticar(request(app).post('/api/v1/dispositivos/' + body.id + '/aceptar'), supervisor, token).expect(400);
+    await autenticar(request(app).post('/api/v1/dispositivos/' + body.id + '/aceptar'), admin2, token).expect(403);
+    const aceptada = await autenticar(request(app).post('/api/v1/dispositivos/' + body.id + '/aceptar'), central, token).expect(200);
+    expect(aceptada.body.token).toMatch(/^[a-f0-9]{64}$/);
+    await autenticar(request(app).post('/api/v1/dispositivos/' + body.id + '/aceptar'), central, token).expect(400);
+    await confirmar(tokenDe(body.enlace)).expect(400);
+  });
+
   test('revocar corta sesiones vigentes y el guardia puede volver a entrar como personal', async () => {
     const sesion = (await login(cuenta.admin, token).expect(200)).body;
     const guardia = (await login(cuenta.pauta, token).expect(200)).body;

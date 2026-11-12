@@ -38,13 +38,14 @@ import { AdminUsuarios } from "../../screens/administrador/AdminUsuarios";
 import { AdminInstalaciones } from "../../screens/administrador/AdminInstalaciones";
 import { AdminTurnos } from "../../screens/administrador/AdminTurnos";
 import { AdminAuditoria } from "../../screens/administrador/AdminAuditoria";
+import { MisDispositivos } from "../../screens/MisDispositivos";
 
 function seccionesPara(user) {
   if (user.dispositivo === "personal" && [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(user.rol)) {
     return ROLES[ROL.GGSS_LIBRE].sections.map(s => s.id === "turnos" ? { ...s, label: "Mi pauta" } : s);
   }
   const secciones = ROLES[user.rol].sections;
-  return user.rol === ROL.ADMINISTRADOR
+  return [ROL.ADMINISTRADOR, ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL].includes(user.rol)
     ? [...secciones, { id: "dispositivos", icon: "key-round", label: "Dispositivos" }]
     : secciones;
 }
@@ -80,6 +81,7 @@ function RoleContent({ user, rol, section }) {
     if (section === "solicitudes") return <LibreSolicitudes />;
     if (section === "docs") return <LibreDocs />;
   }
+  if (section === "dispositivos" && [ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL].includes(rol)) return <MisDispositivos user={user} />;
   if (rol === ROL.SUPERVISOR) {
     if (section === "dashboard") return <SupDashboard />;
     if (section === "novedades") return <SupNovedades />;

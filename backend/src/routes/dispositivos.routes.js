@@ -26,7 +26,12 @@ router.post('/invitaciones/confirmar', limitarEnrolamiento(),
   validarBody(z.object({ token: z.string().regex(/^[a-f0-9]{64}$/) })),
   responder(200, req => invitaciones.confirmar(req.body.token, contexto(req))));
 
-router.use(authenticate, exigirEmpresa, authorize(ROLES.ADMINISTRADOR));
+router.use(authenticate, exigirEmpresa);
+const invitado = authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL);
+router.get('/mis-invitaciones', invitado, responder(200, req => invitaciones.misInvitaciones({ id: req.user.id, rol: req.user.rol })));
+router.post('/:id/aceptar', invitado, limitarEnrolamiento(),
+  responder(200, req => invitaciones.aceptar({ id: req.user.id, rol: req.user.rol, empresa_id: req.user.empresaId }, req.params.id)));
+router.use(authorize(ROLES.ADMINISTRADOR));
 router.get('/destinatarios', responder(200, () => invitaciones.destinatarios()));
 router.post('/invitaciones', validarBody(z.object({
   nombre: z.string().trim().min(1).max(100),

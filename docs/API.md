@@ -270,6 +270,8 @@ Solo con `DEVICE_POLICY=on` (404 si está apagada). Roles: supervisor (solo sus 
 
 Con la política activa, el reporte exigido para marcar la salida excluye los tipos de rutina «Ronda», «Fin de ronda» y «Cambio de turno»; cuentan «Sin novedad» y las novedades reales.
 
+`GET /dispositivos/mis-invitaciones` (supervisor y operador central) lista las invitaciones pendientes dirigidas al usuario autenticado y `POST /dispositivos/:id/aceptar` registra el equipo actual sin volver a iniciar sesión, devolviendo `{ "token" }` una vez (400 si no es el destinatario o venció). El enlace por correo sigue siendo la vía para el primer equipo, cuando aún no hay otro corporativo desde el cual entrar.
+
 El enlace usa `FRONTEND_URL/#/enrolar?t=…`. Tras confirmar, el cliente envía el valor del fragmento en el campo opcional `invitacion` de `POST /auth/login`. Si hay 2FA, el desafío temporal vincula esa invitación y el enrolamiento se completa en `POST /auth/2fa/verify`. La respuesta final de autenticación devuelve `tokenDispositivo` una vez. La invitación vence en 15 minutos y solo se consume con la cuenta destinataria tras completar la autenticación. Si SMTP falla, `correoEnviado` es falso y el enlace sigue disponible para copiar. `POST /dispositivos` y `/dispositivos/canjear` quedan como respaldo manual.
 
 Con `DEVICE_POLICY=on`, el cliente envía `X-Device-Token` al iniciar sesión, verificar 2FA, renovar y llamar a rutas protegidas. Socket.IO recibe `deviceToken` en su autenticación. El JWT y el perfil incluyen `dispositivo`. En HTTP, `X-Device-Class` indica la clasificación vigente para actualizar el menú. La API comprueba el token contra el equipo activo de la empresa y contra el equipo vinculado a la sesión.
