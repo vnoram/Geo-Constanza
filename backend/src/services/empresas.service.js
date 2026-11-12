@@ -26,7 +26,8 @@ const SELECT_EMPRESA = {
   plan: true,
   created_at: true,
   // Solo conteos y la cuenta de administración: nunca datos operativos de la empresa.
-  _count: { select: { usuarios: true, instalaciones: true } },
+  // El contador de usuarios cuenta solo cuentas activas: una desactivada ya no puede entrar.
+  _count: { select: { usuarios: { where: { estado: ESTADO_USUARIO.ACTIVO } }, instalaciones: true } },
   usuarios: { where: { rol: ROLES.ADMINISTRADOR }, select: { id: true, nombre: true, email: true, rut: true, telefono: true, estado: true } },
 };
 

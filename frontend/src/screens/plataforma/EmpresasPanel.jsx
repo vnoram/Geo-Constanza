@@ -317,7 +317,7 @@ export function EmpresasPanel() {
                 <th style={cabecera}>Plan</th>
                 <th style={cabecera}>Estado</th>
                 <th style={cabecera}>Administrador</th>
-                <th style={cabecera}>Usuarios</th>
+                <th style={cabecera}>Usuarios activos</th>
                 <th style={cabecera}>Creada</th>
                 <th style={cabecera}>Acciones</th>
               </tr>
