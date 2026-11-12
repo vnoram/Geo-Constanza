@@ -29,6 +29,7 @@ model Empresa {
   novedades                Novedad[]
   novedades_historial      NovedadHistorial[]
   solicitudes              Solicitud[]
+  documentos               Documento[]
   auditorias               Auditoria[]
   dispositivos             Dispositivo[]
 }
@@ -85,6 +86,8 @@ model Usuario {
   marcajes_revisados       Asistencia[] @relation("MarcajeRevisor")
   instalaciones_sup        Supervisor_Instalacion[]
   solicitudes              Solicitud[] @relation("UsuarioSolicita")
+  documentos               Documento[] @relation("DocumentoDuenio")
+  documentos_subidos       Documento[] @relation("DocumentoAutor")
   solicitudes_rev          Solicitud[] @relation("SupervisorRevisa")
   empresa                  Empresa?     @relation(fields: [empresa_id], references: [id], onDelete: Restrict)
   instalacion_asignada     Instalacion? @relation("ggss_asignado", fields: [empresa_id, instalacion_asignada_id], references: [empresa_id, id], onDelete: Restrict)
@@ -323,6 +326,25 @@ model Solicitud {
   revisor             Usuario?     @relation("SupervisorRevisa", fields: [empresa_id, revisada_por], references: [empresa_id, id], onDelete: Restrict)
 
   @@index([empresa_id])
+}
+
+// ─── DOCUMENTOS DEL PERSONAL (contrato, liquidaciones, certificado OS-10, anexos) ───
+model Documento {
+  id             String   @id @default(uuid())
+  empresa_id     String
+  usuario_id     String   // dueño del documento
+  tipo           String   // 'contrato' | 'liquidacion' | 'os10' | 'anexo' | 'otro'
+  nombre         String
+  archivo_url    String
+  archivo_nombre String?
+  subido_por     String
+  created_at     DateTime @default(now())
+
+  empresa        Empresa  @relation(fields: [empresa_id], references: [id], onDelete: Restrict)
+  usuario        Usuario  @relation("DocumentoDuenio", fields: [empresa_id, usuario_id], references: [empresa_id, id], onDelete: Restrict)
+  autor          Usuario  @relation("DocumentoAutor", fields: [empresa_id, subido_por], references: [empresa_id, id], onDelete: Restrict)
+
+  @@index([empresa_id, usuario_id])
 }
 
 // ─── 8. AUDITORÍA (Seguridad Inmutable) ───

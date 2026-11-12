@@ -39,15 +39,17 @@ import { AdminInstalaciones } from "../../screens/administrador/AdminInstalacion
 import { AdminTurnos } from "../../screens/administrador/AdminTurnos";
 import { AdminAuditoria } from "../../screens/administrador/AdminAuditoria";
 import { MisDispositivos } from "../../screens/MisDispositivos";
+import { AdminDocumentos } from "../../screens/administrador/AdminDocumentos";
 
 function seccionesPara(user) {
   if (user.dispositivo === "personal" && [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(user.rol)) {
     return ROLES[ROL.GGSS_LIBRE].sections.map(s => s.id === "turnos" ? { ...s, label: "Mi pauta" } : s);
   }
   const secciones = ROLES[user.rol].sections;
-  return [ROL.ADMINISTRADOR, ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL].includes(user.rol)
-    ? [...secciones, { id: "dispositivos", icon: "key-round", label: "Dispositivos" }]
-    : secciones;
+  const extra = [];
+  if (user.rol === ROL.ADMINISTRADOR) extra.push({ id: "documentos", icon: "folder", label: "Documentos" });
+  if ([ROL.ADMINISTRADOR, ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL].includes(user.rol)) extra.push({ id: "dispositivos", icon: "key-round", label: "Dispositivos" });
+  return [...secciones, ...extra];
 }
 
 function RoleContent({ user, rol, section }) {
@@ -100,6 +102,7 @@ function RoleContent({ user, rol, section }) {
   if (rol === ROL.ADMINISTRADOR) {
     // Admin ya no tiene el panel de monitoreo — solo gestión RRHH/config
     if (section === "dispositivos") return <AdminDispositivos />;
+    if (section === "documentos")    return <AdminDocumentos />;
     if (section === "usuarios")      return <AdminUsuarios />;
     if (section === "instalaciones") return <AdminInstalaciones />;
     if (section === "turnos")        return <AdminTurnos />;

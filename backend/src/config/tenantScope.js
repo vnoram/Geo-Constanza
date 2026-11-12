@@ -29,6 +29,7 @@ const MODELOS_CON_EMPRESA = new Set([
   'Novedad',
   'NovedadHistorial',
   'Solicitud',
+  'Documento',
   'Auditoria',
 ]);
 

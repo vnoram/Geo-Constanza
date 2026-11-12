@@ -4,10 +4,10 @@ const { ROLES } = require('../constants/roles');
 const permisoPersonal = (req) => {
   const ruta = (req.baseUrl + req.path).toLowerCase().replace(/^\/api\/v1(?=\/)/, '').replace(/\/$/, '');
   if (req.method === 'GET' || req.method === 'HEAD') {
-    if (['/usuarios/me', '/solicitudes', '/turnos'].includes(ruta)) return true;
+    if (['/usuarios/me', '/solicitudes', '/turnos', '/documentos'].includes(ruta)) return true;
     return /^\/turnos\/(?!disponibles$|conflictos$)[^/]+$/.test(ruta);
   }
-  return req.method === 'POST' && ['/solicitudes', '/auth/logout'].includes(ruta);
+  return req.method === 'POST' && ['/solicitudes', '/documentos', '/auth/logout'].includes(ruta);
 };
 
 const aplicarDispositivo = async (req, res, sesion) => {
