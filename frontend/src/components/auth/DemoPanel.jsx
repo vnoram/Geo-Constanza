@@ -9,7 +9,7 @@ const DEMO_USERS = [
   { rut: "19234567-8", rol: "GGSS Leftraru",      name: "M. López"       },
   { rut: "21000001-1", rol: "Beta · Admin",       name: "Admin Beta"     },
   { rut: "21000002-K", rol: "Beta · Supervisor",  name: "C. Ruiz"        },
-  { rut: "21000003-8", rol: "Beta · GGSS Pauta",  name: "R. Vera"        },
+  { rut: "21000003-8", rol: "Beta · GGSS Rodrigo", name: "R. Vera"        },
 ];
 
 export function DemoPanel({ onSelect }) {
