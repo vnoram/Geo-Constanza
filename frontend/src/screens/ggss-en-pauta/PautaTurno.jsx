@@ -188,6 +188,8 @@ export function PautaTurno({ user }) {
         estado:          data.estado,
         minutos_retraso: data.minutos_retraso ?? 0,
         verificacion:    data.verificacion_gps ?? null,
+        revision:        data.revision_estado ?? null,
+        comentarioRevision: data.comentario_revision ?? null,
         mensaje_gps:     data.mensaje_gps ?? null,
       };
       setMarcaje(m);
@@ -367,6 +369,7 @@ export function PautaTurno({ user }) {
             }}>
               <strong>{VERIFICACION_GPS[marcaje.verificacion].texto}.</strong>
               {marcaje.mensaje_gps ? ` ${marcaje.mensaje_gps}` : ""}
+              {marcaje.revision ? ` Revisión: ${marcaje.revision}${marcaje.comentarioRevision ? ` (${marcaje.comentarioRevision})` : ""}.` : ""}
             </div>
           )}
           {yaSalio && (

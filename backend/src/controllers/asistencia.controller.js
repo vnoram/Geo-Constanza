@@ -1,3 +1,4 @@
+const { habilitada } = require('../services/dispositivos.service');
 const asistenciaService = require('../services/asistencia.service');
 const { ROLES } = require('../constants/roles');
 const { prisma } = require('../config/database');
@@ -20,7 +21,7 @@ const registrarEntrada = async (req, res, next) => {
 const registrarEntradaTablet = async (req, res, next) => {
   try {
     const result = await asistenciaService.registrarEntradaTablet(req.body, req.user);
-    res.status(201).json({ ...result, dispositivo_usado: 'tablet', es_fallback: false });
+    res.status(201).json(habilitada() ? result : { ...result, dispositivo_usado: 'tablet', es_fallback: false });
   } catch (error) {
     next(error);
   }
@@ -35,7 +36,7 @@ const registrarEntradaTablet = async (req, res, next) => {
 const registrarEntradaFallback = async (req, res, next) => {
   try {
     const result = await asistenciaService.registrarEntradaFallback(req.body, req.user);
-    res.status(201).json({ ...result, dispositivo_usado: 'mobil_empresa', es_fallback: true });
+    res.status(201).json(habilitada() ? result : { ...result, dispositivo_usado: 'mobil_empresa', es_fallback: true });
   } catch (error) {
     next(error);
   }

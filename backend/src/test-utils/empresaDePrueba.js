@@ -21,6 +21,7 @@ const borrarEmpresaDePrueba = async (empresaId) => {
   if (!empresaId) return;
   const donde = { empresa_id: empresaId };
   await prismaGlobal.asistencia.deleteMany({ where: donde });
+  await prismaGlobal.dispositivo.deleteMany({ where: donde });
   await prismaGlobal.novedadHistorial.deleteMany({ where: donde });
   await prismaGlobal.novedad.deleteMany({ where: donde });
   await prismaGlobal.solicitud.deleteMany({ where: donde });

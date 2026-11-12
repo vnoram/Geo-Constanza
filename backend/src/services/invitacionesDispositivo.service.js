@@ -5,6 +5,7 @@ const { conEmpresa } = require('../config/tenant');
 const { jwtConfig } = require('../config/jwt');
 const { ESTADO_EMPRESA, ESTADO_USUARIO } = require('../constants/estados');
 const { ROLES } = require('../constants/roles');
+const { validarInstalacion, auditar } = require('./dispositivos.service');
 const { enviarCorreo } = require('./correo.service');
 
 const ROLES_INVITABLES = [ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL];
@@ -54,11 +55,11 @@ async function entregar(usuario, nombre, enlace) {
   return enviarCorreo(usuario.email, 'Invitación a un equipo corporativo - Geo Constanza', undefined, texto, { soloSMTP: true });
 }
 
-async function invitar(nombre, destinatarioId, adminId) {
+async function invitar(nombre, destinatarioId, adminId, instalacionId) {
   const usuario = await obtenerDestinatario(destinatarioId);
   const { datos, enlace } = generarInvitacion();
   const equipo = await prisma.dispositivo.create({
-    data: { nombre, creado_por: adminId, invitado_usuario_id: destinatarioId, ...datos },
+    data: { nombre, creado_por: adminId, invitado_usuario_id: destinatarioId, instalacion_id: await validarInstalacion(instalacionId), ...datos },
     select: { id: true, invitacion_expira_en: true },
   });
   return { ...equipo, enlace, correoEnviado: await entregar(usuario, nombre, enlace) };
@@ -85,12 +86,13 @@ const filtroVigente = digest => ({
   estado: 'activo', empresa: { estado: ESTADO_EMPRESA.ACTIVA }, invitado: { is: FILTRO_DESTINATARIO },
 });
 
-async function confirmar(token) {
+async function confirmar(token, contexto) {
   // El hash único identifica la empresa sin exponer datos del destinatario.
   const equipo = await prismaGlobal.dispositivo.findFirst({
-    where: filtroVigente(hash(token)), select: { empresa: { select: { nombre: true } } },
+    where: filtroVigente(hash(token)), select: { id: true, empresa_id: true, invitado_usuario_id: true, empresa: { select: { nombre: true } } },
   });
   if (!equipo) throw invalida();
+  await auditar('confirmar_invitacion_dispositivo', equipo.id, equipo.invitado_usuario_id, equipo.empresa_id, contexto, false);
   return { empresa: equipo.empresa.nombre };
 }
 
@@ -115,6 +117,10 @@ async function consumir(usuario, digest) {
     },
   }));
   if (!count) throw invalida();
+  const equipo = await conEmpresa(usuario.empresa_id, () => prisma.dispositivo.findUnique({
+    where: { token_hash: hash(tokenDispositivo) }, select: { id: true },
+  }));
+  if (equipo) await auditar('enrolar_dispositivo', equipo.id, usuario.id, usuario.empresa_id);
   return tokenDispositivo;
 }
 

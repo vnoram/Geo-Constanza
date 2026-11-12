@@ -1,5 +1,7 @@
 const { prisma } = require('../config/database');
 const { getSocketIO } = require('../socket/socketManager');
+const { habilitada } = require('./dispositivos.service');
+const { TIPOS_SIN_REPORTE_CIERRE } = require('./priorizacion.service');
 const geovalidacion = require('./geovalidacion.service');
 const { ROLES } = require('../constants/roles');
 const { salaInstalacion, salaAdmin, salaCentral } = require('../constants/salas');
@@ -116,6 +118,14 @@ const registrarEntradaFallback = async (data, user) => {
 const registrarEntrada = async (data, user, esFallbackOverride = null) => {
   const { instalacion_id, metodo, latitud, longitud, precision_m, dispositivo } = data;
   const usuario_id = user?.id || data.usuario_id;
+  const politica = habilitada();
+  const equipo = politica ? user?.equipoCorporativo : null;
+  const desdeTablet = esFallbackOverride === false;
+  if (politica && desdeTablet && !equipo) {
+    throw Object.assign(new Error('El marcaje en tablet requiere un equipo corporativo enrolado.'), { statusCode: 403 });
+  }
+  // Con la política activa el método tablet solo lo acredita la ruta dedicada.
+  const metodoReal = politica && !desdeTablet && metodo === 'tablet' ? 'fallback_telefono' : metodo;
 
   const resultado = await prisma.$transaction(async (db) => {
     // Bloqueo por guardia compartido entre procesos; evita dos entradas simultáneas.
@@ -129,6 +139,9 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
     const otraAbierta = abiertas.find((a) => a.turno_id !== turno?.id);
     if (otraAbierta) {
       throw Object.assign(new Error(`Ya tienes una entrada abierta en el turno ${otraAbierta.turno_id}; marca salida antes de iniciar otro`), { statusCode: 409 });
+    }
+    if (desdeTablet && turno && equipo?.instalacion_id && equipo.instalacion_id !== turno.instalacion_id) {
+      throw Object.assign(new Error('El equipo corporativo está asociado a otra instalación.'), { statusCode: 403 });
     }
     const mismaAbierta = abiertas.find((a) => a.turno_id === turno?.id);
     if (mismaAbierta) return { asistencia: mismaAbierta };
@@ -144,7 +157,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
     // La tablet es un equipo fijo en la instalación: sin coordenadas no hay nada que validar.
     const hayCoordenadas = lat != null && lon != null && !isNaN(lat) && !isNaN(lon);
     let gps;
-    if (!hayCoordenadas && metodo === 'tablet') {
+    if (!hayCoordenadas && metodoReal === 'tablet') {
       gps = { resultado: 'tablet', permitido: true, distanciaMetros: null, precisionMetros: null, mensaje: 'Marcaje desde la tablet de la instalación.' };
     } else {
       gps = geovalidacion.clasificarMarcaje(
@@ -167,7 +180,7 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
 
     const esFallback = esFallbackOverride !== null
       ? esFallbackOverride
-      : metodo === 'fallback_telefono';
+      : metodoReal === 'fallback_telefono';
 
     const asistencia = await db.asistencia.create({
       data: {
@@ -175,13 +188,16 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
         turno_id: turno.id,
         instalacion_id,
         hora_entrada: ahora,
-        metodo_entrada: metodo,
+        metodo_entrada: metodoReal,
         estado,
         minutos_retraso: minutosRetraso,
         latitud_entrada:  lat,
         longitud_entrada: lon,
         es_fallback: esFallback,
-        dispositivo_usado: dispositivo || (metodo === 'fallback_telefono' ? 'mobil_empresa' : 'tablet'),
+        ...(equipo ? { dispositivo_id: equipo.id } : {}),
+        dispositivo_usado: politica
+          ? (equipo ? (desdeTablet ? 'tablet' : 'mobil_empresa') : null)
+          : dispositivo || (metodo === 'fallback_telefono' ? 'mobil_empresa' : 'tablet'),
         verificacion_gps: gps.resultado,
         distancia_entrada_m: gps.distanciaMetros,
         precision_entrada_m: gps.precisionMetros,
@@ -266,7 +282,10 @@ const registrarSalida = async (data, user) => {
 
   // Regla de negocio (RF-05/06): un turno no se cierra sin un reporte asociado.
   // El reporte es una novedad del turno; "Sin novedad" también cuenta.
-  const reportes = await prisma.novedad.count({ where: { turno_id: asistencia.turno_id } });
+  const reportes = await prisma.novedad.count({ where: {
+    turno_id: asistencia.turno_id,
+    ...(habilitada() ? { tipo: { notIn: TIPOS_SIN_REPORTE_CIERRE } } : {}),
+  } });
   if (reportes === 0) {
     throw Object.assign(
       new Error('Antes de marcar la salida debes dejar el reporte del turno (una novedad o «Sin novedad»).'),
@@ -312,6 +331,7 @@ const obtenerHoy = async (instalacionId) => {
     include: {
       usuario: { select: { id: true, nombre: true, rut: true } },
       turno: { select: { hora_inicio: true, hora_fin: true, tipo_turno: true } },
+      ...(habilitada() ? { dispositivo: { select: { nombre: true, instalacion_id: true } } } : {}),
     },
     orderBy: { hora_entrada: 'desc' },
   });
@@ -330,7 +350,10 @@ const obtenerHistorial = async (usuarioId, query) => {
   const [data, total] = await Promise.all([
     prisma.asistencia.findMany({
       where,
-      include: { instalacion: { select: { nombre: true } }, turno: { select: { hora_inicio: true, hora_fin: true } } },
+      include: {
+        instalacion: { select: { nombre: true } }, turno: { select: { hora_inicio: true, hora_fin: true } },
+        ...(habilitada() ? { dispositivo: { select: { nombre: true, instalacion_id: true } } } : {}),
+      },
       orderBy: { created_at: 'desc' },
       skip: (+page - 1) * +limit,
       take: +limit,
@@ -358,6 +381,7 @@ const obtenerEstadoActual = async (usuarioId) => {
       hora_entrada: abierta.hora_entrada,
       estado: abierta.estado,
       minutos_retraso: abierta.minutos_retraso,
+      ...(habilitada() ? { verificacion_gps: abierta.verificacion_gps, revision_estado: abierta.revision_estado, comentario_revision: abierta.comentario_revision } : {}),
       turno_id: abierta.turno_id,
       instalacion_id: abierta.instalacion_id,
       turno: abierta.turno,
@@ -409,6 +433,10 @@ const sincronizarBatch = async (registros, user) => {
       if (registro.metodo_entrada !== undefined && !['totem', 'fallback_telefono'].includes(registro.metodo_entrada)) throw Object.assign(new Error('metodo_entrada inválido'), { statusCode: 400 });
       // Un registro sincronizado no pasó la validación de geocerca del servidor: queda para revisión.
       registro.verificacion_gps = 'por_revisar';
+      if (habilitada()) {
+        registro.dispositivo_id = user.equipoCorporativo?.id ?? null;
+        registro.dispositivo_usado = null; // El dispositivo sincronizador no acredita el hardware original.
+      }
       // La sincronización también puede abrir entradas: respeta el mismo bloqueo.
       const result = await prisma.$transaction(async (db) => {
         await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${registro.usuario_id}))`;

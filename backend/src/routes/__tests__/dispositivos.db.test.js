@@ -85,7 +85,6 @@ suite('Dispositivos corporativos con PostgreSQL local', () => {
 
   afterAll(async () => {
     if (db && empresa && otra) {
-      await db.dispositivo.deleteMany({ where: { empresa_id: { in: [empresa.id, otra.id] } } });
       const { borrarEmpresaDePrueba } = require('../../test-utils/empresaDePrueba');
       await borrarEmpresaDePrueba(empresa.id);
       await borrarEmpresaDePrueba(otra.id);
@@ -283,6 +282,93 @@ suite('Dispositivos corporativos con PostgreSQL local', () => {
       delete process.env.TWO_FACTOR_ENCRYPTION_KEY;
       process.env.REQUIRE_2FA = 'false';
     }
+  });
+
+  describe('revisión de marcajes y reporte de cierre', () => {
+    const marcaje = async (usuario, verificacion = 'por_revisar') => {
+      const instalacionId = (await db.instalacion.findFirst({ where: { empresa_id: empresa.id } })).id;
+      const t = await db.turno.create({ data: {
+        empresa_id: empresa.id, instalacion_id: instalacionId, usuario_id: usuario.id, fecha: new Date(),
+        hora_inicio: '08:00', hora_fin: '16:00',
+      } });
+      return db.asistencia.create({ data: {
+        empresa_id: empresa.id, usuario_id: usuario.id, turno_id: t.id, instalacion_id: instalacionId,
+        hora_entrada: new Date(), metodo_entrada: 'fallback_telefono', estado: 'normal', verificacion_gps: verificacion,
+      } });
+    };
+    const revisar = (sesion, id, cuerpo) => autenticar(request(app).patch('/api/v1/asistencia/' + id + '/revisar'), sesion, token).send(cuerpo);
+
+    test('rechazar exige comentario, conserva el GPS original y audita la decisión', async () => {
+      const sesion = await sesionAdmin();
+      const a = await marcaje(cuenta.pauta);
+      await revisar(sesion, a.id, { decision: 'rechazar' }).expect(400);
+      const { body } = await revisar(sesion, a.id, { decision: 'rechazar', comentario: 'Fuera del recinto' }).expect(200);
+      expect(body).toMatchObject({ revision_estado: 'rechazado', comentario_revision: 'Fuera del recinto', verificacion_gps: 'por_revisar' });
+      expect(await db.auditoria.count({ where: { accion: 'revisar_marcaje', usuario_id: cuenta.admin.id } })).toBeGreaterThan(0);
+    });
+
+    test('es idempotente para la misma decisión, 409 para otra y 400 si no requiere revisión', async () => {
+      const sesion = await sesionAdmin();
+      const a = await marcaje(cuenta.libre);
+      const resultados = await Promise.all([
+        revisar(sesion, a.id, { decision: 'aprobar' }), revisar(sesion, a.id, { decision: 'aprobar' }),
+      ]);
+      expect(resultados.map(r => r.status)).toEqual([200, 200]);
+      await revisar(sesion, a.id, { decision: 'rechazar', comentario: 'Cambio' }).expect(409);
+      const normal = await marcaje(cuenta.pauta, 'dentro');
+      await revisar(sesion, normal.id, { decision: 'aprobar' }).expect(400);
+    });
+
+    test('el supervisor solo revisa marcajes de sus instalaciones', async () => {
+      const supervisor = (await login(cuenta.supervisor, token).expect(200)).body.accessToken;
+      const a = await marcaje(cuenta.pauta);
+      await revisar(supervisor, a.id, { decision: 'aprobar' }).expect(403);
+      await db.supervisor_Instalacion.create({ data: { empresa_id: empresa.id, supervisor_id: cuenta.supervisor.id, instalacion_id: a.instalacion_id } });
+      await revisar(supervisor, a.id, { decision: 'aprobar' }).expect(200);
+    });
+
+    test('otra empresa no ve el marcaje y un guardia no puede revisar', async () => {
+      const a = await marcaje(cuenta.pauta);
+      process.env.DEVICE_POLICY = 'off';
+      try {
+        const r = await autenticar(request(app).patch('/api/v1/asistencia/' + a.id + '/revisar'), adminOtra).send({ decision: 'aprobar' });
+        expect([403, 404]).toContain(r.status);
+      } finally { process.env.DEVICE_POLICY = 'on'; }
+      const guardia = (await login(cuenta.pauta, token).expect(200)).body.accessToken;
+      await revisar(guardia, a.id, { decision: 'aprobar' }).expect(403);
+      expect((await db.asistencia.findUnique({ where: { id: a.id } })).revision_estado).toBeNull();
+    });
+
+    test('con la política apagada la revisión no existe', async () => {
+      const sesion = await sesionAdmin();
+      const a = await marcaje(cuenta.pauta);
+      process.env.DEVICE_POLICY = 'off';
+      try {
+        await autenticar(request(app).patch('/api/v1/asistencia/' + a.id + '/revisar'), sesion).send({ decision: 'aprobar' }).expect(404);
+      } finally { process.env.DEVICE_POLICY = 'on'; }
+    });
+
+    test('un equipo asociado a otra instalación no acepta marcajes de tablet y la invitación valida la instalación', async () => {
+      const sesion = await sesionAdmin();
+      const otraInst = await db.instalacion.create({ data: { nombre: 'Otra', empresa_id: empresa.id, latitud: 1, longitud: 1 } });
+      const ajena = await db.instalacion.create({ data: { nombre: 'Ajena', empresa_id: otra.id, latitud: 1, longitud: 1 } });
+      const rechazo = await autenticar(request(app).post('/api/v1/dispositivos'), sesion, token).send({ nombre: 'X', instalacion_id: ajena.id });
+      expect(rechazo.status).toBe(400);
+      const ok = await autenticar(request(app).post('/api/v1/dispositivos'), sesion, token).send({ nombre: 'Tablet', instalacion_id: otraInst.id }).expect(201);
+      expect(ok.body.instalacion).toMatchObject({ id: otraInst.id });
+      const tokenTablet = (await canjear(ok.body.codigo).expect(200)).body.token;
+      await db.asistencia.updateMany({ where: { usuario_id: cuenta.pauta.id }, data: { hora_salida: new Date() } });
+      const guardia = (await login(cuenta.pauta, tokenTablet).expect(200)).body.accessToken;
+      const r = await autenticar(request(app).post('/api/v1/asistencia/entrada-tablet'), guardia, tokenTablet)
+        .send({ instalacion_id: propio.instalacion_id, metodo: 'tablet' });
+      expect(r.status).toBe(403);
+    });
+
+    test('la rutina no cuenta como reporte de cierre pero «Sin novedad» sí', async () => {
+      const { TIPOS_SIN_REPORTE_CIERRE } = require('../../services/priorizacion.service');
+      expect(TIPOS_SIN_REPORTE_CIERRE).toEqual(expect.arrayContaining(['Ronda', 'Fin de ronda', 'Cambio de turno']));
+      expect(TIPOS_SIN_REPORTE_CIERRE).not.toContain('Sin novedad');
+    });
   });
 
   test('revocar corta sesiones vigentes y el guardia puede volver a entrar como personal', async () => {

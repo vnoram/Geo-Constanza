@@ -97,10 +97,11 @@ export function AdminDispositivos() {
       {error && <p role="alert" style={{ color: T.alert }}>{error}</p>}
       {equipos.map(equipo => {
         const pendiente = equipo.estado === "activo" && !!(equipo.codigo_expira_en || equipo.invitacion_expira_en);
-        const estado = equipo.estado === "revocado" ? "Revocado" : pendiente ? "Pendiente de enrolamiento" : "Enrolado";
+        const vencida = pendiente && new Date(equipo.invitacion_expira_en || equipo.codigo_expira_en) < new Date();
+        const estado = equipo.estado === "revocado" ? "Revocado" : vencida ? "Vencida" : pendiente ? "Pendiente de enrolamiento" : "Enrolado";
         return (
           <div key={equipo.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, marginTop: 12 }}>
-            <span>{equipo.nombre} · {estado}</span>
+            <span>{equipo.nombre} · {estado}{equipo.instalacion ? ` · ${equipo.instalacion.nombre}` : ""}</span>
             {equipo.enrolador && <span>Enroló: {equipo.enrolador.nombre}</span>}
             <span>Último uso: {equipo.ultimo_uso ? new Date(equipo.ultimo_uso).toLocaleString("es-CL") : "Sin uso registrado"}</span>
             {pendiente && equipo.invitado_usuario_id && <Btn variant="outline" disabled={ocupado} onClick={() => ejecutar(async () => {

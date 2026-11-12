@@ -1,3 +1,4 @@
+const { habilitada } = require('./dispositivos.service');
 const { prisma } = require('../config/database');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { ROLES } = require('../constants/roles');
@@ -37,6 +38,7 @@ const getDashboardHoy = async (user) => {
       asistencias: {
         orderBy: { hora_entrada: 'desc' },
         take: 1,
+        ...(habilitada() ? { include: { dispositivo: { select: { nombre: true, instalacion_id: true } } } } : {}),
       },
     },
     orderBy: [{ fecha: 'asc' }, { hora_inicio: 'asc' }],
@@ -58,6 +60,10 @@ const getDashboardHoy = async (user) => {
       hora_entrada: asistencia?.hora_entrada || null,
       es_fallback: asistencia?.es_fallback || false,
       verificacion_gps: asistencia?.verificacion_gps || null,
+      ...(habilitada() ? {
+        asistencia_id: asistencia?.id ?? null, dispositivo: asistencia?.dispositivo ?? null,
+        revision_estado: asistencia?.revision_estado ?? null, comentario_revision: asistencia?.comentario_revision ?? null,
+      } : {}),
       distancia_entrada_m: asistencia?.distancia_entrada_m ?? null,
       precision_entrada_m: asistencia?.precision_entrada_m ?? null,
       estado: estadoActual,

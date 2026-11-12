@@ -54,4 +54,5 @@ module.exports = {
   evaluarUrgencia,
   TIPOS_RUTINA,
   SOLO_INCIDENCIAS,
+  TIPOS_SIN_REPORTE_CIERRE: TIPOS_RUTINA.filter(tipo => tipo !== 'Sin novedad'),
 };

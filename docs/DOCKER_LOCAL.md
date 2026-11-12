@@ -80,3 +80,7 @@ Consume bastante RAM y CPU: apágalo cuando no lo uses.
 5. Desde un equipo corporativo, Administración puede revocar el equipo registrado. Para apagar la política, vuelve a `DEVICE_POLICY=off`, recrea la API y vuelve a iniciar sesión en los dos equipos.
 
 El administrador puede preparar equipos con la política apagada. Si se activa antes del primer enrolamiento o se revoca el último equipo, apaga la política en el entorno local para generar otra invitación. Si el modo TOTP exige segundo factor, el destinatario debe haberlo configurado previamente. En la demo con 2FA por correo, el código de verificación también llega a Mailpit. En web la identidad del dispositivo es blanda: el token se guarda en el navegador y depende del perfil y del origen. Una garantía fuerte requiere MDM o una app nativa con identidad de dispositivo.
+
+### Recuperación si me quedo sin acceso (política de dispositivos)
+
+Si ningún equipo corporativo puede entrar, apaga la política: pon `DEVICE_POLICY=off` en el `.env` local y ejecuta `docker compose up -d api` (luego `docker compose up -d --force-recreate azurite`). Con la política apagada todos los roles vuelven a entrar desde cualquier equipo; invita de nuevo un equipo desde **Dispositivos** y vuelve a `DEVICE_POLICY=on`. `DEVICE_TOKEN_MAX_INACTIVIDAD_DIAS` (90 por defecto) define cuándo un equipo sin uso deja de ser válido.

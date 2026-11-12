@@ -14,28 +14,46 @@ const responder = (status, operacion) => async (req, res, next) => {
   try { res.set('Cache-Control', 'no-store').status(status).json(await operacion(req)); } catch (err) { next(err); }
 };
 
-router.post('/canjear', validarBody(z.object({ codigo: z.string().trim().toLowerCase().regex(/^[a-f0-9]{24}$/) })),
-  responder(200, (req) => equipos.canjear(req.body.codigo)));
-const limitarConfirmacion = rateLimit({
+const contexto = req => ({ ip: req.ip, userAgent: req.get('user-agent') });
+const instalacion = z.string().trim().min(1).max(100).nullable().optional();
+const limitarEnrolamiento = () => rateLimit({
   windowMs: 60_000, limit: 10, standardHeaders: true, legacyHeaders: false,
   message: { error: 'Demasiadas solicitudes. Intenta nuevamente en un minuto.' },
 });
-router.post('/invitaciones/confirmar', limitarConfirmacion,
+router.post('/canjear', limitarEnrolamiento(), validarBody(z.object({ codigo: z.string().trim().toLowerCase().regex(/^[a-f0-9]{24}$/) })),
+  responder(200, req => equipos.canjear(req.body.codigo, contexto(req))));
+router.post('/invitaciones/confirmar', limitarEnrolamiento(),
   validarBody(z.object({ token: z.string().regex(/^[a-f0-9]{64}$/) })),
-  responder(200, req => invitaciones.confirmar(req.body.token)));
+  responder(200, req => invitaciones.confirmar(req.body.token, contexto(req))));
 
 router.use(authenticate, exigirEmpresa, authorize(ROLES.ADMINISTRADOR));
 router.get('/destinatarios', responder(200, () => invitaciones.destinatarios()));
 router.post('/invitaciones', validarBody(z.object({
   nombre: z.string().trim().min(1).max(100),
   usuario_id: z.string().trim().min(1).max(100),
-})), responder(201, req => invitaciones.invitar(req.body.nombre, req.body.usuario_id, req.user.id)));
-router.post('/:id/invitaciones/reenviar', responder(200, req => invitaciones.reenviar(req.params.id)));
+  instalacion_id: instalacion,
+})), responder(201, async req => {
+  const invitacion = await invitaciones.invitar(req.body.nombre, req.body.usuario_id, req.user.id, req.body.instalacion_id);
+  await equipos.auditar('invitar_dispositivo', invitacion.id, req.user.id, req.user.empresaId, contexto(req));
+  return invitacion;
+}));
+router.post('/:id/invitaciones/reenviar', responder(200, async req => {
+  const invitacion = await invitaciones.reenviar(req.params.id);
+  equipos.invalidar(invitacion.id, req.user.empresaId);
+  await equipos.auditar('reenviar_invitacion_dispositivo', invitacion.id, req.user.id, req.user.empresaId, contexto(req));
+  return invitacion;
+}));
 router.get('/', responder(200, () => equipos.listar()));
-router.post('/', validarBody(z.object({ nombre: z.string().trim().min(1).max(100) })),
-  responder(201, (req) => equipos.crear(req.body.nombre, req.user.id)));
+router.post('/', validarBody(z.object({ nombre: z.string().trim().min(1).max(100), instalacion_id: instalacion })),
+  responder(201, async req => {
+    const equipo = await equipos.crear(req.body.nombre, req.user.id, req.body.instalacion_id);
+    await equipos.auditar('crear_codigo_dispositivo', equipo.id, req.user.id, req.user.empresaId, contexto(req));
+    return equipo;
+  }));
 router.patch('/:id/revocar', responder(200, async (req) => {
   await equipos.revocar(req.params.id);
+  equipos.invalidar(req.params.id, req.user.empresaId);
+  await equipos.auditar('revocar_dispositivo', req.params.id, req.user.id, req.user.empresaId, contexto(req));
   desconectarDispositivo(req.user.empresaId, req.params.id);
   return { estado: 'revocado' };
 }));

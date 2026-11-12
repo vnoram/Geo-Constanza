@@ -19,6 +19,7 @@ const aplicarDispositivo = async (req, res, sesion) => {
   const equipo = sesion.dispositivoId && await equipos.identificar(
     sesion.empresaId, req.get('X-Device-Token'), sesion.dispositivoId,
   );
+  sesion.equipoCorporativo = equipo || null;
   sesion.dispositivo = equipo ? equipos.TIPOS.CORPORATIVO : equipos.TIPOS.PERSONAL;
   res.set('X-Device-Class', sesion.dispositivo);
   if (equipo || (equipos.GUARDIAS.includes(sesion.rol) && permisoPersonal(req))) return true;

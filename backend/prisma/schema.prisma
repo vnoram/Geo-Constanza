@@ -82,6 +82,7 @@ model Usuario {
   dispositivos_creados     Dispositivo[]
   dispositivos_invitados   Dispositivo[] @relation("DispositivoInvitado")
   dispositivos_enrolados   Dispositivo[] @relation("DispositivoEnrolado")
+  marcajes_revisados       Asistencia[] @relation("MarcajeRevisor")
   instalaciones_sup        Supervisor_Instalacion[]
   solicitudes              Solicitud[] @relation("UsuarioSolicita")
   solicitudes_rev          Solicitud[] @relation("SupervisorRevisa")
@@ -108,16 +109,21 @@ model Dispositivo {
   enrolado_por             String?
   invitacion_hash          String?  @unique
   invitacion_expira_en     DateTime?
+  instalacion_id           String?
+  instalacion              Instalacion? @relation(fields: [empresa_id, instalacion_id], references: [empresa_id, id], onDelete: Restrict)
+  asistencias              Asistencia[]
   empresa                  Empresa  @relation(fields: [empresa_id], references: [id], onDelete: Restrict)
   creador                  Usuario  @relation(fields: [empresa_id, creado_por], references: [empresa_id, id], onDelete: Restrict)
   invitado                 Usuario? @relation("DispositivoInvitado", fields: [empresa_id, invitado_usuario_id], references: [empresa_id, id], onDelete: Restrict)
   enrolador                Usuario? @relation("DispositivoEnrolado", fields: [empresa_id, enrolado_por], references: [empresa_id, id], onDelete: Restrict)
 
+  @@unique([empresa_id, id])
   @@index([empresa_id])
 }
 
 // ─── 2. INSTALACIONES (Recintos a proteger) ───
 model Instalacion {
+  dispositivos         Dispositivo[]
   id                  String     @id @default(uuid())
   empresa_id          String
   nombre              String
@@ -213,6 +219,14 @@ model Asistencia {
   horas_trabajadas    Float?
   horas_extra         Float?
   created_at          DateTime     @default(now())
+
+  dispositivo_id      String?
+  revisado_por        String?
+  revisado_en         DateTime?
+  comentario_revision String?
+  revision_estado     String?
+  dispositivo         Dispositivo? @relation(fields: [empresa_id, dispositivo_id], references: [empresa_id, id], onDelete: Restrict)
+  revisor_marcaje     Usuario? @relation("MarcajeRevisor", fields: [empresa_id, revisado_por], references: [empresa_id, id], onDelete: Restrict)
 
   dispositivo_usado   String?      // 'tablet' | 'mobil_empresa' | 'mobil_personal'
 

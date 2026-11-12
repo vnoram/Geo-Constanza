@@ -1,4 +1,7 @@
 const { Router } = require('express');
+const { z } = require('zod');
+const { validarBody } = require('../validators/auth.validators');
+const { revisar } = require('../services/revisionMarcajes.service');
 const asistenciaController = require('../controllers/asistencia.controller');
 const { authenticate } = require('../middlewares/auth');
 const { authorize, exigirEmpresa } = require('../middlewares/rbac');
@@ -31,5 +34,13 @@ router.post('/sync', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE), asistenci
 // ── Rutas con parámetros ──────────────────────────────────────────────────
 router.get('/hoy/:instalacionId',   authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), asistenciaController.obtenerHoy);
 router.get('/historial/:usuarioId', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), asistenciaController.obtenerHistorial);
+
+router.patch('/:id/revisar', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR),
+  validarBody(z.object({ decision: z.enum(['aprobar', 'rechazar']), comentario: z.string().trim().max(1000).optional() })),
+  async (req, res, next) => {
+    try {
+      res.json(await revisar(req.params.id, req.body, req.user, { ip: req.ip, userAgent: req.get('user-agent') }));
+    } catch (err) { next(err); }
+  });
 
 module.exports = router;

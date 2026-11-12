@@ -31,6 +31,25 @@ export function SupDashboard() {
     finally   { setLoading(false); }
   };
 
+  const [revisando, setRevisando] = useState(null);
+  const revisar = async (g, decision) => {
+    let comentario;
+    if (decision === "rechazar") {
+      comentario = (window.prompt("Motivo del rechazo (obligatorio):") || "").trim();
+      if (!comentario) return;
+    }
+    setRevisando(g.asistencia_id);
+    try {
+      const res = await fetch(`${API_BASE}/asistencia/${g.asistencia_id}/revisar`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "X-Device-Token": leerDeviceToken() || "" },
+        body: JSON.stringify({ decision, comentario }),
+      });
+      if (!res.ok) window.alert((await res.json().catch(() => ({}))).error || "No se pudo registrar la revisión.");
+    } catch { window.alert("No se pudo registrar la revisión."); }
+    finally { setRevisando(null); fetchData(); }
+  };
+
   useEffect(() => {
     fetchData();
     try {
@@ -160,8 +179,20 @@ export function SupDashboard() {
                   : "Ubicación imprecisa"}
                 {g.distancia_entrada_m != null && ` · a ${g.distancia_entrada_m} m`}
                 {g.precision_entrada_m != null && ` · ±${g.precision_entrada_m} m`}
-                {" · por revisar"}
+                {g.revision_estado ? ` · ${g.revision_estado}` : " · por revisar"}
               </div>
+            )}
+            {g.asistencia_id && !g.revision_estado && (g.verificacion_gps === "por_revisar" || g.verificacion_gps === "sin_ubicacion") && (
+              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                <button disabled={revisando === g.asistencia_id} onClick={() => revisar(g, "aprobar")}>Aprobar</button>
+                <button disabled={revisando === g.asistencia_id} onClick={() => revisar(g, "rechazar")}>Rechazar</button>
+              </div>
+            )}
+            {g.revision_estado === "rechazado" && g.comentario_revision && (
+              <div style={{ fontSize: 10, color: T.textMut, marginTop: 2 }}>Motivo: {g.comentario_revision}</div>
+            )}
+            {g.dispositivo?.nombre && (
+              <div style={{ fontSize: 10, color: T.textMut, marginTop: 2 }}>Equipo: {g.dispositivo.nombre}</div>
             )}
             {g.verificacion_gps === "verificado" && (
               <div style={{ fontSize: 10, color: T.accent, marginTop: 2 }}>

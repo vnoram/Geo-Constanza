@@ -254,13 +254,21 @@ Rutas bajo `/api/v1`. Las operaciones de gestión requieren un administrador de 
 | Método y ruta | Solicitud y respuesta |
 | --- | --- |
 | `GET /dispositivos/destinatarios` | Lista los supervisores y operadores centrales activos de la empresa. |
-| `POST /dispositivos/invitaciones` | Recibe `{ "nombre": "...", "usuario_id": "..." }`. Devuelve 201 con `id`, `invitacion_expira_en`, `enlace` y `correoEnviado`. Los destinatarios no elegibles reciben el mismo 400. |
+| `POST /dispositivos/invitaciones` | Recibe `{ "nombre": "...", "usuario_id": "...", "instalacion_id": "..." }` (instalación opcional). Devuelve 201 con `id`, `invitacion_expira_en`, `enlace` y `correoEnviado`. Los destinatarios no elegibles reciben el mismo 400. |
 | `POST /dispositivos/invitaciones/confirmar` | Pública. Recibe `{ "token": "..." }` en el cuerpo y devuelve `{ "empresa": "..." }` si el enlace sigue vigente. No lo consume. Límite: 10 peticiones por minuto por IP. |
 | `POST /dispositivos/:id/invitaciones/reenviar` | Genera un enlace nuevo para el destinatario de una invitación pendiente e invalida el anterior. |
-| `POST /dispositivos` | `{ "nombre": "PC de recepción" }`. Devuelve 201 con los datos del registro y el campo `codigo` en claro una sola vez. |
+| `POST /dispositivos` | `{ "nombre": "PC de recepción", "instalacion_id": "…" }` (la instalación es opcional y debe ser de tu empresa). Devuelve 201 con los datos del registro y el campo `codigo` en claro una sola vez. |
 | `POST /dispositivos/canjear` | Pública. Recibe `{ "codigo": "..." }` y devuelve `{ "token": "..." }`. El código vence en 15 minutos, se consume de forma atómica y responde 400 si es inválido, usado, revocado o vencido. |
 | `GET /dispositivos` | Lista los equipos de la empresa. Incluye estado, vencimiento pendiente, nombre de quien enroló el equipo y último uso, sin hashes. |
 | `PATCH /dispositivos/:id/revocar` | Devuelve `{ "estado": "revocado" }` e invalida la invitación, el código manual y el token de dispositivo. Un ID ajeno o inexistente devuelve 404. |
+
+Con `DEVICE_POLICY=on`, un equipo asociado a una instalación solo acepta marcajes de tablet para turnos de esa instalación (403 en otro caso) y cada marcaje guarda `dispositivo_id`. Los registros sincronizados no acreditan el hardware original. Los tokens de equipo vencen tras `DEVICE_TOKEN_MAX_INACTIVIDAD_DIAS` días sin uso (90 por defecto); `ultimo_uso` se actualiza como máximo una vez por hora y la identificación se cachea 45 s (se invalida al revocar o reenviar). Crear, invitar, reenviar, confirmar, canjear, enrolar y revocar quedan en auditoría sin tokens. `/dispositivos/canjear` e `/invitaciones/confirmar` limitan 10 peticiones por minuto por IP.
+
+### `PATCH /asistencia/:id/revisar`
+
+Solo con `DEVICE_POLICY=on` (404 si está apagada). Roles: supervisor (solo sus instalaciones), operador central y administrador. Cuerpo: `{ "decision": "aprobar" | "rechazar", "comentario": "..." }`; el comentario es obligatorio al rechazar. Solo marcajes con `verificacion_gps` `por_revisar` o `sin_ubicacion` (400 en otro caso). La decisión se aplica con una actualización condicional: repetir la misma decisión es idempotente y una decisión distinta responde 409. Se conserva el `verificacion_gps` original, se audita (`revisar_marcaje`) y se notifica al guardia.
+
+Con la política activa, el reporte exigido para marcar la salida excluye los tipos de rutina «Ronda», «Fin de ronda» y «Cambio de turno»; cuentan «Sin novedad» y las novedades reales.
 
 El enlace usa `FRONTEND_URL/#/enrolar?t=…`. Tras confirmar, el cliente envía el valor del fragmento en el campo opcional `invitacion` de `POST /auth/login`. Si hay 2FA, el desafío temporal vincula esa invitación y el enrolamiento se completa en `POST /auth/2fa/verify`. La respuesta final de autenticación devuelve `tokenDispositivo` una vez. La invitación vence en 15 minutos y solo se consume con la cuenta destinataria tras completar la autenticación. Si SMTP falla, `correoEnviado` es falso y el enlace sigue disponible para copiar. `POST /dispositivos` y `/dispositivos/canjear` quedan como respaldo manual.
 
