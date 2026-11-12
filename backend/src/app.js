@@ -39,7 +39,8 @@ const corsOptions = {
   origin: frontendOrigin,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['X-Device-Class'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-Token'],
 };
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // responde preflight en todas las rutas
@@ -99,6 +100,7 @@ app.use('/api/v1/health', require('./routes/health.routes'));
 
 // Rutas API v1
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/dispositivos', require('./routes/dispositivos.routes'));
 app.use('/api/v1/usuarios', usuariosRoutes);
 app.use('/api/v1/instalaciones', instalacionesRoutes);
 app.use('/api/v1/turnos', turnosRoutes);

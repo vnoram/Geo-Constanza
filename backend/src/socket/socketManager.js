@@ -5,6 +5,8 @@ const { getRedis } = require('../config/redis');
 // Todo lo que sigue se ejecuta con `conEmpresa(...)` y usa el cliente con alcance.
 const { prisma, prismaGlobal } = require('../config/database');
 const { conEmpresa } = require('../config/tenant');
+const equipos = require('../services/dispositivos.service');
+const salaDispositivo = (empresa, dispositivo) => `dispositivo:${empresa}:${dispositivo}`;
 const { ROLES } = require('../constants/roles');
 const { ESTADO_USUARIO, ESTADO_TURNO, ESTADO_EMPRESA } = require('../constants/estados');
 const { salaInstalacion, salaEmpresa, salaCentral, salaAdmin } = require('../constants/salas');
@@ -42,6 +44,11 @@ const initSocket = (server) => {
       // La empresa debe coincidir con la del token y estar activa.
       if (!user.empresa_id || user.empresa_id !== decoded.empresaId) throw new Error('Empresa inválida');
       if (user.empresa?.estado !== ESTADO_EMPRESA.ACTIVA) throw new Error('Empresa suspendida');
+      if (equipos.habilitada()) {
+        const equipo = decoded.dispositivoId && await equipos.identificar(user.empresa_id, socket.handshake.auth?.deviceToken, decoded.dispositivoId);
+        if (!equipo) throw new Error('Dispositivo corporativo requerido');
+        socket.data.dispositivoId = equipo.id;
+      }
       socket.data.user = user;
       socket.data.empresaId = user.empresa_id;
       socket.data.global = [ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR].includes(user.rol);
@@ -66,6 +73,7 @@ const initSocket = (server) => {
   io.on('connection', (socket) => {
     const { user, instalaciones, global, empresaId } = socket.data;
     socket.join(salaEmpresa(empresaId));
+    if (socket.data.dispositivoId) socket.join(salaDispositivo(empresaId, socket.data.dispositivoId));
     if (user.rol === ROLES.OPERADOR_CENTRAL) socket.join(salaCentral(empresaId));
     if (user.rol === ROLES.ADMINISTRADOR) socket.join(salaAdmin(empresaId));
     for (const id of instalaciones) socket.join(salaInstalacion(id));
@@ -117,7 +125,10 @@ const desconectarEmpresa = (empresaId) => {
   io.in(salaEmpresa(empresaId)).disconnectSockets(true);
 };
 
+const desconectarDispositivo = (empresaId, id) => io?.in(salaDispositivo(empresaId, id)).disconnectSockets(true);
+
 module.exports = {
+  desconectarDispositivo,
   initSocket,
   getSocketIO,
   desconectarEmpresa,

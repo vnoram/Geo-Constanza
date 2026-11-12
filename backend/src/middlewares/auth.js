@@ -4,6 +4,7 @@ const { getRedis } = require('../config/redis');
 // Cliente global a propósito: aquí todavía no hay empresa en el contexto; la fijamos justo abajo
 // con la empresa del TOKEN, y recién entonces el resto de la petición usa el cliente con alcance.
 const { prismaGlobal } = require('../config/database');
+const { aplicarDispositivo } = require('./dispositivo');
 const { conEmpresa } = require('../config/tenant');
 const { ESTADO_USUARIO, ESTADO_EMPRESA } = require('../constants/estados');
 
@@ -56,6 +57,7 @@ const authenticate = async (req, res, next) => {
         return res.status(401).json({ error: 'Token inválido' });
       }
     }
+    if (!await aplicarDispositivo(req, res, decoded)) return;
     req.user = decoded;
     // Desde aquí, todo el código de la petición (servicios, transacciones) queda aislado
     // a la empresa del token. El super admin (empresaId null) no abre contexto de empresa.

@@ -6,6 +6,7 @@ const { prismaGlobal } = require('../config/database');
 const { ESTADO_EMPRESA, ESTADO_USUARIO } = require('../constants/estados');
 const { jwtConfig } = require('../config/jwt');
 const { getRedis } = require('../config/redis');
+const equipos = require('./dispositivos.service');
 const twoFactor = require('./twoFactor.service');
 const twoFactorEmail = require('./twoFactorEmail.service');
 const passwordReset = require('./passwordReset.service');
@@ -22,7 +23,7 @@ const variantesRut = (rut) => {
   return [...variantes];
 };
 
-const login = async (rut, password, _ip, _userAgent) => {
+const login = async (rut, password, _ip, _userAgent, deviceToken) => {
   const usuario = await prismaGlobal.usuario.findFirst({
     where: { rut: { in: variantesRut(rut) } },
     include: {
@@ -65,12 +66,13 @@ const login = async (rut, password, _ip, _userAgent) => {
   // Una empresa suspendida no puede iniciar sesión (se avisa recién con la contraseña correcta,
   // para no revelar a un tercero el estado de una cuenta).
   exigirEmpresaActiva(usuario);
+  const dispositivo = await equipos.clasificar(usuario, deviceToken);
 
   if (twoFactorEmail.habilitado()) {
     if (twoFactorEmail.exigido() && twoFactor.rolExige2FA(usuario.rol)) {
       return twoFactorEmail.iniciar(usuario, { ip: _ip, userAgent: _userAgent });
     }
-    return { usuario: sanitizeUser(usuario), ...generateTokens(usuario) };
+    return { usuario: sanitizeUser(usuario, dispositivo), ...generateTokens(usuario, dispositivo) };
   }
 
   // Segundo factor (TOTP) para supervisor y administrador.
@@ -80,12 +82,12 @@ const login = async (rut, password, _ip, _userAgent) => {
     if (usuario.two_factor_enabled) {
       return { requires2FA: true, tempToken: twoFactor.emitirTempToken(usuario.id) };
     }
-    const tokensSinFactor = generateTokens(usuario);
-    return { usuario: sanitizeUser(usuario), ...tokensSinFactor, mustEnroll2FA: true };
+    const tokensSinFactor = generateTokens(usuario, dispositivo);
+    return { usuario: sanitizeUser(usuario, dispositivo), ...tokensSinFactor, mustEnroll2FA: true };
   }
 
-  const tokens = generateTokens(usuario);
-  return { usuario: sanitizeUser(usuario), ...tokens };
+  const tokens = generateTokens(usuario, dispositivo);
+  return { usuario: sanitizeUser(usuario, dispositivo), ...tokens };
 };
 
 const obtenerUsuarioEmail = async (tempToken) => {
@@ -110,19 +112,21 @@ const reenviar2FA = async (tempToken, contexto) => {
   return twoFactorEmail.reenviar(usuario, desafio, contexto);
 };
 
-const verify2FA = async (tempToken, code, contexto) => {
+const verify2FA = async (tempToken, code, contexto, deviceToken) => {
   if (twoFactorEmail.habilitado()) {
     const { usuario, desafio } = await obtenerUsuarioEmail(tempToken);
+    const dispositivo = await equipos.clasificar(usuario, deviceToken);
     await twoFactorEmail.verificar(usuario, desafio, code, contexto);
-    return { usuario: sanitizeUser(usuario), ...generateTokens(usuario) };
+    return { usuario: sanitizeUser(usuario, dispositivo), ...generateTokens(usuario, dispositivo) };
   }
   const usuario = await twoFactor.verificarLogin(tempToken, code);
   exigirEmpresaActiva(usuario);
-  const tokens = generateTokens(usuario);
-  return { usuario: sanitizeUser(usuario), ...tokens };
+  const dispositivo = await equipos.clasificar(usuario, deviceToken);
+  const tokens = generateTokens(usuario, dispositivo);
+  return { usuario: sanitizeUser(usuario, dispositivo), ...tokens };
 };
 
-const refreshToken = async (token) => {
+const refreshToken = async (token, deviceToken) => {
   let decoded;
   try {
     decoded = jwt.verify(token, jwtConfig.refreshSecret);
@@ -142,7 +146,8 @@ const refreshToken = async (token) => {
   if (usuario.password_cambiada_en && decoded.iat * 1000 < usuario.password_cambiada_en.getTime()) {
     throw Object.assign(new Error('Token inválido'), { statusCode: 401 });
   }
-  return generateTokens(usuario);
+  const dispositivo = await equipos.clasificar(usuario, deviceToken, decoded.dispositivoId ?? null);
+  return generateTokens(usuario, dispositivo);
 };
 
 const logout = async (token, _userId) => {
@@ -169,22 +174,24 @@ const exigirEmpresaActiva = (usuario) => {
   }
 };
 
-const generateTokens = (usuario) => {
+const generateTokens = (usuario, dispositivo) => {
   const payload = {
     id: usuario.id,
     email: usuario.email,
     rol: usuario.rol,
     tipo_ggss: usuario.tipo_ggss || null,
+    ...dispositivo,
     // La empresa SIEMPRE sale de aquí (del token firmado por el servidor), nunca de lo que envíe el cliente.
     // Es null solo para el super admin (nivel de plataforma).
     empresaId: usuario.empresa_id ?? null,
   };
   const accessToken = jwt.sign(payload, jwtConfig.accessSecret, { expiresIn: jwtConfig.expiresIn[usuario.rol] });
-  const refreshToken = jwt.sign({ id: usuario.id, empresaId: usuario.empresa_id ?? null }, jwtConfig.refreshSecret, { expiresIn: jwtConfig.refreshExpiresIn });
+  const refreshToken = jwt.sign({ id: usuario.id, empresaId: usuario.empresa_id ?? null, ...dispositivo }, jwtConfig.refreshSecret, { expiresIn: jwtConfig.refreshExpiresIn });
   return { accessToken, refreshToken };
 };
 
-const sanitizeUser = (usuario) => ({
+const sanitizeUser = (usuario, dispositivo) => ({
+  ...(dispositivo.dispositivo ? { dispositivo: dispositivo.dispositivo } : {}),
   id: usuario.id,
   nombre: usuario.nombre,
   email: usuario.email,
