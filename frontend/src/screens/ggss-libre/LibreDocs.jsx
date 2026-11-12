@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { leerSesion } from "../../services/almacenSesion";
 import { Icon } from "../../components/ui/Icon";
 import { T } from "../../theme/theme";
 import { SectionHeader } from "../../components/ui/SectionHeader";
@@ -34,7 +35,7 @@ export function LibreDocs() {
       form.append("nombre", "Certificado OS-10");
       form.append("archivo", archivo);
       const res = await fetch(`${API_BASE}/documentos`, {
-        method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("gc_token")}` }, body: form,
+        method: "POST", headers: { Authorization: `Bearer ${leerSesion("gc_token")}` }, body: form,
       });
       const cuerpo = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(cuerpo.error || `Error ${res.status}`);

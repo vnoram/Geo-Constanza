@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { leerSesion } from "../../services/almacenSesion";
 import { io } from "socket.io-client";
 import { leerDeviceToken } from "../../services/dispositivos";
 import { T } from "../../theme/theme";
@@ -99,7 +100,7 @@ function ReportarModal({ onClose, onSuccess }) {
         if (coordsRef.current?.accuracy != null) form.append("precision_m", coordsRef.current.accuracy);
         form.append("foto", foto);
 
-        const token = localStorage.getItem(TOKEN_KEY);
+        const token = leerSesion(TOKEN_KEY);
         const res = await fetch(`${API_BASE}/novedades`, {
           method: "POST",
           headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -295,7 +296,7 @@ export function PautaNovedades({ user }) {
   useEffect(() => {
     cargarNovedades();
 
-    const socket = io(SOCKET_URL, { auth: (cb) => cb({ deviceToken: leerDeviceToken(), token: localStorage.getItem("gc_token") }), transports: ["websocket"] });
+    const socket = io(SOCKET_URL, { auth: (cb) => cb({ deviceToken: leerDeviceToken(), token: leerSesion("gc_token") }), transports: ["websocket"] });
     socketRef.current = socket;
 
     if (user?.instalacion_asignada_id) {

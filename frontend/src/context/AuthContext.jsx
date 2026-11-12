@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { borrarSesion, guardarSesion, leerSesion, limpiarSesionAntigua } from "../services/almacenSesion";
 import { cacheClearAll } from "../utils/cache";
 import { DISPOSITIVO_ACTUAL, SESION_EXPIRADA } from "../services/sesion";
 import { ROLES } from "../constants/roles";
@@ -17,37 +18,38 @@ export function AuthProvider({ children }) {
   // `ready` evita un flash de la pantalla de login mientras se restaura la sesión
   const [ready, setReady] = useState(false);
 
-  // Restaurar sesión desde localStorage al montar
+  // Restaurar sesión desde sessionStorage al montar (y borrar restos de versiones que la guardaban en localStorage)
   useEffect(() => {
+    limpiarSesionAntigua();
     try {
-      const storedToken = localStorage.getItem(TOKEN_KEY);
-      const storedUser  = localStorage.getItem(USER_KEY);
+      const storedToken = leerSesion(TOKEN_KEY);
+      const storedUser  = leerSesion(USER_KEY);
       if (storedToken && storedUser) {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
       }
     } catch {
       // Storage corrupto — empezar limpio
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
+      borrarSesion(TOKEN_KEY);
+      borrarSesion(USER_KEY);
     } finally {
       setReady(true);
     }
   }, []);
 
   const login = useCallback((u, t, r) => {
-    localStorage.setItem(TOKEN_KEY, t);
-    if (r) localStorage.setItem(REFRESH_KEY, r);
-    localStorage.setItem(USER_KEY, JSON.stringify(u));
+    guardarSesion(TOKEN_KEY, t);
+    if (r) guardarSesion(REFRESH_KEY, r);
+    guardarSesion(USER_KEY, JSON.stringify(u));
     setToken(t);
     setUser(u);
   }, []);
 
   const logout = useCallback(() => {
     cacheClearAll(); // Purgar todos los datos cacheados antes de limpiar la sesión
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_KEY);
-    localStorage.removeItem(USER_KEY);
+    borrarSesion(TOKEN_KEY);
+    borrarSesion(REFRESH_KEY);
+    borrarSesion(USER_KEY);
     setToken(null);
     setUser(null);
   }, []);
@@ -68,7 +70,7 @@ export function AuthProvider({ children }) {
       }
       cacheClearAll();
       const actualizado = { ...user, dispositivo };
-      localStorage.setItem(USER_KEY, JSON.stringify(actualizado));
+      guardarSesion(USER_KEY, JSON.stringify(actualizado));
       setUser(actualizado);
     };
     window.addEventListener(DISPOSITIVO_ACTUAL, actualizar);

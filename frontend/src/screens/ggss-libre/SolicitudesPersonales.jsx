@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { leerSesion } from "../../services/almacenSesion";
 import { api } from "../../services/api";
 import { Btn } from "../../components/ui/Btn";
 import { Input } from "../../components/ui/Input";
@@ -79,7 +80,7 @@ export function SolicitudesPersonales() {
         if (motivo) form.append("motivo", motivo);
         form.append("adjunto", archivo);
         const res = await fetch(`${API_BASE}/solicitudes`, {
-          method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("gc_token")}` }, body: form,
+          method: "POST", headers: { Authorization: `Bearer ${leerSesion("gc_token")}` }, body: form,
         });
         const cuerpo = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(cuerpo.error || `Error ${res.status}`);

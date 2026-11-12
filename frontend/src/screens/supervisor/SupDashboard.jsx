@@ -1,4 +1,5 @@
 import { Icon } from "../../components/ui/Icon";
+import { leerSesion } from "../../services/almacenSesion";
 import { Badge } from "../../components/ui/Badge";
 import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
@@ -61,7 +62,7 @@ export function SupDashboard() {
   useEffect(() => {
     fetchData();
     try {
-      const socket = io(SOCKET_URL, { auth: (cb) => cb({ deviceToken: leerDeviceToken(), token: localStorage.getItem("gc_token") || token }), transports: ["websocket"] });
+      const socket = io(SOCKET_URL, { auth: (cb) => cb({ deviceToken: leerDeviceToken(), token: leerSesion("gc_token") || token }), transports: ["websocket"] });
       socketRef.current = socket;
       socket.on("guardia:entrada",  fetchData);
       socket.on("guardia:atraso",   fetchData);

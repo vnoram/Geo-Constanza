@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { leerSesion } from "../../services/almacenSesion";
 import { io } from "socket.io-client";
 import { leerDeviceToken } from "../../services/dispositivos";
 import { T } from "../../theme/theme";
@@ -308,7 +309,7 @@ export function SupNovedades({ user }) {
   useEffect(() => {
     cargarNovedades();
 
-    const socket = io(SOCKET_URL, { auth: (cb) => cb({ deviceToken: leerDeviceToken(), token: localStorage.getItem("gc_token") }), transports: ["websocket"] });
+    const socket = io(SOCKET_URL, { auth: (cb) => cb({ deviceToken: leerDeviceToken(), token: leerSesion("gc_token") }), transports: ["websocket"] });
     socketRef.current = socket;
 
     if (user?.instalacion_asignada_id) {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, memo } from "react";
+import { leerSesion } from "../../services/almacenSesion";
 import { io } from "socket.io-client";
 import { leerDeviceToken } from "../../services/dispositivos";
 import { T, FONT } from "../../theme/theme";
@@ -337,7 +338,7 @@ export function AdminPanel() {
     fetchStats();
     fetchAnalytics();
 
-    const socket = io(SOCKET_URL, { auth: (cb) => cb({ deviceToken: leerDeviceToken(), token: localStorage.getItem("gc_token") || token }), transports: ["websocket"], reconnectionDelay: 2000 });
+    const socket = io(SOCKET_URL, { auth: (cb) => cb({ deviceToken: leerDeviceToken(), token: leerSesion("gc_token") || token }), transports: ["websocket"], reconnectionDelay: 2000 });
     socketRef.current = socket;
 
     socket.on("connect",          ()  => { console.log("[AdminPanel] Socket:", socket.id); setSocketStatus("connected"); });

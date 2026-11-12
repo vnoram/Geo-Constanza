@@ -7,6 +7,7 @@
 //   3) si no se puede renovar, avisa para cerrar la sesión en vez de dejar la app fallando en silencio.
 import { API_URL } from "../config/api";
 import { leerDeviceToken } from "./dispositivos";
+import { leerSesion, guardarSesion } from "./almacenSesion";
 
 const TOKEN_KEY = "gc_token";
 const REFRESH_KEY = "gc_refresh";
@@ -18,8 +19,8 @@ const RUTA_PUBLICA = /\/auth\/(login|refresh|2fa\/(verify|resend)|password\/)/;
 
 let renovando = null;
 
-const leer = (clave) => { try { return localStorage.getItem(clave); } catch { return null; } };
-const guardar = (clave, valor) => { try { localStorage.setItem(clave, valor); } catch { /* sin almacenamiento */ } };
+const leer = leerSesion;
+const guardar = guardarSesion;
 
 const encabezadoDispositivo = () => {
   const token = leerDeviceToken();

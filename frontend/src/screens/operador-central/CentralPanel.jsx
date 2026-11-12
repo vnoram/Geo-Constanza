@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, memo } from "react";
+import { leerSesion } from "../../services/almacenSesion";
 import { io } from "socket.io-client";
 import { leerDeviceToken } from "../../services/dispositivos";
 import { T, FONT } from "../../theme/theme";
@@ -395,7 +396,7 @@ function IncidentesPanel({ token }) {
 
   // Aviso en vivo cuando un supervisor escala una novedad
   useEffect(() => {
-    const socket = io(SOCKET_URL, { auth: (cb) => cb({ deviceToken: leerDeviceToken(), token: localStorage.getItem("gc_token") || token }), transports: ["websocket"], reconnectionDelay: 2000 });
+    const socket = io(SOCKET_URL, { auth: (cb) => cb({ deviceToken: leerDeviceToken(), token: leerSesion("gc_token") || token }), transports: ["websocket"], reconnectionDelay: 2000 });
     socket.on("novedad:escalada_central", (data) => { setAlertaEscalada(data); cargar(); });
     return () => { socket.disconnect(); };
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -535,7 +536,7 @@ function MonitoreoPanel({ token }) {
   useEffect(() => {
     fetchStats();
 
-    const socket = io(SOCKET_URL, { auth: (cb) => cb({ deviceToken: leerDeviceToken(), token: localStorage.getItem("gc_token") || token }), transports: ["websocket"], reconnectionDelay: 2000 });
+    const socket = io(SOCKET_URL, { auth: (cb) => cb({ deviceToken: leerDeviceToken(), token: leerSesion("gc_token") || token }), transports: ["websocket"], reconnectionDelay: 2000 });
     socketRef.current = socket;
 
     socket.on("connect",           () => { console.log("[CentralPanel] Socket:", socket.id); setSocketStatus("connected"); });

@@ -1,4 +1,5 @@
 import { API_URL as API_BASE } from "../config/api";
+import { leerSesion } from "../services/almacenSesion";
 
 const TOKEN_KEY   = "gc_token";
 
@@ -44,7 +45,7 @@ async function request(path, options = {}) {
 
 // ─── TOKEN HELPER ───────────────────────────────────────────────
 function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
+  return leerSesion(TOKEN_KEY);
 }
 
 // ─── AUTHENTICATED FETCH ────────────────────────────────────────

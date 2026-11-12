@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { leerSesion } from "./services/almacenSesion";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ConfirmarInvitacionDispositivo } from "./screens/auth/ConfirmarInvitacionDispositivo";
 import { LoginScreen } from "./screens/auth/LoginScreen";
@@ -72,7 +73,7 @@ function AppRouter() {
 
   if (user.mustEnroll2FA) {
     const { mustEnroll2FA, ...usuario } = user; // eslint-disable-line no-unused-vars
-    return <Enroll2FAScreen onDone={() => login({ ...usuario, segundoFactor: true }, localStorage.getItem("gc_token") || token)} onLogout={logout} />;
+    return <Enroll2FAScreen onDone={() => login({ ...usuario, segundoFactor: true }, leerSesion("gc_token") || token)} onLogout={logout} />;
   }
 
   return <AppShell user={user} token={token} onLogout={logout} />;
