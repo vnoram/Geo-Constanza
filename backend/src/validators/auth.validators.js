@@ -6,6 +6,7 @@ const texto = (max) => z.string().trim().min(1).max(max);
 
 const loginSchema = z.object({
   rut: texto(20),
+  invitacion: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   password: z.string().min(1).max(128),
 });
 

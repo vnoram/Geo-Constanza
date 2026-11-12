@@ -14,6 +14,7 @@ jest.mock('pg', () => {
   }
   return { ...pg, Pool, pools };
 });
+jest.mock('../../services/correo.service', () => ({ enviarCorreo: jest.fn().mockResolvedValue(true) }));
 jest.mock('morgan', () => () => (_req, _res, next) => next());
 
 const suite = process.env.RUN_LOCAL_DB_TESTS === '1' ? describe : describe.skip;
@@ -24,11 +25,17 @@ suite('Dispositivos corporativos con PostgreSQL local', () => {
   const password = randomUUID();
   const secret = randomBytes(32).toString('hex');
   const env = { ...process.env };
-  const login = (u, dispositivo) => request(app).post('/api/v1/auth/login')
-    .set('X-Device-Token', dispositivo ?? '').send({ rut: u.rut, password });
+  const login = (u, dispositivo, invitacion) => request(app).post('/api/v1/auth/login')
+    .set('X-Device-Token', dispositivo ?? '').send({ rut: u.rut, password, invitacion });
   const autenticar = (peticion, sesion, dispositivo) => peticion
     .set('Authorization', `Bearer ${sesion}`).set('X-Device-Token', dispositivo ?? '');
   const nuevo = (sesion, nombre, dispositivo) => autenticar(request(app).post('/api/v1/dispositivos'), sesion, dispositivo).send({ nombre });
+  const mail = require('../../services/correo.service').enviarCorreo;
+  const confirmar = (valor) => request(app).post('/api/v1/dispositivos/invitaciones/confirmar').send({ token: valor });
+  const tokenDe = (enlace) => new URLSearchParams(new URL(enlace).hash.split('?')[1]).get('t');
+  const sesionAdmin = async () => (await login(cuenta.admin, token).expect(200)).body.accessToken;
+  const invitar = (sesion, u) => autenticar(request(app).post('/api/v1/dispositivos/invitaciones'), sesion, token)
+    .send({ nombre: 'PC invitado', usuario_id: u.id });
   const canjear = (valor) => request(app).post('/api/v1/dispositivos/canjear').send({ codigo: valor });
 
   beforeAll(async () => {
@@ -40,6 +47,7 @@ suite('Dispositivos corporativos con PostgreSQL local', () => {
     process.env.JWT_REFRESH_SECRET = randomBytes(32).toString('hex');
     process.env.REQUIRE_2FA = 'false';
     process.env.DEVICE_POLICY = 'off';
+    process.env.FRONTEND_URL = 'http://localhost:5173';
     process.env.RATE_LIMIT_PUBLIC = '1000';
     app = require('../../app');
     db = require('../../config/database').prismaGlobal;
@@ -56,6 +64,9 @@ suite('Dispositivos corporativos con PostgreSQL local', () => {
       libre: await usuario(ROLES.GGSS_LIBRE), plataforma: await usuario(ROLES.SUPER_ADMIN, null),
     };
     otraAdmin = await usuario(ROLES.ADMINISTRADOR, otra.id);
+    cuenta.supervisorAjeno = await usuario(ROLES.SUPERVISOR, otra.id);
+    cuenta.supervisorInactivo = await usuario(ROLES.SUPERVISOR);
+    await db.usuario.update({ where: { id: cuenta.supervisorInactivo.id }, data: { estado: 'inactivo' } });
     const instalacion = await db.instalacion.create({ data: { nombre: 'Prueba', empresa_id: empresa.id, latitud: 0, longitud: 0 } });
     const turno = (u) => db.turno.create({ data: {
       empresa_id: empresa.id, instalacion_id: instalacion.id, usuario_id: u.id, fecha: new Date(),
@@ -85,7 +96,7 @@ suite('Dispositivos corporativos con PostgreSQL local', () => {
     }
     if (db) await db.$disconnect();
     await Promise.all(require('pg').pools.map(pool => pool.end()));
-    for (const key of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'REQUIRE_2FA', 'DEVICE_POLICY', 'RATE_LIMIT_PUBLIC']) {
+    for (const key of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'REQUIRE_2FA', 'DEVICE_POLICY', 'FRONTEND_URL', 'TWO_FACTOR_METHOD', 'TWO_FACTOR_ENCRYPTION_KEY', 'RATE_LIMIT_PUBLIC']) {
       if (env[key] === undefined) delete process.env[key];
       else process.env[key] = env[key];
     }
@@ -160,6 +171,118 @@ suite('Dispositivos corporativos con PostgreSQL local', () => {
       expect(listado.body).toEqual([]);
       await autenticar(request(app).patch('/api/v1/dispositivos/' + equipo + '/revocar'), adminOtra).expect(404);
     } finally { process.env.DEVICE_POLICY = 'on'; }
+  });
+
+  test('solo ofrece supervisor y central de la empresa y permite invitar con política apagada', async () => {
+    process.env.DEVICE_POLICY = 'off';
+    try {
+      const lista = await autenticar(request(app).get('/api/v1/dispositivos/destinatarios'), admin).expect(200);
+      expect(lista.body.map(u => u.id).sort()).toEqual([cuenta.supervisor.id, cuenta.central.id].sort());
+      for (const u of [cuenta.pauta, cuenta.libre, cuenta.supervisorAjeno, cuenta.supervisorInactivo, { id: randomUUID() }]) {
+        const rechazo = await invitar(admin, u).expect(400);
+        expect(rechazo.body.error).toBe('Selecciona un supervisor u operador central activo de tu empresa.');
+      }
+      for (const u of [cuenta.supervisor, cuenta.central]) {
+        const { body } = await invitar(admin, u).expect(201);
+        const enlace = new URL(body.enlace);
+        expect(enlace.search).toBe('');
+        expect(enlace.hash).toMatch(/^#\/enrolar\?t=[a-f0-9]{64}$/);
+        expect(mail).toHaveBeenLastCalledWith(u.email, expect.any(String), undefined, expect.stringContaining(body.enlace), { soloSMTP: true });
+        const registro = await db.dispositivo.findUnique({ where: { id: body.id } });
+        expect(registro.invitacion_hash).toBe(createHash('sha256').update(tokenDe(body.enlace)).digest('hex'));
+      }
+    } finally { process.env.DEVICE_POLICY = 'on'; }
+  });
+
+  test('abrir el enlace, fallar contraseña y usar otra cuenta dejan la invitación pendiente', async () => {
+    const { body } = await invitar(await sesionAdmin(), cuenta.supervisor).expect(201);
+    const invitacion = tokenDe(body.enlace);
+    const vista = await confirmar(invitacion).expect(200);
+    expect(vista.body).toEqual({ empresa: empresa.nombre });
+    await request(app).post('/api/v1/auth/login')
+      .send({ rut: cuenta.supervisor.rut, password: 'incorrecta', invitacion }).expect(401);
+    await login(cuenta.central, undefined, invitacion).expect(400);
+    expect((await db.dispositivo.findUnique({ where: { id: body.id } })).token_hash).toBeNull();
+    const respuestas = await Promise.all([login(cuenta.supervisor, undefined, invitacion), login(cuenta.supervisor, undefined, invitacion)]);
+    expect(respuestas.map(r => r.status).sort()).toEqual([200, 400]);
+    const sesion = respuestas.find(r => r.status === 200);
+    expect(sesion.body.usuario.dispositivo).toBe('corporativo');
+    expect(sesion.body.tokenDispositivo).toMatch(/^[a-f0-9]{64}$/);
+    await login(cuenta.supervisor, undefined, invitacion).expect(400);
+    const guardia = await login(cuenta.pauta, sesion.body.tokenDispositivo).expect(200);
+    expect(guardia.body.usuario.dispositivo).toBe('corporativo');
+    const listado = await autenticar(request(app).get('/api/v1/dispositivos'), await sesionAdmin(), token).expect(200);
+    expect(listado.body.find(e => e.id === body.id)).toMatchObject({ enrolador: { nombre: cuenta.supervisor.nombre }, invitacion_expira_en: null });
+  });
+
+  test('vencimiento, reenvío y revocación invalidan el enlace correspondiente', async () => {
+    const sesion = await sesionAdmin();
+    const { body } = await invitar(sesion, cuenta.central).expect(201);
+    const anterior = tokenDe(body.enlace);
+    await db.dispositivo.update({ where: { id: body.id }, data: { invitacion_expira_en: new Date(0) } });
+    await confirmar(anterior).expect(400);
+    await login(cuenta.central, undefined, anterior).expect(400);
+    const nuevo = await autenticar(request(app).post('/api/v1/dispositivos/' + body.id + '/invitaciones/reenviar'), sesion, token).expect(200);
+    const vigente = tokenDe(nuevo.body.enlace);
+    expect(vigente).not.toBe(anterior);
+    await confirmar(anterior).expect(400);
+    await confirmar(vigente).expect(200);
+    await autenticar(request(app).patch('/api/v1/dispositivos/' + body.id + '/revocar'), sesion, token).expect(200);
+    await confirmar(vigente).expect(400);
+    await login(cuenta.central, undefined, vigente).expect(400);
+  });
+
+  test('el segundo factor por correo debe verificarse antes de consumir el enlace', async () => {
+    const { body } = await invitar(await sesionAdmin(), cuenta.supervisor).expect(201);
+    const invitacion = tokenDe(body.enlace);
+    process.env.TWO_FACTOR_METHOD = 'email';
+    process.env.REQUIRE_2FA = 'true';
+    try {
+      const pendiente = await login(cuenta.supervisor, undefined, invitacion).expect(200);
+      expect(pendiente.body).toMatchObject({ requires2FA: true, method: 'email' });
+      expect(pendiente.body.tokenDispositivo).toBeUndefined();
+      const code = mail.mock.calls.at(-1)[3].match(/\b\d{6}\b/)[0];
+      const verificar = valor => request(app).post('/api/v1/auth/2fa/verify').send({ tempToken: pendiente.body.tempToken, code: valor });
+      await verificar(code === '000000' ? '000001' : '000000').expect(401);
+      expect((await db.dispositivo.findUnique({ where: { id: body.id } })).token_hash).toBeNull();
+      const sesion = await verificar(code).expect(200);
+      expect(sesion.body.tokenDispositivo).toMatch(/^[a-f0-9]{64}$/);
+      expect(sesion.body.usuario.dispositivo).toBe('corporativo');
+      await confirmar(invitacion).expect(400);
+    } finally {
+      delete process.env.TWO_FACTOR_METHOD;
+      process.env.REQUIRE_2FA = 'false';
+    }
+  });
+
+  test('el modo TOTP conserva su verificación antes de enrolar el equipo', async () => {
+    const { body } = await invitar(await sesionAdmin(), cuenta.supervisor).expect(201);
+    const invitacion = tokenDe(body.enlace);
+    process.env.TWO_FACTOR_METHOD = 'totp';
+    process.env.TWO_FACTOR_ENCRYPTION_KEY = randomBytes(32).toString('hex');
+    process.env.REQUIRE_2FA = 'true';
+    try {
+      await login(cuenta.supervisor, undefined, invitacion).expect(409);
+      expect((await db.dispositivo.findUnique({ where: { id: body.id } })).token_hash).toBeNull();
+      const { authenticator } = require('otplib');
+      const { cifrar } = require('../../utils/cifrado');
+      const secreto = authenticator.generateSecret();
+      await db.usuario.update({ where: { id: cuenta.supervisor.id }, data: {
+        two_factor_enabled: true, two_factor_secret: cifrar(secreto),
+      } });
+      const pendiente = await login(cuenta.supervisor, undefined, invitacion).expect(200);
+      expect(pendiente.body.requires2FA).toBe(true);
+      expect(pendiente.body.tokenDispositivo).toBeUndefined();
+      const sesion = await request(app).post('/api/v1/auth/2fa/verify').send({
+        tempToken: pendiente.body.tempToken, code: authenticator.generate(secreto),
+      }).expect(200);
+      expect(sesion.body.usuario.dispositivo).toBe('corporativo');
+      expect(sesion.body.tokenDispositivo).toMatch(/^[a-f0-9]{64}$/);
+    } finally {
+      delete process.env.TWO_FACTOR_METHOD;
+      delete process.env.TWO_FACTOR_ENCRYPTION_KEY;
+      process.env.REQUIRE_2FA = 'false';
+    }
   });
 
   test('revocar corta sesiones vigentes y el guardia puede volver a entrar como personal', async () => {

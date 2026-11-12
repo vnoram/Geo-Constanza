@@ -7,6 +7,7 @@ const { ESTADO_EMPRESA, ESTADO_USUARIO } = require('../constants/estados');
 const { jwtConfig } = require('../config/jwt');
 const { getRedis } = require('../config/redis');
 const equipos = require('./dispositivos.service');
+const invitaciones = require('./invitacionesDispositivo.service');
 const twoFactor = require('./twoFactor.service');
 const twoFactorEmail = require('./twoFactorEmail.service');
 const passwordReset = require('./passwordReset.service');
@@ -23,7 +24,16 @@ const variantesRut = (rut) => {
   return [...variantes];
 };
 
-const login = async (rut, password, _ip, _userAgent, deviceToken) => {
+const completarSesion = async (usuario, deviceToken, digest, dispositivo) => {
+  const tokenDispositivo = digest ? await invitaciones.consumir(usuario, digest) : null;
+  const clasificacion = dispositivo ?? await equipos.clasificar(usuario, tokenDispositivo ?? deviceToken);
+  return {
+    usuario: sanitizeUser(usuario, clasificacion), ...generateTokens(usuario, clasificacion),
+    ...(tokenDispositivo ? { tokenDispositivo } : {}),
+  };
+};
+
+const login = async (rut, password, _ip, _userAgent, deviceToken, invitacion) => {
   const usuario = await prismaGlobal.usuario.findFirst({
     where: { rut: { in: variantesRut(rut) } },
     include: {
@@ -66,13 +76,15 @@ const login = async (rut, password, _ip, _userAgent, deviceToken) => {
   // Una empresa suspendida no puede iniciar sesión (se avisa recién con la contraseña correcta,
   // para no revelar a un tercero el estado de una cuenta).
   exigirEmpresaActiva(usuario);
-  const dispositivo = await equipos.clasificar(usuario, deviceToken);
+  const digest = invitacion ? await invitaciones.validarParaUsuario(usuario, invitacion) : null;
+  const dispositivo = digest ? undefined : await equipos.clasificar(usuario, deviceToken);
 
   if (twoFactorEmail.habilitado()) {
     if (twoFactorEmail.exigido() && twoFactor.rolExige2FA(usuario.rol)) {
-      return twoFactorEmail.iniciar(usuario, { ip: _ip, userAgent: _userAgent });
+      const desafio = await twoFactorEmail.iniciar(usuario, { ip: _ip, userAgent: _userAgent });
+      return invitaciones.vincularSegundoFactor(desafio, digest);
     }
-    return { usuario: sanitizeUser(usuario, dispositivo), ...generateTokens(usuario, dispositivo) };
+    return completarSesion(usuario, deviceToken, digest, dispositivo);
   }
 
   // Segundo factor (TOTP) para supervisor y administrador.
@@ -80,14 +92,14 @@ const login = async (rut, password, _ip, _userAgent, deviceToken) => {
   // - Sin enrolar: el acceso continúa y se avisa para que complete el enrolamiento (nadie queda fuera).
   if (twoFactor.dosFactoresExigido() && twoFactor.rolExige2FA(usuario.rol)) {
     if (usuario.two_factor_enabled) {
-      return { requires2FA: true, tempToken: twoFactor.emitirTempToken(usuario.id) };
+      return invitaciones.vincularSegundoFactor({ requires2FA: true, tempToken: twoFactor.emitirTempToken(usuario.id) }, digest);
     }
+    if (digest) throw Object.assign(new Error('Configura el segundo factor de tu cuenta antes de enrolar el equipo.'), { statusCode: 409 });
     const tokensSinFactor = generateTokens(usuario, dispositivo);
     return { usuario: sanitizeUser(usuario, dispositivo), ...tokensSinFactor, mustEnroll2FA: true };
   }
 
-  const tokens = generateTokens(usuario, dispositivo);
-  return { usuario: sanitizeUser(usuario, dispositivo), ...tokens };
+  return completarSesion(usuario, deviceToken, digest, dispositivo);
 };
 
 const obtenerUsuarioEmail = async (tempToken) => {
@@ -108,22 +120,22 @@ const obtenerUsuarioEmail = async (tempToken) => {
 };
 
 const reenviar2FA = async (tempToken, contexto) => {
-  const { usuario, desafio } = await obtenerUsuarioEmail(tempToken);
+  const { token } = invitaciones.separarSegundoFactor(tempToken);
+  const { usuario, desafio } = await obtenerUsuarioEmail(token);
   return twoFactorEmail.reenviar(usuario, desafio, contexto);
 };
 
 const verify2FA = async (tempToken, code, contexto, deviceToken) => {
+  const { token, digest } = invitaciones.separarSegundoFactor(tempToken);
   if (twoFactorEmail.habilitado()) {
-    const { usuario, desafio } = await obtenerUsuarioEmail(tempToken);
-    const dispositivo = await equipos.clasificar(usuario, deviceToken);
+    const { usuario, desafio } = await obtenerUsuarioEmail(token);
+    const dispositivo = digest ? undefined : await equipos.clasificar(usuario, deviceToken);
     await twoFactorEmail.verificar(usuario, desafio, code, contexto);
-    return { usuario: sanitizeUser(usuario, dispositivo), ...generateTokens(usuario, dispositivo) };
+    return completarSesion(usuario, deviceToken, digest, dispositivo);
   }
-  const usuario = await twoFactor.verificarLogin(tempToken, code);
+  const usuario = await twoFactor.verificarLogin(token, code);
   exigirEmpresaActiva(usuario);
-  const dispositivo = await equipos.clasificar(usuario, deviceToken);
-  const tokens = generateTokens(usuario, dispositivo);
-  return { usuario: sanitizeUser(usuario, dispositivo), ...tokens };
+  return completarSesion(usuario, deviceToken, digest);
 };
 
 const refreshToken = async (token, deviceToken) => {

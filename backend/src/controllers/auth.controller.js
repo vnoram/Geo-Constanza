@@ -4,8 +4,8 @@ const { registrarAuditoria } = require('../middlewares/auditLog');
 
 const login = async (req, res, next) => {
   try {
-    const { rut, password } = req.body;
-    const result = await authService.login(rut, password, req.ip, req.get('user-agent'), req.get('X-Device-Token'));
+    const { rut, password, invitacion } = req.body;
+    const result = await authService.login(rut, password, req.ip, req.get('user-agent'), req.get('X-Device-Token'), invitacion);
 
     if (result.requires2FA) {
       return res.json(result);
@@ -20,6 +20,7 @@ const login = async (req, res, next) => {
       userAgent: req.get('user-agent'),
     });
 
+    if (result.tokenDispositivo) res.set('Cache-Control', 'no-store');
     res.json(result);
   } catch (error) {
     next(error);
@@ -60,6 +61,7 @@ const verify2FA = async (req, res, next) => {
       userAgent: req.get('user-agent'),
     });
 
+    if (result.tokenDispositivo) res.set('Cache-Control', 'no-store');
     res.json(result);
   } catch (error) {
     next(error);
