@@ -14,6 +14,34 @@ const conAdjuntoFirmado = async ({ adjunto_url, ...resto }) => ({
   adjunto_url_firmada: adjunto_url ? await generarUrlLectura(adjunto_url) : null,
 });
 
+const MAX_FECHAS = 31;
+const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Acepta un arreglo (o su JSON en multipart) de fechas YYYY-MM-DD; devuelve ordenado y sin repetidas, o null. */
+function normalizarFechas(valor) {
+  if (valor === undefined || valor === null || valor === '') return null;
+  let lista = valor;
+  if (typeof valor === 'string') {
+    try { lista = JSON.parse(valor); } catch { lista = null; }
+  }
+  const invalida = () => Object.assign(new Error(`Indica entre 1 y ${MAX_FECHAS} fechas válidas (AAAA-MM-DD)`), { statusCode: 400 });
+  if (!Array.isArray(lista) || lista.length === 0 || lista.length > MAX_FECHAS) throw invalida();
+  if (!lista.every(f => typeof f === 'string' && FECHA_ISO.test(f) && !Number.isNaN(Date.parse(f)))) throw invalida();
+  return [...new Set(lista)].sort();
+}
+
+/** [['2026-12-01','2026-12-03'], ...] a partir de fechas ordenadas. */
+function agruparConsecutivas(fechas) {
+  const dia = 86_400_000;
+  const tramos = [];
+  for (const f of fechas) {
+    const ultimo = tramos[tramos.length - 1];
+    if (ultimo && Date.parse(f) - Date.parse(ultimo[1]) === dia) ultimo[1] = f;
+    else tramos.push([f, f]);
+  }
+  return tramos;
+}
+
 const TIPOS_VALIDOS = ['vacaciones', 'dias_libres', 'turno_extra', 'traslado', 'turno'];
 
 /**
@@ -74,7 +102,9 @@ const listar = async (query, user) => {
  * Crea una solicitud. Solo para GGSS libre o pauta.
  */
 const crear = async (body, userId, archivo) => {
-  const { tipo, fecha_desde, fecha_hasta, motivo } = body;
+  const { tipo, fecha_hasta, motivo } = body;
+  const fechas = normalizarFechas(body.fechas);
+  const fecha_desde = body.fecha_desde ?? fechas?.[0];
 
   if (!tipo || !fecha_desde) {
     throw Object.assign(new Error('Los campos tipo y fecha_desde son obligatorios'), { statusCode: 400 });
@@ -97,20 +127,36 @@ const crear = async (body, userId, archivo) => {
     }
   }
 
+  const comunes = {
+    usuario_id: userId,
+    adjunto_url,
+    adjunto_nombre: archivo ? String(archivo.originalname || 'adjunto').slice(0, 100) : null,
+    tipo,
+    motivo: motivo || null,
+    estado: 'pendiente',
+  };
+  const include = { usuario: { select: { id: true, nombre: true, rut: true } } };
+
+  // Varias fechas sueltas: un turno extra por día; en ausencias, los días consecutivos forman un solo tramo.
+  if (fechas) {
+    if (!['dias_libres', 'turno_extra'].includes(tipo)) {
+      throw Object.assign(new Error('Solo las ausencias y los turnos extra admiten varias fechas'), { statusCode: 400 });
+    }
+    const tramos = tipo === 'turno_extra' ? fechas.map(f => [f, f]) : agruparConsecutivas(fechas);
+    const creadas = await prisma.$transaction(tramos.map(([desde, hasta]) => prisma.solicitud.create({
+      data: { ...comunes, fecha_desde: new Date(desde), fecha_hasta: hasta !== desde ? new Date(hasta) : null },
+      include,
+    })));
+    return Promise.all(creadas.map(conAdjuntoFirmado));
+  }
+
   const creada = await prisma.solicitud.create({
     data: {
-      usuario_id: userId,
-      adjunto_url,
-      adjunto_nombre: archivo ? String(archivo.originalname || 'adjunto').slice(0, 100) : null,
-      tipo,
+      ...comunes,
       fecha_desde: new Date(fecha_desde),
       fecha_hasta: fecha_hasta ? new Date(fecha_hasta) : null,
-      motivo: motivo || null,
-      estado: 'pendiente',
     },
-    include: {
-      usuario: { select: { id: true, nombre: true, rut: true } },
-    },
+    include,
   });
   return conAdjuntoFirmado(creada);
 };
@@ -214,4 +260,4 @@ const tieneturnoAprobadoHoy = async (usuarioId) => {
   return solicitud !== null;
 };
 
-module.exports = { listar, crear, aprobar, rechazar, tieneturnoAprobadoHoy };
+module.exports = { listar, crear, aprobar, rechazar, tieneturnoAprobadoHoy, normalizarFechas, agruparConsecutivas };

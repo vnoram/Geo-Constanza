@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../../services/api";
 import { Btn } from "../../components/ui/Btn";
 import { Input } from "../../components/ui/Input";
-import { CalendarioRango, sumarDias } from "../../components/ui/CalendarioRango";
+import { CalendarioRango, rangoDias, sumarDias } from "../../components/ui/CalendarioRango";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { Badge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
@@ -13,9 +13,17 @@ const TIPOS = {
   vacaciones: "Vacaciones", dias_libres: "Ausentarse", turno_extra: "Turno extra", traslado: "Traslado",
 };
 const MAX_ADJUNTO_MB = 5;
-// Duración sugerida: unas vacaciones suelen ser de 3 semanas; el resto, un solo día.
-const DURACION_SUGERIDA = { vacaciones: 21 };
-const RAPIDAS = [1, 7, 14, 21];
+// Cómo se eligen las fechas según el tipo:
+//  vacaciones → un clic autocompleta 3 semanas · ausentarse → días sueltos o rango ·
+//  turno extra → días sueltos (marcar/desmarcar) · traslado → una sola fecha.
+const VACACIONES_DIAS = 21;
+const RAPIDAS = [7, 14, 21];
+const AYUDA = {
+  vacaciones: "Elige el primer día: se marcan las semanas siguientes automáticamente.",
+  dias_libres: "Marca los días que te ausentarás (vuelve a tocar para quitarlos) o usa «Rango» para elegir inicio y fin.",
+  turno_extra: "Marca cada día en que quieres un turno extra; vuelve a tocar para quitarlo.",
+  traslado: "Elige la fecha del traslado.",
+};
 const corta = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString("es-CL", { day: "2-digit", month: "short" });
 
 const ICONOS = { vacaciones: "umbrella", dias_libres: "ban", turno_extra: "plus", traslado: "refresh-cw" };
@@ -27,8 +35,10 @@ const etiqueta = { fontSize: 10, color: T.textMut, textTransform: "uppercase", l
 export function SolicitudesPersonales() {
   const [solicitudes, setSolicitudes] = useState([]);
   const [tipo, setTipo] = useState("vacaciones");
-  const [fecha, setFecha] = useState("");
-  const [dias, setDias] = useState(DURACION_SUGERIDA.vacaciones);
+  const [fechas, setFechas] = useState([]);        // días elegidos (YYYY-MM-DD, ordenados)
+  const [dias, setDias] = useState(VACACIONES_DIAS); // duración de las vacaciones
+  const [modoAusencia, setModoAusencia] = useState("sueltos"); // "sueltos" | "rango"
+  const [ancla, setAncla] = useState(null);          // primer clic de un rango en curso
   const [motivo, setMotivo] = useState("");
   const [archivo, setArchivo] = useState(null);
   const archivoRef = useRef(null);
@@ -42,17 +52,35 @@ export function SolicitudesPersonales() {
     return () => { activo = false; };
   }, []);
 
+  const reiniciar = (nuevoTipo, nuevoModo = modoAusencia) => { setFechas([]); setAncla(null); setTipo(nuevoTipo); setModoAusencia(nuevoModo); };
+  const alternar = (iso) => setFechas(prev => (prev.includes(iso) ? prev.filter(f => f !== iso) : [...prev, iso].sort()));
+  const elegir = (iso) => {
+    if (tipo === "vacaciones") return setFechas(rangoDias(iso, sumarDias(iso, dias - 1)));
+    if (tipo === "traslado") return setFechas([iso]);
+    if (tipo === "dias_libres" && modoAusencia === "rango") {
+      if (!ancla) { setAncla(iso); return setFechas([iso]); }
+      setAncla(null);
+      return setFechas(rangoDias(ancla, iso));
+    }
+    return alternar(iso);
+  };
+  const cambiarDuracion = (n) => { setDias(n); if (tipo === "vacaciones" && fechas.length) setFechas(rangoDias(fechas[0], sumarDias(fechas[0], n - 1))); };
+  const esRango = tipo === "vacaciones" || (tipo === "dias_libres" && modoAusencia === "rango");
+  const destacados = esRango && fechas.length ? [fechas[0], fechas[fechas.length - 1]] : tipo === "vacaciones" ? [] : fechas;
+
   const crear = async (evento) => {
     evento.preventDefault();
     setError("");
     setOcupado(true);
     try {
+      const variasFechas = !esRango && ["dias_libres", "turno_extra"].includes(tipo);
       let nueva;
       if (archivo) {
         const form = new FormData();
         form.append("tipo", tipo);
-        form.append("fecha_desde", fecha);
-        if (dias > 1) form.append("fecha_hasta", sumarDias(fecha, dias - 1));
+        form.append("fecha_desde", fechas[0]);
+        if (esRango && fechas.length > 1) form.append("fecha_hasta", fechas[fechas.length - 1]);
+        if (variasFechas) form.append("fechas", JSON.stringify(fechas));
         if (motivo) form.append("motivo", motivo);
         form.append("adjunto", archivo);
         const res = await fetch(`${API_BASE}/solicitudes`, {
@@ -62,10 +90,16 @@ export function SolicitudesPersonales() {
         if (!res.ok) throw new Error(cuerpo.error || `Error ${res.status}`);
         nueva = cuerpo;
       } else {
-        nueva = await api.post("/solicitudes", { tipo, fecha_desde: fecha, fecha_hasta: dias > 1 ? sumarDias(fecha, dias - 1) : undefined, motivo });
+        nueva = await api.post("/solicitudes", {
+          tipo, fecha_desde: fechas[0], motivo,
+          ...(esRango && fechas.length > 1 ? { fecha_hasta: fechas[fechas.length - 1] } : {}),
+          ...(variasFechas ? { fechas } : {}),
+        });
       }
-      setSolicitudes(prev => [nueva, ...prev.filter(s => s.id !== nueva.id)]);
-      setFecha("");
+      const nuevas = Array.isArray(nueva) ? nueva : [nueva];
+      setSolicitudes(prev => [...nuevas, ...prev.filter(s => !nuevas.some(n => n.id === s.id))]);
+      setFechas([]);
+      setAncla(null);
       setMotivo("");
       setArchivo(null);
       if (archivoRef.current) archivoRef.current.value = "";
@@ -76,6 +110,10 @@ export function SolicitudesPersonales() {
     }
   };
 
+  const resumen = !fechas.length ? "Aún no has elegido fechas."
+    : esRango ? `${corta(fechas[0])}${fechas.length > 1 ? ` → ${corta(fechas[fechas.length - 1])}` : ""} · ${fechas.length} ${fechas.length === 1 ? "día" : "días"}${ancla ? " (elige el día final)" : ""}`
+      : `${fechas.length} ${fechas.length === 1 ? "día" : "días"}: ${fechas.map(corta).join(", ")}`;
+
   return (
     <div className="guard-screen">
       <SectionHeader title="Mis solicitudes" sub="Pide vacaciones, días libres o turnos extra" />
@@ -83,7 +121,7 @@ export function SolicitudesPersonales() {
         <div style={etiqueta}>Tipo de solicitud</div>
         <div className="guard-action-grid" style={{ display: "grid", gap: 8, marginBottom: 16 }}>
           {Object.entries(TIPOS).map(([id, label]) => (
-            <button type="button" className="touch-target gc-accion-btn gc-accion-btn--morado" key={id} aria-pressed={tipo === id} onClick={() => { setTipo(id); setDias(DURACION_SUGERIDA[id] ?? 1); }} style={{
+            <button type="button" className="touch-target gc-accion-btn gc-accion-btn--morado" key={id} aria-pressed={tipo === id} onClick={() => reiniciar(id)} style={{
               background: tipo === id ? T.focusGhost : "transparent",
               border: `1px solid ${tipo === id ? T.borderFocus : T.border}`, borderRadius: 8,
               padding: "12px 8px", color: tipo === id ? T.focusText : T.text, fontSize: 12, fontWeight: 600,
@@ -91,21 +129,34 @@ export function SolicitudesPersonales() {
             }}><Icon name={ICONOS[id] ?? "file-pen"} size={16} /> {label}</button>
           ))}
         </div>
-        <div style={{ ...etiqueta, marginBottom: 6, textTransform: "none", letterSpacing: 0, fontSize: 12, fontWeight: 500, color: T.textSec }}>Fecha de inicio</div>
-        <CalendarioRango inicio={fecha} dias={dias} onElegir={setFecha} />
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, margin: "12px 0 6px" }}>
-          <span style={{ fontSize: 12, color: T.textSec }}>Duración:</span>
-          {RAPIDAS.map(n => (
-            <button type="button" key={n} aria-pressed={dias === n} onClick={() => setDias(n)} className="gc-accion-btn gc-accion-btn--morado" style={{
-              background: dias === n ? T.focusGhost : "transparent", border: `1px solid ${dias === n ? T.borderFocus : T.border}`,
-              color: dias === n ? T.focusText : T.text, borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-ui)",
-            }}>{n === 1 ? "1 día" : `${n} días`}</button>
-          ))}
-          <input type="number" min={1} max={60} value={dias} aria-label="Días" onChange={e => setDias(Math.min(60, Math.max(1, Number(e.target.value) || 1)))}
-            style={{ width: 56, background: T.bgInput, color: T.text, border: `1px solid ${T.border}`, borderRadius: 6, padding: "4px 6px", fontSize: 12 }} />
+        <div style={{ ...etiqueta, marginBottom: 6, textTransform: "none", letterSpacing: 0, fontSize: 12, fontWeight: 500, color: T.textSec }}>
+          {tipo === "vacaciones" ? "Primer día de vacaciones" : tipo === "traslado" ? "Fecha del traslado" : "Fechas"}
         </div>
-        <div style={{ fontSize: 12, color: fecha ? T.focusText : T.textMut, marginBottom: 16 }}>
-          {fecha ? `${corta(fecha)}${dias > 1 ? ` → ${corta(sumarDias(fecha, dias - 1))}` : ""} · ${dias} ${dias === 1 ? "día" : "días"}` : "Elige el día de inicio en el calendario."}
+        <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>{AYUDA[tipo]}</div>
+        {tipo === "dias_libres" && (
+          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            {[["sueltos", "Días sueltos"], ["rango", "Rango"]].map(([id, label]) => (
+              <button type="button" key={id} aria-pressed={modoAusencia === id} onClick={() => reiniciar(tipo, id)} className="gc-accion-btn gc-accion-btn--morado" style={{
+                background: modoAusencia === id ? T.focusGhost : "transparent", border: `1px solid ${modoAusencia === id ? T.borderFocus : T.border}`,
+                color: modoAusencia === id ? T.focusText : T.text, borderRadius: 6, padding: "4px 12px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-ui)",
+              }}>{label}</button>
+            ))}
+          </div>
+        )}
+        <CalendarioRango marcados={fechas} destacados={destacados} onElegir={elegir} />
+        {tipo === "vacaciones" && (
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, margin: "12px 0 0" }}>
+            <span style={{ fontSize: 12, color: T.textSec }}>Duración:</span>
+            {RAPIDAS.map(n => (
+              <button type="button" key={n} aria-pressed={dias === n} onClick={() => cambiarDuracion(n)} className="gc-accion-btn gc-accion-btn--morado" style={{
+                background: dias === n ? T.focusGhost : "transparent", border: `1px solid ${dias === n ? T.borderFocus : T.border}`,
+                color: dias === n ? T.focusText : T.text, borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-ui)",
+              }}>{n / 7} {n === 7 ? "semana" : "semanas"}</button>
+            ))}
+          </div>
+        )}
+        <div style={{ fontSize: 12, color: fechas.length ? T.focusText : T.textMut, margin: "12px 0 16px" }}>
+          {resumen}
         </div>
         <Input label="Motivo (opcional)" icon="file-pen" value={motivo} onChange={setMotivo} maxLength={500} placeholder="Cuéntale brevemente al supervisor" />
         <div style={{ marginBottom: 16 }}>
@@ -117,7 +168,7 @@ export function SolicitudesPersonales() {
           }} style={{ color: T.textSec, fontSize: 12, maxWidth: "100%" }} />
           <div style={{ fontSize: 11, color: T.textMut, marginTop: 4 }}>Imagen (JPG, PNG, WebP) o PDF, hasta {MAX_ADJUNTO_MB} MB. Útil para certificados o comprobantes.</div>
         </div>
-        <Btn type="submit" loading={ocupado} disabled={!fecha} full>Enviar solicitud</Btn>
+        <Btn type="submit" loading={ocupado} disabled={!fechas.length} full>Enviar solicitud</Btn>
         {error && <div role="alert" style={{ fontSize: 12, color: T.alert, marginTop: 10 }}>{error}</div>}
       </form>
 

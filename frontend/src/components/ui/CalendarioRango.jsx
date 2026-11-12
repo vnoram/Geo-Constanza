@@ -11,15 +11,23 @@ const aIso = (d) => d.toISOString().slice(0, 10);
 export const sumarDias = (iso, dias) => { const d = aFecha(iso); d.setUTCDate(d.getUTCDate() + dias); return aIso(d); };
 const hoyIso = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Santiago" });
 
+export const rangoDias = (desde, hasta) => {
+  const [a, b] = desde <= hasta ? [desde, hasta] : [hasta, desde];
+  const lista = [];
+  for (let d = a; d <= b; d = sumarDias(d, 1)) lista.push(d);
+  return lista;
+};
+
 /**
- * Calendario mensual que pinta en morado suave el rango elegido.
- * Al hacer clic en un día define el inicio; el fin se calcula con `dias` (ej. 21 en vacaciones).
+ * Calendario mensual. No decide nada: pinta `marcados` en morado suave, `destacados` en morado
+ * fuerte y avisa con `onElegir(iso)` qué día se tocó. Cada tipo de solicitud interpreta el clic.
  */
-export function CalendarioRango({ inicio, dias, onElegir }) {
+export function CalendarioRango({ marcados = [], destacados = [], onElegir }) {
   const hoy = hoyIso();
-  const base = aFecha(inicio || hoy);
+  const suaves = new Set(marcados);
+  const fuertes = new Set(destacados);
+  const base = aFecha(marcados[0] || hoy);
   const [vista, setVista] = useState({ a: base.getUTCFullYear(), m: base.getUTCMonth() });
-  const fin = inicio ? sumarDias(inicio, Math.max(dias, 1) - 1) : null;
 
   const primero = new Date(Date.UTC(vista.a, vista.m, 1));
   const huecos = (primero.getUTCDay() + 6) % 7; // semana desde lunes
@@ -40,16 +48,16 @@ export function CalendarioRango({ inicio, dias, onElegir }) {
         {celdas.map((iso, i) => {
           if (!iso) return <div key={`h${i}`} />;
           const pasado = iso < hoy;
-          const extremo = iso === inicio || iso === fin;
-          const dentro = inicio && iso >= inicio && iso <= fin;
+          const fuerte = fuertes.has(iso);
+          const suave = suaves.has(iso);
           return (
             <button type="button" key={iso} disabled={pasado} onClick={() => onElegir(iso)}
-              aria-pressed={extremo} aria-label={iso}
+              aria-pressed={fuerte} aria-label={iso}
               style={{
-                border: `1px solid ${extremo ? T.borderFocus : "transparent"}`, borderRadius: 6, padding: "8px 0",
-                fontSize: 12, fontWeight: extremo ? 700 : 500, fontFamily: "var(--font-ui)",
-                background: extremo ? T.focus : dentro ? T.focusGhost : "transparent",
-                color: pasado ? T.textMut : extremo ? "#fff" : dentro ? T.focusText : T.text,
+                border: `1px solid ${fuerte ? T.borderFocus : "transparent"}`, borderRadius: 6, padding: "8px 0",
+                fontSize: 12, fontWeight: fuerte ? 700 : 500, fontFamily: "var(--font-ui)",
+                background: fuerte ? T.focus : suave ? T.focusGhost : "transparent",
+                color: pasado ? T.textMut : fuerte ? "#fff" : suave ? T.focusText : T.text,
                 opacity: pasado ? 0.4 : 1, cursor: pasado ? "not-allowed" : "pointer",
               }}>{Number(iso.slice(8))}</button>
           );
