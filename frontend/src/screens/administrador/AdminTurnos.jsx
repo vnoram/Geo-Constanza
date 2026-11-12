@@ -282,49 +282,90 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
   );
 }
 
-// ─── CARD DE TURNO ───────────────────────────────────────────────
-function TurnoCard({ turno }) {
-  const estadoColor = {
-    programado: T.accent,
-    completado: "#7A4EBF",
-    cancelado: T.red,
-  }[turno.estado] || T.textMut;
+// ─── HELPERS DE LISTA ────────────────────────────────────────────
+const ESTADO_COLOR = {
+  programado: T.accent,
+  completado: "#7A4EBF",
+  cancelado: T.red,
+};
 
+const fmtFecha = (f) =>
+  new Date(f).toLocaleDateString("es-CL", {
+    weekday: "short", day: "numeric", month: "short", timeZone: "UTC",
+  });
+
+const esNoct = (t) => t.hora_fin < t.hora_inicio;
+
+const selectStyle = {
+  background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: 8,
+  padding: "8px 10px", color: T.text, fontSize: 12,
+  fontFamily: "var(--font-ui)", outline: "none", cursor: "pointer",
+};
+
+// ─── FILA DE TURNO (compacta) ────────────────────────────────────
+function TurnoFila({ turno }) {
+  const color = ESTADO_COLOR[turno.estado] || T.textMut;
   return (
-    <div className="admin-card admin-turn-card" style={{
-      background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
-      padding: "12px 16px", marginBottom: 8,
-      display: "grid", alignItems: "center", gap: 12,
+    <div style={{
+      display: "grid", gridTemplateColumns: "110px 1fr auto", alignItems: "center",
+      gap: 12, padding: "8px 14px", borderTop: `1px solid ${T.border}`, fontSize: 12,
     }}>
-      <div className="admin-list-row__main">
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>
-            {turno.usuario?.nombre || "—"}
+      <span style={{ color: T.textSec, textTransform: "capitalize" }}>{fmtFecha(turno.fecha)}</span>
+      <span style={{ color: T.text }}>
+        {turno.hora_inicio} – {turno.hora_fin}
+        {esNoct(turno) && (
+          <span style={{ color: T.focusText, marginLeft: 6 }}>
+            <Icon name="moon" size={13} /> +1d
           </span>
-          {turno.hora_fin < turno.hora_inicio && (
-            <span style={{ fontSize: 10, color: T.focusText, background: T.bgCard, borderRadius: 4, padding: "1px 5px" }}>
-              <Icon name="moon" size={16} />
-            </span>
-          )}
-        </div>
-        <div style={{ fontSize: 12, color: T.textMut, marginTop: 2 }}>
-          {turno.instalacion?.nombre} · {turno.hora_inicio} – {turno.hora_fin}
-          {turno.hora_fin < turno.hora_inicio && <span style={{ color: T.focusText }}> (+1d)</span>}
-        </div>
-        <div style={{ fontSize: 11, color: T.textSec, marginTop: 3 }}>
-          {new Date(turno.fecha).toLocaleDateString("es-CL", {
-            weekday: "short", year: "numeric", month: "short", day: "numeric",
-            timeZone: "UTC",
-          })}
-        </div>
-      </div>
-      <div style={{
-        fontSize: 11, fontWeight: 700, color: estadoColor,
-        background: `${estadoColor}18`, borderRadius: 6, padding: "4px 10px",
-        textTransform: "uppercase", letterSpacing: 0.8,
+        )}
+      </span>
+      <span style={{
+        fontSize: 10, fontWeight: 700, color, background: `${color}18`,
+        borderRadius: 6, padding: "3px 8px", textTransform: "uppercase", letterSpacing: 0.8,
       }}>
         {turno.estado}
-      </div>
+      </span>
+    </div>
+  );
+}
+
+// ─── GRUPO POR GUARDIA (plegable) ────────────────────────────────
+function GrupoGuardia({ grupo, abiertoInicial }) {
+  const [abierto, setAbierto] = useState(abiertoInicial);
+  const { nombre, turnos } = grupo;
+  const instalaciones = [...new Set(turnos.map((t) => t.instalacion?.nombre).filter(Boolean))];
+  const proximo = turnos.find((t) => t.estado === "programado");
+  return (
+    <div style={{
+      background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
+      marginBottom: 10, overflow: "hidden",
+    }}>
+      <button
+        type="button"
+        onClick={() => setAbierto((v) => !v)}
+        aria-expanded={abierto}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", gap: 10,
+          padding: "12px 14px", background: "none", border: "none",
+          color: T.text, cursor: "pointer", textAlign: "left", fontFamily: "var(--font-ui)",
+        }}
+      >
+        <Icon name={abierto ? "chevron-down" : "chevron-right"} size={16} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>{nombre}</div>
+          <div style={{ fontSize: 11, color: T.textMut, marginTop: 2 }}>
+            {instalaciones.join(" · ") || "Sin instalación"}
+            {proximo && ` · próximo: ${fmtFecha(proximo.fecha)}`}
+          </div>
+        </div>
+        <span style={{
+          fontSize: 11, fontWeight: 700, color: T.textSec, background: T.bgInput,
+          borderRadius: 6, padding: "3px 9px",
+        }}>
+          {turnos.length} {turnos.length === 1 ? "turno" : "turnos"}
+        </span>
+      </button>
+      {abierto && turnos.map((t) => <TurnoFila key={t.id} turno={t} />)}
     </div>
   );
 }
@@ -336,6 +377,9 @@ export function AdminTurnos() {
   const [instalaciones, setInstalaciones] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [filtroGuardia, setFiltroGuardia] = useState("todos");
+  const [filtroEstado, setFiltroEstado] = useState("todos");
+  const [soloProximos, setSoloProximos] = useState(true);
 
   const cargarDatos = async () => {
     setCargando(true);
@@ -361,6 +405,24 @@ export function AdminTurnos() {
 
   const handlePautaExitosa = () => { cargarDatos(); };
 
+  // Filtra, ordena por fecha y agrupa por guardia
+  const hoy = new Date().toISOString().slice(0, 10);
+  const filtrados = turnos
+    .filter((t) => filtroGuardia === "todos" || t.usuario?.id === filtroGuardia || t.usuario_id === filtroGuardia)
+    .filter((t) => filtroEstado === "todos" || t.estado === filtroEstado)
+    .filter((t) => !soloProximos || String(t.fecha).slice(0, 10) >= hoy)
+    .sort((x, y) => new Date(x.fecha) - new Date(y.fecha) || x.hora_inicio.localeCompare(y.hora_inicio));
+  const grupos = Object.values(
+    filtrados.reduce((acc, t) => {
+      const key = t.usuario_id || t.usuario?.id || "sin";
+      (acc[key] ||= { nombre: t.usuario?.nombre || "Sin asignar", turnos: [] }).turnos.push(t);
+      return acc;
+    }, {})
+  ).sort((x, y) => x.nombre.localeCompare(y.nombre));
+  const guardiasConTurnos = [...new Map(
+    turnos.filter((t) => t.usuario).map((t) => [t.usuario_id || t.usuario.id, t.usuario.nombre])
+  )];
+
   return (
     <div className="admin-screen">
       <SectionHeader
@@ -369,33 +431,58 @@ export function AdminTurnos() {
         action={{ label: <><Icon name="zap" size={16} />{" Generar Pauta 4×4"}</>, onClick: () => setModalAbierto(true) }}
       />
 
-      {/* Tarjeta de importación CSV */}
+      {/* Importación CSV (compacta) */}
       <div style={{
-        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
-        padding: 20, textAlign: "center", marginBottom: 20,
+        background: T.bgCard, border: `1px dashed ${T.border}`, borderRadius: 8,
+        padding: "12px 16px", marginBottom: 16, display: "flex",
+        alignItems: "center", gap: 12, flexWrap: "wrap",
       }}>
-        <div style={{ fontSize: 40, marginBottom: 10 }}><Icon name="download" size={40} /></div>
-        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Importar Turnos</div>
-        <div style={{ fontSize: 12, color: T.textMut, marginBottom: 14 }}>
-          Sube un archivo CSV o Excel con los turnos programados
+        <Icon name="download" size={22} />
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <div style={{ fontWeight: 700, fontSize: 13 }}>Importar turnos</div>
+          <div style={{ fontSize: 11, color: T.textMut }}>CSV o Excel con los turnos programados</div>
         </div>
         <Btn>Seleccionar Archivo</Btn>
       </div>
 
-      {/* Lista de turnos */}
-      <SubHeader title={`Todos los Turnos (${turnos.length})`} />
+      {/* Filtros */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
+        <select aria-label="Guardia" value={filtroGuardia} onChange={(e) => setFiltroGuardia(e.target.value)} style={selectStyle}>
+          <option value="todos">Todos los guardias</option>
+          {guardiasConTurnos.map(([id, nombre]) => <option key={id} value={id}>{nombre}</option>)}
+        </select>
+        <select aria-label="Estado" value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)} style={selectStyle}>
+          <option value="todos">Todos los estados</option>
+          <option value="programado">Programado</option>
+          <option value="completado">Completado</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.textSec, cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={soloProximos}
+            onChange={(e) => setSoloProximos(e.target.checked)}
+            style={{ accentColor: T.accent }}
+          />
+          Solo desde hoy
+        </label>
+      </div>
+
+      <SubHeader title={`Turnos (${filtrados.length} de ${turnos.length}) · ${grupos.length} ${grupos.length === 1 ? "guardia" : "guardias"}`} />
 
       {cargando ? (
         <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 30 }}>
           Cargando turnos...
         </div>
-      ) : turnos.length === 0 ? (
+      ) : filtrados.length === 0 ? (
         <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 30 }}>
-          No hay turnos registrados.
+          {turnos.length === 0 ? "No hay turnos registrados." : "Ningún turno coincide con los filtros."}
         </div>
       ) : (
         <div>
-          {turnos.map((t) => <TurnoCard key={t.id} turno={t} />)}
+          {grupos.map((g, i) => (
+            <GrupoGuardia key={g.nombre + i} grupo={g} abiertoInicial={grupos.length <= 3 || i === 0} />
+          ))}
         </div>
       )}
 
