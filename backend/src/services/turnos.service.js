@@ -33,7 +33,12 @@ const mensajeConflicto = (t) => `Conflicto con turno ${t.id}: ${new Date(t.fecha
 const listar = async (query, user) => {
   const where = {};
   if (query.fecha) where.fecha = new Date(query.fecha);
-  else if (query.desde) where.fecha = { gte: new Date(query.desde) };
+  else if (query.desde || query.hasta) {
+    where.fecha = {
+      ...(query.desde && { gte: new Date(query.desde) }),
+      ...(query.hasta && { lte: new Date(query.hasta) }),
+    };
+  }
   if (query.instalacion_id) where.instalacion_id = query.instalacion_id;
   if (query.usuario_id) where.usuario_id = query.usuario_id;
 

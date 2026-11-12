@@ -7,6 +7,7 @@ import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 import { ROLES } from "../../constants/roles";
 import { ahoraChile, sumarDias } from "../../utils/fechaChile";
+import { SemanaTurnos, lunesDe } from "./SemanaTurnos";
 
 const hoyLocal = () => ahoraChile().fecha;
 
@@ -207,11 +208,12 @@ export function SupGuardias() {
   const [filtroGuardia, setFiltroGuardia] = useState("");
   const [turnoEditando, setTurnoEditando] = useState(null);
   const [aviso, setAviso] = useState("");
+  const [lunes, setLunes] = useState(() => lunesDe(hoyLocal()));
 
   const cargarTurnos = async () => {
     setCargandoTurnos(true);
     try {
-      const data = await api.get(`/turnos?desde=${hoyLocal()}`);
+      const data = await api.get(`/turnos?desde=${lunes}&hasta=${sumarDias(lunes, 6)}`);
       setTurnos(Array.isArray(data) ? data : (data.data || []));
     } catch (err) {
       console.error("Error al cargar turnos:", err);
@@ -250,8 +252,11 @@ export function SupGuardias() {
 
   useEffect(() => {
     cargarRecursos();
-    cargarTurnos();
   }, []);
+
+  useEffect(() => {
+    cargarTurnos();
+  }, [lunes]);
 
   const onTurnoGuardado = () => {
     setTurnoEditando(null);
@@ -260,23 +265,13 @@ export function SupGuardias() {
     cargarTurnos();
   };
 
-  const { fecha: hoy, hora: horaActual } = ahoraChile();
-  const ayer = sumarDias(hoy, -1);
+  const { fecha: hoy } = ahoraChile();
   const idsInstalaciones = new Set(instalaciones.map((i) => i.id));
   const turnosVisibles = turnos
     .filter((t) => t.estado !== "cancelado")
-    // Desde hoy, más el turno nocturno de ayer si todavía no termina
-    .filter((t) => fechaDeTurno(t) >= hoy || (fechaDeTurno(t) === ayer && esNocturno(t) && horaActual < t.hora_fin))
     // Solo turnos de las instalaciones del supervisor (/instalaciones ya viene filtrado)
     .filter((t) => idsInstalaciones.has(t.instalacion_id))
     .filter((t) => !filtroGuardia || t.usuario_id === filtroGuardia);
-
-  // Agrupar por fecha manteniendo el orden (el backend ya ordena por fecha)
-  const turnosPorFecha = turnosVisibles.reduce((acc, t) => {
-    const f = fechaDeTurno(t);
-    (acc[f] ||= []).push(t);
-    return acc;
-  }, {});
 
   const crearTurno = async () => {
     if (!form.usuario_id || !form.instalacion_id || !form.fecha) {
@@ -416,7 +411,7 @@ export function SupGuardias() {
 
       {/* ── Próximos turnos ── */}
       <div className="filter-bar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, margin: "4px 0 10px" }}>
-        <div style={{ fontWeight: 800, fontSize: 14, color: "#9F8FC4" }}>Próximos turnos</div>
+        <div style={{ fontWeight: 800, fontSize: 14, color: "#9F8FC4" }}>Turnos de la semana</div>
         <select
           className="touch-target filter-control"
           value={filtroGuardia}
@@ -441,53 +436,8 @@ export function SupGuardias() {
 
       {cargandoTurnos ? (
         <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 16 }}>Cargando turnos...</div>
-      ) : turnosVisibles.length === 0 ? (
-        <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 16 }}>
-          No hay turnos programados desde hoy.
-        </div>
       ) : (
-        Object.entries(turnosPorFecha).map(([fecha, lista]) => (
-          <div key={fecha} style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: T.textSec, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
-              {formatearFecha(fecha)}
-            </div>
-            {lista.map((t) => (
-              <div
-                className="responsive-list-row"
-                key={t.id}
-                style={{
-                  background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
-                  padding: 12, marginBottom: 6, display: "flex", alignItems: "center", gap: 10,
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>
-                    {t.hora_inicio} – {t.hora_fin}
-                    {esNocturno(t) && <span style={{ color: T.focusText, fontSize: 11 }}> (+1) <Icon name="moon" size={16} /></span>}
-                    {" · "}{t.usuario?.nombre || "Sin guardia"}
-                  </div>
-                  <div style={{ fontSize: 11, color: T.textMut, marginTop: 2 }}>
-                    <Icon name="building-2" size={16} /> {t.instalacion?.nombre || "—"}
-                  </div>
-                </div>
-                <Badge color={ESTADO_COLOR[t.estado] || "accent"}>{t.estado}</Badge>
-                {t.estado === "programado" && (
-                  <button
-                    className="touch-target gc-accion-btn gc-accion-btn--morado"
-                    onClick={() => setTurnoEditando(t)}
-                    style={{
-                      background: "transparent", border: `1px solid ${T.border}`,
-                      color: T.text, borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700,
-                      fontFamily: "var(--font-ui)", cursor: "pointer", whiteSpace: "nowrap",
-                    }}
-                  >
-                    <Icon name="pencil" size={16} /> Editar
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        ))
+        <SemanaTurnos lunes={lunes} hoy={hoy} turnos={turnosVisibles} onCambiarSemana={setLunes} onEditar={setTurnoEditando} />
       )}
 
       <div style={{ fontWeight: 800, fontSize: 14, color: "#9F8FC4", margin: "18px 0 10px" }}>Personal</div>
