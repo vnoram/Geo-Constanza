@@ -17,7 +17,6 @@ const MAX_ADJUNTO_MB = 5;
 //  vacaciones → un clic autocompleta 3 semanas · ausentarse → un día, o dos toques y se completa el rango ·
 //  turno extra → días sueltos (marcar/desmarcar) · traslado → una sola fecha.
 const VACACIONES_DIAS = 21;
-const RAPIDAS = [7, 14, 21];
 const AYUDA = {
   vacaciones: "Elige el primer día: se marcan las semanas siguientes automáticamente.",
   dias_libres: "Toca el día en que te ausentarás. Si son varios, toca el último y se marcan los de en medio.",
@@ -36,8 +35,7 @@ export function SolicitudesPersonales() {
   const [solicitudes, setSolicitudes] = useState([]);
   const [tipo, setTipo] = useState("vacaciones");
   const [fechas, setFechas] = useState([]);        // días elegidos (YYYY-MM-DD, ordenados)
-  const [dias, setDias] = useState(VACACIONES_DIAS); // duración de las vacaciones
-  const [motivo, setMotivo] = useState("");
+    const [motivo, setMotivo] = useState("");
   const [archivo, setArchivo] = useState(null);
   const archivoRef = useRef(null);
   const [error, setError] = useState("");
@@ -53,7 +51,7 @@ export function SolicitudesPersonales() {
   const reiniciar = (nuevoTipo) => { setFechas([]); setTipo(nuevoTipo); };
   const alternar = (iso) => setFechas(prev => (prev.includes(iso) ? prev.filter(f => f !== iso) : [...prev, iso].sort()));
   const elegir = (iso) => {
-    if (tipo === "vacaciones") return setFechas(rangoDias(iso, sumarDias(iso, dias - 1)));
+    if (tipo === "vacaciones") return setFechas(rangoDias(iso, sumarDias(iso, VACACIONES_DIAS - 1)));
     if (tipo === "traslado") return setFechas([iso]);
     if (tipo === "dias_libres") {
       // Un día queda solo; si ya hay uno suelto y tocas otro, se completa lo de en medio.
@@ -62,7 +60,6 @@ export function SolicitudesPersonales() {
     }
     return alternar(iso);
   };
-  const cambiarDuracion = (n) => { setDias(n); if (tipo === "vacaciones" && fechas.length) setFechas(rangoDias(fechas[0], sumarDias(fechas[0], n - 1))); };
   const esRango = tipo === "vacaciones" || tipo === "dias_libres";
   const destacados = esRango ? (fechas.length ? [fechas[0], fechas[fechas.length - 1]] : []) : fechas;
 
@@ -131,17 +128,6 @@ export function SolicitudesPersonales() {
         </div>
         <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>{AYUDA[tipo]}</div>
         <CalendarioRango marcados={fechas} destacados={destacados} onElegir={elegir} />
-        {tipo === "vacaciones" && (
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, margin: "12px 0 0" }}>
-            <span style={{ fontSize: 12, color: T.textSec }}>Duración:</span>
-            {RAPIDAS.map(n => (
-              <button type="button" key={n} aria-pressed={dias === n} onClick={() => cambiarDuracion(n)} className="gc-accion-btn gc-accion-btn--morado" style={{
-                background: dias === n ? T.focusGhost : "transparent", border: `1px solid ${dias === n ? T.borderFocus : T.border}`,
-                color: dias === n ? T.focusText : T.text, borderRadius: 6, padding: "4px 10px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-ui)",
-              }}>{n / 7} {n === 7 ? "semana" : "semanas"}</button>
-            ))}
-          </div>
-        )}
         <div style={{ fontSize: 12, color: fechas.length ? T.focusText : T.textMut, margin: "12px 0 16px" }}>
           {resumen}
         </div>
