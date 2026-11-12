@@ -148,6 +148,9 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
     if (!turno) {
       throw Object.assign(new Error('No tienes un turno vigente en esta instalación (entrada permitida desde 15 minutos antes).'), { statusCode: 400 });
     }
+    if (turno.instalacion?.estado === 'inactivo') {
+      throw Object.assign(new Error('La instalación de este turno fue desactivada. Tu supervisor debe reasignarte.'), { statusCode: 409 });
+    }
 
     // Convertir coordenadas a número (pueden llegar como string desde JSON del body)
     const lat = latitud  != null ? parseFloat(latitud)  : null;

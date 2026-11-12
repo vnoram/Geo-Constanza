@@ -464,6 +464,9 @@ router.get('/disponibles', authorize(ROLES.GGSS_LIBRE), turnosController.listarD
 // ── Verificar conflictos (antes de /:id para evitar captura) ───────────────
 router.get('/conflictos', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.verificarConflictos);
 
+// ── Turnos futuros en instalaciones desactivadas (antes de /:id) ───────────
+router.get('/por-reasignar', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.porReasignar);
+
 // ── Creación de pautas y lotes (antes de /:id) ────────────────────────────
 router.post('/lote',      authorize(ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.crearLote);
 router.post('/pauta-4x4', authorize(ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.crearPauta4x4);

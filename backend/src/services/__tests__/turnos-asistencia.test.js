@@ -339,3 +339,19 @@ test('conflictos: el supervisor no ve instalación ni horario de turnos fuera de
   const adm = await turnos.verificarConflictosPara(q, { id: 'x', rol: 'administrador' });
   expect(adm[1].instalacion.nombre).toBe('Secreta');
 });
+
+test('entrada en un turno de instalación desactivada se rechaza hasta que lo reasignen', async () => {
+  prisma.turno.findMany.mockResolvedValue([{ ...b, instalacion: { ...inst, estado: 'inactivo' } }]);
+  await expect(entrada()).rejects.toMatchObject({ statusCode: 409, message: expect.stringContaining('desactivada') });
+  expect(prisma.asistencia.create).not.toHaveBeenCalled();
+});
+
+test('turnos por reasignar: el supervisor solo ve sus instalaciones', async () => {
+  const { resolverInstalacionesSupervisor } = require('../supervisor.helper');
+  resolverInstalacionesSupervisor.mockResolvedValue(['i']);
+  prisma.turno.findMany.mockResolvedValue([]);
+  await turnos.porReasignar({ id: 's', rol: 'supervisor' });
+  expect(prisma.turno.findMany.mock.calls[0][0].where).toMatchObject({ estado: 'programado', instalacion: { estado: 'inactivo' }, instalacion_id: { in: ['i'] } });
+  await turnos.porReasignar({ id: 'a', rol: 'admin' });
+  expect(prisma.turno.findMany.mock.calls[1][0].where).not.toHaveProperty('instalacion_id');
+});

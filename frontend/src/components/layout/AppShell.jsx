@@ -111,6 +111,7 @@ export function AppShell({ user, onLogout }) {
   const role = ROLES[user.rol];
   const [pendientes, setPendientes] = useState(0);
   const [novedadesPend, setNovedadesPend] = useState(0);
+  const [porReasignar, setPorReasignar] = useState(0);
   // Insignia real de solicitudes pendientes para el supervisor (se refresca cada minuto y al resolver una)
   useEffect(() => {
     if (user.rol !== ROL.SUPERVISOR) return undefined;
@@ -122,20 +123,26 @@ export function AppShell({ user, onLogout }) {
     const cargarNovedades = () => Promise.all(["abierta", "en_atencion", "escalada"].map((e) => api.get(`/novedades?estado=${e}&limit=1`)))
       .then((r) => { if (vigente) setNovedadesPend(r.reduce((n, x) => n + (Number(x?.total) || 0), 0)); })
       .catch(() => {});
-    const todo = () => { cargar(); cargarNovedades(); };
+    const cargarReasignar = () => api.get("/turnos/por-reasignar")
+      .then((r) => { if (vigente) setPorReasignar(Array.isArray(r) ? r.length : 0); })
+      .catch(() => {});
+    const todo = () => { cargar(); cargarNovedades(); cargarReasignar(); };
     todo();
     const timer = setInterval(todo, 60000);
     window.addEventListener("gc:solicitudes-cambio", cargar);
     window.addEventListener("gc:novedades-cambio", cargarNovedades);
+    window.addEventListener("gc:reasignar-cambio", cargarReasignar);
     return () => {
       vigente = false; clearInterval(timer);
       window.removeEventListener("gc:solicitudes-cambio", cargar);
       window.removeEventListener("gc:novedades-cambio", cargarNovedades);
+      window.removeEventListener("gc:reasignar-cambio", cargarReasignar);
     };
   }, [user.rol]);
   const sections = seccionesPara(user).map((s) => {
     if (user.rol !== ROL.SUPERVISOR) return s;
     if (s.id === "solicitudes") return { ...s, badge: pendientes > 0 ? String(pendientes) : null };
+    if (s.id === "dashboard") return { ...s, badge: porReasignar > 0 ? String(porReasignar) : null };
     if (s.id === "novedades") return { ...s, badge: novedadesPend > 0 ? String(novedadesPend) : null };
     return s;
   });

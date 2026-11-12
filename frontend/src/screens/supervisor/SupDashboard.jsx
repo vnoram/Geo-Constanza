@@ -11,6 +11,7 @@ import { Btn } from "../../components/ui/Btn";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
+import { TurnosPorReasignar } from "./TurnosPorReasignar";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 
 
@@ -95,6 +96,7 @@ export function SupDashboard() {
       )}
       {errorRevision && <Dialogo titulo="No se pudo registrar la revisión" mensaje={errorRevision} soloMensaje onCancelar={() => setErrorRevision("")} />}
       <SectionHeader title="Dashboard en Vivo" sub="Estado operacional en tiempo real" />
+      <TurnosPorReasignar />
 
       {/* ── KPIs de asistencia ───────────────────────────────────── */}
       <div className="metrics-grid" style={{ display: "grid", gap: 10, marginBottom: 16 }}>

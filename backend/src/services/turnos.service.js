@@ -203,6 +203,22 @@ const verificarConflictosPara = async (query, user) => {
   return conflictos.map((t) => (permitidas.has(t.instalacion_id) ? t : { fuera_de_alcance: true }));
 };
 
+// Turnos futuros cuya instalación fue desactivada: el supervisor debe reasignarlos.
+const porReasignar = async (user) => {
+  const where = {
+    estado: 'programado',
+    fecha: { gte: new Date(new Date().toISOString().slice(0, 10)) },
+    instalacion: { estado: 'inactivo' },
+  };
+  if (user?.rol === ROLES.SUPERVISOR) where.instalacion_id = { in: await resolverInstalacionesSupervisor(user) };
+  return prisma.turno.findMany({
+    where,
+    include: { usuario: { select: { id: true, nombre: true } }, instalacion: { select: { id: true, nombre: true } } },
+    orderBy: [{ fecha: 'asc' }, { hora_inicio: 'asc' }],
+    take: 200,
+  });
+};
+
 const crearPauta4x4 = async (data, creadoPor) => {
   const { usuario_id, instalacion_id, fecha_inicio, hora_inicio, hora_fin, reemplazar = false } = data;
 
@@ -336,4 +352,4 @@ const listarDisponibles = async (user) => {
   });
 };
 
-module.exports = { listar, obtenerPorId, crear, crearLote, crearPauta4x4, editar, cancelar, verificarConflictos, verificarConflictosPara, listarDisponibles };
+module.exports = { listar, obtenerPorId, crear, crearLote, crearPauta4x4, editar, cancelar, verificarConflictos, verificarConflictosPara, porReasignar, listarDisponibles };

@@ -88,6 +88,14 @@ const verificarConflictos = async (req, res, next) => {
   }
 };
 
+const porReasignar = async (req, res, next) => {
+  try {
+    res.json(await turnosService.porReasignar(req.user));
+  } catch (error) {
+    next(error);
+  }
+};
+
 const crearPauta4x4 = async (req, res, next) => {
   try {
     const result = await turnosService.crearPauta4x4(req.body, req.user.id);
@@ -117,4 +125,4 @@ const listarDisponibles = async (req, res, next) => {
   }
 };
 
-module.exports = { listar, obtener, crear, crearLote, crearPauta4x4, editar, cancelar, verificarConflictos, listarDisponibles };
+module.exports = { listar, obtener, crear, crearLote, crearPauta4x4, editar, cancelar, verificarConflictos, porReasignar, listarDisponibles };

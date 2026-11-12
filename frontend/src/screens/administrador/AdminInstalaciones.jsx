@@ -825,7 +825,9 @@ export function AdminInstalaciones() {
     const guardada = await api.put(`/instalaciones/${inst.id}`, { estado: nuevo }); // si falla, el diálogo muestra el motivo
     setInstalaciones((prev) => prev.map((i) => (i.id === inst.id ? { ...i, ...guardada, estado: nuevo } : i)));
     setCambiandoEstado(null);
-    setConfirmacion(`Instalación "${inst.nombre}" ${nuevo === "activo" ? "activada" : "desactivada"}`);
+    setConfirmacion(nuevo === "activo"
+      ? `Instalación "${inst.nombre}" activada`
+      : `Instalación "${inst.nombre}" desactivada: ${guardada.guardias_sin_instalacion ?? 0} guardia(s) sin instalación y ${guardada.turnos_por_reasignar ?? 0} turno(s) por reasignar`);
   };
 
   const cargar = async () => {
@@ -955,7 +957,7 @@ export function AdminInstalaciones() {
           titulo={cambiandoEstado.estado === "inactivo" ? "Activar instalación" : "Desactivar instalación"}
           mensaje={cambiandoEstado.estado === "inactivo"
             ? `«${cambiandoEstado.nombre}» volverá a estar disponible para turnos y guardias.`
-            : `«${cambiandoEstado.nombre}» dejará de estar disponible. Se conserva todo su historial y podrás activarla de nuevo.`}
+            : `«${cambiandoEstado.nombre}» dejará de estar disponible. Sus guardias quedarán sin instalación y sus turnos futuros pasarán a «por reasignar» para el supervisor. El historial se conserva y podrás activarla de nuevo.`}
           confirmarLabel={cambiandoEstado.estado === "inactivo" ? "Activar" : "Desactivar"}
           variante={cambiandoEstado.estado === "inactivo" ? "aprobar" : "rechazar"}
           onConfirmar={confirmarEstado}

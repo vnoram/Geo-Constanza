@@ -103,19 +103,6 @@ const editar = async (id, data) => {
     if (!ESTADOS_INSTALACION.includes(campos.estado)) {
       throw Object.assign(new Error('El estado debe ser activo o inactivo.'), { statusCode: 400 });
     }
-    // Una instalación con turnos por cumplir no se desactiva: primero se cancelan o reasignan.
-    if (campos.estado === 'inactivo') {
-      const hoy = new Date(new Date().toISOString().slice(0, 10));
-      const pendientes = await prisma.turno.count({
-        where: { instalacion_id: id, estado: ESTADO_TURNO.PROGRAMADO, fecha: { gte: hoy } },
-      });
-      if (pendientes > 0) {
-        throw Object.assign(
-          new Error(`No se puede desactivar: tiene ${pendientes} turno(s) programado(s). Cancélalos o reasígnalos primero.`),
-          { statusCode: 409 },
-        );
-      }
-    }
   }
 
   const dataToUpdate = { ...campos };
@@ -133,6 +120,20 @@ const editar = async (id, data) => {
   }
 
   return prisma.$transaction(async (tx) => {
+    // Al desactivar, los guardias quedan sin instalación asignada y sus turnos futuros
+    // quedan por reasignar (los ve el supervisor a cargo). El historial no se toca.
+    let guardiasSinInstalacion = 0;
+    let turnosPorReasignar = 0;
+    if (campos.estado === 'inactivo') {
+      const hoy = new Date(new Date().toISOString().slice(0, 10));
+      guardiasSinInstalacion = (await tx.usuario.updateMany({
+        where: { instalacion_asignada_id: id },
+        data: { instalacion_asignada_id: null },
+      })).count;
+      turnosPorReasignar = await tx.turno.count({
+        where: { instalacion_id: id, estado: ESTADO_TURNO.PROGRAMADO, fecha: { gte: hoy } },
+      });
+    }
     const actualizada = await tx.instalacion.update({
       where: { id },
       data: dataToUpdate,
@@ -155,7 +156,7 @@ const editar = async (id, data) => {
       }
     }
 
-    return actualizada;
+    return { ...actualizada, guardias_sin_instalacion: guardiasSinInstalacion, turnos_por_reasignar: turnosPorReasignar };
   });
 };
 

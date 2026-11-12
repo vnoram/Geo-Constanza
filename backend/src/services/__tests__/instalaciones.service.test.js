@@ -1,6 +1,6 @@
 jest.mock('../../config/database', () => ({ prisma: {
   instalacion: { findMany: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn(), update: jest.fn() },
-  turno: { count: jest.fn() },
+  turno: { count: jest.fn() }, usuario: { updateMany: jest.fn() },
   supervisor_Instalacion: { createMany: jest.fn(), deleteMany: jest.fn() }, $transaction: jest.fn(),
 } }));
 jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn(), exigirAlcanceInstalacion: jest.fn() }));
@@ -14,6 +14,7 @@ beforeEach(() => {
   jest.resetAllMocks(); prisma.$transaction.mockImplementation(fn => fn(prisma));
   prisma.instalacion.create.mockResolvedValue({ id: 'i1' }); prisma.instalacion.update.mockResolvedValue({ id: 'i1' });
   resolverInstalacionesSupervisor.mockResolvedValue(['i1']);
+  prisma.usuario.updateMany.mockResolvedValue({ count: 0 }); prisma.turno.count.mockResolvedValue(0);
 });
 test('listado aplica filtros y alcance del supervisor', async () => {
   await service.listar({ estado: ESTADO_USUARIO.ACTIVO, tipo_recinto: 'Prueba' }, { id: 's1', rol: ROLES.SUPERVISOR });
@@ -61,12 +62,17 @@ test('permite coordenadas límite y radio por defecto', async () => {
   expect(prisma.instalacion.create.mock.calls[0][0].data.radio_geofence_m).toBe(100);
 });
 
-test('no se desactiva una instalación con turnos programados y sí cuando no tiene', async () => {
+test('al desactivar, los guardias quedan sin instalación y se informan los turnos por reasignar', async () => {
+  prisma.usuario.updateMany.mockResolvedValue({ count: 3 });
   prisma.turno.count.mockResolvedValue(2);
-  await expect(service.editar('i1', { estado: 'inactivo' })).rejects.toMatchObject({ statusCode: 409 });
-  expect(prisma.instalacion.update).not.toHaveBeenCalled();
-  prisma.turno.count.mockResolvedValue(0);
-  await service.editar('i1', { estado: 'inactivo' });
+  const r = await service.editar('i1', { estado: 'inactivo' });
+  expect(prisma.usuario.updateMany).toHaveBeenCalledWith({ where: { instalacion_asignada_id: 'i1' }, data: { instalacion_asignada_id: null } });
   expect(prisma.instalacion.update.mock.calls[0][0].data.estado).toBe('inactivo');
+  expect(r).toMatchObject({ guardias_sin_instalacion: 3, turnos_por_reasignar: 2 });
   await expect(service.editar('i1', { estado: 'borrada' })).rejects.toMatchObject({ statusCode: 400 });
+});
+
+test('al activar no se tocan guardias ni turnos', async () => {
+  await service.editar('i1', { estado: 'activo' });
+  expect(prisma.usuario.updateMany).not.toHaveBeenCalled();
 });
