@@ -14,13 +14,13 @@ const TIPOS = {
 };
 const MAX_ADJUNTO_MB = 5;
 // Cómo se eligen las fechas según el tipo:
-//  vacaciones → un clic autocompleta 3 semanas · ausentarse → días sueltos o rango ·
+//  vacaciones → un clic autocompleta 3 semanas · ausentarse → un día, o dos toques y se completa el rango ·
 //  turno extra → días sueltos (marcar/desmarcar) · traslado → una sola fecha.
 const VACACIONES_DIAS = 21;
 const RAPIDAS = [7, 14, 21];
 const AYUDA = {
   vacaciones: "Elige el primer día: se marcan las semanas siguientes automáticamente.",
-  dias_libres: "Marca los días que te ausentarás (vuelve a tocar para quitarlos) o usa «Rango» para elegir inicio y fin.",
+  dias_libres: "Toca el día en que te ausentarás. Si son varios, toca el último y se marcan los de en medio.",
   turno_extra: "Marca cada día en que quieres un turno extra; vuelve a tocar para quitarlo.",
   traslado: "Elige la fecha del traslado.",
 };
@@ -37,8 +37,6 @@ export function SolicitudesPersonales() {
   const [tipo, setTipo] = useState("vacaciones");
   const [fechas, setFechas] = useState([]);        // días elegidos (YYYY-MM-DD, ordenados)
   const [dias, setDias] = useState(VACACIONES_DIAS); // duración de las vacaciones
-  const [modoAusencia, setModoAusencia] = useState("sueltos"); // "sueltos" | "rango"
-  const [ancla, setAncla] = useState(null);          // primer clic de un rango en curso
   const [motivo, setMotivo] = useState("");
   const [archivo, setArchivo] = useState(null);
   const archivoRef = useRef(null);
@@ -52,28 +50,28 @@ export function SolicitudesPersonales() {
     return () => { activo = false; };
   }, []);
 
-  const reiniciar = (nuevoTipo, nuevoModo = modoAusencia) => { setFechas([]); setAncla(null); setTipo(nuevoTipo); setModoAusencia(nuevoModo); };
+  const reiniciar = (nuevoTipo) => { setFechas([]); setTipo(nuevoTipo); };
   const alternar = (iso) => setFechas(prev => (prev.includes(iso) ? prev.filter(f => f !== iso) : [...prev, iso].sort()));
   const elegir = (iso) => {
     if (tipo === "vacaciones") return setFechas(rangoDias(iso, sumarDias(iso, dias - 1)));
     if (tipo === "traslado") return setFechas([iso]);
-    if (tipo === "dias_libres" && modoAusencia === "rango") {
-      if (!ancla) { setAncla(iso); return setFechas([iso]); }
-      setAncla(null);
-      return setFechas(rangoDias(ancla, iso));
+    if (tipo === "dias_libres") {
+      // Un día queda solo; si ya hay uno suelto y tocas otro, se completa lo de en medio.
+      if (fechas.length === 1) return setFechas(fechas[0] === iso ? [] : rangoDias(fechas[0], iso));
+      return setFechas([iso]);
     }
     return alternar(iso);
   };
   const cambiarDuracion = (n) => { setDias(n); if (tipo === "vacaciones" && fechas.length) setFechas(rangoDias(fechas[0], sumarDias(fechas[0], n - 1))); };
-  const esRango = tipo === "vacaciones" || (tipo === "dias_libres" && modoAusencia === "rango");
-  const destacados = esRango && fechas.length ? [fechas[0], fechas[fechas.length - 1]] : tipo === "vacaciones" ? [] : fechas;
+  const esRango = tipo === "vacaciones" || tipo === "dias_libres";
+  const destacados = esRango ? (fechas.length ? [fechas[0], fechas[fechas.length - 1]] : []) : fechas;
 
   const crear = async (evento) => {
     evento.preventDefault();
     setError("");
     setOcupado(true);
     try {
-      const variasFechas = !esRango && ["dias_libres", "turno_extra"].includes(tipo);
+      const variasFechas = tipo === "turno_extra";
       let nueva;
       if (archivo) {
         const form = new FormData();
@@ -99,7 +97,6 @@ export function SolicitudesPersonales() {
       const nuevas = Array.isArray(nueva) ? nueva : [nueva];
       setSolicitudes(prev => [...nuevas, ...prev.filter(s => !nuevas.some(n => n.id === s.id))]);
       setFechas([]);
-      setAncla(null);
       setMotivo("");
       setArchivo(null);
       if (archivoRef.current) archivoRef.current.value = "";
@@ -111,7 +108,7 @@ export function SolicitudesPersonales() {
   };
 
   const resumen = !fechas.length ? "Aún no has elegido fechas."
-    : esRango ? `${corta(fechas[0])}${fechas.length > 1 ? ` → ${corta(fechas[fechas.length - 1])}` : ""} · ${fechas.length} ${fechas.length === 1 ? "día" : "días"}${ancla ? " (elige el día final)" : ""}`
+    : esRango ? `${corta(fechas[0])}${fechas.length > 1 ? ` → ${corta(fechas[fechas.length - 1])}` : ""} · ${fechas.length} ${fechas.length === 1 ? "día" : "días"}${tipo === "dias_libres" && fechas.length === 1 ? " (toca otro día para marcar hasta ahí)" : ""}`
       : `${fechas.length} ${fechas.length === 1 ? "día" : "días"}: ${fechas.map(corta).join(", ")}`;
 
   return (
@@ -133,16 +130,6 @@ export function SolicitudesPersonales() {
           {tipo === "vacaciones" ? "Primer día de vacaciones" : tipo === "traslado" ? "Fecha del traslado" : "Fechas"}
         </div>
         <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>{AYUDA[tipo]}</div>
-        {tipo === "dias_libres" && (
-          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-            {[["sueltos", "Días sueltos"], ["rango", "Rango"]].map(([id, label]) => (
-              <button type="button" key={id} aria-pressed={modoAusencia === id} onClick={() => reiniciar(tipo, id)} className="gc-accion-btn gc-accion-btn--morado" style={{
-                background: modoAusencia === id ? T.focusGhost : "transparent", border: `1px solid ${modoAusencia === id ? T.borderFocus : T.border}`,
-                color: modoAusencia === id ? T.focusText : T.text, borderRadius: 6, padding: "4px 12px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-ui)",
-              }}>{label}</button>
-            ))}
-          </div>
-        )}
         <CalendarioRango marcados={fechas} destacados={destacados} onElegir={elegir} />
         {tipo === "vacaciones" && (
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, margin: "12px 0 0" }}>
