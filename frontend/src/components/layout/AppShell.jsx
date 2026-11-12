@@ -114,7 +114,7 @@ export function AppShell({ user, onLogout }) {
   const role = ROLES[user.rol];
   const sections = seccionesPara(user);
   // En un equipo personal el guardia ve su vista de GGSS libre: la etiqueta es solo «GGSS».
-  const etiquetaRol = user.dispositivo === "personal" && [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(user.rol) ? "GGSS" : role.label;
+  const etiquetaRol = user.rol === ROL.GGSS_LIBRE || (user.dispositivo === "personal" && user.rol === ROL.GGSS_EN_PAUTA) ? "GGSS" : role.label;
   const [seleccion, setActiveSection] = useState(sections[0].id);
   const activeSection = sections.some(s => s.id === seleccion) ? seleccion : sections[0].id;
   const [sidebarOpen, setSidebarOpen] = useState(false);
