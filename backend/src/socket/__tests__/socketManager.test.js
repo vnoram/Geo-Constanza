@@ -27,8 +27,8 @@ let server, io, url;
 const clientes = [];
 const activa = { estado: 'activa' };
 const perfiles = {
-  g1: { id: 'g1', rol: ROLES.GGSS_EN_PAUTA, estado: ESTADO_USUARIO.ACTIVO, instalacion_asignada_id: 'i1', empresa_id: 'e1', empresa: activa },
-  g2: { id: 'g2', rol: ROLES.GGSS_LIBRE, estado: ESTADO_USUARIO.ACTIVO, instalacion_asignada_id: 'i2', empresa_id: 'e1', empresa: activa },
+  g1: { id: 'g1', rol: ROLES.GGSS, estado: ESTADO_USUARIO.ACTIVO, instalacion_asignada_id: 'i1', empresa_id: 'e1', empresa: activa },
+  g2: { id: 'g2', rol: ROLES.GGSS, estado: ESTADO_USUARIO.ACTIVO, instalacion_asignada_id: 'i2', empresa_id: 'e1', empresa: activa },
   s1: { id: 's1', rol: ROLES.SUPERVISOR, estado: ESTADO_USUARIO.ACTIVO, empresa_id: 'e1', empresa: activa },
   c1: { id: 'c1', rol: ROLES.OPERADOR_CENTRAL, estado: ESTADO_USUARIO.ACTIVO, empresa_id: 'e1', empresa: activa },
   a1: { id: 'a1', rol: ROLES.ADMINISTRADOR, estado: ESTADO_USUARIO.ACTIVO, empresa_id: 'e1', empresa: activa },

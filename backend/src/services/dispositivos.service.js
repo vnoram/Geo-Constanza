@@ -7,7 +7,7 @@ const { ROLES } = require('../constants/roles');
 const { registrarAuditoria } = require('../middlewares/auditLog');
 
 const TIPOS = { CORPORATIVO: 'corporativo', PERSONAL: 'personal' };
-const GUARDIAS = [ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE];
+const GUARDIAS = [ROLES.GGSS];
 const ACTIVO = 'activo';
 const REVOCADO = 'revocado';
 const habilitada = () => process.env.DEVICE_POLICY === 'on';

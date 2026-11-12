@@ -16,8 +16,8 @@ describe('lecturas: findMany / findFirst / count / aggregate / groupBy', () => {
   });
 
   test('un OR del llamador no puede escapar del filtro de empresa', () => {
-    const where = alcance('Usuario', 'findMany', { where: { OR: [{ rol: 'admin' }, { rol: 'pauta' }] } }).where;
-    expect(where).toEqual({ AND: [{ OR: [{ rol: 'admin' }, { rol: 'pauta' }] }, { empresa_id: E }] });
+    const where = alcance('Usuario', 'findMany', { where: { OR: [{ rol: 'admin' }, { rol: 'ggss' }] } }).where;
+    expect(where).toEqual({ AND: [{ OR: [{ rol: 'admin' }, { rol: 'ggss' }] }, { empresa_id: E }] });
   });
 
   test('un where que intenta fijar OTRA empresa sigue encerrado en la del contexto', () => {

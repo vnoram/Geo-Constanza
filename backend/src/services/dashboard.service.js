@@ -133,7 +133,7 @@ const getDashboardHoy = async (user) => {
       prisma.novedad.count({ where: { ...SOLO_INCIDENCIAS, estado: 'escalada' } }),
       prisma.instalacion.count(),
       prisma.instalacion.count({ where: { estado: 'activo' } }),
-      prisma.usuario.count({ where: { rol: ROLES.GGSS_EN_PAUTA, estado: 'activo' } }),
+      prisma.usuario.count({ where: { rol: ROLES.GGSS, estado: 'activo' } }),
       // Novedades pendientes (no resueltas), de cualquier fecha, agrupadas por urgencia
       prisma.novedad.groupBy({ by: ['urgencia'], where: { ...SOLO_INCIDENCIAS, estado: { not: 'resuelta' } }, _count: { _all: true } }),
     ]);
@@ -183,7 +183,7 @@ const getDashboardHoy = async (user) => {
     const inicioMesInstantes = instanteChile(inicioMesISO, '00:00');
 
     const [totalGuardias, turnosMes, asistenciasMes] = await Promise.all([
-      prisma.usuario.count({ where: { rol: { in: [ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE] }, estado: 'activo' } }),
+      prisma.usuario.count({ where: { rol: { in: [ROLES.GGSS] }, estado: 'activo' } }),
       prisma.turno.count({ where: { fecha: { gte: inicioMesTurnos }, estado: { not: 'cancelado' } } }),
       prisma.asistencia.count({ where: { created_at: { gte: inicioMesInstantes } } }),
     ]);

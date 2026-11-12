@@ -39,7 +39,7 @@ describe('authenticate confirma el estado actual del usuario', () => {
   test('un usuario eliminado o con otro rol ya no entra con el token viejo', async () => {
     prisma.usuario.findUnique.mockResolvedValue(null);
     expect((await correr(firmar())).res.status).toHaveBeenCalledWith(401);
-    prisma.usuario.findUnique.mockResolvedValue(vigente({ rol: 'pauta' }));
+    prisma.usuario.findUnique.mockResolvedValue(vigente({ rol: 'ggss' }));
     expect((await correr(firmar())).res.status).toHaveBeenCalledWith(401);
   });
 

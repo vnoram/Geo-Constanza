@@ -98,11 +98,11 @@ const registrarEntradaTablet = async (data, user) => {
 
 /**
  * Entrada desde MÓVIL (fallback cuando la tablet no está disponible).
- * - GGSS en pauta: siempre puede, flag es_fallback = true.
- * - GGSS libre: SOLO si tiene solicitud de turno aprobada para hoy.
+ * - GGSS con pauta vigente: siempre puede, flag es_fallback = true.
+ * - GGSS sin pauta (libre): SOLO si tiene solicitud de turno aprobada para hoy.
  */
 const registrarEntradaFallback = async (data, user) => {
-  if (user.rol === ROLES.GGSS_LIBRE) {
+  if (user.rol === ROLES.GGSS && !(await require('./turnos.service').tienePautaVigente(user.id))) {
     const { tieneturnoAprobadoHoy } = require('./solicitudes.service');
     const tieneAprobado = await tieneturnoAprobadoHoy(user.id);
     if (!tieneAprobado) {

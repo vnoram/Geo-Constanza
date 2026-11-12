@@ -56,7 +56,7 @@ const initSocket = (server) => {
       // Las consultas de instalaciones/turnos corren dentro del contexto de la empresa del usuario.
       await conEmpresa(user.empresa_id, async () => {
         if (user.rol === ROLES.SUPERVISOR) ids = await resolverInstalacionesSupervisor(user);
-        else if ([ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE].includes(user.rol)) {
+        else if ([ROLES.GGSS].includes(user.rol)) {
           const ventana = turnosDeHoy();
           const turnos = await prisma.turno.findMany({ where: {
             usuario_id: user.id, ...ventana.where, estado: { not: ESTADO_TURNO.CANCELADO },

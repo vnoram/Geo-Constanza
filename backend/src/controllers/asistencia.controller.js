@@ -69,7 +69,7 @@ const obtenerHistorial = async (req, res, next) => {
     // Primero: el usuario debe existir en la empresa del token (uno de otra empresa responde 404).
     if (!await prisma.usuario.findUnique({ where: { id: usuarioId }, select: { id: true } })) throw noEncontrado();
     // Un guardia solo puede ver su propio historial (evita IDOR)
-    if ([ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE].includes(req.user.rol) && usuarioId !== req.user.id) {
+    if ([ROLES.GGSS].includes(req.user.rol) && usuarioId !== req.user.id) {
       return res.status(403).json({ error: 'No tienes permiso para ver el historial de otro usuario.' });
     }
     const result = await asistenciaService.obtenerHistorial(usuarioId, req.query);

@@ -109,7 +109,7 @@ suite('2FA TOTP con PostgreSQL local', () => {
   });
 
   test('un rol sin 2FA no puede enrolarse ni recibe desafío al iniciar sesión', async () => {
-    const guardia = await crearUsuario(ROLES.GGSS_EN_PAUTA);
+    const guardia = await crearUsuario(ROLES.GGSS);
     await expect(twoFactor.iniciarEnrolamiento(guardia.id)).rejects.toMatchObject({ statusCode: 403 });
     const sesion = await auth.login(guardia.rut, PASSWORD);
     expect(sesion.accessToken).toBeTruthy();

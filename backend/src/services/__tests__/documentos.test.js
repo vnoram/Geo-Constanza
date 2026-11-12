@@ -16,7 +16,7 @@ describe('documentos del personal', () => {
   beforeEach(() => jest.clearAllMocks());
 
   test('un guardia solo puede subir su certificado OS-10, para sí mismo', async () => {
-    const r = await subir({ id: 'g1', rol: 'pauta' }, { tipo: 'contrato', usuario_id: 'otro' }, archivo, {});
+    const r = await subir({ id: 'g1', rol: 'ggss' }, { tipo: 'contrato', usuario_id: 'otro' }, archivo, {});
     expect(prisma.documento.create.mock.calls[0][0].data).toMatchObject({ tipo: 'os10', usuario_id: 'g1', subido_por: 'g1' });
     expect(r.url_firmada).toBe('http://blob/firmado');
     expect(r).not.toHaveProperty('archivo_url');
@@ -32,14 +32,14 @@ describe('documentos del personal', () => {
   });
 
   test('sin archivo no se crea nada y una falla de Azure no deja un documento sin archivo', async () => {
-    await expect(subir({ id: 'g1', rol: 'libre' }, {}, undefined, {})).rejects.toMatchObject({ statusCode: 400 });
+    await expect(subir({ id: 'g1', rol: 'ggss' }, {}, undefined, {})).rejects.toMatchObject({ statusCode: 400 });
     uploadAdjuntoToAzure.mockRejectedValueOnce(new Error('azure caído'));
-    await expect(subir({ id: 'g1', rol: 'libre' }, {}, archivo, {})).rejects.toMatchObject({ statusCode: 503 });
+    await expect(subir({ id: 'g1', rol: 'ggss' }, {}, archivo, {})).rejects.toMatchObject({ statusCode: 503 });
     expect(prisma.documento.create).not.toHaveBeenCalled();
   });
 
   test('un guardia solo lista sus propios documentos aunque pida otro usuario', async () => {
-    await listar({ id: 'g1', rol: 'pauta' }, { usuario_id: 'otro' });
+    await listar({ id: 'g1', rol: 'ggss' }, { usuario_id: 'otro' });
     expect(prisma.documento.findMany.mock.calls[0][0].where).toEqual({ usuario_id: 'g1' });
   });
 });

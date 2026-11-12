@@ -60,8 +60,8 @@ suite('Dispositivos corporativos con PostgreSQL local', () => {
     });
     cuenta = {
       admin: await usuario(ROLES.ADMINISTRADOR), supervisor: await usuario(ROLES.SUPERVISOR),
-      central: await usuario(ROLES.OPERADOR_CENTRAL), pauta: await usuario(ROLES.GGSS_EN_PAUTA),
-      libre: await usuario(ROLES.GGSS_LIBRE), plataforma: await usuario(ROLES.SUPER_ADMIN, null),
+      central: await usuario(ROLES.OPERADOR_CENTRAL), pauta: await usuario(ROLES.GGSS),
+      libre: await usuario(ROLES.GGSS), plataforma: await usuario(ROLES.SUPER_ADMIN, null),
     };
     otraAdmin = await usuario(ROLES.ADMINISTRADOR, otra.id);
     cuenta.supervisorAjeno = await usuario(ROLES.SUPERVISOR, otra.id);

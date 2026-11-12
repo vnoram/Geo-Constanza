@@ -44,27 +44,16 @@ export const FONT = {
 // `icon` es el nombre de un ícono Lucide (ver components/ui/Icon.jsx).
 // Todos los roles comparten el morado: indica el rol activo, no una marca por rol.
 export const ROLES = {
-  [ROL.GGSS_EN_PAUTA]: {
-    label: "GGSS en Pauta",
+  [ROL.GGSS]: {
+    label: "GGSS",
     icon: "user-round-check",
     color: T.focusText,
-    desc: "Guardia en turno activo",
+    desc: "Guardia de seguridad",
     sections: [
       { id: "turno", icon: "map-pin", label: "Mi Turno", badge: null },
       { id: "novedades", icon: "triangle-alert", label: "Novedades", badge: null },
       { id: "historial", icon: "clipboard-list", label: "Historial", badge: null },
       { id: "alertas", icon: "bell", label: "Alertas", badge: null },
-    ],
-  },
-  [ROL.GGSS_LIBRE]: {
-    label: "GGSS Libre",
-    icon: "user-round",
-    color: T.focusText,
-    desc: "Guardia sin turno activo",
-    sections: [
-      { id: "turnos", icon: "calendar-days", label: "Mis Turnos", badge: null },
-      { id: "solicitudes", icon: "file-text", label: "Solicitudes", badge: null },
-      { id: "docs", icon: "folder", label: "Documentos", badge: null },
     ],
   },
   [ROL.SUPERVISOR]: {
@@ -112,3 +101,10 @@ export const ROLES = {
     ],
   },
 };
+
+// Secciones del guardia cuando entra desde su teléfono personal (no desde el equipo corporativo).
+export const SECCIONES_GGSS_PERSONAL = [
+  { id: "turnos", icon: "calendar-days", label: "Mis Turnos", badge: null },
+  { id: "solicitudes", icon: "file-text", label: "Solicitudes", badge: null },
+  { id: "docs", icon: "folder", label: "Documentos", badge: null },
+];

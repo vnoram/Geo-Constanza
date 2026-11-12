@@ -36,7 +36,7 @@ model Empresa {
 
 // ─── 1. USUARIOS (Guardias, Supervisores, Central, Admins) ───
 // Roles del informe (ver backend/src/constants/roles.js):
-//   'pauta' = GGSS_EN_PAUTA | 'libre' = GGSS_LIBRE | 'supervisor' = SUPERVISOR
+//   'ggss' = GGSS (en pauta o libre se deriva de sus turnos) | 'supervisor' = SUPERVISOR
 //   'central' = OPERADOR_CENTRAL | 'admin' = ADMINISTRADOR | 'super_admin' = SUPER_ADMIN (plataforma)
 model Usuario {
   id                       String     @id @default(uuid())
@@ -45,7 +45,7 @@ model Usuario {
   email                    String     @unique
   telefono                 String?
   password_hash            String
-  rol                      String     // 'pauta', 'libre', 'supervisor', 'central', 'admin', 'super_admin'
+  rol                      String     // 'ggss', 'supervisor', 'central', 'admin', 'super_admin'
   // Empresa a la que pertenece. Solo el super_admin la tiene nula (restricción CHECK en la migración).
   empresa_id               String?
   estado                   String     @default("activo") // 'activo', 'inactivo'
@@ -57,7 +57,7 @@ model Usuario {
   password_cambiada_en     DateTime?  // invalida refresh tokens emitidos antes (reset de contraseña)
 
   // Para GGSS: diferencia en_pauta (pauta fija 4x4) vs libre (eventual)
-  tipo_ggss                String?    // 'pauta' | 'libre' — solo aplica a rol 'pauta' o 'libre'
+  tipo_ggss                String?    // DEPRECADO: ya no se usa; pauta/libre se deriva de los turnos del guardia
 
   // Para GGSS libre: instalación base donde puede trabajar
   instalacion_asignada_id  String?
@@ -174,7 +174,7 @@ model Supervisor_Instalacion {
 }
 
 // ─── 4. TURNOS (Planificación) ───
-// El algoritmo de turnos 4x4 para GGSS_EN_PAUTA vive en turnos.service.js.
+// El algoritmo de turnos 4x4 para GGSS con pauta vive en turnos.service.js.
 model Turno {
   id                  String       @id @default(uuid())
   empresa_id          String

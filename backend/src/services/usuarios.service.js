@@ -3,7 +3,6 @@ const bcrypt = require('bcryptjs');
 const { prisma, prismaGlobal } = require('../config/database');
 const { ROLES } = require('../constants/roles');
 const passwordReset = require('./passwordReset.service');
-const { ahoraChile, aFechaDB } = require('../utils/fechaChile');
 
 const BCRYPT_ROUNDS = 12;
 
@@ -118,11 +117,9 @@ const crear = async (data) => {
 const editar = async (id, data) => {
   // eslint-disable-next-line no-unused-vars
   const { instalacionIds, comunas, password: _descartada, ...campos } = data;
-  let rolAnterior;
   if (campos.rol !== undefined) {
     if (!ROLES_DE_EMPRESA.includes(campos.rol)) throw rechazo('Rol de usuario inválido.');
     const actual = await prisma.usuario.findUnique({ where: { id }, select: { rol: true } });
-    rolAnterior = actual?.rol;
     if (actual?.rol === ROLES.ADMINISTRADOR && campos.rol !== ROLES.ADMINISTRADOR) {
       throw rechazo('No se puede cambiar el rol de un administrador.');
     }
@@ -153,15 +150,6 @@ const editar = async (id, data) => {
           skipDuplicates: true,
         });
       }
-    }
-
-    // Pasar de "en pauta" a "libre" elimina su pauta: se cancelan sus turnos programados de hoy en adelante.
-    if (rolAnterior === ROLES.GGSS_EN_PAUTA && campos.rol === ROLES.GGSS_LIBRE) {
-      const { count } = await tx.turno.updateMany({
-        where: { usuario_id: id, estado: 'programado', fecha: { gte: aFechaDB(ahoraChile().fecha) } },
-        data: { estado: 'cancelado', motivo_cancelacion: 'Pauta eliminada: el guardia pasó a GGSS libre' },
-      });
-      return { ...actualizado, turnos_cancelados: count };
     }
 
     return actualizado;

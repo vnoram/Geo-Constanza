@@ -41,7 +41,7 @@ test('supervisor ajeno recibe 403', async () => {
   await expect(asignar('n1', 'r1', actor)).rejects.toMatchObject({ statusCode: 403 });
   expect(prisma.novedad.update).not.toHaveBeenCalled();
 });
-test.each([null, { rol: ROLES.GGSS_LIBRE, estado: ESTADO_USUARIO.ACTIVO },
+test.each([null, { rol: ROLES.GGSS, estado: ESTADO_USUARIO.ACTIVO },
   { rol: ROLES.SUPERVISOR, estado: ESTADO_USUARIO.INACTIVO }])('responsable inválido %p devuelve 400', async (perfil) => {
   prisma.usuario.findUnique.mockResolvedValue(perfil);
   await expect(asignar('n1', 'r1', actor)).rejects.toMatchObject({ statusCode: 400 });

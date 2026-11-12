@@ -11,18 +11,18 @@ import { ROLES as ROL } from "../../constants/roles";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 // Admin no se asigna desde la interfaz: las cuentas de administrador se crean fuera del sistema.
-const ROLES_DISPONIBLES = [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE, ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL];
-const ROL_LABEL = { [ROL.GGSS_EN_PAUTA]: "GGSS Pauta", [ROL.GGSS_LIBRE]: "GGSS Libre", [ROL.SUPERVISOR]: "Supervisor", [ROL.OPERADOR_CENTRAL]: "Central", [ROL.ADMINISTRADOR]: "Admin" };
-const ROL_BADGE = { [ROL.GGSS_EN_PAUTA]: "accent", [ROL.GGSS_LIBRE]: "accent", [ROL.SUPERVISOR]: "yellow", [ROL.OPERADOR_CENTRAL]: "focus", [ROL.ADMINISTRADOR]: "red" };
+const ROLES_DISPONIBLES = [ROL.GGSS, ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL];
+const ROL_LABEL = { [ROL.GGSS]: "GGSS", [ROL.SUPERVISOR]: "Supervisor", [ROL.OPERADOR_CENTRAL]: "Central", [ROL.ADMINISTRADOR]: "Admin" };
+const ROL_BADGE = { [ROL.GGSS]: "accent", [ROL.SUPERVISOR]: "yellow", [ROL.OPERADOR_CENTRAL]: "focus", [ROL.ADMINISTRADOR]: "red" };
 
 // Categorías de la lista, de mayor a menor jerarquía: Central > Supervisor > Guardias.
 const GRUPOS = [
   { clave: "central",      roles: [ROL.OPERADOR_CENTRAL],                 titulo: "Central de monitoreo" },
   { clave: "supervisores", roles: [ROL.SUPERVISOR],                       titulo: "Supervisores" },
-  { clave: "guardias",     roles: [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE],    titulo: "Guardias (GGSS)" },
+  { clave: "guardias",     roles: [ROL.GGSS],    titulo: "Guardias (GGSS)" },
 ];
 
-const VACÍO = { rut: "", nombre: "", email: "", telefono: "", rol: ROL.GGSS_EN_PAUTA, instalacionIds: [], instalacion_asignada_id: "" };
+const VACÍO = { rut: "", nombre: "", email: "", telefono: "", rol: ROL.GGSS, instalacionIds: [], instalacion_asignada_id: "" };
 
 // ─── Helpers de UI ────────────────────────────────────────────────────────────
 const inputStyle = {
@@ -74,7 +74,7 @@ function UsuarioModal({ inicial, instalaciones: todas, onClose, onSaved }) {
     // Construir payload limpio. La contraseña nunca la define el admin: el servidor envía una invitación por correo.
     const payload = { ...form };
     if (payload.rol !== ROL.SUPERVISOR)           delete payload.instalacionIds;
-    if (![ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE, ROL.OPERADOR_CENTRAL].includes(payload.rol)) delete payload.instalacion_asignada_id;
+    if (![ROL.GGSS, ROL.OPERADOR_CENTRAL].includes(payload.rol)) delete payload.instalacion_asignada_id;
 
     setLoading(true);
     try {
@@ -146,7 +146,7 @@ function UsuarioModal({ inicial, instalaciones: todas, onClose, onSaved }) {
           </Field>
 
           {/* Instalación única — solo para GGSS */}
-          {[ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(form.rol) && (
+          {[ROL.GGSS].includes(form.rol) && (
             <Field label="Instalación asignada">
               <select
                 className="touch-target"
@@ -392,7 +392,7 @@ export function AdminUsuarios() {
                 )}
 
                 {/* Instalación del guardia */}
-                {[ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(u.rol) && u.instalacion_asignada && (
+                {[ROL.GGSS].includes(u.rol) && u.instalacion_asignada && (
                   <div className="admin-user-meta" style={{ fontSize: 10, color: T.textMut, marginTop: 3 }}>
                     <span className="admin-user-meta__text"><Icon name="map-pin" size={16} /> {u.instalacion_asignada.nombre}</span>
                   </div>

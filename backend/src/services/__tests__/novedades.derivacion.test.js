@@ -96,6 +96,6 @@ describe('responsables', () => {
   });
 
   test('un guardia no puede consultar la lista (403)', async () => {
-    await expect(service.responsables('n1', { id: 'g1', rol: ROLES.GGSS_EN_PAUTA })).rejects.toMatchObject({ statusCode: 403 });
+    await expect(service.responsables('n1', { id: 'g1', rol: ROLES.GGSS })).rejects.toMatchObject({ statusCode: 403 });
   });
 });

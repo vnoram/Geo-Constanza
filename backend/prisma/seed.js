@@ -111,14 +111,14 @@ async function main() {
   const guardiaA = await prisma.usuario.create({
     data: {
       empresa_id: empresaA.id, rut: '20570418-3', nombre: 'Víctor Norambuena', email: 'pauta@geoconstanza.cl', password_hash: hashGeo,
-      rol: ROLES.GGSS_EN_PAUTA, tipo_ggss: 'pauta', instalacion_asignada_id: instalacionA.id,
+      rol: ROLES.GGSS, instalacion_asignada_id: instalacionA.id,
       imei_dispositivo: 'TABLET_PROV_01', dispositivo_principal: 'tablet_empresa', estado: 'activo',
     },
   });
   await prisma.usuario.create({
     data: {
       empresa_id: empresaA.id, rut: '19234567-8', nombre: 'Leftraru N. Aucapan', email: 'libre@geoconstanza.cl', password_hash: hashGeo,
-      rol: ROLES.GGSS_LIBRE, tipo_ggss: 'libre', instalacion_asignada_id: instalacionA.id, dispositivo_principal: 'mobil_personal', estado: 'activo',
+      rol: ROLES.GGSS, instalacion_asignada_id: instalacionA.id, dispositivo_principal: 'mobil_personal', estado: 'activo',
     },
   });
 
@@ -151,7 +151,7 @@ async function main() {
   const guardiaB = await prisma.usuario.create({
     data: {
       empresa_id: empresaB.id, rut: rutDe(21000003), nombre: 'Rodrigo Vera', email: 'pauta@beta.cl', password_hash: hashGeo,
-      rol: ROLES.GGSS_EN_PAUTA, tipo_ggss: 'pauta', instalacion_asignada_id: instalacionB.id,
+      rol: ROLES.GGSS, instalacion_asignada_id: instalacionB.id,
       dispositivo_principal: 'mobil_empresa', estado: 'activo',
     },
   });

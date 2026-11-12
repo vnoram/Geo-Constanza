@@ -459,7 +459,7 @@ const router = Router();
 router.use(authenticate, exigirEmpresa);
 
 // ── GGSS Libre: ver turnos disponibles en su instalación asignada ──────────
-router.get('/disponibles', authorize(ROLES.GGSS_LIBRE), turnosController.listarDisponibles);
+router.get('/disponibles', authorize(ROLES.GGSS), turnosController.listarDisponibles);
 
 // ── Verificar conflictos (antes de /:id para evitar captura) ───────────────
 router.get('/conflictos', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.verificarConflictos);
@@ -472,8 +472,8 @@ router.post('/lote',      authorize(ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR)
 router.post('/pauta-4x4', authorize(ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.crearPauta4x4);
 
 // ── CRUD general ──────────────────────────────────────────────────────────
-router.get('/',    authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.listar);
-router.get('/:id', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.obtener);
+router.get('/',    authorize(ROLES.GGSS, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.listar);
+router.get('/:id', authorize(ROLES.GGSS, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.obtener);
 router.post('/',   authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.crear);
 router.put('/:id', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.editar);
 router.patch('/:id/cancelar', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), turnosController.cancelar);

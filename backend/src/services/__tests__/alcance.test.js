@@ -19,7 +19,7 @@ const { ROLES } = require('../../constants/roles');
 
 const sup = { id: 'sup', rol: ROLES.SUPERVISOR };
 const admin = { id: 'adm', rol: ROLES.ADMINISTRADOR };
-const guardia = { id: 'g1', rol: ROLES.GGSS_EN_PAUTA };
+const guardia = { id: 'g1', rol: ROLES.GGSS };
 
 beforeEach(() => {
   jest.resetAllMocks();

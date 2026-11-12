@@ -29,8 +29,8 @@ const suite = ejecutar ? describe : describe.skip;
 suite('HU-02 / HU-08 con PostgreSQL Docker local', () => {
   let habilitada = false;
   const instalacionId = randomUUID();
-  const guardia = { id: randomUUID(), rol: ROLES.GGSS_EN_PAUTA };
-  const libre = { id: randomUUID(), rol: ROLES.GGSS_LIBRE };
+  const guardia = { id: randomUUID(), rol: ROLES.GGSS };
+  const libre = { id: randomUUID(), rol: ROLES.GGSS };
   const supervisor = { id: randomUUID(), rol: ROLES.SUPERVISOR };
   const central = { id: randomUUID(), rol: ROLES.OPERADOR_CENTRAL };
   const ids = [guardia.id, libre.id, supervisor.id, central.id];
@@ -95,9 +95,6 @@ suite('HU-02 / HU-08 con PostgreSQL Docker local', () => {
   });
   test('GGSS libre sin turno aprobado recibe 403', async () => {
     await expect(service.crear(datos, null, libre)).rejects.toMatchObject({ statusCode: 403 });
-  });
-  test('GGSS en pauta sin turno recibe 400', async () => {
-    await expect(service.crear(datos, null, { ...libre, rol: ROLES.GGSS_EN_PAUTA })).rejects.toMatchObject({ statusCode: 400 });
   });
   test('foto superior a 10 MB devuelve 413 y no crea novedad', async () => {
     const total = await prisma.novedad.count({ where: { instalacion_id: instalacionId } });

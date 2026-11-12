@@ -69,8 +69,8 @@ const aprobarCobertura = async (id, revisorId, comentario) => {
         throw Object.assign(new Error('La vacante no pertenece a tu instalación.'), { statusCode: 403 });
       }
       const guardia = await tx.usuario.findUnique({ where: { id: solicitud.usuario_id } });
-      if (guardia?.rol !== ROLES.GGSS_LIBRE || guardia.estado !== ESTADO_USUARIO.ACTIVO) {
-        throw Object.assign(new Error('El solicitante debe ser GGSS Libre activo.'), { statusCode: 409 });
+      if (guardia?.rol !== ROLES.GGSS || guardia.estado !== ESTADO_USUARIO.ACTIVO) {
+        throw Object.assign(new Error('El solicitante debe ser un GGSS activo.'), { statusCode: 409 });
       }
       if ((await verificarConflictos({ ...turno, usuario_id: guardia.id, excluirId: turno.id }, tx)).length) {
         throw Object.assign(new Error('La cobertura se superpone con otro turno.'), { statusCode: 409 });

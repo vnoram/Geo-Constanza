@@ -3,6 +3,7 @@ const { salaAdmin, salaCentral } = require('../constants/salas');
 const { empresaActual } = require('../config/tenant');
 const { getSocketIO } = require('../socket/socketManager');
 const { ROLES } = require('../constants/roles');
+const { ESTADO_TURNO } = require('../constants/estados');
 const { resolverInstalacionesSupervisor, exigirAlcanceInstalacion } = require('./supervisor.helper');
 
 const { ahoraChile, aFechaDB, sumarDias, intervaloTurno, seSolapan } = require('../utils/fechaChile');
@@ -43,7 +44,7 @@ const listar = async (query, user) => {
   if (query.usuario_id) where.usuario_id = query.usuario_id;
 
   // GGSS solo ve sus propios turnos
-  if ([ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE].includes(user.rol)) {
+  if ([ROLES.GGSS].includes(user.rol)) {
     where.usuario_id = user.id;
   }
 
@@ -74,7 +75,7 @@ const obtenerPorId = async (id, user) => {
     },
   });
   // Un guardia solo lee sus propios turnos; el supervisor, los de sus instalaciones.
-  if (user && [ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE].includes(user.rol) && turno.usuario_id !== user.id) {
+  if (user && [ROLES.GGSS].includes(user.rol) && turno.usuario_id !== user.id) {
     throw Object.assign(new Error('No tienes acceso a este turno'), { statusCode: 403 });
   }
   await exigirAlcanceInstalacion(user, turno.instalacion_id);
@@ -219,6 +220,12 @@ const porReasignar = async (user) => {
   });
 };
 
+// «En pauta» = tiene turnos programados de hoy en adelante; sin ellos el guardia está «libre».
+const tienePautaVigente = async (usuarioId, db = prisma) => {
+  const n = await db.turno.count({ where: { usuario_id: usuarioId, estado: ESTADO_TURNO.PROGRAMADO, fecha: { gte: aFechaDB(ahoraChile().fecha) } } });
+  return n > 0;
+};
+
 const crearPauta4x4 = async (data, creadoPor) => {
   const { usuario_id, instalacion_id, fecha_inicio, hora_inicio, hora_fin, reemplazar = false } = data;
 
@@ -358,4 +365,4 @@ const listarDisponibles = async (user) => {
   });
 };
 
-module.exports = { listar, obtenerPorId, crear, crearLote, crearPauta4x4, editar, cancelar, verificarConflictos, verificarConflictosPara, porReasignar, listarDisponibles };
+module.exports = { listar, obtenerPorId, crear, crearLote, crearPauta4x4, editar, cancelar, verificarConflictos, verificarConflictosPara, porReasignar, listarDisponibles, tienePautaVigente };

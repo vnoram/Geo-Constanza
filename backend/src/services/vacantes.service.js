@@ -15,8 +15,8 @@ const esVacante = (turno, ahora = new Date()) => {
 
 const exigirLibre = async (user, db = prisma) => {
   const usuario = await db.usuario.findUnique({ where: { id: user.id } });
-  if (user.rol !== ROLES.GGSS_LIBRE || usuario?.rol !== ROLES.GGSS_LIBRE || usuario.estado !== ESTADO_USUARIO.ACTIVO) {
-    throw Object.assign(new Error('Solo un GGSS Libre activo puede solicitar cobertura.'), { statusCode: 403 });
+  if (user.rol !== ROLES.GGSS || usuario?.rol !== ROLES.GGSS || usuario.estado !== ESTADO_USUARIO.ACTIVO) {
+    throw Object.assign(new Error('Solo un GGSS activo puede solicitar cobertura.'), { statusCode: 403 });
   }
 };
 

@@ -64,7 +64,7 @@ suite('Multiempresa con PostgreSQL local', () => {
     const d = { empresa };
     d.admin = await crearUsuario(empresa.id, 'admin');
     d.supervisor = await crearUsuario(empresa.id, 'supervisor');
-    d.guardia = await crearUsuario(empresa.id, 'pauta', { tipo_ggss: 'pauta' });
+    d.guardia = await crearUsuario(empresa.id, 'ggss');
     d.instalacion = await prismaGlobal.instalacion.create({
       data: { empresa_id: empresa.id, nombre: `Instalación ${clave} ${sufijo}`, latitud: -33.45, longitud: -70.66 },
     });
@@ -251,7 +251,7 @@ suite('Multiempresa con PostgreSQL local', () => {
     test('crear un usuario de A asignado a una instalación de B → 404', async () => {
       const rut = siguienteRut();
       const res = await api(E.A.tokenAdmin).post('/usuarios', {
-        rut, nombre: 'Cruzado', email: `cruzado.${rut}@prueba-${sufijo}.test`, rol: 'libre', tipo_ggss: 'libre',
+        rut, nombre: 'Cruzado', email: `cruzado.${rut}@prueba-${sufijo}.test`, rol: 'ggss',
         instalacion_asignada_id: E.B.instalacion.id, password: CLAVE,
       });
       expect([404, 400]).toContain(res.status);
@@ -579,7 +579,7 @@ suite('Multiempresa con PostgreSQL local', () => {
     let guardia; let token; let otraEmpresaFolio;
     beforeAll(async () => {
       const { aFechaDB, ahoraChile } = require('../../utils/fechaChile');
-      guardia = await crearUsuario(E.A.empresa.id, 'pauta', { tipo_ggss: 'pauta' });
+      guardia = await crearUsuario(E.A.empresa.id, 'ggss');
       await prismaGlobal.turno.create({
         data: { empresa_id: E.A.empresa.id, usuario_id: guardia.id, instalacion_id: E.A.instalacion.id, fecha: aFechaDB(ahoraChile().fecha), hora_inicio: '00:00', hora_fin: '23:59' },
       });

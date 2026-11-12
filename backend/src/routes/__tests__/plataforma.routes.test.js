@@ -50,7 +50,7 @@ const RUTAS = [
 ];
 
 describe('quién puede entrar', () => {
-  test.each([ROLES.ADMINISTRADOR, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE])(
+  test.each([ROLES.ADMINISTRADOR, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.GGSS])(
     'el rol %s (aunque sea de una empresa) recibe 403 en TODAS las rutas de plataforma', async (rol) => {
       for (const [metodo, ruta] of RUTAS) {
         const res = await request(app)[metodo](ruta).set(como({ id: 'x', rol, empresaId: 'e1' })).send({});

@@ -73,7 +73,7 @@ describe.each([
     await expect(ejecutar({ id: 's1', rol })).resolves.toMatchObject({ id: 'n1' });
     expect(resolverInstalacionesSupervisor).toHaveBeenCalledTimes(rol === ROLES.SUPERVISOR ? 1 : 0);
   });
-  test.each([ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE])('rechaza %s', async (rol) => {
+  test.each([ROLES.GGSS])('rechaza %s', async (rol) => {
     await expect(ejecutar({ id: 'u1', rol })).rejects.toMatchObject({ statusCode: 403 });
   });
 });

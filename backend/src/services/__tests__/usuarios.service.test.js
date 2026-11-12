@@ -14,11 +14,11 @@ const passwordReset = require('../passwordReset.service');
 const service = require('../usuarios.service');
 const { ROLES } = require('../../constants/roles');
 const { ESTADO_USUARIO } = require('../../constants/estados');
-const datos = { nombre: 'Prueba', rut: 'rut-prueba', email: 'prueba@example.invalid', rol: ROLES.GGSS_LIBRE, password: 'entrada-simulada' };
+const datos = { nombre: 'Prueba', rut: 'rut-prueba', email: 'prueba@example.invalid', rol: ROLES.GGSS, password: 'entrada-simulada' };
 beforeEach(() => {
   jest.resetAllMocks(); prisma.$transaction.mockImplementation(fn => fn(prisma));
   bcrypt.hash.mockResolvedValue('hash-simulado');
-  prisma.usuario.create.mockResolvedValue({ id: 'u1', rol: ROLES.GGSS_LIBRE });
+  prisma.usuario.create.mockResolvedValue({ id: 'u1', rol: ROLES.GGSS });
   prisma.usuario.update.mockResolvedValue({ id: 'u1', rol: ROLES.SUPERVISOR });
   prisma.usuario.findMany.mockResolvedValue([{ id: 'u1' }]); prisma.usuario.count.mockResolvedValue(1);
 });
@@ -29,8 +29,8 @@ test('perfil propio selecciona datos públicos sin hash, token FCM ni secreto 2F
   expect(consulta.select.password_hash).toBeUndefined(); expect(consulta.select.fcm_token).toBeUndefined(); expect(consulta.select.two_factor_secret).toBeUndefined();
 });
 test('listado paginado usa filtros de rol/estado y no selecciona credenciales', async () => {
-  await expect(service.listar({ rol: ROLES.GGSS_LIBRE, estado: ESTADO_USUARIO.ACTIVO, page: 2, limit: 10 })).resolves.toMatchObject({ total: 1, page: 2 });
-  expect(prisma.usuario.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { rol: ROLES.GGSS_LIBRE, estado: ESTADO_USUARIO.ACTIVO }, skip: 10, take: 10 }));
+  await expect(service.listar({ rol: ROLES.GGSS, estado: ESTADO_USUARIO.ACTIVO, page: 2, limit: 10 })).resolves.toMatchObject({ total: 1, page: 2 });
+  expect(prisma.usuario.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { rol: ROLES.GGSS, estado: ESTADO_USUARIO.ACTIVO }, skip: 10, take: 10 }));
   await service.listar({ page: 1, limit: 20 });
   expect(prisma.usuario.findMany.mock.calls[1][0].where).toEqual({});
 });
@@ -62,8 +62,8 @@ test('edita campos públicos sin contraseña y permite limpiar asignaciones', as
   expect(prisma.usuario.update.mock.calls[0][0].data).toEqual({ nombre: 'Otro' });
 });
 test('editar otro rol no crea asignaciones y rechaza roles inválidos', async () => {
-  prisma.usuario.findUnique.mockResolvedValue({ rol: ROLES.GGSS_EN_PAUTA });
-  await service.editar('u1', { rol: ROLES.GGSS_LIBRE, instalacionIds: ['i1'] });
+  prisma.usuario.findUnique.mockResolvedValue({ rol: ROLES.GGSS });
+  await service.editar('u1', { rol: ROLES.GGSS, instalacionIds: ['i1'] });
   expect(prisma.supervisor_Instalacion.deleteMany).not.toHaveBeenCalled();
   await expect(service.editar('u1', { rol: 'desconocido' })).rejects.toMatchObject({ statusCode: 400 });
 });
@@ -73,7 +73,7 @@ test('no se puede desactivar a un administrador', async () => {
   expect(prisma.usuario.update).not.toHaveBeenCalled();
 });
 test('desactivación es lógica y su respuesta no expone credenciales', async () => {
-  prisma.usuario.findUnique.mockResolvedValue({ rol: ROLES.GGSS_LIBRE });
+  prisma.usuario.findUnique.mockResolvedValue({ rol: ROLES.GGSS });
   await service.desactivar('u1');
   expect(prisma.usuario.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { estado: ESTADO_USUARIO.INACTIVO },
     select: { id: true, nombre: true, email: true, rol: true, estado: true } });
@@ -90,15 +90,15 @@ test('no se puede crear un administrador', async () => {
   expect(prisma.usuario.create).not.toHaveBeenCalled();
 });
 test('no se puede asignar el rol admin ni quitárselo a un administrador', async () => {
-  prisma.usuario.findUnique.mockResolvedValue({ rol: ROLES.GGSS_LIBRE });
+  prisma.usuario.findUnique.mockResolvedValue({ rol: ROLES.GGSS });
   await expect(service.editar('u1', { rol: ROLES.ADMINISTRADOR })).rejects.toMatchObject({ statusCode: 400 });
   prisma.usuario.findUnique.mockResolvedValue({ rol: ROLES.ADMINISTRADOR });
-  await expect(service.editar('u1', { rol: ROLES.GGSS_EN_PAUTA })).rejects.toMatchObject({ statusCode: 400 });
+  await expect(service.editar('u1', { rol: ROLES.GGSS })).rejects.toMatchObject({ statusCode: 400 });
   await expect(service.editar('u1', { nombre: 'Otro nombre' })).resolves.toBeDefined();
   expect(prisma.usuario.update).toHaveBeenCalledTimes(1);
 });
 test('crear sin contraseña guarda una clave aleatoria y envía la invitación', async () => {
-  prisma.usuario.create.mockResolvedValue({ id: 'u9', nombre: 'Nuevo', email: 'nuevo@example.invalid', rol: ROLES.GGSS_LIBRE });
+  prisma.usuario.create.mockResolvedValue({ id: 'u9', nombre: 'Nuevo', email: 'nuevo@example.invalid', rol: ROLES.GGSS });
   passwordReset.invitar.mockResolvedValue(true);
   const sinClave = { ...datos, password: undefined };
   const res = await service.crear(sinClave);
@@ -108,7 +108,7 @@ test('crear sin contraseña guarda una clave aleatoria y envía la invitación',
   expect(res).toMatchObject({ id: 'u9', invitacion_enviada: true });
 });
 test('si la invitación falla el usuario igual queda creado e informa que no se envió', async () => {
-  prisma.usuario.create.mockResolvedValue({ id: 'u9', rol: ROLES.GGSS_LIBRE });
+  prisma.usuario.create.mockResolvedValue({ id: 'u9', rol: ROLES.GGSS });
   passwordReset.invitar.mockRejectedValue(new Error('smtp caído'));
   const sinClave = { ...datos, password: undefined };
   await expect(service.crear(sinClave)).resolves.toMatchObject({ id: 'u9', invitacion_enviada: false });

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../../services/api";
-import { T, FONT, ROLES } from "../../theme/theme";
+import { T, FONT, ROLES, SECCIONES_GGSS_PERSONAL } from "../../theme/theme";
 import { Icon } from "../ui/Icon";
 import { Wordmark } from "../ui/Wordmark";
 import { ROLES as ROL } from "../../constants/roles";
@@ -42,11 +42,10 @@ import { MisDispositivos } from "../../screens/MisDispositivos";
 import { AdminDocumentos } from "../../screens/administrador/AdminDocumentos";
 
 function seccionesPara(user) {
-  if (user.dispositivo === "personal" && [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(user.rol)) {
-    return ROLES[ROL.GGSS_LIBRE].sections.map(s => s.id === "turnos" ? { ...s, label: "Mi pauta" } : s);
+  if (user.dispositivo === "personal" && [ROL.GGSS].includes(user.rol)) {
+    return SECCIONES_GGSS_PERSONAL.map(s => s.id === "turnos" ? { ...s, label: "Mi pauta" } : s);
   }
-  // En equipo corporativo el guardia libre usa las mismas pantallas operativas que el guardia en pauta.
-  const secciones = user.rol === ROL.GGSS_LIBRE ? ROLES[ROL.GGSS_EN_PAUTA].sections : ROLES[user.rol].sections;
+  const secciones = ROLES[user.rol].sections;
   const extra = [];
   if (user.rol === ROL.ADMINISTRADOR) extra.push({ id: "documentos", icon: "folder", label: "Documentos" });
   if ([ROL.ADMINISTRADOR, ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL].includes(user.rol)) extra.push({ id: "dispositivos", icon: "key-round", label: "Dispositivos" });
@@ -67,13 +66,13 @@ function RoleContent({ user, rol, section }) {
     );
   }
 
-  if (user.dispositivo === "personal" && [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(rol)) {
+  if (user.dispositivo === "personal" && [ROL.GGSS].includes(rol)) {
     if (section === "turnos") return <LibreTurnos />;
     if (section === "solicitudes") return <SolicitudesPersonales />;
     if (section === "docs") return <LibreDocs />;
   }
 
-  if (rol === ROL.GGSS_EN_PAUTA || rol === ROL.GGSS_LIBRE) {
+  if (rol === ROL.GGSS) {
     if (section === "turno") return <PautaTurno user={user} />;
     if (section === "novedades") return <PautaNovedades user={user} />;
     if (section === "historial") return <PautaHistorial user={user} />;
@@ -147,13 +146,13 @@ export function AppShell({ user, onLogout }) {
     return s;
   });
   // Todo guardia (en pauta o libre, en cualquier equipo) se muestra solo como «GGSS».
-  const etiquetaRol = [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(user.rol) ? "GGSS" : role.label;
+  const etiquetaRol = [ROL.GGSS].includes(user.rol) ? "GGSS" : role.label;
   const [seleccion, setActiveSection] = useState(sections[0].id);
   const activeSection = sections.some(s => s.id === seleccion) ? seleccion : sections[0].id;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cambiandoPassword, setCambiandoPassword] = useState(false);
 
-  const duracionToken = user.rol === ROL.GGSS_EN_PAUTA || user.rol === ROL.GGSS_LIBRE ? "30 min" : user.rol === ROL.SUPERVISOR ? "2 h" : user.rol === ROL.SUPER_ADMIN ? "1 h" : "4 h";
+  const duracionToken = user.rol === ROL.GGSS ? "30 min" : user.rol === ROL.SUPERVISOR ? "2 h" : user.rol === ROL.SUPER_ADMIN ? "1 h" : "4 h";
   const conSegundoFactor = user.segundoFactor === true;
 
   return (
@@ -315,7 +314,7 @@ export function AppShell({ user, onLogout }) {
 
         {/* ─── CONTENIDO ─── */}
         <main className={`app-shell__main ${
-          user.rol === ROL.GGSS_EN_PAUTA || user.rol === ROL.GGSS_LIBRE
+          user.rol === ROL.GGSS
             ? "app-shell__main--guardia"
             : "app-shell__main--operativo"
         }`}>

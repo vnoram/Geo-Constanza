@@ -10,7 +10,7 @@ const { instanteChile, aFechaDB } = require('../../utils/fechaChile');
 const { ROLES } = require('../../constants/roles');
 const { ESTADO_TURNO, ESTADO_USUARIO, ESTADO_SOLICITUD } = require('../../constants/estados');
 const { TIPO_SOLICITUD } = require('../../constants/solicitudes');
-const user = { id: 'g1', rol: ROLES.GGSS_LIBRE };
+const user = { id: 'g1', rol: ROLES.GGSS };
 const turno = { id: 't1', usuario_id: null, fecha: aFechaDB('2026-10-30'), hora_inicio: '08:00', hora_fin: '20:00',
   estado: ESTADO_TURNO.PROGRAMADO, instalacion: { id: 'i1', nombre: 'Instalación' }, asistencias: [],
 };
@@ -41,7 +41,7 @@ test('lista solo vacantes sin solapamiento y no expone datos del guardia ausente
   verificarConflictos.mockResolvedValue([turno]);
   await expect(listarCompatibles(user)).resolves.toEqual([]);
 });
-test.each([ROLES.SUPERVISOR, ROLES.GGSS_EN_PAUTA])('rechaza rol %s', async rol => {
+test.each([ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL])('rechaza rol %s', async rol => {
   await expect(listarCompatibles({ id: 'g1', rol })).rejects.toMatchObject({ statusCode: 403 });
 });
 test('registra cobertura vinculada a la vacante y al solicitante', async () => {

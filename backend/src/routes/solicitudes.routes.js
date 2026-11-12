@@ -255,12 +255,12 @@ const subirAdjunto = (req, res, next) => upload.single('adjunto')(req, res, (err
 const router = Router();
 
 router.use(authenticate, exigirEmpresa);
-router.get('/vacantes', authorize(ROLES.GGSS_LIBRE), require('../controllers/vacantes.controller').listar);
-router.post('/cobertura', authorize(ROLES.GGSS_LIBRE), require('../controllers/vacantes.controller').solicitar);
+router.get('/vacantes', authorize(ROLES.GGSS), require('../controllers/vacantes.controller').listar);
+router.post('/cobertura', authorize(ROLES.GGSS), require('../controllers/vacantes.controller').solicitar);
 
 // ── GGSS: ver y crear sus propias solicitudes ─────────────────────────────
-router.get('/',  authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), solicitudesController.listar);
-router.post('/', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE), subirAdjunto, restaurarEmpresa, solicitudesController.crear);
+router.get('/',  authorize(ROLES.GGSS, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), solicitudesController.listar);
+router.post('/', authorize(ROLES.GGSS), subirAdjunto, restaurarEmpresa, solicitudesController.crear);
 
 // ── Supervisor/Admin: aprobar y rechazar ──────────────────────────────────
 router.patch('/:id/aprobar',  authorize(ROLES.SUPERVISOR, ROLES.ADMINISTRADOR), solicitudesController.aprobar);

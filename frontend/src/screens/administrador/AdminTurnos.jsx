@@ -311,7 +311,7 @@ export function AdminTurnos() {
         api.get("/instalaciones"),
       ]);
       const usuarios = Array.isArray(listaUsuarios) ? listaUsuarios : (listaUsuarios.data ?? []);
-      setGuardias(usuarios.filter((u) => [ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE].includes(u.rol)));
+      setGuardias(usuarios.filter((u) => [ROLES.GGSS].includes(u.rol)));
       setInstalaciones(Array.isArray(listaInstalaciones) ? listaInstalaciones : (listaInstalaciones.data ?? []));
     } catch (e) {
       console.error("Error cargando recursos:", e);

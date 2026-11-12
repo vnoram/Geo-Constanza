@@ -57,7 +57,7 @@ const listar = async (query, user) => {
   if (estado) where.estado = estado;
   if (tipo) where.tipo = tipo;
 
-  if (user.rol === ROLES.GGSS_EN_PAUTA || user.rol === ROLES.GGSS_LIBRE) {
+  if (user.rol === ROLES.GGSS) {
     // Guardia solo ve sus propias solicitudes
     where.usuario_id = user.id;
   } else if (user.rol === ROLES.SUPERVISOR) {
@@ -72,7 +72,7 @@ const listar = async (query, user) => {
           { instalacion_asignada_id: { in: instalacionIds } },
           { turnos: { some: { instalacion_id: { in: instalacionIds } } } },
         ],
-        rol: { in: [ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE] },
+        rol: { in: [ROLES.GGSS] },
       },
       select: { id: true },
     });

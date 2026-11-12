@@ -25,7 +25,7 @@ beforeEach(() => {
   prisma.solicitud.update.mockResolvedValue({ id: 'sol1', estado: ESTADO_SOLICITUD.APROBADA });
   prisma.turno.findUnique.mockResolvedValue(turno); prisma.turno.findMany.mockResolvedValue([]);
   prisma.usuario.findUnique.mockImplementation(({ where }) => Promise.resolve({ id: where.id, estado: ESTADO_USUARIO.ACTIVO,
-    rol: where.id === 's1' ? ROLES.SUPERVISOR : ROLES.GGSS_LIBRE }));
+    rol: where.id === 's1' ? ROLES.SUPERVISOR : ROLES.GGSS }));
   verificarConflictos.mockResolvedValue([]); resolverInstalacionesSupervisor.mockResolvedValue(['i1']);
 });
 afterEach(() => jest.useRealTimers());

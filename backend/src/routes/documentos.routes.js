@@ -20,7 +20,7 @@ const restaurarEmpresa = (req, res, next) => (
 
 const router = Router();
 router.use(authenticate, exigirEmpresa);
-const permitidos = authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.ADMINISTRADOR);
+const permitidos = authorize(ROLES.GGSS, ROLES.ADMINISTRADOR);
 
 router.get('/', permitidos, async (req, res, next) => {
   try { res.set('Cache-Control', 'no-store').json(await documentos.listar(req.user, req.query)); } catch (err) { next(err); }

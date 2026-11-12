@@ -14,26 +14,26 @@ router.use(authenticate, exigirEmpresa);
 // ── Rutas sin parámetros → PRIMERO (evitar captura por /:param) ───────────
 
 // Estado actual del usuario autenticado
-router.get('/estado-actual', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.ADMINISTRADOR), asistenciaController.obtenerEstadoActual);
+router.get('/estado-actual', authorize(ROLES.GGSS, ROLES.ADMINISTRADOR), asistenciaController.obtenerEstadoActual);
 
 // Entrada desde TABLET fija (GGSS en pauta — método primario 95% de los casos)
-router.post('/entrada-tablet',   authorize(ROLES.GGSS_EN_PAUTA), asistenciaController.registrarEntradaTablet);
+router.post('/entrada-tablet',   authorize(ROLES.GGSS), asistenciaController.registrarEntradaTablet);
 
 // Entrada desde MÓVIL (fallback para pauta, o GGSS libre con turno aprobado)
-router.post('/entrada-fallback', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE), asistenciaController.registrarEntradaFallback);
+router.post('/entrada-fallback', authorize(ROLES.GGSS), asistenciaController.registrarEntradaFallback);
 
 // Entrada genérica (mantener compatibilidad con clientes existentes)
-router.post('/entrada',  authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.ADMINISTRADOR), asistenciaController.registrarEntrada);
+router.post('/entrada',  authorize(ROLES.GGSS, ROLES.ADMINISTRADOR), asistenciaController.registrarEntrada);
 
 // Salida — GGSS libre solo puede si tiene turno aprobado (validación en service via estado-actual)
-router.post('/salida',   authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.ADMINISTRADOR), asistenciaController.registrarSalida);
+router.post('/salida',   authorize(ROLES.GGSS, ROLES.ADMINISTRADOR), asistenciaController.registrarSalida);
 
 // Sincronización offline
-router.post('/sync', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE), asistenciaController.sincronizarOffline);
+router.post('/sync', authorize(ROLES.GGSS), asistenciaController.sincronizarOffline);
 
 // ── Rutas con parámetros ──────────────────────────────────────────────────
 router.get('/hoy/:instalacionId',   authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), asistenciaController.obtenerHoy);
-router.get('/historial/:usuarioId', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), asistenciaController.obtenerHistorial);
+router.get('/historial/:usuarioId', authorize(ROLES.GGSS, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), asistenciaController.obtenerHistorial);
 
 router.patch('/:id/revisar', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR),
   validarBody(z.object({ decision: z.enum(['aprobar', 'rechazar']), comentario: z.string().trim().max(1000).optional() })),

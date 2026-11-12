@@ -4,7 +4,7 @@ const { registrarAuditoria } = require('../middlewares/auditLog');
 const { uploadAdjuntoToAzure, generarUrlLectura } = require('../utils/azureStorage');
 
 const TIPOS = { contrato: 'Contrato', liquidacion: 'Liquidación', os10: 'Certificado OS-10', anexo: 'Anexo', otro: 'Documento' };
-const GUARDIAS = [ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE];
+const GUARDIAS = [ROLES.GGSS];
 const error = (statusCode, message) => Object.assign(new Error(message), { statusCode });
 
 // El contenedor es privado: el cliente recibe un link temporal, nunca la URL guardada.

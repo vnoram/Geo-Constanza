@@ -35,7 +35,7 @@ beforeEach(() => {
   resolverInstalacionesSupervisor.mockResolvedValue(['i1']);
 });
 test.each([
-  [ACCION_NOVEDAD.CREAR, () => service.crear({ tipo: 'Ronda', descripcion: 'Todo bien' }, null, { id: 'g1', rol: ROLES.GGSS_EN_PAUTA }), null, ESTADO_NOVEDAD.ABIERTA],
+  [ACCION_NOVEDAD.CREAR, () => service.crear({ tipo: 'Ronda', descripcion: 'Todo bien' }, null, { id: 'g1', rol: ROLES.GGSS }), null, ESTADO_NOVEDAD.ABIERTA],
   [ACCION_NOVEDAD.ASIGNAR, () => service.asignar('n1', 's1', supervisor), ESTADO_NOVEDAD.ABIERTA, ESTADO_NOVEDAD.EN_ATENCION],
   [ACCION_NOVEDAD.ESCALAR, () => service.escalar('n1', supervisor), ESTADO_NOVEDAD.ABIERTA, ESTADO_NOVEDAD.ESCALADA],
   [ACCION_NOVEDAD.RESOLVER, () => service.resolver('n1', 'Cierre correcto', supervisor), ESTADO_NOVEDAD.ABIERTA, ESTADO_NOVEDAD.RESUELTA],
@@ -52,7 +52,7 @@ test('un fallo de historial propaga error y no informa éxito', async () => {
   await expect(service.resolver('n1', 'Cierre correcto', supervisor)).rejects.toThrow('Historial no disponible');
 });
 test('historial de otro guardia está prohibido', async () => {
-  await expect(service.historial('n1', { id: 'otro', rol: ROLES.GGSS_EN_PAUTA })).rejects.toMatchObject({ statusCode: 403 });
+  await expect(service.historial('n1', { id: 'otro', rol: ROLES.GGSS })).rejects.toMatchObject({ statusCode: 403 });
   expect(prisma.novedadHistorial.findMany).not.toHaveBeenCalled();
 });
 test('historial exige instalación del supervisor', async () => {
@@ -61,6 +61,6 @@ test('historial exige instalación del supervisor', async () => {
 });
 test('autor autorizado puede leer historial en orden', async () => {
   prisma.novedadHistorial.findMany.mockResolvedValue([]);
-  await expect(service.historial('n1', { id: 'g1', rol: ROLES.GGSS_EN_PAUTA })).resolves.toEqual([]);
+  await expect(service.historial('n1', { id: 'g1', rol: ROLES.GGSS })).resolves.toEqual([]);
   expect(prisma.novedadHistorial.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { novedad_id: 'n1' }, orderBy: [{ created_at: 'asc' }, { id: 'asc' }] }));
 });

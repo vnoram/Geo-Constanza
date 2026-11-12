@@ -10,7 +10,7 @@ const { getRedis } = require('../../config/redis');
 const auth = require('../auth.service');
 const { ROLES } = require('../../constants/roles');
 const { ESTADO_USUARIO } = require('../../constants/estados');
-const perfil = { id: 'u1', rol: ROLES.GGSS_EN_PAUTA, nombre: 'Prueba', email: 'prueba@example.invalid', estado: ESTADO_USUARIO.ACTIVO,
+const perfil = { id: 'u1', rol: ROLES.GGSS, nombre: 'Prueba', email: 'prueba@example.invalid', estado: ESTADO_USUARIO.ACTIVO,
   password_hash: 'hash-simulado', two_factor_secret: 'dato-simulado-no-operativo',
   empresa_id: 'e1', empresa: { id: 'e1', nombre: 'Empresa Uno', estado: 'activa' } };
 let redis;

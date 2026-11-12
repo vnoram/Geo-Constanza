@@ -11,7 +11,7 @@ const auth = require('../auth.service');
 const { ROLES } = require('../../constants/roles');
 
 const perfil = {
-  id: 'u1', rol: ROLES.GGSS_EN_PAUTA, nombre: 'Prueba', email: 'prueba@example.invalid', estado: 'activo', password_hash: 'hash',
+  id: 'u1', rol: ROLES.GGSS, nombre: 'Prueba', email: 'prueba@example.invalid', estado: 'activo', password_hash: 'hash',
   empresa_id: 'e1', empresa: { id: 'e1', nombre: 'Empresa Uno', estado: 'activa' },
 };
 const suspendida = { ...perfil, empresa: { ...perfil.empresa, estado: 'suspendida' } };

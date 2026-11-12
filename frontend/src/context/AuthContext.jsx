@@ -64,7 +64,7 @@ export function AuthProvider({ children }) {
     const actualizar = ({ detail }) => {
       const dispositivo = detail === 'off' ? undefined : detail;
       if (!user || user.dispositivo === dispositivo) return;
-      if (detail === "personal" && ![ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE].includes(user.rol)) {
+      if (detail === "personal" && ![ROLES.GGSS].includes(user.rol)) {
         logout();
         return;
       }

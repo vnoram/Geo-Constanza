@@ -20,14 +20,14 @@ router.use(authenticate, exigirEmpresa);
 
 // ── Listado ───────────────────────────────────────────────────────────────
 // Supervisor ve su instalación, central/admin ven todas (filtro en service)
-router.get('/', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), novedadesController.listar);
-router.get('/:id', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), novedadesController.obtener);
-router.get('/:id/historial', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), novedadesController.historial);
+router.get('/', authorize(ROLES.GGSS, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), novedadesController.listar);
+router.get('/:id', authorize(ROLES.GGSS, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), novedadesController.obtener);
+router.get('/:id/historial', authorize(ROLES.GGSS, ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), novedadesController.historial);
 
 // ── Creación ──────────────────────────────────────────────────────────────
 // pauta: siempre puede (tiene turno 4x4)
 // libre: solo si tiene turno aprobado hoy (validación en service)
-router.post('/', authorize(ROLES.GGSS_EN_PAUTA, ROLES.GGSS_LIBRE), upload.single('foto'), restaurarEmpresa, novedadesController.crear);
+router.post('/', authorize(ROLES.GGSS), upload.single('foto'), restaurarEmpresa, novedadesController.crear);
 
 // ── Gestión (supervisor de su instalación, central/admin para todas) ───────
 router.patch('/:id/resolver', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), novedadesController.resolver);

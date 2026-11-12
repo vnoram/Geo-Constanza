@@ -68,7 +68,7 @@ const listar = async (query, user) => {
       if (fecha_fin) where.created_at.lte = finDiaChile(fecha_fin);
     }
 
-    if (user.rol === ROLES.GGSS_EN_PAUTA || user.rol === ROLES.GGSS_LIBRE) {
+    if (user.rol === ROLES.GGSS) {
       where.usuario_id = user.id;
     } else if (user.rol === ROLES.SUPERVISOR) {
       const ids = await resolverInstalacionesSupervisor(user);
@@ -127,7 +127,7 @@ const obtenerPorId = async (id, user) => {
       },
     });
 
-    if (user.rol === ROLES.GGSS_EN_PAUTA || user.rol === ROLES.GGSS_LIBRE) {
+    if (user.rol === ROLES.GGSS) {
       if (novedad.usuario_id !== user.id) {
         const error = new Error('No tienes permiso para ver esta novedad');
         error.statusCode = 403;
@@ -182,7 +182,7 @@ const crear = async (data, file, user) => {
     const turno = candidatos.find(ventana.incluir) ?? null;
 
     // GGSS libre: validar que tenga solicitud de turno aprobada para hoy
-    if (!turno && user.rol === ROLES.GGSS_LIBRE) {
+    if (!turno && user.rol === ROLES.GGSS && !(await require('./turnos.service').tienePautaVigente(user.id))) {
       const { tieneturnoAprobadoHoy } = require('./solicitudes.service');
       const tieneAprobado = await tieneturnoAprobadoHoy(user.id);
       if (!tieneAprobado) {

@@ -27,8 +27,8 @@ export function AdminDocumentos() {
   const [ocupado, setOcupado] = useState(false);
 
   useEffect(() => {
-    Promise.all([api.get("/usuarios?rol=pauta&limit=200"), api.get("/usuarios?rol=libre&limit=200")])
-      .then(([a, b]) => setGuardias([...(a.data ?? []), ...(b.data ?? [])].sort((x, y) => x.nombre.localeCompare(y.nombre))))
+    api.get("/usuarios?rol=ggss&limit=200")
+      .then((a) => setGuardias([...(a.data ?? [])].sort((x, y) => x.nombre.localeCompare(y.nombre))))
       .catch(err => setError(err.message));
   }, []);
 

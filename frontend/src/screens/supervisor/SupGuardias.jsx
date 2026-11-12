@@ -5,7 +5,6 @@ import { Badge } from "../../components/ui/Badge";
 import { Btn } from "../../components/ui/Btn";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
-import { ROLES } from "../../constants/roles";
 import { ahoraChile, sumarDias } from "../../utils/fechaChile";
 import { SemanaTurnos, lunesDe } from "./SemanaTurnos";
 import { CalendarioRango } from "../../components/ui/CalendarioRango";
@@ -139,7 +138,7 @@ export function ModalEditarTurno({ turno, turnos, guardias, instalaciones, input
           )}
           {guardias.map((g) => (
             <option key={g.id} value={g.id}>
-              {g.nombre} ({g.rol === ROLES.GGSS_EN_PAUTA ? "Pauta" : "Libre"})
+              {g.nombre}
             </option>
           ))}
         </select>
@@ -230,17 +229,15 @@ export function SupGuardias() {
   const cargarRecursos = async () => {
     setCargandoDatos(true);
     try {
-      const [resPauta, resLibre, resInstalaciones] = await Promise.all([
-        api.get("/usuarios?rol=pauta&limit=100"),
-        api.get("/usuarios?rol=libre&limit=100"),
+      const [resGuardias, resInstalaciones] = await Promise.all([
+        api.get("/usuarios?rol=ggss&limit=200"),
         api.get("/instalaciones"),
       ]);
 
-      const listaPauta = Array.isArray(resPauta) ? resPauta : (resPauta.data || []);
-      const listaLibre = Array.isArray(resLibre) ? resLibre : (resLibre.data || []);
+      const listaGuardias = Array.isArray(resGuardias) ? resGuardias : (resGuardias.data || []);
       const listaInst  = Array.isArray(resInstalaciones) ? resInstalaciones : (resInstalaciones.data || []);
 
-      setGuardias([...listaPauta, ...listaLibre]);
+      setGuardias(listaGuardias);
       setInstalaciones(listaInst);
 
       // Si solo hay una instalación disponible, preseleccionarla automáticamente
@@ -375,7 +372,7 @@ export function SupGuardias() {
             <option value="">Seleccionar guardia...</option>
             {guardias.map((g) => (
               <option key={g.id} value={g.id}>
-                {g.nombre} ({g.rol === ROLES.GGSS_EN_PAUTA ? "Pauta" : "Libre"})
+                {g.nombre}
               </option>
             ))}
           </select>
@@ -510,7 +507,7 @@ export function SupGuardias() {
             <div className="responsive-list-row__main">
               <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{g.nombre}</div>
               <div style={{ fontSize: 11, color: T.textMut }}>
-                GGSS {g.rol === ROLES.GGSS_EN_PAUTA ? "Pauta" : "Libre"} {g.rut ? `· ${g.rut}` : ""}
+                GGSS {g.rut ? `· ${g.rut}` : ""}
               </div>
             </div>
             <Badge color={g.estado === "activo" ? "accent" : "red"}>{g.estado}</Badge>

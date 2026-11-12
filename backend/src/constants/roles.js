@@ -7,8 +7,8 @@
  * para que el código use el mismo lenguaje que el informe.
  */
 const ROLES = {
-  GGSS_EN_PAUTA: 'pauta',
-  GGSS_LIBRE: 'libre',
+  // Un solo rol de guardia. «En pauta» o «libre» no es un rol: se deriva de si tiene turnos programados (tienePautaVigente).
+  GGSS: 'ggss',
   SUPERVISOR: 'supervisor',
   OPERADOR_CENTRAL: 'central',
   ADMINISTRADOR: 'admin',
