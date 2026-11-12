@@ -194,6 +194,15 @@ const verificarConflictos = async (query, db = prisma) => {
     ? candidatos.filter(t => seSolapan(intervaloTurno(query), intervaloTurno(t))) : candidatos;
 };
 
+// Consulta expuesta por la API: un supervisor solo ve el detalle de los turnos de sus
+// instalaciones; los demás se informan como conflicto sin revelar instalación ni horario.
+const verificarConflictosPara = async (query, user) => {
+  const conflictos = await verificarConflictos(query);
+  if (user?.rol !== ROLES.SUPERVISOR) return conflictos;
+  const permitidas = new Set(await resolverInstalacionesSupervisor(user));
+  return conflictos.map((t) => (permitidas.has(t.instalacion_id) ? t : { fuera_de_alcance: true }));
+};
+
 const crearPauta4x4 = async (data, creadoPor) => {
   const { usuario_id, instalacion_id, fecha_inicio, hora_inicio, hora_fin, reemplazar = false } = data;
 
@@ -327,4 +336,4 @@ const listarDisponibles = async (user) => {
   });
 };
 
-module.exports = { listar, obtenerPorId, crear, crearLote, crearPauta4x4, editar, cancelar, verificarConflictos, listarDisponibles };
+module.exports = { listar, obtenerPorId, crear, crearLote, crearPauta4x4, editar, cancelar, verificarConflictos, verificarConflictosPara, listarDisponibles };

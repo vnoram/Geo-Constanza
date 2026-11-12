@@ -1,6 +1,6 @@
 jest.mock('../../config/database', () => ({ prisma: {
   turno: { findMany: jest.fn(), findUnique: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn(), update: jest.fn() },
-  asistencia: { findMany: jest.fn(), create: jest.fn(), findUniqueOrThrow: jest.fn(), update: jest.fn() },
+  asistencia: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), findUniqueOrThrow: jest.fn(), update: jest.fn() },
   solicitud: { findFirst: jest.fn() },
   novedad: { count: jest.fn() },
   $transaction: jest.fn(), $executeRaw: jest.fn(),
@@ -295,4 +295,47 @@ test('sincronización offline rechaza listas vacías, enormes o que no son lista
   for (const malo of [undefined, 'x', {}, [], new Array(201).fill({})]) {
     await expect(asistencia.sincronizarBatch(malo, { id: 'u' })).rejects.toMatchObject({ statusCode: 400 });
   }
+});
+
+test('sincronización offline: una salida sin reporte, con horas invertidas o con error interno se rechaza sin filtrar detalles', async () => {
+  prisma.turno.findUnique.mockImplementation(async ({ where }) => ({ id: where.id, usuario_id: 'u', instalacion_id: 'i1' }));
+  prisma.asistencia.findMany.mockResolvedValue([]);
+  prisma.novedad.count.mockResolvedValue(0);
+  const r1 = await asistencia.sincronizarBatch([
+    { turno_id: 'A', hora_entrada: '2026-09-27T09:00:00Z', hora_salida: '2026-09-27T17:00:00Z' },
+    { turno_id: 'A', hora_entrada: '2026-09-27T09:00:00Z', hora_salida: '2026-09-27T08:00:00Z' },
+  ], { id: 'u' });
+  expect(r1[0]).toEqual({ success: false, error: expect.stringContaining('reporte del turno') });
+  expect(r1[1]).toEqual({ success: false, error: expect.stringContaining('posterior') });
+  expect(prisma.asistencia.create).not.toHaveBeenCalled();
+
+  prisma.novedad.count.mockResolvedValue(1);
+  prisma.asistencia.create.mockRejectedValue(new Error('Invalid prisma.asistencia.create() invocation: columna secreta'));
+  const r2 = await asistencia.sincronizarBatch([{ turno_id: 'A', hora_entrada: '2026-09-27T09:00:00Z' }], { id: 'u' });
+  expect(r2[0].error).toBe('No se pudo sincronizar este registro');
+});
+
+test('sincronización offline: salida con reporte se guarda y el reintento no duplica', async () => {
+  prisma.turno.findUnique.mockImplementation(async ({ where }) => ({ id: where.id, usuario_id: 'u', instalacion_id: 'i1' }));
+  prisma.asistencia.findMany.mockResolvedValue([]);
+  prisma.novedad.count.mockResolvedValue(1);
+  prisma.asistencia.create.mockResolvedValue({ id: 'nuevo' });
+  const reg = { turno_id: 'A', hora_entrada: '2026-09-27T09:00:00Z', hora_salida: '2026-09-27T17:00:00Z' };
+  expect(await asistencia.sincronizarBatch([reg], { id: 'u' })).toEqual([{ success: true, id: 'nuevo' }]);
+  prisma.asistencia.findFirst.mockResolvedValue({ id: 'nuevo' });
+  expect(await asistencia.sincronizarBatch([reg], { id: 'u' })).toEqual([{ success: true, id: 'nuevo' }]);
+  expect(prisma.asistencia.create).toHaveBeenCalledTimes(1);
+});
+
+test('conflictos: el supervisor no ve instalación ni horario de turnos fuera de su alcance', async () => {
+  const { resolverInstalacionesSupervisor } = require('../supervisor.helper');
+  resolverInstalacionesSupervisor.mockResolvedValue(['i']);
+  prisma.turno.findMany.mockResolvedValue([a, { ...b, instalacion_id: 'otra', instalacion: { nombre: 'Secreta' } }]);
+  const q = { usuario_id: 'u', fecha: '2026-09-27' };
+  const sup = await turnos.verificarConflictosPara(q, { id: 's', rol: 'supervisor' });
+  expect(sup).toHaveLength(2);
+  expect(sup[0].instalacion_id).toBe('i');
+  expect(sup[1]).toEqual({ fuera_de_alcance: true });
+  const adm = await turnos.verificarConflictosPara(q, { id: 'x', rol: 'administrador' });
+  expect(adm[1].instalacion.nombre).toBe('Secreta');
 });

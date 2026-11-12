@@ -266,6 +266,22 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
   return { ...asistencia, mensaje_gps: gps.mensaje };
 };
 
+// Regla de negocio (RF-05/06): un turno no se cierra sin un reporte asociado.
+// El reporte es una novedad del turno; "Sin novedad" también cuenta.
+// Se aplica igual a la salida manual y a las salidas sincronizadas offline.
+const exigirReporteTurno = async (turnoId, db = prisma) => {
+  const reportes = await db.novedad.count({ where: {
+    turno_id: turnoId,
+    ...(habilitada() ? { tipo: { notIn: TIPOS_SIN_REPORTE_CIERRE } } : {}),
+  } });
+  if (reportes === 0) {
+    throw Object.assign(
+      new Error('Antes de marcar la salida debes dejar el reporte del turno (una novedad o «Sin novedad»).'),
+      { statusCode: 409 },
+    );
+  }
+};
+
 const registrarSalida = async (data, user) => {
   const { asistencia_id, metodo } = data;
 
@@ -280,18 +296,7 @@ const registrarSalida = async (data, user) => {
     throw Object.assign(new Error(`Esta asistencia ya tiene salida registrada${detalle}`), { statusCode: 409 });
   }
 
-  // Regla de negocio (RF-05/06): un turno no se cierra sin un reporte asociado.
-  // El reporte es una novedad del turno; "Sin novedad" también cuenta.
-  const reportes = await prisma.novedad.count({ where: {
-    turno_id: asistencia.turno_id,
-    ...(habilitada() ? { tipo: { notIn: TIPOS_SIN_REPORTE_CIERRE } } : {}),
-  } });
-  if (reportes === 0) {
-    throw Object.assign(
-      new Error('Antes de marcar la salida debes dejar el reporte del turno (una novedad o «Sin novedad»).'),
-      { statusCode: 409 },
-    );
-  }
+  await exigirReporteTurno(asistencia.turno_id);
 
   const ahora = new Date();
   const horasTrabajadas = (ahora - new Date(asistencia.hora_entrada)) / 3600000;
@@ -429,6 +434,13 @@ const sincronizarBatch = async (registros, user) => {
         }
       }
       if (!registro.hora_entrada) throw Object.assign(new Error('hora_entrada es obligatoria'), { statusCode: 400 });
+      if (registro.hora_salida != null) {
+        if (registro.hora_salida <= registro.hora_entrada) {
+          throw Object.assign(new Error('hora_salida debe ser posterior a hora_entrada'), { statusCode: 400 });
+        }
+        // Una salida sincronizada pasa por la misma regla de cierre que la manual (RF-05/06).
+        await exigirReporteTurno(turno.id);
+      }
       if (registro.estado !== undefined && !['normal', 'tardio'].includes(registro.estado)) throw Object.assign(new Error('estado inválido'), { statusCode: 400 });
       if (registro.metodo_entrada !== undefined && !['totem', 'fallback_telefono'].includes(registro.metodo_entrada)) throw Object.assign(new Error('metodo_entrada inválido'), { statusCode: 400 });
       // Un registro sincronizado no pasó la validación de geocerca del servidor: queda para revisión.
@@ -447,11 +459,18 @@ const sincronizarBatch = async (registros, user) => {
           }
           if (abiertas.length) return abiertas[0];
         }
+        // Idempotencia: reintentar el mismo registro (mismo turno y misma entrada) no lo duplica.
+        const repetido = await db.asistencia.findFirst({
+          where: { usuario_id: registro.usuario_id, turno_id: registro.turno_id, hora_entrada: registro.hora_entrada },
+          select: { id: true },
+        });
+        if (repetido) return repetido;
         return db.asistencia.create({ data: registro });
       }, { isolationLevel: 'ReadCommitted' });
       resultados.push({ success: true, id: result.id });
     } catch (error) {
-      resultados.push({ success: false, error: error.message });
+      // Solo se devuelven mensajes de validación propios; los errores internos (Prisma, etc.) no se exponen.
+      resultados.push({ success: false, error: error.statusCode ? error.message : 'No se pudo sincronizar este registro' });
     }
   }
   return resultados;

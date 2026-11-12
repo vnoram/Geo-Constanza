@@ -81,7 +81,7 @@ const cancelar = async (req, res, next) => {
 
 const verificarConflictos = async (req, res, next) => {
   try {
-    const conflictos = await turnosService.verificarConflictos(req.query);
+    const conflictos = await turnosService.verificarConflictosPara(req.query, req.user);
     res.json(conflictos);
   } catch (error) {
     next(error);
