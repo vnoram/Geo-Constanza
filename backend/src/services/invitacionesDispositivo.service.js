@@ -117,7 +117,7 @@ async function consumir(usuario, digest) {
     },
   }));
   if (!count) throw invalida();
-  const equipo = await conEmpresa(usuario.empresa_id, () => prisma.dispositivo.findUnique({
+  const equipo = await conEmpresa(usuario.empresa_id, async () => prisma.dispositivo.findUnique({
     where: { token_hash: hash(tokenDispositivo) }, select: { id: true },
   }));
   if (equipo) await auditar('enrolar_dispositivo', equipo.id, usuario.id, usuario.empresa_id);
