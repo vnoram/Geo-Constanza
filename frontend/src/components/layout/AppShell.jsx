@@ -14,7 +14,6 @@ import { PautaAlertas } from "../../screens/ggss-en-pauta/PautaAlertas";
 
 // ─── GGSS libre ───
 import { LibreTurnos } from "../../screens/ggss-libre/LibreTurnos";
-import { LibreSolicitudes } from "../../screens/ggss-libre/LibreSolicitudes";
 import { LibreDocs } from "../../screens/ggss-libre/LibreDocs";
 
 // ─── Supervisor ───
@@ -42,7 +41,7 @@ import { MisDispositivos } from "../../screens/MisDispositivos";
 import { AdminDocumentos } from "../../screens/administrador/AdminDocumentos";
 
 function seccionesPara(user) {
-  if (user.dispositivo === "personal" && [ROL.GGSS_EN_PAUTA, ROL.GGSS_LIBRE].includes(user.rol)) {
+  if (user.rol === ROL.GGSS_LIBRE || (user.dispositivo === "personal" && user.rol === ROL.GGSS_EN_PAUTA)) {
     return ROLES[ROL.GGSS_LIBRE].sections.map(s => s.id === "turnos" ? { ...s, label: "Mi pauta" } : s);
   }
   const secciones = ROLES[user.rol].sections;
@@ -80,7 +79,7 @@ function RoleContent({ user, rol, section }) {
   }
   if (rol === ROL.GGSS_LIBRE) {
     if (section === "turnos") return <LibreTurnos />;
-    if (section === "solicitudes") return <LibreSolicitudes />;
+    if (section === "solicitudes") return <SolicitudesPersonales />;
     if (section === "docs") return <LibreDocs />;
   }
   if (section === "dispositivos" && [ROL.SUPERVISOR, ROL.OPERADOR_CENTRAL].includes(rol)) return <MisDispositivos user={user} />;
