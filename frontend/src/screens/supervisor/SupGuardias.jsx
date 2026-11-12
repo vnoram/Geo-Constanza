@@ -209,6 +209,7 @@ export function SupGuardias() {
   const [filtroGuardia, setFiltroGuardia] = useState("");
   const [turnoEditando, setTurnoEditando] = useState(null);
   const [aviso, setAviso] = useState("");
+  const [diasEnPauta, setDiasEnPauta] = useState([]);
   const [lunes, setLunes] = useState(() => lunesDe(hoyLocal()));
 
   const cargarTurnos = async () => {
@@ -258,6 +259,19 @@ export function SupGuardias() {
   useEffect(() => {
     cargarTurnos();
   }, [lunes]);
+
+  // Días en que el guardia elegido ya tiene turno programado (se pintan en verde en el calendario)
+  useEffect(() => {
+    if (!form.usuario_id) { setDiasEnPauta([]); return; }
+    let vigente = true;
+    api.get(`/turnos?usuario_id=${form.usuario_id}&desde=${hoyLocal()}`)
+      .then((data) => {
+        const lista = Array.isArray(data) ? data : (data.data || []);
+        if (vigente) setDiasEnPauta([...new Set(lista.filter((t) => t.estado !== "cancelado").map(fechaDeTurno))]);
+      })
+      .catch(() => { if (vigente) setDiasEnPauta([]); });
+    return () => { vigente = false; };
+  }, [form.usuario_id, turnos]);
 
   const onTurnoGuardado = () => {
     setTurnoEditando(null);
@@ -378,7 +392,12 @@ export function SupGuardias() {
           <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>
             Marca cada día en que el guardia hará turno extra; vuelve a tocar para quitarlo.
           </div>
-          <CalendarioRango marcados={form.fechas} destacados={form.fechas} onElegir={alternarFecha} />
+          <CalendarioRango marcados={form.fechas} destacados={form.fechas} enPauta={diasEnPauta} onElegir={alternarFecha} />
+          {form.usuario_id && (
+            <div style={{ fontSize: 11, color: T.textMut, marginTop: 6 }}>
+              <span style={{ color: "#39FF88", fontWeight: 700 }}>Verde</span>: días en que este guardia ya está en pauta.
+            </div>
+          )}
           <div style={{ fontSize: 12, color: form.fechas.length ? T.focusText : T.textMut, margin: "12px 0 16px" }}>
             {form.fechas.length
               ? `${form.fechas.length} ${form.fechas.length === 1 ? "día" : "días"}: ${form.fechas.map((f) => `${f.slice(8)}/${f.slice(5, 7)}`).join(", ")}`

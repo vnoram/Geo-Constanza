@@ -22,10 +22,11 @@ export const rangoDias = (desde, hasta) => {
  * Calendario mensual. No decide nada: pinta `marcados` en morado suave, `destacados` en morado
  * fuerte y avisa con `onElegir(iso)` qué día se tocó. Cada tipo de solicitud interpreta el clic.
  */
-export function CalendarioRango({ marcados = [], destacados = [], onElegir }) {
+export function CalendarioRango({ marcados = [], destacados = [], enPauta = [], onElegir }) {
   const hoy = hoyIso();
   const suaves = new Set(marcados);
   const fuertes = new Set(destacados);
+  const ocupados = new Set(enPauta);
   const base = aFecha(marcados[0] || hoy);
   const [vista, setVista] = useState({ a: base.getUTCFullYear(), m: base.getUTCMonth() });
 
@@ -50,14 +51,15 @@ export function CalendarioRango({ marcados = [], destacados = [], onElegir }) {
           const pasado = iso < hoy;
           const fuerte = fuertes.has(iso);
           const suave = suaves.has(iso);
+          const pauta = ocupados.has(iso) && !fuerte;
           return (
             <button type="button" key={iso} disabled={pasado} onClick={() => onElegir(iso)}
-              aria-pressed={fuerte} aria-label={iso}
+              aria-pressed={fuerte} aria-label={pauta ? `${iso} (ya en pauta)` : iso}
               style={{
-                border: `1px solid ${fuerte ? T.borderFocus : "transparent"}`, borderRadius: 6, padding: "8px 0",
+                border: `1px solid ${fuerte ? T.borderFocus : pauta ? "rgba(57,255,136,.55)" : "transparent"}`, borderRadius: 6, padding: "8px 0",
                 fontSize: 12, fontWeight: fuerte ? 700 : 500, fontFamily: "var(--font-ui)",
-                background: fuerte ? T.focus : suave ? T.focusGhost : "transparent",
-                color: pasado ? T.textMut : fuerte ? "#fff" : suave ? T.focusText : T.text,
+                background: fuerte ? T.focus : suave ? T.focusGhost : pauta ? "rgba(57,255,136,.16)" : "transparent",
+                color: pasado ? T.textMut : fuerte ? "#fff" : suave ? T.focusText : pauta ? "#39FF88" : T.text,
                 opacity: pasado ? 0.4 : 1, cursor: pasado ? "not-allowed" : "pointer",
               }}>{Number(iso.slice(8))}</button>
           );
