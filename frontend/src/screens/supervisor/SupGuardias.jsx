@@ -267,7 +267,11 @@ export function SupGuardias() {
     api.get(`/turnos?usuario_id=${form.usuario_id}&desde=${hoyLocal()}`)
       .then((data) => {
         const lista = Array.isArray(data) ? data : (data.data || []);
-        if (vigente) setDiasEnPauta([...new Set(lista.filter((t) => t.estado !== "cancelado").map(fechaDeTurno))]);
+        if (!vigente) return;
+        const ocupados = [...new Set(lista.filter((t) => t.estado !== "cancelado").map(fechaDeTurno))];
+        setDiasEnPauta(ocupados);
+        // Si ya había días marcados que resultan estar en pauta para este guardia, se sacan
+        setForm((f) => (f.fechas.some((x) => ocupados.includes(x)) ? { ...f, fechas: f.fechas.filter((x) => !ocupados.includes(x)) } : f));
       })
       .catch(() => { if (vigente) setDiasEnPauta([]); });
     return () => { vigente = false; };
@@ -289,7 +293,7 @@ export function SupGuardias() {
     .filter((t) => !filtroGuardia || t.usuario_id === filtroGuardia);
 
   // Los turnos extra se marcan día a día: tocar de nuevo un día lo quita.
-  const alternarFecha = (iso) => setForm((f) => ({
+  const alternarFecha = (iso) => diasEnPauta.includes(iso) || setForm((f) => ({
     ...f,
     fechas: f.fechas.includes(iso) ? f.fechas.filter((x) => x !== iso) : [...f.fechas, iso].sort(),
   }));
@@ -395,7 +399,7 @@ export function SupGuardias() {
           <CalendarioRango marcados={form.fechas} destacados={form.fechas} enPauta={diasEnPauta} onElegir={alternarFecha} />
           {form.usuario_id && (
             <div style={{ fontSize: 11, color: T.textMut, marginTop: 6 }}>
-              <span style={{ color: "#39FF88", fontWeight: 700 }}>Verde</span>: días en que este guardia ya está en pauta.
+              <span style={{ color: "#39FF88", fontWeight: 700 }}>Verde</span>: días en que este guardia ya está en pauta (no se pueden elegir).
             </div>
           )}
           <div style={{ fontSize: 12, color: form.fechas.length ? T.focusText : T.textMut, margin: "12px 0 16px" }}>

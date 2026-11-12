@@ -19,7 +19,7 @@ export const rangoDias = (desde, hasta) => {
 };
 
 /**
- * Calendario mensual. No decide nada: pinta `marcados` en morado suave, `destacados` en morado
+ * Calendario mensual. Los días de `enPauta` se ven en verde y no se pueden elegir. No decide nada: pinta `marcados` en morado suave, `destacados` en morado
  * fuerte y avisa con `onElegir(iso)` qué día se tocó. Cada tipo de solicitud interpreta el clic.
  */
 export function CalendarioRango({ marcados = [], destacados = [], enPauta = [], onElegir }) {
@@ -53,14 +53,14 @@ export function CalendarioRango({ marcados = [], destacados = [], enPauta = [], 
           const suave = suaves.has(iso);
           const pauta = ocupados.has(iso) && !fuerte;
           return (
-            <button type="button" key={iso} disabled={pasado} onClick={() => onElegir(iso)}
-              aria-pressed={fuerte} aria-label={pauta ? `${iso} (ya en pauta)` : iso}
+            <button type="button" key={iso} disabled={pasado || pauta} onClick={() => onElegir(iso)}
+              aria-pressed={fuerte} aria-label={pauta ? `${iso} (ya en pauta, no disponible)` : iso}
               style={{
                 border: `1px solid ${fuerte ? T.borderFocus : pauta ? "rgba(57,255,136,.55)" : "transparent"}`, borderRadius: 6, padding: "8px 0",
                 fontSize: 12, fontWeight: fuerte ? 700 : 500, fontFamily: "var(--font-ui)",
                 background: fuerte ? T.focus : suave ? T.focusGhost : pauta ? "rgba(57,255,136,.16)" : "transparent",
                 color: pasado ? T.textMut : fuerte ? "#fff" : suave ? T.focusText : pauta ? "#39FF88" : T.text,
-                opacity: pasado ? 0.4 : 1, cursor: pasado ? "not-allowed" : "pointer",
+                opacity: pasado ? 0.4 : 1, cursor: pasado || pauta ? "not-allowed" : "pointer",
               }}>{Number(iso.slice(8))}</button>
           );
         })}
