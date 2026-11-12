@@ -60,7 +60,7 @@ const DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const hoyIso = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Santiago" });
 const corto = (h) => h.slice(0, 5);
-const VERDE_BOSQUE = "#3F8F66"; // verde de bosque viejo para los íconos de día y noche
+const VERDE_BOSQUE = "#5FD19A"; // verde de bosque viejo para los íconos de día y noche
 
 /** Vista mensual: cada día con turno se pinta (morado; sol = diurno, luna = nocturno). */
 function PautaMensual({ turnos }) {
