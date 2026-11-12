@@ -253,10 +253,16 @@ Rutas bajo `/api/v1`. Las operaciones de gestión requieren un administrador de 
 
 | Método y ruta | Solicitud y respuesta |
 | --- | --- |
+| `GET /dispositivos/destinatarios` | Lista los supervisores y operadores centrales activos de la empresa. |
+| `POST /dispositivos/invitaciones` | Recibe `{ "nombre": "...", "usuario_id": "..." }`. Devuelve 201 con `id`, `invitacion_expira_en`, `enlace` y `correoEnviado`. Los destinatarios no elegibles reciben el mismo 400. |
+| `POST /dispositivos/invitaciones/confirmar` | Pública. Recibe `{ "token": "..." }` en el cuerpo y devuelve `{ "empresa": "..." }` si el enlace sigue vigente. No lo consume. Límite: 10 peticiones por minuto por IP. |
+| `POST /dispositivos/:id/invitaciones/reenviar` | Genera un enlace nuevo para el destinatario de una invitación pendiente e invalida el anterior. |
 | `POST /dispositivos` | `{ "nombre": "PC de recepción" }`. Devuelve 201 con los datos del registro y el campo `codigo` en claro una sola vez. |
 | `POST /dispositivos/canjear` | Pública. Recibe `{ "codigo": "..." }` y devuelve `{ "token": "..." }`. El código vence en 15 minutos, se consume de forma atómica y responde 400 si es inválido, usado, revocado o vencido. |
-| `GET /dispositivos` | Lista los equipos de la empresa. Incluye estado, vencimiento del código pendiente y último uso, sin hashes. |
-| `PATCH /dispositivos/:id/revocar` | Devuelve `{ "estado": "revocado" }` e invalida el código y el token. Un ID ajeno o inexistente devuelve 404. |
+| `GET /dispositivos` | Lista los equipos de la empresa. Incluye estado, vencimiento pendiente, nombre de quien enroló el equipo y último uso, sin hashes. |
+| `PATCH /dispositivos/:id/revocar` | Devuelve `{ "estado": "revocado" }` e invalida la invitación, el código manual y el token de dispositivo. Un ID ajeno o inexistente devuelve 404. |
+
+El enlace usa `FRONTEND_URL/#/enrolar?t=…`. Tras confirmar, el cliente envía el valor del fragmento en el campo opcional `invitacion` de `POST /auth/login`. Si hay 2FA, el desafío temporal vincula esa invitación y el enrolamiento se completa en `POST /auth/2fa/verify`. La respuesta final de autenticación devuelve `tokenDispositivo` una vez. La invitación vence en 15 minutos y solo se consume con la cuenta destinataria tras completar la autenticación. Si SMTP falla, `correoEnviado` es falso y el enlace sigue disponible para copiar. `POST /dispositivos` y `/dispositivos/canjear` quedan como respaldo manual.
 
 Con `DEVICE_POLICY=on`, el cliente envía `X-Device-Token` al iniciar sesión, verificar 2FA, renovar y llamar a rutas protegidas. Socket.IO recibe `deviceToken` en su autenticación. El JWT y el perfil incluyen `dispositivo`. En HTTP, `X-Device-Class` indica la clasificación vigente para actualizar el menú. La API comprueba el token contra el equipo activo de la empresa y contra el equipo vinculado a la sesión.
 
