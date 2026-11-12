@@ -893,6 +893,11 @@ span[style*='text-transform: uppercase'] { display: inline-block; }
 .gc-accion-btn--morado:hover,  .gc-accion-btn--morado:focus-visible  { background: rgba(122,78,191,0.20) !important;  border-color: rgba(179,155,224,0.55) !important; color: #B9A8E0 !important; }
 .gc-accion-btn--naranja:hover, .gc-accion-btn--naranja:focus-visible { background: rgba(232,106,42,0.16) !important;  border-color: rgba(232,106,42,0.55) !important;  color: #EE9A6B !important; }
 .gc-accion-btn:focus-visible { outline: 2px solid #B39BE0; outline-offset: 1px; }
+/* Acción principal (naranja): se aclara un poco al pasar el mouse; no cambia de color */
+.gc-btn-principal { transition: filter 0.15s ease, transform 0.15s ease; }
+.gc-btn-principal:hover:not(:disabled), .gc-btn-principal:focus-visible:not(:disabled) { filter: brightness(1.12); }
+.gc-btn-principal:active:not(:disabled) { transform: translateY(1px); }
+.gc-btn-principal:focus-visible { outline: 2px solid #B39BE0; outline-offset: 1px; }
 
 /* ─── Menú lateral: botones de sesión con color al pasar el mouse ─── */
 .gc-menu-btn { transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; }

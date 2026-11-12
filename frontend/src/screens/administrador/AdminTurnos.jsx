@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
 import { Input } from "../../components/ui/Input";
+import { CalendarioRango, sumarDias } from "../../components/ui/CalendarioRango";
 import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
@@ -183,12 +184,17 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
               }))}
             />
 
-            <Input
-              label="Fecha de Inicio"
-              type="date"
-              value={form.fecha_inicio}
-              onChange={set("fecha_inicio")}
-            />
+            <div style={{ fontSize: 12, fontWeight: 500, color: T.textSec, marginBottom: 6 }}>Primer día de la pauta</div>
+            <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>
+              Elige el primer día: se marcan solos los 16 turnos del ciclo (4 días de trabajo, 4 de descanso).
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <CalendarioRango
+                marcados={form.fecha_inicio ? Array.from({ length: 32 }, (_, i) => i % 8 < 4 ? sumarDias(form.fecha_inicio, i) : null).filter(Boolean) : []}
+                destacados={form.fecha_inicio ? [form.fecha_inicio] : []}
+                onElegir={(iso) => set("fecha_inicio")(iso)}
+              />
+            </div>
 
             <div className="admin-form-grid" style={{ display: "grid", gap: 12 }}>
               <Input
@@ -216,29 +222,6 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
                 <span>Turno nocturno detectado — la salida ({form.hora_fin}) ocurre al día siguiente.</span>
               </div>
             )}
-
-            {/* Info visual del ciclo */}
-            <div style={{
-              background: T.bgInput, border: `1px solid ${T.border}`,
-              borderRadius: 8, padding: 12, marginBottom: 14,
-              display: "flex", gap: 6, flexWrap: "wrap",
-            }}>
-              {Array.from({ length: 8 }, (_, i) => (
-                <div key={i} style={{
-                  width: 30, height: 30, borderRadius: 6, display: "flex",
-                  alignItems: "center", justifyContent: "center", fontSize: 10,
-                  fontWeight: 700,
-                  background: i < 4 ? T.accentGhost : T.bgCard,
-                  color: i < 4 ? T.accent : T.textMut,
-                  border: `1px solid ${i < 4 ? T.accent : T.border}`,
-                }}>
-                  {i < 4 ? "T" : "D"}
-                </div>
-              ))}
-              <div style={{ width: "100%", fontSize: 11, color: T.textMut, marginTop: 4 }}>
-                T = Trabajo · D = Descanso · ciclo × 4 = 32 días (16 turnos)
-              </div>
-            </div>
 
             {/* Checkbox reemplazar */}
             <label style={{

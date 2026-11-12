@@ -157,7 +157,10 @@ function ModalEditarTurno({ turno, turnos, guardias, instalaciones, inputStyle, 
         </select>
 
         <div style={etiquetaStyle}>FECHA DE INICIO *</div>
-        <input className="touch-target" type="date" style={inputStyle} value={form.fecha} onChange={set("fecha")} />
+        <div style={{ marginBottom: 10 }}>
+          <CalendarioRango marcados={form.fecha ? [form.fecha] : []} destacados={form.fecha ? [form.fecha] : []}
+            onElegir={(iso) => setForm((f) => ({ ...f, fecha: iso }))} />
+        </div>
 
         <div className="form-grid-2" style={{ display: "grid", gap: 10 }}>
           <div>

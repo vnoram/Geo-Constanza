@@ -517,12 +517,12 @@ export function SupReportes() {
             { id: "novedades",  label: <><Icon name="siren" size={16} />{" Novedades"}</>  },
             { id: "rondas",     label: <><Icon name="map-pin" size={16} />{" Libro de rondas"}</> },
           ].map((tab) => (
-            <button className="touch-target" key={tab.id} onClick={() => setVistaActiva(tab.id)} style={{
+            <button className="touch-target gc-accion-btn gc-accion-btn--morado" key={tab.id} aria-pressed={vistaActiva === tab.id} onClick={() => setVistaActiva(tab.id)} style={{
               padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-              fontFamily: "var(--font-ui)",
-              background: vistaActiva === tab.id ? T.accent : T.bgInput,
-              color:      vistaActiva === tab.id ? T.bg     : T.textMut,
-              border:     vistaActiva === tab.id ? "none"   : `1px solid ${T.border}`,
+              fontFamily: "var(--font-ui)", transition: "all 0.15s",
+              background: vistaActiva === tab.id ? T.focusGhost : "transparent",
+              color:      vistaActiva === tab.id ? T.focusText : T.text,
+              border:     `1px solid ${vistaActiva === tab.id ? T.borderFocus : T.border}`,
             }}>
               {tab.label}
             </button>
@@ -555,21 +555,8 @@ export function SupReportes() {
               </div>
             </div>
             <div className="action-wrap" style={{ display: "flex", gap: 8 }}>
-              <button className="touch-target" onClick={exportarCSV} style={{
-                background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: 8,
-                padding: "7px 12px", color: T.textSec, fontSize: 11, fontWeight: 700,
-                cursor: "pointer", fontFamily: "var(--font-ui)",
-              }}>
-                <Icon name="chart-column" size={16} /> Excel
-              </button>
-              <button className="touch-target" onClick={exportarPDF} disabled={exportando} style={{
-                background: exportando ? T.textMut : T.accent, border: "none", borderRadius: 8,
-                padding: "7px 14px", color: T.bg, fontSize: 11, fontWeight: 700,
-                cursor: exportando ? "not-allowed" : "pointer", fontFamily: "var(--font-ui)",
-                boxShadow: exportando ? "none" : `0 2px 12px rgba(0,229,176,.3)`,
-              }}>
-                {exportando ? <><Icon name="hourglass" size={16} />{" Generando..."}</> : <><Icon name="file-text" size={16} />{" PDF OS-10"}</>}
-              </button>
+              <Btn variant="outline" onClick={exportarCSV} icon="chart-column" style={{ minHeight: 34, padding: "0 12px", fontSize: 12 }}>Excel</Btn>
+              <Btn onClick={exportarPDF} loading={exportando} icon="file-text" style={{ minHeight: 34, padding: "0 14px", fontSize: 12 }}>PDF OS-10</Btn>
             </div>
           </div>
 

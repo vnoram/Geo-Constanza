@@ -435,7 +435,7 @@ export function PautaTurno({ user }) {
               ) : (
                 /* Botón naranja para salida — usa button nativo porque Btn no admite color custom */
                 <button
-                  className="touch-target"
+                  className="touch-target gc-btn-principal"
                   onClick={marcarSalida}
                   disabled={loadingMarcaje}
                   style={{

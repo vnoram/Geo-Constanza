@@ -45,15 +45,15 @@ export function SemanaTurnos({ lunes, hoy, turnos, onCambiarSemana, onEditar }) 
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button type="button" aria-label="Semana anterior" onClick={() => onCambiarSemana(sumarDias(lunes, -7))} style={flecha}><Icon name="arrow-left" size={16} /></button>
-          <button type="button" aria-label="Semana siguiente" onClick={() => onCambiarSemana(sumarDias(lunes, 7))} style={{ ...flecha, transform: "scaleX(-1)" }}><Icon name="arrow-left" size={16} /></button>
+          <button type="button" className="gc-accion-btn gc-accion-btn--morado" aria-label="Semana anterior" onClick={() => onCambiarSemana(sumarDias(lunes, -7))} style={flecha}><Icon name="arrow-left" size={16} /></button>
+          <button type="button" className="gc-accion-btn gc-accion-btn--morado" aria-label="Semana siguiente" onClick={() => onCambiarSemana(sumarDias(lunes, 7))} style={{ ...flecha, transform: "scaleX(-1)" }}><Icon name="arrow-left" size={16} /></button>
           <div>
             <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>{etiquetaFecha(dias[0])} – {etiquetaFecha(dias[6])}</div>
             <div style={{ fontSize: 11, color: T.textMut }}>{totalTurnos} {totalTurnos === 1 ? "turno" : "turnos"} esta semana</div>
           </div>
         </div>
         {lunes !== lunesDe(hoy) && (
-          <button type="button" onClick={() => onCambiarSemana(lunesDe(hoy))} style={{ ...flecha, width: "auto", padding: "0 12px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-ui)" }}>Esta semana</button>
+          <button type="button" className="gc-accion-btn gc-accion-btn--morado" onClick={() => onCambiarSemana(lunesDe(hoy))} style={{ ...flecha, width: "auto", padding: "0 12px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-ui)" }}>Esta semana</button>
         )}
       </div>
 
@@ -98,7 +98,7 @@ export function SemanaTurnos({ lunes, hoy, turnos, onCambiarSemana, onEditar }) 
                             const editable = t.estado === "programado";
                             return (
                               <button
-                                key={t.id} type="button" disabled={!editable} onClick={() => onEditar(t)}
+                                key={t.id} type="button" className={editable ? "gc-accion-btn gc-accion-btn--morado" : undefined} disabled={!editable} onClick={() => onEditar(t)}
                                 title={`${corto(t.hora_inicio)} – ${corto(t.hora_fin)}${esNocturno(t) ? " (+1)" : ""} · ${t.estado}`}
                                 style={{
                                   display: "flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "4px 2px",

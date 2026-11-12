@@ -6,6 +6,7 @@ import { Btn } from "../../components/ui/Btn";
 import { Badge } from "../../components/ui/Badge";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
+import { Dialogo } from "../../components/ui/Dialogo";
 import { SOCKET_URL } from "../../config/api";
 import { esRutina } from "../../utils/novedades";
 
@@ -283,6 +284,7 @@ function FotoNovedad({ url }) {
 
 // ─── Pantalla principal ───────────────────────────────────────────────
 export function SupNovedades({ user }) {
+  const [dialogoError, setDialogoError] = useState("");
   const [novedades, setNovedades]     = useState([]);
   const [loading, setLoading]         = useState(true);
   const [resolverTarget, setResolver] = useState(null); // novedad seleccionada para resolver
@@ -353,7 +355,7 @@ export function SupNovedades({ user }) {
         prev.map(n => n.id === id ? { ...n, estado: "escalada" } : n),
       );
     } catch (err) {
-      alert(err.message || "Error al escalar la novedad.");
+      setDialogoError(err.message || "Error al escalar la novedad.");
     } finally {
       setActionLoading(prev => ({ ...prev, [id]: false }));
     }
@@ -381,6 +383,7 @@ export function SupNovedades({ user }) {
 
   return (
     <div className="operations-screen">
+      {dialogoError && <Dialogo titulo="No se pudo escalar" mensaje={dialogoError} soloMensaje onCancelar={() => setDialogoError("")} />}
       <SectionHeader title="Novedades" sub="Ordenadas por prioridad" />
 
       {/* Banner alerta crítica */}

@@ -3,6 +3,7 @@ import { api } from "../services/api";
 import { guardarDeviceToken } from "../services/dispositivos";
 import { T } from "../theme/theme";
 import { Btn } from "../components/ui/Btn";
+import { Dialogo } from "../components/ui/Dialogo";
 import { SectionHeader } from "../components/ui/SectionHeader";
 
 /** Invitaciones de equipo dirigidas al usuario (supervisor / operador central). */
@@ -18,8 +19,9 @@ export function MisDispositivos({ user }) {
   }, []);
   useEffect(() => { cargar(); }, [cargar]);
 
+  const [porAceptar, setPorAceptar] = useState(null);
   const aceptar = async (inv) => {
-    if (!window.confirm(`¿Registrar este equipo como corporativo («${inv.nombre}»)?`)) return;
+    setPorAceptar(null);
     setError(""); setAviso(""); setOcupado(true);
     try {
       const { token } = await api.post(`/dispositivos/${inv.id}/aceptar`, {});
@@ -31,6 +33,10 @@ export function MisDispositivos({ user }) {
 
   return (
     <div>
+      {porAceptar && (
+        <Dialogo titulo="Registrar este equipo" mensaje={`Este equipo quedará registrado como corporativo («${porAceptar.nombre}»).`} confirmarLabel="Registrar equipo"
+          onConfirmar={() => aceptar(porAceptar)} onCancelar={() => setPorAceptar(null)} />
+      )}
       <SectionHeader title="Dispositivos" sub="Equipos corporativos" />
       <p style={{ color: T.textSec, fontSize: 13 }}>
         Equipo actual: {user.dispositivo === "corporativo" ? "corporativo" : "sin registrar"}.
@@ -43,7 +49,7 @@ export function MisDispositivos({ user }) {
           <div key={inv.id} style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginTop: 10 }}>
             <span>{inv.nombre}{inv.instalacion ? ` · ${inv.instalacion.nombre}` : ""}</span>
             <span style={{ color: T.textMut, fontSize: 12 }}>vence {new Date(inv.invitacion_expira_en).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}</span>
-            <Btn disabled={ocupado} onClick={() => aceptar(inv)}>Aceptar en este equipo</Btn>
+            <Btn disabled={ocupado} onClick={() => setPorAceptar(inv)}>Aceptar en este equipo</Btn>
           </div>
         ))}
     </div>

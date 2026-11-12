@@ -5,6 +5,8 @@ import { io } from "socket.io-client";
 import { leerDeviceToken } from "../../services/dispositivos";
 import { T } from "../../theme/theme";
 import { KPI } from "../../components/ui/KPI";
+import { Dialogo } from "../../components/ui/Dialogo";
+import { Btn } from "../../components/ui/Btn";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
@@ -32,22 +34,28 @@ export function SupDashboard() {
   };
 
   const [revisando, setRevisando] = useState(null);
+  const [rechazando, setRechazando] = useState(null); // guardia cuyo marcaje se está rechazando
+  const [errorRevision, setErrorRevision] = useState("");
+  // Lanza un Error con el mensaje del servidor para que el diálogo lo muestre
+  const enviarRevision = async (g, decision, comentario) => {
+    const res = await fetch(`${API_BASE}/asistencia/${g.asistencia_id}/revisar`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "X-Device-Token": leerDeviceToken() || "" },
+      body: JSON.stringify({ decision, comentario }),
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "No se pudo registrar la revisión.");
+  };
   const revisar = async (g, decision) => {
-    let comentario;
-    if (decision === "rechazar") {
-      comentario = (window.prompt("Motivo del rechazo (obligatorio):") || "").trim();
-      if (!comentario) return;
-    }
+    if (decision === "rechazar") { setRechazando(g); return; }
     setRevisando(g.asistencia_id);
-    try {
-      const res = await fetch(`${API_BASE}/asistencia/${g.asistencia_id}/revisar`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "X-Device-Token": leerDeviceToken() || "" },
-        body: JSON.stringify({ decision, comentario }),
-      });
-      if (!res.ok) window.alert((await res.json().catch(() => ({}))).error || "No se pudo registrar la revisión.");
-    } catch { window.alert("No se pudo registrar la revisión."); }
+    try { await enviarRevision(g, decision); }
+    catch (err) { setErrorRevision(err.message); }
     finally { setRevisando(null); fetchData(); }
+  };
+  const rechazarConMotivo = async (motivo) => {
+    await enviarRevision(rechazando, "rechazar", motivo);
+    setRechazando(null);
+    fetchData();
   };
 
   useEffect(() => {
@@ -80,6 +88,11 @@ export function SupDashboard() {
 
   return (
     <div className="operations-screen">
+      {rechazando && (
+        <Dialogo titulo="Rechazar marcaje" mensaje={`Marcaje de ${rechazando.guardia}. El motivo queda registrado y se le notifica al guardia.`} pedirMotivo confirmarLabel="Rechazar marcaje"
+          onConfirmar={rechazarConMotivo} onCancelar={() => setRechazando(null)} />
+      )}
+      {errorRevision && <Dialogo titulo="No se pudo registrar la revisión" mensaje={errorRevision} soloMensaje onCancelar={() => setErrorRevision("")} />}
       <SectionHeader title="Dashboard en Vivo" sub="Estado operacional en tiempo real" />
 
       {/* ── KPIs de asistencia ───────────────────────────────────── */}
@@ -184,8 +197,8 @@ export function SupDashboard() {
             )}
             {g.asistencia_id && !g.revision_estado && (g.verificacion_gps === "por_revisar" || g.verificacion_gps === "sin_ubicacion") && (
               <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                <button disabled={revisando === g.asistencia_id} onClick={() => revisar(g, "aprobar")}>Aprobar</button>
-                <button disabled={revisando === g.asistencia_id} onClick={() => revisar(g, "rechazar")}>Rechazar</button>
+                <Btn onClick={() => revisar(g, "aprobar")} loading={revisando === g.asistencia_id} style={{ minHeight: 32, padding: "0 12px", fontSize: 12 }}>Aprobar</Btn>
+                <Btn variant="ghost" onClick={() => revisar(g, "rechazar")} disabled={revisando === g.asistencia_id} style={{ minHeight: 32, padding: "0 12px", fontSize: 12 }}>Rechazar</Btn>
               </div>
             )}
             {g.revision_estado === "rechazado" && g.comentario_revision && (

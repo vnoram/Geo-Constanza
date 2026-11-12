@@ -637,7 +637,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                   </b>
                 </span>
                 <button
-                  className="touch-target"
+                  className="touch-target gc-accion-btn gc-accion-btn--verde"
                   type="button"
                   onClick={usarSugerenciaPin}
                   style={{
@@ -754,33 +754,15 @@ function InstCard({ inst, onEditar }) {
 
         {/* Botón Editar */}
         <button
-          className="touch-target"
+          className="touch-target gc-accion-btn gc-accion-btn--morado"
           onClick={() => onEditar(inst)}
           style={{
-            background: "rgba(122,78,191,0.1)",
-            border: "1px solid rgba(122,78,191,0.3)",
-            color: "#7A4EBF",
-            borderRadius: 8,
-            padding: "6px 12px",
-            fontSize: 12,
-            fontWeight: 700,
-            fontFamily: "var(--font-ui)",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            transition: "all 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(122,78,191,0.2)";
-            e.currentTarget.style.borderColor = "#7A4EBF";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(122,78,191,0.1)";
-            e.currentTarget.style.borderColor = "rgba(122,78,191,0.3)";
+            background: "transparent", border: `1px solid ${T.border}`, color: T.textSec,
+            borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700,
+            fontFamily: "var(--font-ui)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
           }}
         >
-          <span><Icon name="pencil" size={16} /></span> Editar
+          <Icon name="pencil" size={16} /> Editar
         </button>
       </div>
 

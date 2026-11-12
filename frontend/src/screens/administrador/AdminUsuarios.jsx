@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
 import { Btn } from "../../components/ui/Btn";
+import { Dialogo } from "../../components/ui/Dialogo";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 import { esCentroOperativo } from "../../utils/instalaciones";
@@ -281,14 +282,15 @@ export function AdminUsuarios() {
     });
   };
 
-  const handleDesactivar = async (id) => {
-    if (!window.confirm("¿Desactivar este usuario?")) return;
+  const [confirmandoDesactivar, setConfirmandoDesactivar] = useState(null);
+  const handleDesactivar = (id) => setConfirmandoDesactivar(id);
+  const desactivarConfirmado = async () => {
+    const id = confirmandoDesactivar;
     setDesactivando(id);
     try {
       await api.patch(`/usuarios/${id}/desactivar`);
       setUsuarios((prev) => prev.map((u) => u.id === id ? { ...u, estado: "inactivo" } : u));
-    } catch (err) {
-      alert(err.message || "Error al desactivar.");
+      setConfirmandoDesactivar(null);
     } finally {
       setDesactivando(null);
     }
@@ -296,6 +298,10 @@ export function AdminUsuarios() {
 
   return (
     <div className="admin-screen">
+      {confirmandoDesactivar && (
+        <Dialogo titulo="Desactivar usuario" mensaje="El usuario ya no podrá iniciar sesión. Podrás verlo como inactivo en la lista." confirmarLabel="Desactivar"
+          onConfirmar={desactivarConfirmado} onCancelar={() => setConfirmandoDesactivar(null)} />
+      )}
       <SectionHeader
         title="Usuarios"
         sub="Gestión de personal del sistema"
