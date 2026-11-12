@@ -17,7 +17,7 @@ export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacio
   const {
     rut, pass, setPass, error, loading,
     step, code2fa, setCode2fa,
-    locked, lockTime, lockLabel,
+    locked, lockLabel,
     formatRut, handleLogin, handle2FA, resetTo2FA,
     email2FA, resendAt, resends, handleResend,
   } = useLoginForm({ onLogin, invitacion });

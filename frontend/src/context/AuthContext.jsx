@@ -24,9 +24,14 @@ export function AuthProvider({ children }) {
     try {
       const storedToken = leerSesion(TOKEN_KEY);
       const storedUser  = leerSesion(USER_KEY);
-      if (storedToken && storedUser) {
+      const usuario = storedUser ? JSON.parse(storedUser) : null;
+      // Una sesión guardada con un rol que ya no existe (p. ej. 'pauta'/'libre') se descarta: hay que volver a entrar.
+      if (storedToken && usuario && Object.values(ROLES).includes(usuario.rol)) {
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        setUser(usuario);
+      } else if (storedToken || storedUser) {
+        borrarSesion(TOKEN_KEY);
+        borrarSesion(USER_KEY);
       }
     } catch {
       // Storage corrupto — empezar limpio

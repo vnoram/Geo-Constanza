@@ -94,6 +94,13 @@ test('pauta 4x4 solo en la instalación asignada del guardia', async () => {
   expect(prisma.turno.create).not.toHaveBeenCalled();
 });
 
+test('entrada de respaldo: un GGSS sin pauta ni turno aprobado recibe 403', async () => {
+  prisma.turno.count.mockResolvedValue(0);
+  prisma.solicitud.findFirst.mockResolvedValue(null);
+  await expect(asistencia.registrarEntradaFallback({ instalacion_id: 'i' }, { id: 'u', rol: 'ggss' }))
+    .rejects.toMatchObject({ statusCode: 403 });
+});
+
 test('tienePautaVigente: hay turnos programados de hoy en adelante', async () => {
   prisma.turno.count.mockResolvedValueOnce(3).mockResolvedValueOnce(0);
   await expect(turnos.tienePautaVigente('u')).resolves.toBe(true);

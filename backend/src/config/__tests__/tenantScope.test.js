@@ -147,7 +147,7 @@ describe('include / select anidados', () => {
 describe('modelos y operaciones', () => {
   test('cubre exactamente los modelos con empresa del esquema', () => {
     expect([...MODELOS_CON_EMPRESA].sort()).toEqual(
-      ['Asistencia', 'Auditoria', 'Dispositivo', 'Instalacion', 'Novedad', 'NovedadHistorial', 'Solicitud', 'Supervisor_Instalacion', 'Turno', 'Usuario'],
+      ['Asistencia', 'Auditoria', 'Dispositivo', 'Documento', 'Instalacion', 'Novedad', 'NovedadHistorial', 'Solicitud', 'Supervisor_Instalacion', 'Turno', 'Usuario'],
     );
   });
 

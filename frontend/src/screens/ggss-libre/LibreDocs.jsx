@@ -8,7 +8,6 @@ import { API_URL as API_BASE } from "../../config/api";
 
 const ICONOS = { contrato: "file-text", liquidacion: "banknote", os10: "graduation-cap", anexo: "paperclip", otro: "file-text" };
 const tarjeta = { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 14 };
-const etiqueta = { fontSize: 10, color: T.textMut, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 };
 const fecha = (iso) => new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" });
 
 export function LibreDocs() {
