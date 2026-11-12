@@ -7,13 +7,13 @@ import { Icon } from "./Icon";
 export function Btn({ children, onClick, loading, variant = "primary", disabled, full, className = "", icon, style: estilo, ...props }) {
   // aprobar = verde oscuro (confirmar/aceptar) · rechazar = naranja (rechazar/destructivo) · primary = naranja (acción principal)
   const isAprobar = variant === "aprobar";
-  const isPrimary = variant === "primary" || variant === "rechazar" || isAprobar;
+  const isPrimary = variant === "primary" || variant === "rechazar" || variant === "morado" || isAprobar;
   const isGhost = variant === "ghost";
   const inactivo = loading || disabled;
   return (
     <button
       {...props}
-      className={`touch-target ${isAprobar ? "gc-btn-aprobar" : variant === "rechazar" ? "gc-btn-rechazar" : isPrimary ? "gc-btn-principal" : "gc-accion-btn gc-accion-btn--morado"} ${className}`.trim()}
+      className={`touch-target ${variant === "morado" ? "gc-btn-morado" : isAprobar ? "gc-btn-aprobar" : variant === "rechazar" ? "gc-btn-rechazar" : isPrimary ? "gc-btn-principal" : "gc-accion-btn gc-accion-btn--morado"} ${className}`.trim()}
       onClick={onClick}
       disabled={inactivo}
       style={{

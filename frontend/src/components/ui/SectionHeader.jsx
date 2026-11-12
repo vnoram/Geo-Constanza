@@ -8,7 +8,7 @@ export function SectionHeader({ title, sub, action }) {
         {sub && <div style={{ fontSize: 12, color: T.textSec, marginTop: 3 }}>{sub}</div>}
       </div>
       {action && (
-        <button className="touch-target gc-btn-principal" onClick={action.onClick} style={{
+        <button className="touch-target gc-btn-morado" onClick={action.onClick} style={{
           background: T.alert, color: T.ink, border: "1px solid transparent", borderRadius: T.radius,
           padding: "0 14px", minHeight: 36, fontWeight: 600, fontSize: 13, cursor: "pointer",
           fontFamily: FONT.ui, whiteSpace: "nowrap",

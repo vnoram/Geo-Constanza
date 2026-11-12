@@ -8,7 +8,8 @@ Todo cambio visual nuevo debe cumplir esta lista. Si algo se decide en una panta
 |---|---|---|
 | Aprobar / aceptar / confirmar positivo | `<Btn variant="aprobar">` | Suave en reposo (tinte verde, borde verde); al pasar el mouse se rellena de verde oscuro `T.accentDim`. |
 | Rechazar / destructivo | `<Btn variant="rechazar">` | Suave en reposo (tinte naranja, borde naranja); al pasar el mouse se rellena de naranja `T.alert`. Aprobar y rechazar siempre van juntos con estos colores. |
-| Acción principal neutra (Enviar, Guardar, Consultar, «+ Nuevo») | `<Btn>` (variant `primary`) o la acción de `SectionHeader` | Igual que rechazar: suave en reposo y naranja pleno en hover. |
+| Crear / nuevo («Nueva empresa», «+ Turno extra», «+ Reportar») | acción de `SectionHeader` o `<Btn variant="morado">` | Suave en reposo (tinte morado, borde morado); morado pleno en hover. |
+| Acción principal neutra (Enviar, Guardar, Consultar) | `<Btn>` (variant `primary`) | Igual que rechazar: suave en reposo y naranja pleno en hover. |
 | Secundaria / contorno | `<Btn variant="outline">` | Borde neutro. En hover se decolora a morado suave. |
 | Ghost (sin borde) | `<Btn variant="ghost">` | Sin borde. En hover se decolora a morado suave. |
 | Acción en tarjeta / lista | `<button className="touch-target gc-accion-btn gc-accion-btn--morado">` | Transparente con borde `T.border`. |
@@ -20,7 +21,7 @@ Reglas:
 - `Btn` ya aplica el hover correcto: usarlo siempre que se pueda. Acepta `style` para ajustar tamaño.
 - Un botón sin función real no se deja: se quita.
 - Semántica de color: verde = aprobar/aceptar, naranja = rechazar/destructivo o acción principal. Un par aprobar/rechazar nunca se pinta con el mismo color.
-- Ningún botón es llamativo en reposo: todos los rellenos son suaves (tinte + borde) y toman el color pleno solo al pasar el mouse. Las clases viven en `index.css` (`gc-btn-principal`, `gc-btn-rechazar`, `gc-btn-aprobar`); un botón suelto las usa en vez de pintar su propio fondo.
+- Ningún botón es llamativo en reposo: todos los rellenos son suaves (tinte + borde) y toman el color pleno solo al pasar el mouse. Las clases viven en `index.css` (`gc-btn-principal`, `gc-btn-rechazar`, `gc-btn-aprobar`, `gc-btn-morado`); un botón suelto las usa en vez de pintar su propio fondo.
 - Nunca usar `<button>` sin estilo del navegador.
 
 ## 2. Avisos y confirmaciones
