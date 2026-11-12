@@ -21,6 +21,7 @@
 // acciones de plataforma): sus filas sin empresa quedan fuera de toda consulta de empresa.
 const MODELOS_CON_EMPRESA = new Set([
   'Usuario',
+  'Dispositivo',
   'Instalacion',
   'Supervisor_Instalacion',
   'Turno',

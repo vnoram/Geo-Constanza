@@ -30,6 +30,7 @@ model Empresa {
   novedades_historial      NovedadHistorial[]
   solicitudes              Solicitud[]
   auditorias               Auditoria[]
+  dispositivos             Dispositivo[]
 }
 
 // ─── 1. USUARIOS (Guardias, Supervisores, Central, Admins) ───
@@ -78,6 +79,7 @@ model Usuario {
   historial_novedades       NovedadHistorial[]
   auditorias               Auditoria[]
   password_resets          PasswordReset[]
+  dispositivos_creados     Dispositivo[]
   instalaciones_sup        Supervisor_Instalacion[]
   solicitudes              Solicitud[] @relation("UsuarioSolicita")
   solicitudes_rev          Solicitud[] @relation("SupervisorRevisa")
@@ -85,6 +87,24 @@ model Usuario {
   instalacion_asignada     Instalacion? @relation("ggss_asignado", fields: [empresa_id, instalacion_asignada_id], references: [empresa_id, id], onDelete: Restrict)
 
   @@unique([empresa_id, id])
+  @@index([empresa_id])
+}
+
+// Equipos enrolados por un administrador de su empresa.
+model Dispositivo {
+  id                       String   @id @default(uuid())
+  empresa_id               String
+  nombre                   String
+  tipo                     String   @default("corporativo")
+  codigo_enrolamiento_hash String?  @unique
+  codigo_expira_en         DateTime?
+  token_hash               String?  @unique
+  estado                   String   @default("activo")
+  creado_por               String
+  ultimo_uso               DateTime?
+  empresa                  Empresa  @relation(fields: [empresa_id], references: [id], onDelete: Restrict)
+  creador                  Usuario  @relation(fields: [empresa_id, creado_por], references: [empresa_id, id], onDelete: Restrict)
+
   @@index([empresa_id])
 }
 

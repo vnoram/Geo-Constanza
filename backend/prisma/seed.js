@@ -59,6 +59,7 @@ async function main() {
   await prisma.turno.deleteMany();
   await prisma.passwordReset.deleteMany();
   await prisma.supervisor_Instalacion.deleteMany();
+  await prisma.dispositivo.deleteMany();
   await prisma.usuario.deleteMany();
   await prisma.instalacion.deleteMany();
   await prisma.empresa.deleteMany();
