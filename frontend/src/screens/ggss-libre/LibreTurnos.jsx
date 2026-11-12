@@ -114,10 +114,12 @@ function PautaMensual({ turnos }) {
                 color: t ? T.focusText : T.textMut,
                 cursor: t ? "pointer" : "default", opacity: t ? 1 : 0.7,
               }}>
-              <span style={{ fontSize: 14, fontWeight: esHoy || t ? 700 : 500, color: esHoy ? "#EE9A6B" : t ? undefined : T.textMut }}>{Number(iso.slice(8))}</span>
+              <span style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "0 4px" }}>
+                <span style={{ fontSize: 14, fontWeight: esHoy || t ? 700 : 500, color: esHoy ? "#EE9A6B" : t ? undefined : T.textMut }}>{Number(iso.slice(8))}</span>
+                {t && <Icon name={nocturno ? "moon" : "sun"} size={20} color={VERDE_NEON} />}
+              </span>
               {t ? (
-                <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, fontSize: 10, lineHeight: 1.2 }}>
-                  <Icon name={nocturno ? "moon" : "sun"} size={22} color={VERDE_NEON} />
+                <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.2, letterSpacing: -0.2 }}>
                   {corto(t.hora_inicio)}–{corto(t.hora_fin)}
                 </span>
               ) : <span />}
