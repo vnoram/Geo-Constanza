@@ -434,6 +434,10 @@ const cambiarEstado = async (id, user, accion, data, permitidos, comentario = nu
   try {
     return await prisma.$transaction(async (tx) => {
       const anterior = await exigirGestion(id, user, tx);
+      // Las rondas y registros de rutina (Libro de rondas) no se escalan ni se derivan: no son incidencias.
+      if ((accion === ACCION_NOVEDAD.ESCALAR || accion === ACCION_NOVEDAD.ASIGNAR) && priorizacion.TIPOS_RUTINA.includes(anterior.tipo)) {
+        throw Object.assign(new Error('Las rondas del libro no se pueden escalar ni derivar.'), { statusCode: 409 });
+      }
       if (!permitidos.includes(anterior.estado)) {
         throw Object.assign(new Error('La novedad no admite esta acción en su estado actual.'), { statusCode: 409 });
       }

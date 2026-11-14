@@ -197,7 +197,7 @@ const generateTokens = (usuario, dispositivo) => {
     // Es null solo para el super admin (nivel de plataforma).
     empresaId: usuario.empresa_id ?? null,
   };
-  const accessToken = jwt.sign(payload, jwtConfig.accessSecret, { expiresIn: jwtConfig.expiresIn[usuario.rol] });
+  const accessToken = jwt.sign(payload, jwtConfig.accessSecret, { expiresIn: jwtConfig.expiresIn[usuario.rol] || jwtConfig.expiresIn.ggss });
   const refreshToken = jwt.sign({ id: usuario.id, empresaId: usuario.empresa_id ?? null, ...dispositivo }, jwtConfig.refreshSecret, { expiresIn: jwtConfig.refreshExpiresIn });
   return { accessToken, refreshToken };
 };
