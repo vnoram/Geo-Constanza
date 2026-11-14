@@ -83,4 +83,6 @@ El administrador puede preparar equipos con la política apagada. Si se activa a
 
 ### Recuperación si me quedo sin acceso (política de dispositivos)
 
+**Empresa nueva (equipo principal):** sin apagar la política, inicia sesión como super admin (no requiere equipo) y en **Dispositivos** pulsa **Enviar invitación** en la fila de la empresa (necesita su administrador de gestión creado). Al administrador le llega un correo (en local, revisa Mailpit en `localhost:8025`): abre el enlace en su navegador, confirma e inicia sesión; ese navegador queda como equipo principal. Desde ahí él invita los demás equipos en su panel **Dispositivos**. El enlace vence en 15 minutos y se usa una vez.
+
 Si ningún equipo corporativo puede entrar, apaga la política: pon `DEVICE_POLICY=off` en el `.env` local y ejecuta `docker compose up -d api` (luego `docker compose up -d --force-recreate azurite`). Con la política apagada todos los roles vuelven a entrar desde cualquier equipo; invita de nuevo un equipo desde **Dispositivos** y vuelve a `DEVICE_POLICY=on`. `DEVICE_TOKEN_MAX_INACTIVIDAD_DIAS` (90 por defecto) define cuándo un equipo sin uso deja de ser válido.

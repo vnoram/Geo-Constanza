@@ -10,6 +10,9 @@ const { enviarCorreo } = require('./correo.service');
 
 const ROLES_INVITABLES = [ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL];
 const FILTRO_DESTINATARIO = { rol: { in: ROLES_INVITABLES }, estado: ESTADO_USUARIO.ACTIVO };
+// El administrador de gestión solo recibe invitaciones de la plataforma (equipo principal de su empresa).
+const ROLES_ENROLABLES = [...ROLES_INVITABLES, ROLES.ADMINISTRADOR];
+const FILTRO_ENROLABLE = { rol: { in: ROLES_ENROLABLES }, estado: ESTADO_USUARIO.ACTIVO };
 const error = (statusCode, message) => Object.assign(new Error(message), { statusCode });
 const invalida = () => error(400, 'La invitación no es válida para este acceso o ha vencido.');
 const hash = token => createHash('sha256').update(token).digest('hex');
@@ -65,6 +68,39 @@ async function invitar(nombre, destinatarioId, adminId, instalacionId) {
   return { ...equipo, enlace, correoEnviado: await entregar(usuario, nombre, enlace) };
 }
 
+/**
+ * Equipo principal de una empresa, invitado desde la consola de plataforma (SUPER_ADMIN): el correo
+ * llega al administrador de gestión, que lo enrola abriendo el enlace e iniciando sesión. Resuelve el
+ * arranque con DEVICE_POLICY=on; después él invita los demás equipos desde su panel.
+ */
+async function invitarPrincipal(empresaId, nombre) {
+  const empresa = await prismaGlobal.empresa.findUnique({ where: { id: empresaId }, select: { estado: true } });
+  if (!empresa) throw error(404, 'Empresa no encontrada.');
+  if (empresa.estado !== ESTADO_EMPRESA.ACTIVA) throw error(409, 'La empresa está suspendida.');
+  const admin = await prismaGlobal.usuario.findFirst({
+    where: { empresa_id: empresaId, rol: ROLES.ADMINISTRADOR, estado: ESTADO_USUARIO.ACTIVO },
+    select: { id: true, nombre: true, email: true },
+  });
+  if (!admin) throw error(409, 'Crea primero el administrador de gestión de la empresa.');
+  const { datos, enlace } = generarInvitacion();
+  const equipo = await conEmpresa(empresaId, async () => {
+    // Un solo equipo principal: con uno habilitado no se invita otro; se deshabilita primero.
+    const esPrincipal = { estado: 'activo', OR: [{ invitado_usuario_id: null }, { invitado: { is: { rol: ROLES.ADMINISTRADOR } } }] };
+    const habilitado = await prisma.dispositivo.findFirst({ where: { ...esPrincipal, token_hash: { not: null } }, select: { id: true } });
+    if (habilitado) throw error(409, 'La empresa ya tiene un equipo principal habilitado. Deshabilítalo para invitar otro.');
+    // Reenviar: la invitación pendiente anterior deja de valer.
+    await prisma.dispositivo.updateMany({
+      where: { ...esPrincipal, token_hash: null, invitacion_hash: { not: null } },
+      data: { estado: 'revocado', invitacion_hash: null, invitacion_expira_en: null },
+    });
+    return prisma.dispositivo.create({
+      data: { nombre, creado_por: admin.id, invitado_usuario_id: admin.id, ...datos },
+      select: { id: true, invitacion_expira_en: true },
+    });
+  });
+  return { ...equipo, enlace, administrador: { nombre: admin.nombre, email: admin.email }, correoEnviado: await entregar(admin, nombre, enlace) };
+}
+
 async function reenviar(id) {
   const equipo = await prisma.dispositivo.findFirst({
     where: { id, estado: 'activo', token_hash: null, invitado_usuario_id: { not: null } },
@@ -83,7 +119,7 @@ async function reenviar(id) {
 
 const filtroVigente = digest => ({
   invitacion_hash: digest, invitacion_expira_en: { gt: new Date() }, token_hash: null,
-  estado: 'activo', empresa: { estado: ESTADO_EMPRESA.ACTIVA }, invitado: { is: FILTRO_DESTINATARIO },
+  estado: 'activo', empresa: { estado: ESTADO_EMPRESA.ACTIVA }, invitado: { is: FILTRO_ENROLABLE },
 });
 
 async function confirmar(token, contexto) {
@@ -97,7 +133,7 @@ async function confirmar(token, contexto) {
 }
 
 async function validarParaUsuario(usuario, token) {
-  if (!usuario.empresa_id || !ROLES_INVITABLES.includes(usuario.rol)) throw invalida();
+  if (!usuario.empresa_id || !ROLES_ENROLABLES.includes(usuario.rol)) throw invalida();
   const digest = hash(token);
   const equipo = await conEmpresa(usuario.empresa_id, async () => prisma.dispositivo.findFirst({
     where: { ...filtroVigente(digest), invitado_usuario_id: usuario.id }, select: { id: true },
@@ -107,7 +143,7 @@ async function validarParaUsuario(usuario, token) {
 }
 
 async function consumir(usuario, digest) {
-  if (!usuario.empresa_id || !ROLES_INVITABLES.includes(usuario.rol)) throw invalida();
+  if (!usuario.empresa_id || !ROLES_ENROLABLES.includes(usuario.rol)) throw invalida();
   const tokenDispositivo = randomBytes(32).toString('hex');
   const { count } = await conEmpresa(usuario.empresa_id, async () => prisma.dispositivo.updateMany({
     where: { ...filtroVigente(digest), invitado_usuario_id: usuario.id },
@@ -144,7 +180,7 @@ function separarSegundoFactor(token) {
 }
 
 const misInvitaciones = async usuario => {
-  if (!ROLES_INVITABLES.includes(usuario.rol)) return [];
+  if (!ROLES_ENROLABLES.includes(usuario.rol)) return [];
   return prisma.dispositivo.findMany({
     where: { invitado_usuario_id: usuario.id, estado: 'activo', token_hash: null, invitacion_hash: { not: null }, invitacion_expira_en: { gt: new Date() } },
     select: { id: true, nombre: true, invitacion_expira_en: true, instalacion: { select: { id: true, nombre: true } } },
@@ -154,12 +190,12 @@ const misInvitaciones = async usuario => {
 
 // El usuario ya está autenticado: acepta la invitación dirigida a él sin volver a iniciar sesión.
 async function aceptar(usuario, id) {
-  if (!usuario.empresa_id || !ROLES_INVITABLES.includes(usuario.rol)) throw invalida();
+  if (!usuario.empresa_id || !ROLES_ENROLABLES.includes(usuario.rol)) throw invalida();
   const tokenDispositivo = randomBytes(32).toString('hex');
   const { count } = await prisma.dispositivo.updateMany({
     where: {
       id, invitado_usuario_id: usuario.id, estado: 'activo', token_hash: null, invitacion_hash: { not: null },
-      invitacion_expira_en: { gt: new Date() }, invitado: { is: FILTRO_DESTINATARIO },
+      invitacion_expira_en: { gt: new Date() }, invitado: { is: FILTRO_ENROLABLE },
     },
     data: { token_hash: hash(tokenDispositivo), enrolado_por: usuario.id, invitacion_hash: null, invitacion_expira_en: null, ultimo_uso: new Date() },
   });
@@ -170,6 +206,6 @@ async function aceptar(usuario, id) {
 
 module.exports = {
   misInvitaciones, aceptar,
-  destinatarios, invitar, reenviar, confirmar, validarParaUsuario, consumir,
+  destinatarios, invitar, invitarPrincipal, reenviar, confirmar, validarParaUsuario, consumir,
   vincularSegundoFactor, separarSegundoFactor,
 };

@@ -135,6 +135,27 @@ suite('Dispositivos corporativos con PostgreSQL local', () => {
     await autenticar(request(app).get('/api/v1/plataforma/empresas'), body.accessToken).expect(200);
   });
 
+  test('la plataforma invita al administrador y su equipo principal queda enrolado con la política encendida', async () => {
+    const plataforma = (await login(cuenta.plataforma).expect(200)).body.accessToken;
+    const invitarPrincipal = (sesion, id) => autenticar(request(app).post(`/api/v1/plataforma/empresas/${id}/dispositivos/invitacion`), sesion)
+      .send({ nombre: 'Equipo principal' });
+    await invitarPrincipal(admin, otra.id).expect(403);
+    await invitarPrincipal(plataforma, randomUUID()).expect(404);
+    const { body } = await invitarPrincipal(plataforma, otra.id).expect(201);
+    expect(mail).toHaveBeenCalledWith(otraAdmin.email, expect.any(String), undefined, expect.stringContaining(body.enlace), { soloSMTP: true });
+    await login(otraAdmin).expect(403);
+    await confirmar(tokenDe(body.enlace)).expect(200);
+    const sesion = (await login(otraAdmin, undefined, tokenDe(body.enlace)).expect(200)).body;
+    expect(sesion.tokenDispositivo).toMatch(/^[a-f0-9]{64}$/);
+    await login(otraAdmin, sesion.tokenDispositivo).expect(200);
+    const { body: lista } = await autenticar(request(app).get('/api/v1/plataforma/dispositivos'), plataforma).expect(200);
+    expect(lista.find(e => e.id === otra.id).equipos[0].estado).toBe('enrolado');
+    await invitarPrincipal(plataforma, otra.id).expect(409);
+    await autenticar(request(app).patch(`/api/v1/plataforma/empresas/${otra.id}/dispositivos/${body.id}/revocar`), plataforma).expect(200);
+    await invitarPrincipal(plataforma, otra.id).expect(201);
+    await login(otraAdmin, sesion.tokenDispositivo).expect(403);
+  });
+
   test('el mismo guardia ve turnos propios y solicitudes en personal, con 403 para operaciones restringidas', async () => {
     const personal = (await login(cuenta.pauta, 'inválido').expect(200)).body;
     const corporativo = (await login(cuenta.pauta, token).expect(200)).body;
