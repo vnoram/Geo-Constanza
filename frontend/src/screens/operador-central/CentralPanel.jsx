@@ -13,7 +13,9 @@ import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
 import { escaparHtml } from "../../utils/html";
 import { esRutina } from "../../utils/novedades";
-import { TarjetaNovedadCompacta, DetalleNovedadModal, ResolverModal } from "../supervisor/SupNovedades";
+import { DetalleNovedadModal, ResolverModal } from "../supervisor/SupNovedades";
+import { NovedadesPorDia } from "../../components/ui/NovedadesPorDia";
+import { NovedadMini } from "../../components/ui/NovedadMini";
 
 // Morado: selección y foco en las vistas de Central
 const C_COLOR = "#7A4EBF";
@@ -164,7 +166,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
         <div style={{
           position: "absolute", inset: 0, zIndex: 10,
           display: "flex", alignItems: "center", justifyContent: "center",
-          background: T.bgCard, borderRadius: 8, fontSize: 12, color: T.textMut,
+          background: T.bgCard, borderRadius: T.radius, fontSize: 12, color: T.textMut,
         }}>
           Cargando mapa...
         </div>
@@ -172,7 +174,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
       <div
         className="central-map"
         ref={containerRef}
-        style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }}
+        style={{ borderRadius: T.radius, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }}
       />
       <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: T.textMut }}>
         <span><span style={{ color: C_COLOR }}>●</span> Instalación</span>
@@ -256,7 +258,7 @@ function SocketBadge({ status }) {
 
 function MiniStat({ value, label, color }) {
   return (
-    <div style={{ background: T.bgCard, border: `1px solid ${color}22`, borderRadius: 8, padding: "10px 12px", textAlign: "center" }}>
+    <div style={{ background: T.bgCard, border: `1px solid ${color}22`, borderRadius: T.radius, padding: "10px 12px", textAlign: "center" }}>
       <div style={{ fontSize: 22, fontWeight: 800, color }}>{value ?? "—"}</div>
       <div style={{ fontSize: 10, color: T.textMut, marginTop: 2 }}>{label}</div>
     </div>
@@ -268,7 +270,7 @@ function AvisoEscalada({ data, onClose }) {
   if (!data) return null;
   return (
     <div role="alert" style={{
-      background: T.redGhost, border: `1px solid ${T.red}`, borderRadius: 8, padding: 14, marginBottom: 12,
+      background: T.redGhost, border: `1px solid ${T.red}`, borderRadius: T.radius, padding: 14, marginBottom: 12,
       display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10,
     }}>
       <div style={{ minWidth: 0 }}>
@@ -324,7 +326,7 @@ function DerivarModal({ novedad, token, onClose, onSuccess }) {
       display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
     }}>
       <div className="responsive-modal" style={{
-        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 24, width: "100%", maxWidth: 400,
+        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 24, width: "100%", maxWidth: 400,
       }}>
         <div style={{ fontWeight: 700, fontSize: 15, color: T.focusText, marginBottom: 12 }}>Derivar a supervisor</div>
         <div style={{ fontSize: 13, color: T.textSec, marginBottom: 14 }}>
@@ -342,24 +344,24 @@ function DerivarModal({ novedad, token, onClose, onSuccess }) {
         {opciones && opciones.length > 0 && (
           <select value={elegido} onChange={(e) => { setElegido(e.target.value); setError(null); }} style={{
             width: "100%", padding: "10px 12px", marginBottom: 12, background: T.bgInput, border: `1px solid ${T.border}`,
-            borderRadius: 8, color: elegido ? T.text : T.textMut, fontSize: 14, fontFamily: "var(--font-ui)",
+            borderRadius: T.radius, color: elegido ? T.text : T.textMut, fontSize: 14, fontFamily: FONT.ui,
           }}>
             <option value="">Selecciona un supervisor…</option>
             {opciones.map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
           </select>
         )}
         {error && (
-          <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: 8, background: T.redGhost, color: T.red, fontSize: 13 }}>{error}</div>
+          <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: T.radius, background: T.redGhost, color: T.red, fontSize: 13 }}>{error}</div>
         )}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <button className="touch-target gc-accion-btn gc-accion-btn--naranja" onClick={onClose} disabled={loading} style={{
             background: "transparent", border: `1px solid ${T.border}`, borderRadius: T.radius, color: T.text,
-            minHeight: 40, padding: "0 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-ui)",
+            minHeight: 40, padding: "0 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT.ui,
           }}>Cancelar</button>
           <button className="touch-target gc-accion-btn gc-accion-btn--morado" onClick={derivar}
             disabled={loading || !opciones || opciones.length === 0} style={{
             background: "transparent", border: `1px solid ${T.border}`, borderRadius: T.radius, color: T.text,
-            minHeight: 40, padding: "0 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-ui)",
+            minHeight: 40, padding: "0 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT.ui,
           }}>{loading ? "Derivando…" : "Derivar"}</button>
         </div>
       </div>
@@ -413,11 +415,6 @@ function IncidentesPanel({ token }) {
     { id: "criticas",  label: "Críticas" },
     { id: "resueltas", label: "Resueltas" },
   ];
-  const VACIO = {
-    escaladas: "No hay incidentes escalados por los supervisores.",
-    criticas:  "No hay incidentes críticos pendientes de atención.",
-    resueltas: "Aún no hay incidentes resueltos.",
-  };
   const visibles = grupos[vista];
 
   return (
@@ -456,21 +453,9 @@ function IncidentesPanel({ token }) {
         </div>
       )}
 
-      {!loading && visibles.length === 0 && (
-        <div style={{
-          textAlign: "center", color: T.textMut, fontSize: 13,
-          background: T.bgCard, border: `1px solid ${T.border}`,
-          borderRadius: 8, padding: "32px 16px",
-        }}>
-          {VACIO[vista]}
-        </div>
-      )}
-
-      <div className="nov-list">
-        {visibles.map((n) => (
-          <TarjetaNovedadCompacta key={n.id} n={n} onClick={() => setDetalle(n)} />
-        ))}
-      </div>
+      <NovedadesPorDia items={visibles} render={(n) => (
+        <NovedadMini key={n.id} n={n} instalacion={n.instalacion?.nombre} onClick={() => setDetalle(n)} />
+      )} />
 
       {detalle && (
         <DetalleNovedadModal
@@ -610,7 +595,7 @@ function MonitoreoPanel({ token }) {
       {/* Alerta novedades escaladas */}
       {kpis?.novedadesEscaladas > 0 && (
         <div style={{
-          background: T.redGhost, border: `1px solid ${T.red}`, borderRadius: 8,
+          background: T.redGhost, border: `1px solid ${T.red}`, borderRadius: T.radius,
           padding: "10px 14px", marginBottom: 14, fontSize: 13, color: T.red,
           display: "flex", alignItems: "center", gap: 8,
         }}>
@@ -623,7 +608,7 @@ function MonitoreoPanel({ token }) {
         <div className="central-summary-grid" style={{ display: "grid", gap: 10, marginBottom: 20, alignItems: "start" }}>
           {/* Resumen por instalación */}
           {kpis?.resumenPorInstalacion?.length > 0 && (
-            <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: "14px 14px 10px" }}>
+            <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "14px 14px 10px" }}>
               <div style={{ fontSize: 10, color: T.textSec, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 }}>
                 Estado por Instalación
               </div>
@@ -653,7 +638,7 @@ function MonitoreoPanel({ token }) {
             </div>
           )}
 
-          <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: "14px 12px" }}>
+          <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "14px 12px" }}>
             <div style={{ fontSize: 10, color: T.textSec, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 }}>
               Estado Hoy
             </div>

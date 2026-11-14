@@ -9,17 +9,17 @@ const ZOOM_PUNTO = 17;
 const PIN_HTML = `
   <div style="position:relative;width:30px;height:42px;">
     <svg width="30" height="42" viewBox="0 0 30 42" style="filter:drop-shadow(0 4px 8px rgba(0,0,0,.6))">
-      <path d="M15 0C6.7 0 0 6.7 0 15c0 11.2 15 27 15 27s15-15.8 15-27C30 6.7 23.3 0 15 0z" fill="${T.accent}"/>
-      <circle cx="15" cy="15" r="6" fill="${T.bg}"/>
+      <path d="M15 0C6.7 0 0 6.7 0 15c0 11.2 15 27 15 27s15-15.8 15-27C30 6.7 23.3 0 15 0z" fill="#3E9A72"/>
+      <circle cx="15" cy="15" r="6" fill="#0E1714"/>
     </svg>
   </div>`;
 
 const ESTILOS_MAPA = `
   .gc-map-picker .leaflet-control-zoom a {
-    background:${T.bgCard} !important;border-color:${T.border} !important;color:${T.textSec} !important;
+    background:#1C2E28 !important;border-color:#2C4038 !important;color:#A8B7AE !important;
   }
-  .gc-map-picker .leaflet-control-zoom a:hover { background:${T.bgCardHover} !important;color:${T.accent} !important; }
-  .gc-map-picker.leaflet-container { cursor: crosshair; background:${T.bgInput}; }
+  .gc-map-picker .leaflet-control-zoom a:hover { background:#22372F !important;color:#3E9A72 !important; }
+  .gc-map-picker.leaflet-container { cursor: crosshair; background:#0E1714; }
   .leaflet-tile-pane .leaflet-tile {
     filter: invert(100%) hue-rotate(180deg) brightness(78%) contrast(92%) saturate(70%) !important;
   }

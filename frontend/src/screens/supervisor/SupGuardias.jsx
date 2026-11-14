@@ -1,6 +1,6 @@
 import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect } from "react";
-import { T } from "../../theme/theme";
+import { FONT, T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
 import { Btn } from "../../components/ui/Btn";
 import { SectionHeader } from "../../components/ui/SectionHeader";
@@ -32,7 +32,7 @@ function AvisoNocturno({ form }) {
   return (
     <div style={{
       fontSize: 11, color: T.focusText, background: "rgba(179,155,224,0.08)",
-      border: "1px solid rgba(179,155,224,0.3)", borderRadius: 8, padding: "8px 10px", marginBottom: 12,
+      border: "1px solid rgba(179,155,224,0.3)", borderRadius: T.radius, padding: "8px 10px", marginBottom: 12,
     }}>
       <Icon name="moon" size={16} /> Turno nocturno: comienza el {formatearFecha(form.fecha)} a las {form.hora_inicio} y
       termina el {diaSiguiente(form.fecha)} a las {form.hora_fin}.
@@ -109,7 +109,7 @@ export function ModalEditarTurno({ turno, turnos, guardias, instalaciones, input
       <div
         className="responsive-modal"
         style={{
-          background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 22,
+          background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 22,
           width: "100%", maxWidth: 440, maxHeight: "90vh", overflowY: "auto",
           boxShadow: "0 16px 40px rgba(0,0,0,0.6)",
         }}
@@ -122,7 +122,7 @@ export function ModalEditarTurno({ turno, turnos, guardias, instalaciones, input
             </div>
           </div>
           <button
-            className="touch-target"
+            className="touch-target gc-accion-btn gc-accion-btn--morado"
             aria-label="Cerrar"
             onClick={onClose}
             style={{ background: "none", border: "none", color: T.textMut, fontSize: 18, cursor: "pointer" }}
@@ -132,7 +132,7 @@ export function ModalEditarTurno({ turno, turnos, guardias, instalaciones, input
         </div>
 
         <div style={etiquetaStyle}>GUARDIA *</div>
-        <select className="touch-target" style={inputStyle} value={form.usuario_id} onChange={set("usuario_id")}>
+        <select aria-label="Guardia" className="touch-target" style={inputStyle} value={form.usuario_id} onChange={set("usuario_id")}>
           {!guardias.some((g) => g.id === turno.usuario_id) && (
             <option value={turno.usuario_id}>{turno.usuario?.nombre || "Guardia actual"}</option>
           )}
@@ -144,7 +144,7 @@ export function ModalEditarTurno({ turno, turnos, guardias, instalaciones, input
         </select>
 
         <div style={etiquetaStyle}>INSTALACIÓN *</div>
-        <select className="touch-target" style={inputStyle} value={form.instalacion_id} onChange={set("instalacion_id")}>
+        <select aria-label="Instalación" className="touch-target" style={inputStyle} value={form.instalacion_id} onChange={set("instalacion_id")}>
           {!instalaciones.some((i) => i.id === turno.instalacion_id) && (
             <option value={turno.instalacion_id}>{turno.instalacion?.nombre || "Instalación actual"}</option>
           )}
@@ -164,11 +164,11 @@ export function ModalEditarTurno({ turno, turnos, guardias, instalaciones, input
         <div className="form-grid-2" style={{ display: "grid", gap: 10 }}>
           <div>
             <div style={etiquetaStyle}>HORA INICIO</div>
-            <input className="touch-target" type="time" style={inputStyle} value={form.hora_inicio} onChange={set("hora_inicio")} />
+            <input aria-label="Hora inicio" className="touch-target" type="time" style={inputStyle} value={form.hora_inicio} onChange={set("hora_inicio")} />
           </div>
           <div>
             <div style={etiquetaStyle}>HORA FIN</div>
-            <input className="touch-target" type="time" style={inputStyle} value={form.hora_fin} onChange={set("hora_fin")} />
+            <input aria-label="Hora fin" className="touch-target" type="time" style={inputStyle} value={form.hora_fin} onChange={set("hora_fin")} />
           </div>
         </div>
 
@@ -176,7 +176,7 @@ export function ModalEditarTurno({ turno, turnos, guardias, instalaciones, input
 
         {error && (
           <div style={{
-            fontSize: 12, padding: "8px 12px", borderRadius: 8, marginBottom: 12,
+            fontSize: 12, padding: "8px 12px", borderRadius: T.radius, marginBottom: 12,
             background: "rgba(232,106,42,0.15)", color: T.red, border: `1px solid ${T.red}`,
           }}>
             {error}
@@ -337,9 +337,9 @@ export function SupGuardias() {
   };
 
   const inputStyle = {
-    width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`,
+    width: "100%", padding: "10px 12px", borderRadius: T.radius, border: `1px solid ${T.border}`,
     background: T.bgCard, color: T.text, fontSize: 13, marginBottom: 10, boxSizing: "border-box",
-    outline: "none", fontFamily: "var(--font-ui)",
+    fontFamily: FONT.ui,
   };
 
   return (
@@ -357,7 +357,7 @@ export function SupGuardias() {
       />
 
       {mostrarForm && (
-        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 18, marginBottom: 16 }}>
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 18, marginBottom: 16 }}>
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, color: T.text }}>
             Nuevo turno extra
           </div>
@@ -437,7 +437,7 @@ export function SupGuardias() {
             <div style={{
               fontSize: 12,
               padding: "8px 12px",
-              borderRadius: 8,
+              borderRadius: T.radius,
               background: msg.includes("exitosamente") ? "rgba(62,154,114,0.15)" : "rgba(232,106,42,0.15)",
               color: msg.includes("exitosamente") ? T.accent : T.red,
               border: `1px solid ${msg.includes("exitosamente") ? T.accent : T.red}`,
@@ -471,7 +471,7 @@ export function SupGuardias() {
 
       {aviso && (
         <div style={{
-          fontSize: 12, padding: "8px 12px", borderRadius: 8, marginBottom: 10,
+          fontSize: 12, padding: "8px 12px", borderRadius: T.radius, marginBottom: 10,
           background: T.accentGhost, color: T.accent, border: `1px solid ${T.accent}`, fontWeight: 600,
         }}>
           {aviso}
@@ -500,7 +500,7 @@ export function SupGuardias() {
             className="responsive-list-row"
             key={g.id || i}
             style={{
-              background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
+              background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
               padding: 12, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center",
             }}
           >

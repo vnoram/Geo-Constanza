@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { api } from "../../services/api";
-import { T } from "../../theme/theme";
+import { FONT, T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
 import { Input } from "../../components/ui/Input";
 import { Badge } from "../../components/ui/Badge";
@@ -9,6 +9,7 @@ import { Icon } from "../../components/ui/Icon";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 
 export function AdminDispositivos() {
+  const destinatarioId = useId();
   const [equipos, setEquipos] = useState([]);
   const [destinatarios, setDestinatarios] = useState([]);
   const [usuario, setUsuario] = useState("");
@@ -20,6 +21,7 @@ export function AdminDispositivos() {
   const [error, setError] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [revocando, setRevocando] = useState(null);
+  const [verRevocados, setVerRevocados] = useState(false);
 
   useEffect(() => {
     let activo = true;
@@ -91,17 +93,48 @@ export function AdminDispositivos() {
     return { texto: "Enrolado", color: "accent", pendiente };
   };
 
-  const card = { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 16, marginBottom: 16 };
+  const card = { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 16, marginBottom: 16 };
   const etiqueta = { display: "block", fontSize: 12, fontWeight: 500, color: T.textSec, marginBottom: 6 };
   const selectStyle = {
     width: "100%", background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: T.radius,
     padding: "0 12px", minHeight: 42, color: usuario ? T.text : T.textMut, fontSize: 13,
-    fontFamily: "var(--font-ui)", boxSizing: "border-box",
+    fontFamily: FONT.ui, boxSizing: "border-box",
   };
-  const activos = equipos.filter((e) => e.estado === "activo").length;
+  const revocados = equipos.filter((e) => e.estado === "revocado");
+  const pendientes = equipos.filter((e) => e.estado !== "revocado" && estadoDe(e).pendiente);
+  const enrolados = equipos.filter((e) => e.estado !== "revocado" && !estadoDe(e).pendiente);
+
+  const renderEquipo = (equipo) => {
+    const { texto, color, pendiente } = estadoDe(equipo);
+    const revocado = equipo.estado === "revocado";
+    return (
+      <div key={equipo.id} style={{
+        ...card, marginBottom: 10, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, opacity: revocado ? 0.65 : 1,
+      }}>
+        <Icon name="monitor" size={22} color={revocado ? T.textMut : T.focusText} />
+        <div style={{ flex: 1, minWidth: "min(100%, 200px)", overflowWrap: "anywhere" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+            <span style={{ fontWeight: 700, fontSize: 14 }}>{equipo.nombre}</span>
+            <Badge color={color}>{texto}</Badge>
+            {equipo.instalacion && <span style={{ fontSize: 12, color: T.textSec }}>· {equipo.instalacion.nombre}</span>}
+          </div>
+          <div style={{ fontSize: 11, color: T.textMut, marginTop: 4 }}>
+            {equipo.enrolador ? `Enroló: ${equipo.enrolador.nombre} · ` : ""}
+            Último uso: {equipo.ultimo_uso ? new Date(equipo.ultimo_uso).toLocaleString("es-CL") : "Sin uso registrado"}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {pendiente && equipo.invitado_usuario_id && <Btn variant="outline" disabled={ocupado} onClick={() => ejecutar(async () => {
+            mostrarInvitacion(await api.post(`/dispositivos/${equipo.id}/invitaciones/reenviar`, {}));
+          })}>Reenviar invitación</Btn>}
+          {equipo.estado === "activo" && <Btn variant="outline" disabled={ocupado} onClick={() => setRevocando(equipo)}>{pendiente ? "Cancelar invitación" : "Revocar"}</Btn>}
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="admin-screen" style={{ maxWidth: 880 }}>
+    <div className="admin-screen gc-audited-screen" style={{ maxWidth: 880 }}>
       <SectionHeader title="Dispositivos corporativos" sub="Equipos autorizados para marcar asistencia en las instalaciones" />
 
       <div style={card}>
@@ -111,11 +144,11 @@ export function AdminDispositivos() {
         <div style={{ fontSize: 12, color: T.textMut, marginBottom: 14 }}>
           Se envía un enlace al correo del supervisor u operador central; vence en 15 minutos.
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, alignItems: "end" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: 14, alignItems: "end" }}>
           <Input label="Nombre del equipo" value={nombre} onChange={setNombre} maxLength={100} placeholder="Ej: PC Central" />
           <div style={{ marginBottom: 16 }}>
-            <label style={etiqueta}>Destinatario</label>
-            <select className="touch-target" value={usuario} onChange={evento => setUsuario(evento.target.value)} style={selectStyle}>
+            <label htmlFor={destinatarioId} style={etiqueta}>Destinatario</label>
+            <select id={destinatarioId} className="touch-target" value={usuario} onChange={evento => setUsuario(evento.target.value)} style={selectStyle}>
               <option value="">Selecciona un supervisor u operador central</option>
               {destinatarios.map(persona => <option key={persona.id} value={persona.id}>
                 {persona.nombre} · {persona.rol === "supervisor" ? "Supervisor" : "Operador central"}
@@ -138,14 +171,14 @@ export function AdminDispositivos() {
         )}
 
         {invitacion && (
-          <div style={{ marginTop: 14, padding: 12, background: T.accentGhost, border: `1px solid ${T.accent}`, borderRadius: 8 }}>
+          <div style={{ marginTop: 14, padding: 12, background: T.accentGhost, border: `1px solid ${T.accent}`, borderRadius: T.radius }}>
             <p role="status" style={{ margin: "0 0 10px", fontSize: 12, color: T.accent, fontWeight: 600 }}>
               {invitacion.correoEnviado ? "Invitación enviada. El enlace vence en 15 minutos." : "No se pudo enviar el correo. Puedes copiar el enlace, válido por 15 minutos."}
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              <input aria-label="Enlace de invitación" readOnly value={invitacion.enlace} onFocus={e => e.target.select()} style={{
-                flex: 1, minWidth: 220, background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: T.radius,
-                color: T.text, padding: "0 10px", minHeight: 38, fontFamily: "var(--font-mono)", fontSize: 12,
+              <input className="touch-target" aria-label="Enlace de invitación" readOnly value={invitacion.enlace} onFocus={e => e.target.select()} style={{
+                flex: 1, minWidth: "min(100%, 220px)", background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: T.radius,
+                color: T.text, padding: "0 10px", minHeight: 38, fontFamily: FONT.mono, fontSize: 12,
               }} />
               <Btn variant="outline" onClick={copiar}>{copiado ? "Enlace copiado" : "Copiar enlace"}</Btn>
             </div>
@@ -153,48 +186,36 @@ export function AdminDispositivos() {
         )}
 
         {codigo && (
-          <div style={{ marginTop: 14, padding: 12, background: T.accentGhost, border: `1px solid ${T.accent}`, borderRadius: 8 }}>
+          <div style={{ marginTop: 14, padding: 12, background: T.accentGhost, border: `1px solid ${T.accent}`, borderRadius: T.radius }}>
             <p role="status" style={{ margin: "0 0 6px", fontSize: 12, color: T.accent, fontWeight: 600 }}>Código de un solo uso, válido por 15 minutos.</p>
-            <code style={{ fontFamily: "var(--font-mono)", fontSize: 18, letterSpacing: 2, color: T.text }}>{codigo}</code>
+            <code style={{ fontFamily: FONT.mono, fontSize: 18, letterSpacing: 2, color: T.text }}>{codigo}</code>
           </div>
         )}
         {error && <p role="alert" style={{ color: T.alert, fontSize: 12, margin: "12px 0 0" }}>{error}</p>}
       </div>
 
-      <div style={{ fontWeight: 800, fontSize: 14, color: "#9F8FC4", margin: "4px 0 10px" }}>
-        Equipos ({equipos.length}){equipos.length > 0 && <span style={{ fontWeight: 500, color: T.textMut }}> · {activos} activo{activos === 1 ? "" : "s"}</span>}
-      </div>
-
-      {equipos.length === 0 ? (
+      {equipos.length === 0 && (
         <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 30 }}>Aún no hay equipos registrados.</div>
-      ) : equipos.map(equipo => {
-        const { texto, color, pendiente } = estadoDe(equipo);
-        const revocado = equipo.estado === "revocado";
-        return (
-          <div key={equipo.id} style={{
-            ...card, marginBottom: 10, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, opacity: revocado ? 0.65 : 1,
-          }}>
-            <Icon name="monitor" size={22} color={revocado ? T.textMut : T.focusText} />
-            <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-                <span style={{ fontWeight: 700, fontSize: 14 }}>{equipo.nombre}</span>
-                <Badge color={color}>{texto}</Badge>
-                {equipo.instalacion && <span style={{ fontSize: 12, color: T.textSec }}>· {equipo.instalacion.nombre}</span>}
-              </div>
-              <div style={{ fontSize: 11, color: T.textMut, marginTop: 4 }}>
-                {equipo.enrolador ? `Enroló: ${equipo.enrolador.nombre} · ` : ""}
-                Último uso: {equipo.ultimo_uso ? new Date(equipo.ultimo_uso).toLocaleString("es-CL") : "Sin uso registrado"}
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              {pendiente && equipo.invitado_usuario_id && <Btn variant="outline" disabled={ocupado} onClick={() => ejecutar(async () => {
-                mostrarInvitacion(await api.post(`/dispositivos/${equipo.id}/invitaciones/reenviar`, {}));
-              })}>Reenviar invitación</Btn>}
-              {equipo.estado === "activo" && <Btn variant="outline" disabled={ocupado} onClick={() => setRevocando(equipo)}>Revocar</Btn>}
-            </div>
+      )}
+      {[
+        { clave: "activos", titulo: "Equipos activos", lista: enrolados },
+        { clave: "pendientes", titulo: "Invitaciones pendientes", lista: pendientes },
+      ].map(({ clave, titulo, lista }) => lista.length > 0 && (
+        <section key={clave} aria-label={titulo} style={{ marginBottom: 12 }}>
+          <div style={{ fontWeight: 800, fontSize: 14, color: T.focusMuted, margin: "4px 0 10px" }}>
+            {titulo} <span style={{ fontWeight: 500, color: T.textMut }}>({lista.length})</span>
           </div>
-        );
-      })}
+          {lista.map(renderEquipo)}
+        </section>
+      ))}
+      {revocados.length > 0 && (
+        <section aria-label="Equipos revocados" style={{ marginBottom: 12 }}>
+          <Btn variant="ghost" onClick={() => setVerRevocados((v) => !v)}>
+            {verRevocados ? "Ocultar" : "Ver"} revocados ({revocados.length})
+          </Btn>
+          {verRevocados && <div style={{ marginTop: 10 }}>{revocados.map(renderEquipo)}</div>}
+        </section>
+      )}
 
       {revocando && (
         <Dialogo

@@ -57,7 +57,29 @@ Reglas:
 - Rol del guardia en equipo personal: solo «GGSS».
 - Estados con `Badge`: pendiente = amarillo, aprobada = verde, rechazada = rojo.
 
-## 6. Lista de comprobación antes de entregar una pantalla
+## 6. Novedades y franjas Día/Noche
+
+Todas las vistas que listan novedades (guardia, supervisor, operador central) usan los mismos componentes: `NovedadesPorDia`, `NovedadMini` e `IconoFranja` (`frontend/src/components/ui/`).
+
+- **Carrusel semanal:** una semana (lunes a domingo) a la vez, con los 7 días siempre visibles aunque no tengan novedades ("Sin novedades"). Las flechas navegan libremente hacia atrás, haya o no registros; la flecha siguiente se bloquea en la semana actual. No hay vista "por día".
+- **Días independientes:** cada día tiene el alto que necesite. Dentro del día se separa Día y Noche con una línea y un rótulo. En teléfono los días van en una sola columna y los vacíos ocupan una línea.
+- **Recientes (últimas 12 h):** lista simple, sin calendario, con el mismo separador Día/Noche. Pendientes, Resueltas y Libro de rondas usan la semana.
+- **Tarjeta (`NovedadMini`):** hora grande, tipo con el color de urgencia y el ícono de franja a su derecha, instalación (si aplica), descripción (máx. 3 líneas) y estado. Las rondas del libro van en verde y no se escalan ni se derivan.
+- **Franja:** Día = inicio entre 07:00 y 18:59 (sol neón amarillo); Noche = 19:00 a 06:59 (luna neón violeta). La regla vive en `utils/novedades.js` (`franjaDe`, `franjaDeHora`) y también se usa en los turnos (Mi Turno y lista de turnos del guardia).
+
+## 7. Paneles tipo dashboard
+
+- Pantalla de gestión = **fila de KPI** arriba (componente `KPI`, 3 a 5 indicadores con `sub` explicativo; `accent` verde para lo sano, amarillo para lo pendiente) + **tarjetas** en `grid` con `repeat(auto-fill, minmax(min(100%, 340px), 1fr))`, no tablas. En teléfono queda una columna.
+- Tarjeta: nombre y datos clave arriba, bloque secundario con fondo `T.bgInput`, métricas en `FONT.mono`, acciones abajo (`marginTop: auto`). Borde izquierdo de 3 px para el estado (verde activo, amarillo atención); lo inactivo se atenúa con `opacity`.
+- Ejemplos: `EmpresasPanel` (empresas) y `PlataformaDispositivos` (equipos por empresa, con filas por equipo dentro de cada bloque).
+
+## 8. Enrolamiento de equipos
+
+- Equipo **principal**: la plataforma invita por correo al administrador de gestión (uno habilitado por empresa; para invitar otro se deshabilita el actual). El administrador invita los demás equipos desde su panel.
+- Al llegar desde un enlace de invitación, `LoginScreen` cambia a modo enrolamiento (`PasosEnrolamiento`, título «Enrolar equipo», botón «Iniciar sesión y enrolar equipo», sin «¿Olvidaste tu contraseña?» ni credenciales de demostración).
+- No hay canje manual de códigos en el login.
+
+## 9. Lista de comprobación antes de entregar una pantalla
 
 1. ¿Los botones son `Btn` o llevan `gc-accion-btn`?
 2. ¿Hay algún `alert`, `confirm`, `prompt` o `<input type="date">` fuera de las excepciones?

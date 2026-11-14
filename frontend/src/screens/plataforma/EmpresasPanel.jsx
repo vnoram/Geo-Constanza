@@ -4,6 +4,7 @@ import { Icon } from "../../components/ui/Icon";
 import { Btn } from "../../components/ui/Btn";
 import { Input } from "../../components/ui/Input";
 import { Badge } from "../../components/ui/Badge";
+import { KPI } from "../../components/ui/KPI";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 
@@ -29,7 +30,7 @@ function Dialogo({ titulo, subtitulo, onClose, children }) {
       }}
     >
       <div className="admin-modal" style={{
-        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 24,
+        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 24,
         width: "100%", maxWidth: 480, maxHeight: "92vh", overflowY: "auto", boxShadow: "0 16px 40px rgba(0,0,0,0.6)",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18, gap: 12 }}>
@@ -37,7 +38,7 @@ function Dialogo({ titulo, subtitulo, onClose, children }) {
             <div style={{ fontWeight: 700, fontSize: 18, color: T.text }}>{titulo}</div>
             {subtitulo && <div style={{ fontSize: 12, color: T.textMut, marginTop: 2 }}>{subtitulo}</div>}
           </div>
-          <button className="touch-target" aria-label="Cerrar" onClick={onClose}
+          <button className="touch-target gc-accion-btn gc-accion-btn--morado" aria-label="Cerrar" onClick={onClose}
             style={{ background: "none", border: "none", color: T.textMut, cursor: "pointer", lineHeight: 1 }}>
             <Icon name="x" size={16} />
           </button>
@@ -94,7 +95,7 @@ function ModalEmpresa({ inicial, onClose, onGuardada }) {
       <Input label="RUT de la empresa" value={form.rut} onChange={set("rut")} placeholder="76.111.111-K" mono maxLength={14} />
       <div style={{ marginBottom: 18 }}>
         <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: T.textSec, marginBottom: 6 }}>Plan</label>
-        <select className="touch-target" value={form.plan} onChange={(e) => set("plan")(e.target.value)} style={{
+        <select aria-label="Plan" className="touch-target" value={form.plan} onChange={(e) => set("plan")(e.target.value)} style={{
           width: "100%", background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: T.radius,
           padding: "0 12px", minHeight: 42, color: T.text, fontSize: 14, fontFamily: FONT.ui,
         }}>
@@ -102,7 +103,7 @@ function ModalEmpresa({ inicial, onClose, onGuardada }) {
         </select>
       </div>
       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-        <Btn variant="secondary" onClick={onClose}>Cancelar</Btn>
+        <Btn variant="outline" onClick={onClose}>Cancelar</Btn>
         <Btn onClick={guardar} loading={enviando}>{esEdicion ? "Guardar cambios" : "Crear empresa"}</Btn>
       </div>
     </Dialogo>
@@ -144,7 +145,7 @@ function ModalAdmin({ empresa, onClose, onCreado }) {
       <Input label="Nombre completo" value={form.nombre} onChange={set("nombre")} maxLength={120} />
       <Input label="Correo" type="email" value={form.email} onChange={set("email")} placeholder="nombre@empresa.cl" maxLength={160} />
       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-        <Btn variant="secondary" onClick={onClose}>Cancelar</Btn>
+        <Btn variant="outline" onClick={onClose}>Cancelar</Btn>
         <Btn onClick={crear} loading={enviando}>Crear administrador</Btn>
       </div>
     </Dialogo>
@@ -203,11 +204,11 @@ function ModalGestionAdmin({ empresa, admin, onClose, onTerminado }) {
       <Input label="Correo" type="email" value={form.email} onChange={set("email")} maxLength={160} />
       <Input label="Teléfono (opcional)" value={form.telefono} onChange={set("telefono")} maxLength={30} />
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-        <Btn variant="secondary" onClick={reenviar} loading={enviando === "reenviar"}>Reenviar correo de contraseña</Btn>
-        <Btn variant="secondary" onClick={desactivar} loading={enviando === "desactivar"}>Desactivar administrador</Btn>
+        <Btn variant="outline" onClick={reenviar} loading={enviando === "reenviar"}>Reenviar correo de contraseña</Btn>
+        <Btn variant="rechazar" onClick={desactivar} loading={enviando === "desactivar"}>Desactivar administrador</Btn>
       </div>
       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-        <Btn variant="secondary" onClick={onClose}>Cancelar</Btn>
+        <Btn variant="outline" onClick={onClose}>Cancelar</Btn>
         <Btn onClick={guardar} loading={enviando === "guardar"}>Guardar cambios</Btn>
       </div>
     </Dialogo>
@@ -242,8 +243,8 @@ function ModalEstado({ empresa, onClose, onCambiado }) {
       </p>
       <MensajeError>{error}</MensajeError>
       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-        <Btn variant="secondary" onClick={onClose}>Cancelar</Btn>
-        <Btn onClick={confirmar} loading={enviando}>{suspender ? "Suspender" : "Reactivar"}</Btn>
+        <Btn variant="outline" onClick={onClose}>Cancelar</Btn>
+        <Btn variant={suspender ? "rechazar" : "aprobar"} onClick={confirmar} loading={enviando}>{suspender ? "Suspender" : "Reactivar"}</Btn>
       </div>
     </Dialogo>
   );
@@ -278,8 +279,11 @@ export function EmpresasPanel() {
     await cargar();
   };
 
-  const celda = { padding: "10px 12px", fontSize: 13, color: T.text, borderBottom: `1px solid ${T.border}`, verticalAlign: "middle" };
-  const cabecera = { ...celda, fontSize: 11, color: "#9F8FC4", fontWeight: 500, textAlign: "left", whiteSpace: "nowrap" };
+  const activas = empresas.filter((e) => e.estado === "activa").length;
+  const suspendidas = empresas.length - activas;
+  const totalUsuarios = empresas.reduce((n, e) => n + (e.total_usuarios ?? 0), 0);
+  const totalInstalaciones = empresas.reduce((n, e) => n + (e.total_instalaciones ?? 0), 0);
+  const sinAdmin = empresas.filter((e) => !e.administradores?.some((a) => a.estado === "activo")).length;
   const accion = (icono, etiqueta, onClick, tono = "verde") => (
     <button className={`touch-target gc-accion-btn gc-accion-btn--${tono}`} onClick={onClick} title={etiqueta} aria-label={etiqueta} style={{
       background: "transparent", border: `1px solid ${T.border}`, borderRadius: T.radius, color: T.text,
@@ -289,7 +293,7 @@ export function EmpresasPanel() {
   );
 
   return (
-    <div>
+    <div className="gc-audited-screen">
       <SectionHeader title="Empresas"
         action={{ label: "Nueva empresa", onClick: () => setDialogo({ tipo: "empresa" }) }} />
 
@@ -308,50 +312,65 @@ export function EmpresasPanel() {
           Aún no hay empresas. Crea la primera con “Nueva empresa”.
         </div>
       ) : (
-        <div style={{ overflowX: "auto", border: `1px solid ${T.border}`, borderRadius: T.radius, background: T.bgCard }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 760 }}>
-            <thead>
-              <tr>
-                <th style={cabecera}>Empresa</th>
-                <th style={cabecera}>RUT</th>
-                <th style={cabecera}>Plan</th>
-                <th style={cabecera}>Estado</th>
-                <th style={cabecera}>Administrador</th>
-                <th style={cabecera}>Usuarios activos</th>
-                <th style={cabecera}>Creada</th>
-                <th style={cabecera}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {empresas.map((e) => {
-                const admin = e.administradores?.find((a) => a.estado === "activo");
-                return (
-                  <tr key={e.id}>
-                    <td style={{ ...celda, fontWeight: 600 }}>{e.nombre}</td>
-                    <td style={{ ...celda, fontFamily: FONT.mono }}>{e.rut}</td>
-                    <td style={celda}>{etiquetaPlan(e.plan)}</td>
-                    <td style={celda}><Badge color={e.estado === "activa" ? "accent" : "yellow"}>{e.estado === "activa" ? "Activa" : "Suspendida"}</Badge></td>
-                    <td style={celda}>
-                      {admin ? <>{admin.nombre}<div style={{ fontSize: 11, color: T.textMut }}>{admin.email}</div></>
-                        : <span style={{ color: T.textMut }}>Sin administrador activo</span>}
-                    </td>
-                    <td style={{ ...celda, fontFamily: FONT.mono }}>{e.total_usuarios}</td>
-                    <td style={celda}>{fechaCorta(e.created_at)}</td>
-                    <td style={celda}>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {accion("pencil", "Editar", () => setDialogo({ tipo: "empresa", empresa: e }), "verde")}
-                        {admin
-                          ? accion("user-round", "Admin", () => setDialogo({ tipo: "gestionAdmin", empresa: e, admin }), "morado")
-                          : accion("plus", "Crear admin", () => setDialogo({ tipo: "admin", empresa: e }), "morado")}
-                        {accion(e.estado === "activa" ? "ban" : "check", e.estado === "activa" ? "Suspender" : "Reactivar", () => setDialogo({ tipo: "estado", empresa: e }), e.estado === "activa" ? "naranja" : "verde")}
+        <>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+            <KPI label="Empresas" value={empresas.length} sub="registradas" />
+            <KPI label="Activas" value={activas} sub={suspendidas ? `${suspendidas} suspendida(s)` : "todas operando"} accent={T.accent} />
+            <KPI label="Usuarios activos" value={totalUsuarios} sub="en toda la plataforma" />
+            <KPI label="Instalaciones" value={totalInstalaciones} sub="registradas" />
+            <KPI label="Sin administrador" value={sinAdmin} sub={sinAdmin ? "requieren un admin" : "todas con admin"} accent={sinAdmin ? T.yellow : undefined} />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))", gap: 14 }}>
+            {empresas.map((e) => {
+              const admin = e.administradores?.find((a) => a.estado === "activo");
+              const activa = e.estado === "activa";
+              return (
+                <article key={e.id} aria-label={e.nombre} style={{
+                  background: T.bgCard, border: `1px solid ${T.border}`, borderLeft: `3px solid ${activa ? T.accent : T.yellow}`,
+                  borderRadius: T.radius, padding: 16, display: "flex", flexDirection: "column", gap: 14, opacity: activa ? 1 : 0.8,
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, overflowWrap: "anywhere" }}>{e.nombre}</div>
+                      <div style={{ fontFamily: FONT.mono, fontSize: 12, color: T.textSec, marginTop: 3 }}>{e.rut}</div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                      <Badge color={activa ? "accent" : "yellow"}>{activa ? "Activa" : "Suspendida"}</Badge>
+                      <Badge color="focus">{etiquetaPlan(e.plan)}</Badge>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", background: T.bgInput, borderRadius: T.radius, padding: "10px 12px" }}>
+                    <Icon name="user-round" size={18} color={admin ? T.focusText : T.textMut} />
+                    <div style={{ minWidth: 0 }}>
+                      {admin ? <>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{admin.nombre}</div>
+                        <div style={{ fontSize: 11, color: T.textMut, overflowWrap: "anywhere" }}>{admin.email}</div>
+                      </> : <div style={{ fontSize: 13, color: T.yellow }}>Sin administrador activo</div>}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                    {[["Usuarios", e.total_usuarios], ["Instalaciones", e.total_instalaciones ?? 0], ["Creada", fechaCorta(e.created_at)]].map(([etiqueta, valor]) => (
+                      <div key={etiqueta}>
+                        <div style={{ fontSize: 11, color: T.textMut }}>{etiqueta}</div>
+                        <div style={{ fontFamily: FONT.mono, fontSize: etiqueta === "Creada" ? 12 : 18, marginTop: 2 }}>{valor}</div>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: "auto" }}>
+                    {accion("pencil", "Editar", () => setDialogo({ tipo: "empresa", empresa: e }), "verde")}
+                    {admin
+                      ? accion("user-round", "Admin", () => setDialogo({ tipo: "gestionAdmin", empresa: e, admin }), "morado")
+                      : accion("plus", "Crear admin", () => setDialogo({ tipo: "admin", empresa: e }), "morado")}
+                    {accion(activa ? "ban" : "check", activa ? "Suspender" : "Reactivar", () => setDialogo({ tipo: "estado", empresa: e }), activa ? "naranja" : "verde")}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {dialogo?.tipo === "empresa" && (

@@ -5,16 +5,17 @@ import { ROLES as ROL } from "../constants/roles";
 // principal. Morado = foco, selección y rol activo. El resto es neutro.
 // Los nombres se conservan para que las pantallas existentes hereden el rediseño.
 export const T = {
-  bg: "#0E1714",          // fondo de la app
-  surface: "#162420",     // topbar, sidebar, paneles
-  bgCard: "#1C2E28",      // card
+  bg: "var(--gc-bg)",     // fondo de la app
+  surface: "var(--gc-surface)", // topbar, sidebar, paneles
+  bgCard: "var(--gc-card)",
   bgCardHover: "#22372F", // derivado: hover de card
-  bgInput: "#0E1714",
+  bgInput: "var(--gc-bg)",
+  // Se conservan en hex los colores a los que algunas vistas añaden un sufijo alfa.
   border: "#2C4038",      // línea de 1px
   borderFocus: "#7A4EBF", // foco
   accent: "#3E9A72",      // verde operativo
-  accentDim: "#2F7757",   // derivado: verde pulsado
-  accentGhost: "rgba(62,154,114,0.12)",
+  accentDim: "var(--gc-ok-dim)",
+  accentGhost: "var(--gc-ok-ghost)",
   accentGlow: "transparent", // sin resplandores
   focus: "#7A4EBF",       // morado: selección / foco / rol activo
   focusText: "#B39BE0",   // derivado: tinte claro del morado para texto
@@ -25,12 +26,16 @@ export const T = {
   redGhost: "rgba(232,106,42,0.12)",
   yellow: "#F0A35E",      // derivado: naranja claro (nivel medio de urgencia)
   yellowGhost: "rgba(240,163,94,0.12)",
-  text: "#F3EFE6",
-  textSec: "#A8B7AE",
-  textMut: "#7C8F85",     // derivado: texto atenuado
-  white: "#F3EFE6",
-  ink: "#0E1714",         // texto sobre naranja / verde
-  radius: 8,
+  text: "var(--gc-text)",
+  textSec: "var(--gc-text-2)",
+  textMut: "var(--gc-text-3)",
+  white: "var(--gc-text)",
+  ink: "var(--gc-bg)",    // texto sobre naranja / verde
+  focusMuted: "#9F8FC4",
+  focusStrong: "#D2C6EE",
+  neonDay: "#FFE14D",
+  neonNight: "#B99CFF",
+  radius: "var(--gc-radius)",
 };
 
 // Tipografía: IBM Plex Sans para la interfaz; IBM Plex Mono solo para RUT,
@@ -86,6 +91,7 @@ export const ROLES = {
     desc: "Alta y administración de empresas clientes",
     sections: [
       { id: "empresas", icon: "building-2", label: "Empresas", badge: null },
+      { id: "dispositivos", icon: "monitor", label: "Dispositivos", badge: null },
     ],
   },
   [ROL.ADMINISTRADOR]: {

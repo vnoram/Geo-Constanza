@@ -1,4 +1,5 @@
 import { T, FONT } from "../../theme/theme";
+import { Btn } from "./Btn";
 
 export function SectionHeader({ title, sub, action }) {
   return (
@@ -8,11 +9,10 @@ export function SectionHeader({ title, sub, action }) {
         {sub && <div style={{ fontSize: 12, color: T.textSec, marginTop: 3 }}>{sub}</div>}
       </div>
       {action && (
-        <button className="touch-target gc-btn-morado" onClick={action.onClick} style={{
-          background: T.alert, color: T.ink, border: "1px solid transparent", borderRadius: T.radius,
-          padding: "0 14px", minHeight: 36, fontWeight: 600, fontSize: 13, cursor: "pointer",
-          fontFamily: FONT.ui, whiteSpace: "nowrap",
-        }}>{action.label}</button>
+        <Btn variant="morado" onClick={action.onClick} style={{
+          display: "inline-block", width: undefined, padding: "0 14px",
+          minHeight: 36, fontSize: 13, whiteSpace: "nowrap", transition: "none",
+        }}>{action.label}</Btn>
       )}
     </div>
   );

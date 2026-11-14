@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { T, FONT } from "../../theme/theme";
 import { Icon } from "./Icon";
 
 // `icon`: nombre de un ícono Lucide (ver Icon.jsx). `mono`: para RUT, códigos y coordenadas.
 export function Input({ label, type = "text", value, onChange, icon, error, placeholder, maxLength, mono, inputMode, autoComplete }) {
+  const id = useId();
   const [focused, setFocused] = useState(false);
   return (
     <div style={{ marginBottom: 16 }}>
-      {label && <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: T.textSec, marginBottom: 6 }}>{label}</label>}
+      {label && <label htmlFor={id} style={{ display: "block", fontSize: 12, fontWeight: 500, color: T.textSec, marginBottom: 6 }}>{label}</label>}
       <div style={{
         display: "flex", alignItems: "center", gap: 10,
         background: T.bgInput, border: `1px solid ${error ? T.alert : focused ? T.borderFocus : T.border}`,
@@ -15,6 +16,7 @@ export function Input({ label, type = "text", value, onChange, icon, error, plac
       }}>
         {icon && <Icon name={icon} size={17} color={focused ? T.focusText : T.textMut} />}
         <input
+          id={id}
           type={type}
           value={value}
           onChange={e => onChange(e.target.value)}

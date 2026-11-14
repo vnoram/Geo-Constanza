@@ -2,10 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { leerSesion } from "../../services/almacenSesion";
 import { io } from "socket.io-client";
 import { leerDeviceToken } from "../../services/dispositivos";
-import { T } from "../../theme/theme";
+import { FONT, T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
 import { Btn } from "../../components/ui/Btn";
 import { SectionHeader } from "../../components/ui/SectionHeader";
+import { esRutina, horaNovedad } from "../../utils/novedades";
+import { NovedadesPorDia } from "../../components/ui/NovedadesPorDia";
+import { NovedadMini } from "../../components/ui/NovedadMini";
+import { IconoFranja } from "../../components/ui/IconoFranja";
 import { api } from "../../services/api";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 
@@ -279,7 +283,7 @@ export function PautaNovedades({ user }) {
   const [novedades, setNovedades] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [vista, setVista]         = useState("activas"); // "activas" | "resueltas"
+  const [vista, setVista]         = useState("recientes"); // "recientes" | "pendientes" | "resueltas" | "rondas"
   const socketRef                = useRef(null);
 
   const cargarNovedades = async () => {
@@ -314,9 +318,17 @@ export function PautaNovedades({ user }) {
     cargarNovedades();
   };
 
-  const activas   = novedades.filter(n => n.estado !== "resuelta");
-  const resueltas = novedades.filter(n => n.estado === "resuelta");
-  const visibles  = vista === "resueltas" ? resueltas : activas;
+  const hace12h     = Date.now() - 12 * 60 * 60 * 1000;
+  // Rondas y registros de rutina van aparte (Libro de rondas); no cuentan como incidencia
+  const incidencias = novedades.filter(n => !esRutina(n));
+  const rondas      = novedades.filter(n => esRutina(n));
+  const pendientes  = incidencias.filter(n => n.estado !== "resuelta");
+  const resueltas   = incidencias.filter(n => n.estado === "resuelta");
+  const recientes   = incidencias.filter(n => new Date(n.created_at).getTime() >= hace12h);
+  const visibles    = vista === "resueltas" ? resueltas
+                    : vista === "recientes" ? recientes
+                    : vista === "rondas"    ? rondas
+                    : pendientes;
 
   return (
     <div className="guard-screen">
@@ -334,8 +346,10 @@ export function PautaNovedades({ user }) {
 
       <div role="tablist" style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
         {[
-          { id: "activas",   label: "Activas",   count: activas.length },
-          { id: "resueltas", label: "Resueltas", count: resueltas.length },
+          { id: "recientes",  label: "Recientes",  count: recientes.length },
+          { id: "pendientes", label: "Pendientes", count: pendientes.length },
+          { id: "resueltas",  label: "Resueltas",  count: resueltas.length },
+          { id: "rondas",     label: "Libro de rondas", count: rondas.length },
         ].map(t => {
           const activo = vista === t.id;
           return (
@@ -359,19 +373,10 @@ export function PautaNovedades({ user }) {
         })}
       </div>
 
-      {!loading && visibles.length === 0 && (
-        <div style={{
-          textAlign: "center", color: T.textMut, padding: 32, fontSize: 14,
-          background: T.bgCard, borderRadius: 8, border: `1px solid ${T.border}`,
-        }}>
-          {vista === "resueltas" ? "Aún no hay novedades resueltas." : "No hay novedades activas."}
-        </div>
-      )}
-
-      <div className="nov-list">
-      {visibles.map(n => {
+      <NovedadesPorDia items={visibles} semanal={vista !== "recientes"} vacio="No hay novedades en las últimas 12 h." render={(n, { compacta }) => {
         const urgencia = n.urgencia ?? "verde";
         const colors   = URGENCIA_COLOR[urgencia] ?? URGENCIA_COLOR.verde;
+        if (compacta) return <NovedadMini key={n.id} n={n} />;
         return (
           <div className="guard-card nov-card nov-card--sinfoto" key={n.id} style={{
             background: T.bgCard, border: `1px solid ${T.border}`,
@@ -380,7 +385,14 @@ export function PautaNovedades({ user }) {
           }}>
             <div className="nov-card__body">
             <div className="guard-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                <span style={{
+                  fontFamily: FONT.mono, fontWeight: 800, fontSize: 16, color: T.text, whiteSpace: "nowrap",
+                  background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "3px 8px",
+                }}>{horaNovedad(n.created_at)}</span>
+                <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{n.tipo}</span>
+                <IconoFranja fecha={n.created_at} />
+              </span>
               <Badge color={colors.badge}>{urgencia}</Badge>
             </div>
             <div style={{ fontSize: 12, color: T.textMut, marginBottom: 6 }}>
@@ -395,9 +407,11 @@ export function PautaNovedades({ user }) {
             </div>
             <div className="nov-card__pie">
               <div className="nov-card__estado" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                <Badge color={n.estado === "abierta" ? "yellow" : n.estado === "escalada" ? "red" : "accent"}>
-                  {n.estado}
-                </Badge>
+                {!esRutina(n) && (
+                  <Badge color={n.estado === "abierta" ? "yellow" : n.estado === "escalada" ? "red" : "accent"}>
+                    {n.estado}
+                  </Badge>
+                )}
                 {n.gps_dentro_rango === false && (
                   <Badge color="yellow">GPS fuera de rango</Badge>
                 )}
@@ -405,8 +419,7 @@ export function PautaNovedades({ user }) {
             </div>
           </div>
         );
-      })}
-      </div>
+      }} />
 
       {showModal && (
         <ReportarModal

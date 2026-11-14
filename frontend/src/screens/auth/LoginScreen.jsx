@@ -11,6 +11,36 @@ import { useLoginForm } from "../../hooks/useLoginForm";
 // Credenciales de demostración: solo en desarrollo o si se pide explícitamente al compilar.
 const MOSTRAR_DEMO = import.meta.env.DEV || import.meta.env.VITE_MOSTRAR_DEMO === "true";
 
+// Guía del enrolamiento: se muestra cuando el login llega desde el enlace de invitación.
+function PasosEnrolamiento() {
+  const pasos = [
+    { icono: "circle-check", titulo: "Enlace confirmado", detalle: "Tu invitación es válida.", hecho: true },
+    { icono: "key-round", titulo: "Inicia sesión", detalle: "Con la cuenta a la que se invitó este equipo." },
+    { icono: "monitor", titulo: "Equipo registrado", detalle: "Este navegador quedará como equipo corporativo." },
+  ];
+  return (
+    <div style={{ border: `1px solid ${T.border}`, borderRadius: T.radius, background: T.bgCard, padding: "12px 14px", marginBottom: 18 }}>
+      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 12 }}>
+        {pasos.map((p, i) => (
+          <li key={p.titulo} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+            <span aria-hidden="true" style={{
+              flex: "none", width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center",
+              border: `1px solid ${p.hecho ? T.accent : T.border}`, background: p.hecho ? T.accentGhost : "transparent",
+            }}><Icon name={p.icono} size={15} color={p.hecho ? T.accent : T.focusText} /></span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{i + 1}. {p.titulo}</div>
+              <div style={{ fontSize: 12, color: T.textSec }}>{p.detalle}</div>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 12, paddingTop: 10, borderTop: `1px solid ${T.border}`, fontSize: 11, color: T.textMut }}>
+        <Icon name="clock" size={13} /> El enlace vence a los 15 minutos y se usa una sola vez.
+      </div>
+    </div>
+  );
+}
+
 export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacion }) {
   const [showDemo, setShowDemo] = useState(false);
 
@@ -21,6 +51,7 @@ export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacio
     formatRut, handleLogin, handle2FA, resetTo2FA,
     email2FA, resendAt, resends, handleResend,
   } = useLoginForm({ onLogin, invitacion });
+  const enrolando = !!invitacion;
 
   return (
     <div className="login">
@@ -32,7 +63,7 @@ export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacio
         <div />
         <div>
           <p style={{ margin: 0, fontSize: 14, color: T.textSec, maxWidth: 280 }}>
-            Plataforma de gestión operacional
+            {enrolando ? "Registro de equipo corporativo" : "Plataforma de gestión operacional"}
           </p>
           <p style={{ margin: "10px 0 0", fontSize: 12, color: T.textMut, fontFamily: FONT.mono }}>
             v1.1
@@ -46,10 +77,10 @@ export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacio
             <div className="login__head-text">
               <div>
                 <h1 className="login__title" style={{ fontSize: 22, fontWeight: 600, color: T.text, letterSpacing: "-0.01em", fontFamily: FONT.ui }}>
-                  {step === "login" ? "Iniciar sesión" : "Verificación de seguridad"}
+                  {step === "login" ? (enrolando ? "Enrolar equipo" : "Iniciar sesión") : "Verificación de seguridad"}
                 </h1>
                 <p className="login__sub" style={{ fontSize: 13, color: T.textSec }}>
-                  {step === "login" ? "Ingresa con tu RUT" : "Segundo paso de autenticación"}
+                  {step === "login" ? (enrolando ? "Registra este equipo como corporativo" : "Ingresa con tu RUT") : (enrolando ? "Un último paso para enrolar el equipo" : "Segundo paso de autenticación")}
                 </p>
               </div>
             </div>
@@ -62,6 +93,7 @@ export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacio
 
           {step === "login" && (
             <div>
+              {enrolando && <PasosEnrolamiento />}
               <Input label="RUT" icon="id-card" mono value={rut} onChange={formatRut} placeholder="12345678-9" maxLength={12} />
               <Input label="Contraseña" type="password" icon="key-round" value={pass} onChange={setPass} placeholder="••••••••" />
 
@@ -85,10 +117,10 @@ export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacio
               )}
 
               <Btn onClick={handleLogin} loading={loading} disabled={locked} full>
-                {locked ? `Bloqueado (${lockLabel})` : "Iniciar sesión"}
+                {locked ? `Bloqueado (${lockLabel})` : enrolando ? "Iniciar sesión y enrolar equipo" : "Iniciar sesión"}
               </Btn>
 
-              {onForgot && (
+              {onForgot && !enrolando && (
                 <div style={{ marginTop: 14, textAlign: "center" }}>
                   <button onClick={onForgot} className="login__demo-toggle">
                     <Icon name="key-round" size={14} />
@@ -97,9 +129,9 @@ export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacio
                 </div>
               )}
 
-              {invitacion && <Btn variant="outline" onClick={onCancelarInvitacion} disabled={loading}>Cancelar enrolamiento</Btn>}
+              {invitacion && <Btn variant="outline" onClick={onCancelarInvitacion} disabled={loading} full style={{ marginTop: 10 }}>Cancelar enrolamiento</Btn>}
 
-              {MOSTRAR_DEMO && (
+              {MOSTRAR_DEMO && !enrolando && (
               <div style={{ marginTop: 18 }}>
                 <button
                   onClick={() => setShowDemo(v => !v)}
@@ -112,7 +144,7 @@ export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacio
               </div>
               )}
 
-              {MOSTRAR_DEMO && showDemo && (
+              {MOSTRAR_DEMO && !enrolando && showDemo && (
                 <DemoPanel onSelect={(rut, pwd) => { formatRut(rut); setPass(pwd); }} />
               )}
             </div>

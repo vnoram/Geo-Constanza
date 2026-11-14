@@ -7,7 +7,7 @@ import { CalendarioRango, rangoDias, sumarDias } from "../../components/ui/Calen
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { Badge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
-import { T } from "../../theme/theme";
+import { FONT, T } from "../../theme/theme";
 import { API_URL as API_BASE } from "../../config/api";
 
 const TIPOS = {
@@ -29,7 +29,7 @@ const corta = (iso) => new Date(`${iso}T12:00:00`).toLocaleDateString("es-CL", {
 const ICONOS = { vacaciones: "umbrella", dias_libres: "ban", turno_extra: "plus", traslado: "refresh-cw" };
 const colorEstado = (estado = "") => /aprob/i.test(estado) ? "accent" : /rechaz/i.test(estado) ? "red" : "yellow";
 const fechaLarga = (iso) => iso ? new Date(iso.slice(0, 10) + "T12:00:00").toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" }) : "";
-const tarjeta = { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 14 };
+const tarjeta = { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 14 };
 const etiqueta = { fontSize: 10, color: T.textMut, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 };
 
 export function SolicitudesPersonales() {
@@ -118,9 +118,9 @@ export function SolicitudesPersonales() {
           {Object.entries(TIPOS).map(([id, label]) => (
             <button type="button" className="touch-target gc-accion-btn gc-accion-btn--morado" key={id} aria-pressed={tipo === id} onClick={() => reiniciar(id)} style={{
               background: tipo === id ? T.focusGhost : "transparent",
-              border: `1px solid ${tipo === id ? T.borderFocus : T.border}`, borderRadius: 8,
+              border: `1px solid ${tipo === id ? T.borderFocus : T.border}`, borderRadius: T.radius,
               padding: "12px 8px", color: tipo === id ? T.focusText : T.text, fontSize: 12, fontWeight: 600,
-              cursor: "pointer", textAlign: "center", fontFamily: "var(--font-ui)", transition: "all 0.15s",
+              cursor: "pointer", textAlign: "center", fontFamily: FONT.ui, transition: "all 0.15s",
             }}><Icon name={ICONOS[id] ?? "file-pen"} size={16} /> {label}</button>
           ))}
         </div>

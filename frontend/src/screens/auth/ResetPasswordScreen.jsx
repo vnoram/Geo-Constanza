@@ -89,7 +89,7 @@ export function ResetPasswordScreen({ token, invitacion = false, onBack }) {
               </div>
             )}
             <div style={{ display: "flex", gap: 10 }}>
-              <Btn variant="secondary" onClick={onBack}>Cancelar</Btn>
+              <Btn variant="outline" onClick={onBack}>Cancelar</Btn>
               <Btn onClick={token ? confirmar : solicitar} loading={loading} full>
                 {token ? (invitacion ? "Crear contraseña" : "Cambiar contraseña") : "Enviar enlace"}
               </Btn>

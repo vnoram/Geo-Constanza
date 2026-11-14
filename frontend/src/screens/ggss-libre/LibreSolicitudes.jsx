@@ -1,5 +1,5 @@
 import { Icon } from "../../components/ui/Icon";
-import { T } from "../../theme/theme";
+import { FONT, T } from "../../theme/theme";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 
 export function LibreSolicitudes() {
@@ -14,9 +14,9 @@ export function LibreSolicitudes() {
           { icon: "refresh-cw", label: "Cambio Inst." },
         ].map((t, i) => (
           <button className="touch-target" key={i} style={{
-            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
+            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
             padding: "14px 10px", color: T.text, fontSize: 12, fontWeight: 600,
-            cursor: "pointer", textAlign: "center", fontFamily: "var(--font-ui)",
+            cursor: "pointer", textAlign: "center", fontFamily: FONT.ui,
             transition: "all 0.15s",
           }}><Icon name={t.icon} size={16} /> {t.label}</button>
         ))}

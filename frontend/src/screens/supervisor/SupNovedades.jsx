@@ -2,14 +2,17 @@ import { useState, useEffect, useRef } from "react";
 import { leerSesion } from "../../services/almacenSesion";
 import { io } from "socket.io-client";
 import { leerDeviceToken } from "../../services/dispositivos";
-import { T } from "../../theme/theme";
+import { FONT, T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
 import { Badge } from "../../components/ui/Badge";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 import { Dialogo } from "../../components/ui/Dialogo";
 import { SOCKET_URL } from "../../config/api";
-import { esRutina } from "../../utils/novedades";
+import { esRutina, horaNovedad } from "../../utils/novedades";
+import { NovedadesPorDia } from "../../components/ui/NovedadesPorDia";
+import { NovedadMini } from "../../components/ui/NovedadMini";
+import { IconoFranja } from "../../components/ui/IconoFranja";
 
 
 const URGENCIA_COLOR = {
@@ -60,11 +63,11 @@ export function ResolverModal({ novedad, onClose, onSuccess }) {
     }}>
       <div className="responsive-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`,
-        borderRadius: 8, padding: 24, width: "100%", maxWidth: 400,
+        borderRadius: T.radius, padding: 24, width: "100%", maxWidth: 400,
       }}>
         <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <span style={{ fontWeight: 700, fontSize: 15, color: T.focusText }}>Resolver Novedad</span>
-          <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{
+          <button className="touch-target gc-accion-btn gc-accion-btn--morado" aria-label="Cerrar" onClick={onClose} style={{
             background: "none", border: "none", color: T.textMut, fontSize: 20, cursor: "pointer",
           }}>✕</button>
         </div>
@@ -86,15 +89,15 @@ export function ResolverModal({ novedad, onClose, onSuccess }) {
               style={{
                 width: "100%", padding: "10px 12px", resize: "vertical",
                 background: T.bgInput, border: `1px solid ${T.border}`,
-                borderRadius: 8, color: T.text, fontSize: 14,
-                outline: "none", fontFamily: "var(--font-ui)",
+                borderRadius: T.radius, color: T.text, fontSize: 14,
+                fontFamily: FONT.ui,
                 boxSizing: "border-box",
               }}
             />
           </div>
           {error && (
             <div style={{
-              marginBottom: 12, padding: "8px 12px", borderRadius: 8,
+              marginBottom: 12, padding: "8px 12px", borderRadius: T.radius,
               background: T.redGhost, color: T.red, fontSize: 13,
             }}>
               {error}
@@ -122,10 +125,15 @@ export function TarjetaNovedadCompacta({ n, onClick }) {
               title="Ver detalle" style={{
                 display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
                 "--nov-c": colors.border,
-                background: T.bgCard, borderRadius: 8, border: `2px solid ${esRutina(n) ? T.border : colors.border}`,
-                padding: "10px 14px", cursor: "pointer", fontFamily: "var(--font-ui)", minWidth: 0,
+                background: T.bgCard, borderRadius: T.radius, border: `2px solid ${colors.border}`,
+                padding: "10px 14px", cursor: "pointer", fontFamily: FONT.ui, minWidth: 0,
               }}>
-              <span className="nov-ronda__tipo" style={{ fontWeight: 700, fontSize: 14, color: esRutina(n) ? T.text : colors.border, whiteSpace: "nowrap" }}>{n.tipo}</span>
+              <span style={{
+                fontFamily: FONT.mono, fontWeight: 800, fontSize: 15, color: T.text, whiteSpace: "nowrap",
+                background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "3px 8px",
+              }}>{horaNovedad(n.created_at)}</span>
+              <span className="nov-ronda__tipo" style={{ fontWeight: 700, fontSize: 14, color: colors.border, whiteSpace: "nowrap" }}>{n.tipo}</span>
+              <IconoFranja fecha={n.created_at} />
               <span style={{ fontSize: 12, color: esRutina(n) ? T.textSec : "#B39BE0", fontWeight: 600, whiteSpace: "nowrap" }}>{instNombre}</span>
               <span style={{ fontSize: 12, color: T.textSec, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {n.descripcion}
@@ -153,14 +161,14 @@ export function DetalleNovedadModal({ novedad: n, onClose, onResolver, onEscalar
       display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
     }}>
       <div className="responsive-modal" onClick={e => e.stopPropagation()} style={{
-        background: T.bgCard, border: `2px solid ${colors.border}`, borderRadius: 8, padding: 24,
+        background: T.bgCard, border: `2px solid ${colors.border}`, borderRadius: T.radius, padding: 24,
         width: "100%", maxWidth: 760, maxHeight: "90vh", overflowY: "auto",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, gap: 8 }}>
           <span style={{ fontWeight: 700, fontSize: 16, color: colors.border }}>{n.tipo}</span>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Badge color={colors.badge}>{n.urgencia ?? "verde"}</Badge>
-            <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{
+            <button className="touch-target gc-accion-btn gc-accion-btn--morado" aria-label="Cerrar" onClick={onClose} style={{
               background: "none", border: "none", color: T.textMut, fontSize: 20, cursor: "pointer",
             }}>✕</button>
           </div>
@@ -168,7 +176,7 @@ export function DetalleNovedadModal({ novedad: n, onClose, onResolver, onEscalar
         {n.foto_url_firmada && (
           <img src={n.foto_url_firmada} alt="Foto adjunta a la novedad" style={{
             display: "block", width: "100%", height: "auto", maxHeight: "50vh", objectFit: "contain",
-            background: T.bgInput, borderRadius: 8, border: `1px solid ${T.border}`, marginBottom: 14,
+            background: T.bgInput, borderRadius: T.radius, border: `1px solid ${T.border}`, marginBottom: 14,
           }} />
         )}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0 28px", alignItems: "start" }}>
@@ -232,7 +240,7 @@ function FotoNovedad({ url }) {
         title="Ver foto"
         style={{
           display: "block", padding: 0, marginBottom: 10, cursor: "zoom-in",
-          border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden", background: T.bgInput,
+          border: `1px solid ${T.border}`, borderRadius: T.radius, overflow: "hidden", background: T.bgInput,
         }}
       >
         <img
@@ -256,7 +264,7 @@ function FotoNovedad({ url }) {
           <img
             src={url}
             alt="Foto adjunta a la novedad"
-            style={{ maxWidth: "100%", maxHeight: "85vh", borderRadius: 8, boxShadow: "0 16px 40px rgba(0,0,0,0.6)" }}
+            style={{ maxWidth: "100%", maxHeight: "85vh", borderRadius: T.radius, boxShadow: "0 16px 40px rgba(0,0,0,0.6)" }}
           />
           <div style={{ position: "absolute", top: 16, right: 20, display: "flex", gap: 12, alignItems: "center" }}>
             <a
@@ -392,7 +400,7 @@ export function SupNovedades({ user }) {
       {alertaCritica && (
         <div className="responsive-list-row" style={{
           background: T.redGhost, border: `1px solid ${T.red}`,
-          borderRadius: 8, padding: 14, marginBottom: 12,
+          borderRadius: T.radius, padding: 14, marginBottom: 12,
           display: "flex", justifyContent: "space-between", alignItems: "flex-start",
         }}>
           <div className="responsive-list-row__main">
@@ -407,7 +415,7 @@ export function SupNovedades({ user }) {
               {alertaCritica.gps_dentro_rango === false && " · ⚠️ GPS fuera de rango"}
             </div>
           </div>
-          <button className="touch-target" aria-label="Cerrar alerta" onClick={() => setAlertaCritica(null)} style={{
+          <button className="touch-target gc-accion-btn gc-accion-btn--morado" aria-label="Cerrar alerta" onClick={() => setAlertaCritica(null)} style={{
             background: "none", border: "none", color: T.textMut, fontSize: 18, cursor: "pointer",
           }}>✕</button>
         </div>
@@ -435,8 +443,8 @@ export function SupNovedades({ user }) {
               className="touch-target gc-tab-btn"
               onClick={() => setVista(t.id)}
               style={{
-                padding: "8px 14px", borderRadius: 8, cursor: "pointer",
-                fontSize: 13, fontWeight: 700, fontFamily: "var(--font-ui)",
+                padding: "8px 14px", borderRadius: T.radius, cursor: "pointer",
+                fontSize: 13, fontWeight: 700, fontFamily: FONT.ui,
                 background: activo ? "rgba(122,78,191,0.22)" : "transparent",
                 color: activo ? "#D2C6EE" : T.textSec,
                 border: `1px solid ${activo ? "rgba(159,131,214,0.75)" : T.border}`,
@@ -448,26 +456,11 @@ export function SupNovedades({ user }) {
         })}
       </div>
 
-      {!loading && visibles.length === 0 && (
-        <div style={{
-          textAlign: "center", color: T.textMut, padding: 32, fontSize: 14,
-          background: T.bgCard, borderRadius: 8, border: `1px solid ${T.border}`,
-        }}>
-          {vista === "resueltas" ? "Aún no hay novedades resueltas."
-            : vista === "recientes" ? "No hay novedades en las últimas 12 h."
-            : vista === "rondas"    ? "Aún no hay rondas registradas."
-            : "No hay novedades pendientes."}
-        </div>
-      )}
-
-      <div className="nov-list">
-      {visibles.map(n => {
-        // Todas las novedades: tarjeta compacta; al pulsarla se abre el detalle completo
-        return (
-            <TarjetaNovedadCompacta key={n.id} n={n} onClick={() => setDetalle(n)} />
-        );
-      })}
-      </div>
+      <NovedadesPorDia items={visibles} semanal={vista !== "recientes"} vacio="No hay novedades en las últimas 12 h." render={(n, { compacta }) => (
+        compacta
+          ? <NovedadMini key={n.id} n={n} instalacion={n.instalacion?.nombre} onClick={() => setDetalle(n)} />
+          : <TarjetaNovedadCompacta key={n.id} n={n} onClick={() => setDetalle(n)} />
+      )} />
 
       {detalle && (
         <DetalleNovedadModal

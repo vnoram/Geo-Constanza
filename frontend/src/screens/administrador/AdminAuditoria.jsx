@@ -1,5 +1,6 @@
+import { KPI } from "../../components/ui/KPI";
 import { useEffect, useState } from "react";
-import { T } from "../../theme/theme";
+import { FONT, T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { Btn } from "../../components/ui/Btn";
@@ -49,13 +50,20 @@ export function AdminAuditoria() {
     } catch (e) { setError(e.message); }
     finally { setExportando(false); }
   };
-  const campo = { width: "100%", minWidth: 0, boxSizing: "border-box", padding: 10, background: T.bgInput, color: T.text, border: `1px solid ${T.border}`, borderRadius: 8 };
+  const campo = { width: "100%", minWidth: 0, boxSizing: "border-box", padding: 10, background: T.bgInput, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radius };
   const actualizar = e => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   return (
     <div className="admin-screen">
       <SectionHeader title="Auditoría" sub="Log de cambios del sistema" />
+      {!loading && !error && (
+        <div className="gc-dashboard-kpis">
+          <KPI label="Registros" value={logs.length} sub="en esta página" />
+          <KPI label="Acciones distintas" value={new Set(logs.map(l => l.accion)).size} sub="en esta página" />
+          <KPI label="Páginas" value={totalPages} sub="para los filtros aplicados" />
+        </div>
+      )}
       <form onSubmit={e => { e.preventDefault(); setPage(1); setFiltros({ ...form }); }} style={{ marginBottom: 16 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))", gap: 12, marginBottom: 12 }}>
           <label>Usuario<select name="usuario_id" value={form.usuario_id} onChange={actualizar} style={campo}>
             <option value="">Todos</option>{usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
           </select></label>
@@ -64,26 +72,28 @@ export function AdminAuditoria() {
           <label>Hasta<input type="date" name="fecha_fin" value={form.fecha_fin} onChange={actualizar} style={campo} /></label>
         </div>
         <div className="action-wrap" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Btn type="submit" variant="secondary">Aplicar filtros</Btn>
+          <Btn type="submit" variant="outline">Aplicar filtros</Btn>
           <Btn type="button" icon="file-text" onClick={exportar} loading={exportando} disabled={loading}>Exportar PDF</Btn>
         </div>
       </form>
       {error && <p role="alert" style={{ color: T.red }}>{error}</p>}
       {loading && <p style={{ color: T.textMut }}>Cargando auditoría...</p>}
       {!loading && !logs.length && !error && <p style={{ color: T.textMut }}>Sin registros para estos filtros.</p>}
-      {logs.map(l => (
-        <div className="admin-card" key={l.id} style={{
-          background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
-          padding: 12, marginBottom: 5,
-        }}>
-          <div className="admin-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-            <Badge color="accent">{l.accion}</Badge>
-            <span style={{ fontSize: 10, color: T.textMut, fontFamily: "var(--font-mono)" }}>{new Date(l.created_at).toLocaleString("es-CL", { timeZone: "America/Santiago" })}</span>
+      <div className="gc-dashboard-grid">
+        {logs.map(l => (
+          <div className="gc-dashboard-card" key={l.id} style={{
+            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
+            padding: 12, borderLeft: `3px solid ${T.accent}`,
+          }}>
+            <div className="admin-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <Badge color="accent">{l.accion}</Badge>
+              <span style={{ fontSize: 10, color: T.textMut, fontFamily: FONT.mono }}>{new Date(l.created_at).toLocaleString("es-CL", { timeZone: "America/Santiago" })}</span>
           </div>
           <div style={{ fontSize: 13, fontWeight: 600 }}>{l.usuario?.nombre ?? "—"}</div>
-          <div style={{ fontSize: 11, color: T.textMut }}>{l.tabla_afectada} · {l.registro_id} · IP: {l.ip_address ?? "—"}</div>
+          <div style={{ fontSize: 11, color: T.textSec, fontFamily: FONT.mono, background: T.bgInput, borderRadius: T.radius, padding: 8, overflowWrap: "anywhere" }}>{l.tabla_afectada} · {l.registro_id} · IP: {l.ip_address ?? "—"}</div>
         </div>
       ))}
+      </div>
       {totalPages > 1 && <div className="action-wrap" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
         <Btn variant="ghost" disabled={page <= 1 || loading} onClick={() => setPage(p => p - 1)}>Anterior</Btn>
         <span>{page} / {totalPages}</span>

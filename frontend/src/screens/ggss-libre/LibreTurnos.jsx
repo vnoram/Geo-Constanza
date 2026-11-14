@@ -5,6 +5,8 @@ import { Badge } from "../../components/ui/Badge";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
+import { IconoFranja } from "../../components/ui/IconoFranja";
+import { franjaDeHora } from "../../utils/novedades";
 
 // Convierte "19:00"/"07:00" en texto legible indicando si termina al día siguiente
 function formatHorario(inicio, fin) {
@@ -25,8 +27,6 @@ function TurnoRow({ turno }) {
     cancelado:  "red",
   }[turno.estado] || "yellow";
 
-  const nocturno = turno.hora_fin < turno.hora_inicio;
-
   return (
     <div className="guard-list-row" style={{
       background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
@@ -36,11 +36,10 @@ function TurnoRow({ turno }) {
       <div className="guard-list-row__main" style={{ flex: 1 }}>
         <div className="guard-card-header" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
           <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{fechaStr}</span>
-          {nocturno && (
-            <span style={{ fontSize: 10, color: T.focusText, background: T.bgCard, borderRadius: 4, padding: "1px 5px" }}>
-              <Icon name="moon" size={16} /> nocturno
-            </span>
-          )}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: franjaDeHora(turno.hora_inicio) === "dia" ? "#FFE14D" : "#B99CFF" }}>
+            <IconoFranja hora={turno.hora_inicio} size={15} />
+            {franjaDeHora(turno.hora_inicio) === "dia" ? "Diurno" : "Nocturno"}
+          </span>
         </div>
         <div style={{ fontSize: 12, color: T.textSec }}>
           {formatHorario(turno.hora_inicio, turno.hora_fin)}
@@ -98,7 +97,7 @@ function PautaMensual({ turnos }) {
         {celdas.map((iso, i) => {
           if (!iso) return <div key={`h${i}`} />;
           const t = porDia.get(iso);
-          const nocturno = t && t.hora_fin < t.hora_inicio;
+          const nocturno = t && franjaDeHora(t.hora_inicio) === "noche";
           const esHoy = iso === hoy;
           const activo = elegido === iso;
 

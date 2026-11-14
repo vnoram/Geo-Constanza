@@ -1,6 +1,6 @@
 import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect } from "react";
-import { T } from "../../theme/theme";
+import { FONT, T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
 import { Input } from "../../components/ui/Input";
 import { SubHeader } from "../../components/ui/SubHeader";
@@ -384,10 +384,11 @@ function Select({ label, value, onChange, options, placeholder }) {
     <div style={{ marginBottom: 18 }}>
       {label && <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: T.textSec, marginBottom: 6, letterSpacing: 1.5, textTransform: "uppercase" }}>{label}</label>}
       <select
+        aria-label={label}
         className="touch-target"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", background: T.bgInput, border: `1.5px solid ${T.border}`, borderRadius: 8, padding: "12px 14px", color: value ? T.text : T.textMut, fontSize: 14, fontFamily: "var(--font-ui)", outline: "none" }}
+        style={{ width: "100%", background: T.bgInput, border: `1.5px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px", color: value ? T.text : T.textMut, fontSize: 14, fontFamily: FONT.ui }}
       >
         <option value="">{placeholder || "Seleccionar..."}</option>
         {options.map((o) => <option key={o.value} value={o.value} style={{ background: T.bgCard }}>{o.label}</option>)}
@@ -494,7 +495,7 @@ export function SupReportes() {
       <SectionHeader title="Reportes OS-10" sub="Informes operacionales para fiscalización" />
 
       {/* Filtros */}
-      <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 18, marginBottom: 16 }}>
+      <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 18, marginBottom: 16 }}>
         <SubHeader title="Parámetros del Reporte" />
 
         <Select
@@ -518,8 +519,8 @@ export function SupReportes() {
             { id: "rondas",     label: <><Icon name="map-pin" size={16} />{" Libro de rondas"}</> },
           ].map((tab) => (
             <button className="touch-target gc-accion-btn gc-accion-btn--morado" key={tab.id} aria-pressed={vistaActiva === tab.id} onClick={() => setVistaActiva(tab.id)} style={{
-              padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
-              fontFamily: "var(--font-ui)", transition: "all 0.15s",
+              padding: "8px 16px", borderRadius: T.radius, fontSize: 13, fontWeight: 700, cursor: "pointer",
+              fontFamily: FONT.ui, transition: "all 0.15s",
               background: vistaActiva === tab.id ? T.focusGhost : "transparent",
               color:      vistaActiva === tab.id ? T.focusText : T.text,
               border:     `1px solid ${vistaActiva === tab.id ? T.borderFocus : T.border}`,
@@ -536,7 +537,7 @@ export function SupReportes() {
 
       {/* Error */}
       {error && (
-        <div style={{ background: T.redGhost, border: `1px solid ${T.red}`, borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: T.red }}>
+        <div style={{ background: T.redGhost, border: `1px solid ${T.red}`, borderRadius: T.radius, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: T.red }}>
           {error}
         </div>
       )}
@@ -545,7 +546,7 @@ export function SupReportes() {
       {datos !== null && (
         <>
           {/* Resumen rápido */}
-          <div className="responsive-list-row" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: "12px 16px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="responsive-list-row" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "12px 16px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div className="responsive-list-row__main">
               <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>
                 {datos.length} registro{datos.length !== 1 ? "s" : ""} encontrado{datos.length !== 1 ? "s" : ""}
@@ -561,7 +562,7 @@ export function SupReportes() {
           </div>
 
           {/* Tabla preview */}
-          <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden", marginBottom: 16 }}>
+          <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, overflow: "hidden", marginBottom: 16 }}>
             <TablaPreview datos={datos} tipo={vistaActiva} />
           </div>
         </>

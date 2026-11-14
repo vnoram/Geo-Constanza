@@ -1,5 +1,5 @@
 import { Icon } from "../../components/ui/Icon";
-import { T } from "../../theme/theme";
+import { FONT, T } from "../../theme/theme";
 import { sumarDias } from "../../utils/fechaChile";
 
 const VERDE_NEON = "#39FF88";
@@ -23,7 +23,7 @@ const etiquetaFecha = (iso) => {
 };
 
 const flecha = {
-  background: "transparent", border: `1px solid ${T.border}`, color: T.text, borderRadius: 8,
+  background: "transparent", border: `1px solid ${T.border}`, color: T.text, borderRadius: T.radius,
   width: 34, height: 30, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center",
 };
 
@@ -53,12 +53,12 @@ export function SemanaTurnos({ lunes, hoy, turnos, onCambiarSemana, onEditar }) 
           </div>
         </div>
         {lunes !== lunesDe(hoy) && (
-          <button type="button" className="gc-accion-btn gc-accion-btn--morado" onClick={() => onCambiarSemana(lunesDe(hoy))} style={{ ...flecha, width: "auto", padding: "0 12px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-ui)" }}>Esta semana</button>
+          <button type="button" className="gc-accion-btn gc-accion-btn--morado" onClick={() => onCambiarSemana(lunesDe(hoy))} style={{ ...flecha, width: "auto", padding: "0 12px", fontSize: 12, fontWeight: 700, fontFamily: FONT.ui }}>Esta semana</button>
         )}
       </div>
 
       {secciones.length === 0 ? (
-        <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 24, background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8 }}>
+        <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 24, background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius }}>
           No hay turnos programados esta semana.
         </div>
       ) : (
@@ -103,7 +103,7 @@ export function SemanaTurnos({ lunes, hoy, turnos, onCambiarSemana, onEditar }) 
                                 style={{
                                   display: "flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "4px 2px",
                                   borderRadius: 5, border: "1px solid rgba(122,78,191,.5)", background: "rgba(122,78,191,.22)",
-                                  color: T.text, fontSize: 11, fontWeight: 700, fontFamily: "var(--font-ui)",
+                                  color: T.text, fontSize: 11, fontWeight: 700, fontFamily: FONT.ui,
                                   cursor: editable ? "pointer" : "default", opacity: t.estado === "completado" ? 0.6 : 1,
                                 }}
                               >

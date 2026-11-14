@@ -90,7 +90,7 @@ export function Enroll2FAScreen({ onDone, onLogout }) {
               onChange={v => setCode(v.replace(/\D/g, ""))} placeholder="123456" maxLength={6} />
             {alerta}
             <div style={{ display: "flex", gap: 10 }}>
-              <Btn variant="secondary" onClick={onLogout}>Salir</Btn>
+              <Btn variant="outline" onClick={onLogout}>Salir</Btn>
               <Btn onClick={confirmar} loading={loading} disabled={!setup} full>Activar</Btn>
             </div>
           </div>
@@ -111,8 +111,8 @@ export function Enroll2FAScreen({ onDone, onLogout }) {
               {codigos.map(c => <span key={c}>{c}</span>)}
             </div>
             <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-              <Btn variant="secondary" icon="clipboard-list" onClick={copiar}>Copiar</Btn>
-              <Btn variant="secondary" icon="download" onClick={descargar}>Descargar</Btn>
+              <Btn variant="outline" icon="clipboard-list" onClick={copiar}>Copiar</Btn>
+              <Btn variant="outline" icon="download" onClick={descargar}>Descargar</Btn>
             </div>
             <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: T.text, marginBottom: 16 }}>
               <input type="checkbox" checked={guardados} onChange={e => setGuardados(e.target.checked)} />

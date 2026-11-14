@@ -1,6 +1,6 @@
 import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect, useRef } from "react";
-import { T } from "../../theme/theme";
+import { FONT, T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
 import { Dialogo } from "../../components/ui/Dialogo";
 import { Input } from "../../components/ui/Input";
@@ -96,12 +96,11 @@ function Select({ label, value, onChange, options }) {
           width: "100%",
           background: T.bgInput,
           border: `1.5px solid ${T.border}`,
-          borderRadius: 8,
+          borderRadius: T.radius,
           padding: "12px 14px",
           color: value ? T.text : T.textMut,
           fontSize: 14,
-          fontFamily: "var(--font-ui)",
-          outline: "none",
+          fontFamily: FONT.ui,
           cursor: "pointer",
         }}
       >
@@ -363,7 +362,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
         style={{
           background: T.bgCard,
           border: `1px solid ${T.border}`,
-          borderRadius: 8,
+          borderRadius: T.radius,
           padding: 28,
           width: "100%",
           maxWidth: 1180,
@@ -383,7 +382,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
             </div>
           </div>
           <button
-            className="touch-target"
+            className="touch-target gc-accion-btn gc-accion-btn--morado"
             aria-label="Cerrar"
             onClick={onClose}
             style={{
@@ -405,7 +404,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
             style={{
               background: T.redGhost,
               border: `1px solid ${T.red}`,
-              borderRadius: 8,
+              borderRadius: T.radius,
               padding: "10px 14px",
               marginBottom: 16,
               fontSize: 13,
@@ -512,7 +511,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                 ) : operadores.length === 0 ? (
                   <div style={{ fontSize: 12, color: T.textMut }}>No hay operadores centrales registrados todavía.</div>
                 ) : (
-                  <div style={{ border: `1.5px solid ${T.focus}`, borderRadius: 8, padding: "8px 12px", maxHeight: 140, overflowY: "auto", background: T.bgInput }}>
+                  <div style={{ border: `1.5px solid ${T.focus}`, borderRadius: T.radius, padding: "8px 12px", maxHeight: 140, overflowY: "auto", background: T.bgInput }}>
                     {operadores.map((o) => (
                       <label key={o.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", fontSize: 13, color: T.text, cursor: "pointer" }}>
                         <input
@@ -554,7 +553,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                 <div
                   style={{
                     border: `1.5px solid ${T.yellow}`,
-                    borderRadius: 8,
+                    borderRadius: T.radius,
                     padding: "8px 12px",
                     maxHeight: 140,
                     overflowY: "auto",
@@ -621,7 +620,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                   marginTop: 10,
                   background: T.bgInput,
                   border: `1px solid ${T.border}`,
-                  borderRadius: 8,
+                  borderRadius: T.radius,
                   padding: "10px 14px",
                   display: "flex",
                   alignItems: "center",
@@ -645,11 +644,11 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                     background: T.accentGhost,
                     border: `1px solid ${T.accent}`,
                     color: T.accent,
-                    borderRadius: 8,
+                    borderRadius: T.radius,
                     padding: "5px 10px",
                     fontSize: 12,
                     fontWeight: 700,
-                    fontFamily: "var(--font-ui)",
+                    fontFamily: FONT.ui,
                     cursor: "pointer",
                     whiteSpace: "nowrap",
                   }}
@@ -675,7 +674,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
               style={{
                 background: T.bgInput,
                 border: `1px solid ${T.border}`,
-                borderRadius: 8,
+                borderRadius: T.radius,
                 padding: "10px 14px",
                 marginBottom: 20,
                 display: "flex",
@@ -731,7 +730,7 @@ function InstCard({ inst, onEditar, onCambiarEstado }) {
       style={{
         background: esCentro ? T.focusGhost : T.bgCard,
         border: `1px solid ${esCentro ? T.focus : T.border}`,
-        borderRadius: 8,
+        borderRadius: T.radius,
         padding: "16px 18px",
         marginBottom: 10,
         boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
@@ -759,8 +758,8 @@ function InstCard({ inst, onEditar, onCambiarEstado }) {
           onClick={() => onCambiarEstado(inst)}
           style={{
             background: "transparent", border: `1px solid ${T.border}`, color: T.textSec,
-            borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700,
-            fontFamily: "var(--font-ui)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+            borderRadius: T.radius, padding: "6px 12px", fontSize: 12, fontWeight: 700,
+            fontFamily: FONT.ui, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
           }}
         >
           {esActivo ? "Desactivar" : "Activar"}
@@ -771,8 +770,8 @@ function InstCard({ inst, onEditar, onCambiarEstado }) {
           onClick={() => onEditar(inst)}
           style={{
             background: "transparent", border: `1px solid ${T.border}`, color: T.textSec,
-            borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700,
-            fontFamily: "var(--font-ui)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+            borderRadius: T.radius, padding: "6px 12px", fontSize: 12, fontWeight: 700,
+            fontFamily: FONT.ui, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
           }}
         >
           <Icon name="pencil" size={16} /> Editar
@@ -885,7 +884,7 @@ export function AdminInstalaciones() {
           style={{
             background: T.accentGhost,
             border: `1px solid ${T.accent}`,
-            borderRadius: 8,
+            borderRadius: T.radius,
             padding: "10px 14px",
             marginBottom: 14,
             fontSize: 13,
@@ -909,12 +908,11 @@ export function AdminInstalaciones() {
             width: "100%",
             background: T.bgInput,
             border: `1.5px solid ${T.border}`,
-            borderRadius: 8,
+            borderRadius: T.radius,
             padding: "11px 14px",
             color: T.text,
             fontSize: 13,
-            fontFamily: "var(--font-ui)",
-            outline: "none",
+            fontFamily: FONT.ui,
             boxSizing: "border-box",
           }}
         />

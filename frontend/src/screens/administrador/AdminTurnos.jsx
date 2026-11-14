@@ -1,6 +1,6 @@
 import { Icon } from "../../components/ui/Icon";
 import { useEffect, useState } from "react";
-import { T } from "../../theme/theme";
+import { FONT, T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
 import { Input } from "../../components/ui/Input";
 import { CalendarioRango, sumarDias } from "../../components/ui/CalendarioRango";
@@ -30,8 +30,8 @@ function Select({ label, value, onChange, options, placeholder }) {
         onChange={(e) => onChange(e.target.value)}
         style={{
           width: "100%", background: T.bgInput, border: `1.5px solid ${T.border}`,
-          borderRadius: 8, padding: "12px 14px", color: value ? T.text : T.textMut,
-          fontSize: 14, fontFamily: "var(--font-ui)", outline: "none",
+          borderRadius: T.radius, padding: "12px 14px", color: value ? T.text : T.textMut,
+          fontSize: 14, fontFamily: FONT.ui,
           cursor: "pointer",
         }}
       >
@@ -112,7 +112,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
       zIndex: 1000, padding: 16,
     }}>
       <div className="admin-modal" style={{
-        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
+        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
         padding: 28, width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto",
       }}>
         {/* Header */}
@@ -123,7 +123,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
               32 días · 4 trabajo / 4 descanso
             </div>
           </div>
-          <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{
+          <button className="touch-target gc-accion-btn gc-accion-btn--morado" aria-label="Cerrar" onClick={onClose} style={{
             background: "none", border: "none", color: T.textMut, fontSize: 20,
             cursor: "pointer", lineHeight: 1,
           }}><Icon name="x" size={16} /></button>
@@ -135,7 +135,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
             <div style={{
               background: resultado.creados > 0 ? T.accentGhost : T.redGhost,
               border: `1px solid ${resultado.creados > 0 ? T.accent : T.red}`,
-              borderRadius: 8, padding: 16, marginBottom: 20,
+              borderRadius: T.radius, padding: 16, marginBottom: 20,
             }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: resultado.creados > 0 ? T.accent : T.red, marginBottom: 8 }}>
                 {resultado.creados > 0 ? <><Icon name="check" size={16} />{" Pauta generada correctamente"}</> : <><Icon name="triangle-alert" size={16} />{" Sin turnos creados"}</>}
@@ -157,7 +157,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
                 <SubHeader title="Días omitidos" />
                 {resultado.detalles_omitidos.map((d, i) => (
                   <div key={i} style={{
-                    background: T.bgInput, borderRadius: 8, padding: "8px 12px",
+                    background: T.bgInput, borderRadius: T.radius, padding: "8px 12px",
                     marginBottom: 6, fontSize: 12, color: T.textSec,
                     display: "flex", justifyContent: "space-between",
                   }}>
@@ -230,7 +230,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
             {esNocturno && (
               <div style={{
                 background: T.bgCard, border: "1px solid #7A4EBF",
-                borderRadius: 8, padding: "8px 12px", marginBottom: 14,
+                borderRadius: T.radius, padding: "8px 12px", marginBottom: 14,
                 fontSize: 12, color: T.focusText, display: "flex", gap: 8, alignItems: "center",
               }}>
                 <span><Icon name="moon" size={16} /></span>
@@ -262,7 +262,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
             {error && (
               <div style={{
                 background: T.redGhost, border: `1px solid ${T.red}`,
-                borderRadius: 8, padding: "10px 14px", marginBottom: 14,
+                borderRadius: T.radius, padding: "10px 14px", marginBottom: 14,
                 fontSize: 13, color: T.red,
               }}>
                 {error}
@@ -335,13 +335,13 @@ export function AdminTurnos() {
     .filter((t) => !filtroGuardia || t.usuario_id === filtroGuardia);
 
   const selStyle = {
-    background: T.bgCard, color: T.text, border: `1px solid ${T.border}`, borderRadius: 8,
-    padding: "8px 10px", fontSize: 12, fontFamily: "var(--font-ui)", minWidth: 160, maxWidth: 240,
+    background: T.bgCard, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radius,
+    padding: "8px 10px", fontSize: 12, fontFamily: FONT.ui, minWidth: 160, maxWidth: 240,
   };
   const inputStyle = {
-    width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px solid ${T.border}`,
+    width: "100%", padding: "10px 12px", borderRadius: T.radius, border: `1px solid ${T.border}`,
     background: T.bgCard, color: T.text, fontSize: 13, marginBottom: 10, boxSizing: "border-box",
-    outline: "none", fontFamily: "var(--font-ui)",
+    fontFamily: FONT.ui,
   };
 
   return (
@@ -353,11 +353,11 @@ export function AdminTurnos() {
       />
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", margin: "4px 0 12px" }}>
-        <select value={filtroInstalacion} onChange={(e) => setFiltroInstalacion(e.target.value)} style={selStyle}>
+        <select aria-label="Filtrar por instalación" value={filtroInstalacion} onChange={(e) => setFiltroInstalacion(e.target.value)} style={selStyle}>
           <option value="">Todas las instalaciones</option>
           {instalaciones.map((i) => <option key={i.id} value={i.id}>{i.nombre}</option>)}
         </select>
-        <select value={filtroGuardia} onChange={(e) => setFiltroGuardia(e.target.value)} style={selStyle}>
+        <select aria-label="Filtrar por guardia" value={filtroGuardia} onChange={(e) => setFiltroGuardia(e.target.value)} style={selStyle}>
           <option value="">Todos los guardias</option>
           {guardias.map((g) => <option key={g.id} value={g.id}>{g.nombre}</option>)}
         </select>
@@ -367,7 +367,7 @@ export function AdminTurnos() {
       </div>
 
       {aviso && (
-        <div style={{ background: T.bgCard, color: T.accent, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 600, marginBottom: 10 }}>
+        <div style={{ background: T.bgCard, color: T.accent, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "8px 12px", fontSize: 12, fontWeight: 600, marginBottom: 10 }}>
           <Icon name="circle-check" size={16} />{" "}{aviso}
         </div>
       )}
@@ -385,7 +385,7 @@ export function AdminTurnos() {
       )}
 
       <div style={{
-        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
+        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
         padding: "12px 16px", marginTop: 18, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
       }}>
         <Icon name="download" size={22} />

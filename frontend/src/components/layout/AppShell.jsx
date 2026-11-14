@@ -29,6 +29,7 @@ import { CentralPanel } from "../../screens/operador-central/CentralPanel";
 
 // ─── Plataforma (super admin) ───
 import { EmpresasPanel } from "../../screens/plataforma/EmpresasPanel";
+import { PlataformaDispositivos } from "../../screens/plataforma/PlataformaDispositivos";
 
 // ─── Administrador ───
 import { AdminPanel } from "../../screens/administrador/AdminPanel";
@@ -93,6 +94,7 @@ function RoleContent({ user, rol, section }) {
   }
   if (rol === ROL.SUPER_ADMIN) {
     if (section === "empresas") return <EmpresasPanel />;
+    if (section === "dispositivos") return <PlataformaDispositivos />;
   }
   if (rol === ROL.ADMINISTRADOR) {
     // Admin ya no tiene el panel de monitoreo — solo gestión RRHH/config

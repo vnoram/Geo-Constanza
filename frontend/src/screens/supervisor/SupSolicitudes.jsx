@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { T } from "../../theme/theme";
+import { FONT, T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
 import { Badge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
@@ -22,7 +22,7 @@ const cuando = (s) => {
   return `${dia(s.fecha_desde)} → ${dia(s.fecha_hasta)} · ${diasEntre(s.fecha_desde, s.fecha_hasta)} días`;
 };
 
-const tarjeta = { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 14, marginBottom: 8 };
+const tarjeta = { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 14, marginBottom: 8 };
 
 export function SupSolicitudes() {
   const [filtro, setFiltro] = useState("pendiente");
@@ -67,8 +67,8 @@ export function SupSolicitudes() {
           <button type="button" key={id || "todas"} className="touch-target gc-accion-btn gc-accion-btn--morado" aria-pressed={filtro === id}
             onClick={() => { setFiltro(id); setRechazando(null); setError(""); setAviso(""); }} style={{
               background: filtro === id ? T.focusGhost : "transparent", border: `1px solid ${filtro === id ? T.borderFocus : T.border}`,
-              color: filtro === id ? T.focusText : T.text, borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 600,
-              cursor: "pointer", fontFamily: "var(--font-ui)", transition: "all 0.15s",
+              color: filtro === id ? T.focusText : T.text, borderRadius: T.radius, padding: "8px 14px", fontSize: 12, fontWeight: 600,
+              cursor: "pointer", fontFamily: FONT.ui, transition: "all 0.15s",
             }}>{label}</button>
         ))}
       </div>
@@ -111,10 +111,10 @@ export function SupSolicitudes() {
 
             {s.estado === "pendiente" && (rechazando === s.id ? (
               <div style={{ marginTop: 10 }}>
-                <textarea value={comentario} onChange={(e) => setComentario(e.target.value)} maxLength={300} rows={2} autoFocus
+                <textarea aria-label="Motivo del rechazo (obligatorio)" value={comentario} onChange={(e) => setComentario(e.target.value)} maxLength={300} rows={2} autoFocus
                   placeholder="Motivo del rechazo (obligatorio)" style={{
                     width: "100%", boxSizing: "border-box", background: T.bgInput, color: T.text, border: `1px solid ${T.border}`,
-                    borderRadius: 8, padding: "8px 10px", fontSize: 12, fontFamily: "var(--font-ui)", resize: "vertical", outline: "none",
+                    borderRadius: T.radius, padding: "8px 10px", fontSize: 12, fontFamily: FONT.ui, resize: "vertical",
                   }} />
                 <div className="action-wrap" style={{ display: "flex", gap: 8, marginTop: 8 }}>
                   <Btn variant="rechazar" onClick={() => resolver(s, "rechazar")} loading={ocupado === s.id}>Confirmar rechazo</Btn>

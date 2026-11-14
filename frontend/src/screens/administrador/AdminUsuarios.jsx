@@ -1,6 +1,7 @@
+import { KPI } from "../../components/ui/KPI";
 import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect } from "react";
-import { T } from "../../theme/theme";
+import { FONT, T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
 import { Btn } from "../../components/ui/Btn";
 import { Dialogo } from "../../components/ui/Dialogo";
@@ -28,8 +29,8 @@ const VACÍO = { rut: "", nombre: "", email: "", telefono: "", rol: ROL.GGSS, in
 const inputStyle = {
   width: "100%", padding: "10px 12px", boxSizing: "border-box",
   background: T.bgInput, border: `1px solid ${T.border}`,
-  borderRadius: 8, color: T.text, fontSize: 14, outline: "none",
-  fontFamily: "var(--font-ui)",
+  borderRadius: T.radius, color: T.text, fontSize: 14,
+  fontFamily: FONT.ui,
 };
 
 function Field({ label, required, children }) {
@@ -100,14 +101,14 @@ function UsuarioModal({ inicial, instalaciones: todas, onClose, onSaved }) {
     }}>
       <div className="admin-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`,
-        borderRadius: 8, padding: 24, width: "100%", maxWidth: 480,
+        borderRadius: T.radius, padding: 24, width: "100%", maxWidth: 480,
         maxHeight: "90vh", overflowY: "auto",
       }}>
         <div className="admin-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <span style={{ fontWeight: 700, fontSize: 16, color: T.text }}>
             {esEdicion ? "Editar Usuario" : "Crear Usuario"}
           </span>
-          <button className="touch-target" aria-label="Cerrar" onClick={onClose} style={{ background: "none", border: "none", color: T.textMut, fontSize: 20, cursor: "pointer" }}><Icon name="x" size={16} /></button>
+          <button className="touch-target gc-accion-btn gc-accion-btn--morado" aria-label="Cerrar" onClick={onClose} style={{ background: "none", border: "none", color: T.textMut, fontSize: 20, cursor: "pointer" }}><Icon name="x" size={16} /></button>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -186,7 +187,7 @@ function UsuarioModal({ inicial, instalaciones: todas, onClose, onSaved }) {
                 <div style={{ fontSize: 13, color: T.textMut }}>No hay instalaciones creadas aún.</div>
               ) : (
                 <div style={{
-                  border: `1px solid ${T.border}`, borderRadius: 8,
+                  border: `1px solid ${T.border}`, borderRadius: T.radius,
                   background: T.bgInput, maxHeight: 190, overflowY: "auto",
                 }}>
                   {instalaciones.map((inst) => {
@@ -228,7 +229,7 @@ function UsuarioModal({ inicial, instalaciones: todas, onClose, onSaved }) {
           )}
 
           {error && (
-            <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: 8, background: T.redGhost, color: T.red, fontSize: 13 }}>
+            <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: T.radius, background: T.redGhost, color: T.red, fontSize: 13 }}>
               {error}
             </div>
           )}
@@ -308,6 +309,16 @@ export function AdminUsuarios() {
         action={{ label: "+ Crear", onClick: () => setModal(VACÍO) }}
       />
 
+      {!loading && (
+        <div className="gc-dashboard-kpis">
+          <KPI label="Total" value={usuarios.length} sub="usuarios cargados" />
+          <KPI label="Activos" value={usuarios.filter(u => u.estado === "activo").length} sub="entre los usuarios cargados" accent={T.accent} />
+          {GRUPOS.map(({ clave, roles, titulo }) => (
+            <KPI key={clave} label={titulo} value={usuarios.filter(u => roles.includes(u.rol)).length} sub="usuarios cargados" />
+          ))}
+        </div>
+      )}
+
       {loading && (
         <div style={{ textAlign: "center", color: T.textMut, padding: 32, fontSize: 14 }}>
           Cargando usuarios...
@@ -330,7 +341,7 @@ export function AdminUsuarios() {
         const instSup = u.instalaciones_sup ?? [];
         return (
           <div className="admin-card" key={u.id} style={{
-            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
+            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
             padding: "12px 14px", marginBottom: 6,
           }}>
             <div className="admin-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -407,7 +418,7 @@ export function AdminUsuarios() {
                   style={{
                     background: "transparent", border: `1px solid ${T.border}`,
                     color: T.textSec, fontSize: 11, fontWeight: 700, padding: "5px 10px",
-                    borderRadius: 7, cursor: "pointer", fontFamily: "var(--font-ui)",
+                    borderRadius: 7, cursor: "pointer", fontFamily: FONT.ui,
                   }}
                 >
                   Editar
@@ -420,7 +431,7 @@ export function AdminUsuarios() {
                     style={{
                       background: "transparent", border: `1px solid ${T.border}`,
                       color: T.textSec, fontSize: 11, fontWeight: 700, padding: "5px 10px",
-                      borderRadius: 7, cursor: "pointer", fontFamily: "var(--font-ui)",
+                      borderRadius: 7, cursor: "pointer", fontFamily: FONT.ui,
                       opacity: desactivando === u.id ? 0.5 : 1,
                     }}
                   >

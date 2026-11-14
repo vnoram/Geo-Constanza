@@ -8,6 +8,8 @@
   --gc-text-2: #A8B7AE;
   --gc-text-3: #7C8F85;
   --gc-ok: #3E9A72;
+  --gc-ok-dim: #2F7757;
+  --gc-ok-ghost: rgba(62, 154, 114, 0.12);
   --gc-focus: #7A4EBF;
   --gc-alert: #E86A2A;
   --gc-radius: 8px;
@@ -23,7 +25,7 @@
   --border: var(--gc-line);
   --code-bg: var(--gc-card);
   --accent: var(--gc-ok);
-  --accent-bg: rgba(62, 154, 114, 0.12);
+  --accent-bg: var(--gc-ok-ghost);
   --accent-border: var(--gc-ok);
   --sans: var(--font-ui);
   --heading: var(--font-ui);
@@ -898,11 +900,11 @@ span[style*='text-transform: uppercase'] { display: inline-block; }
 .gc-btn-principal, .gc-btn-rechazar, .gc-btn-aprobar, .gc-btn-morado { transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease; }
 .gc-btn-principal:not(:disabled), .gc-btn-rechazar:not(:disabled) { background: rgba(232,106,42,0.14) !important; border: 1px solid rgba(232,106,42,0.45) !important; color: #EE9A6B !important; }
 .gc-btn-principal:hover:not(:disabled), .gc-btn-principal:focus-visible:not(:disabled),
-.gc-btn-rechazar:hover:not(:disabled),  .gc-btn-rechazar:focus-visible:not(:disabled) { background: #E86A2A !important; border-color: #E86A2A !important; color: #0E1714 !important; }
+.gc-btn-rechazar:hover:not(:disabled),  .gc-btn-rechazar:focus-visible:not(:disabled) { background: var(--gc-alert) !important; border-color: var(--gc-alert) !important; color: var(--gc-bg) !important; }
 .gc-btn-aprobar:not(:disabled) { background: rgba(62,154,114,0.16) !important; border: 1px solid rgba(62,154,114,0.5) !important; color: #9CCBB4 !important; }
-.gc-btn-aprobar:hover:not(:disabled), .gc-btn-aprobar:focus-visible:not(:disabled) { background: #2F7757 !important; border-color: #2F7757 !important; color: #F3EFE6 !important; }
+.gc-btn-aprobar:hover:not(:disabled), .gc-btn-aprobar:focus-visible:not(:disabled) { background: var(--gc-ok-dim) !important; border-color: var(--gc-ok-dim) !important; color: var(--gc-text) !important; }
 .gc-btn-morado:not(:disabled) { background: rgba(122,78,191,0.18) !important; border: 1px solid rgba(179,155,224,0.5) !important; color: #B9A8E0 !important; }
-.gc-btn-morado:hover:not(:disabled), .gc-btn-morado:focus-visible:not(:disabled) { background: #7A4EBF !important; border-color: #7A4EBF !important; color: #F3EFE6 !important; }
+.gc-btn-morado:hover:not(:disabled), .gc-btn-morado:focus-visible:not(:disabled) { background: var(--gc-focus) !important; border-color: var(--gc-focus) !important; color: var(--gc-text) !important; }
 .gc-btn-principal:active:not(:disabled), .gc-btn-rechazar:active:not(:disabled), .gc-btn-aprobar:active:not(:disabled), .gc-btn-morado:active:not(:disabled) { transform: translateY(1px); }
 .gc-btn-principal:focus-visible, .gc-btn-rechazar:focus-visible, .gc-btn-aprobar:focus-visible, .gc-btn-morado:focus-visible { outline: 2px solid #B39BE0; outline-offset: 1px; }
 
@@ -946,3 +948,71 @@ span[style*='text-transform: uppercase'] { display: inline-block; }
 .nov-ronda:hover .nov-ronda__tipo, .nov-ronda:focus-visible .nov-ronda__tipo { color: var(--nov-c) !important; }
 .nov-ronda .nov-ronda__badge { opacity: 0.55; transition: opacity 0.15s ease; }
 .nov-ronda:hover .nov-ronda__badge { opacity: 1; }
+
+/* ─── NOVEDADES: vista semanal (7 días) ─── */
+.nov-semana {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  align-items: start; /* cada día es independiente: su alto depende de sus novedades */
+}
+.nov-semana__dia {
+  border-radius: var(--gc-radius, 8px);
+  padding: 8px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.nov-semana__cab { display: flex; align-items: baseline; gap: 6px; }
+.nov-semana__vacio { font-size: 11px; color: var(--gc-text-3); }
+/* Teléfono: una lista vertical; los días vacíos ocupan una sola línea */
+.nov-semana__dia--vacio { flex-direction: row; align-items: center; justify-content: space-between; padding: 8px 10px; }
+@media (min-width: 640px) {
+  .nov-semana { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .nov-semana__dia--vacio { flex-direction: column; align-items: stretch; justify-content: flex-start; padding: 8px; }
+  .nov-semana__vacio { text-align: center; padding: 8px 0 4px; }
+}
+@media (min-width: 1100px) {
+  .nov-semana { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+}
+/* La vista del guardia es angosta (640 px); la semana necesita todo el ancho disponible */
+@media (min-width: 640px) {
+  .app-shell__main--guardia:has(.nov-semana) { max-width: 1200px; }
+}
+
+.gc-dashboard-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.gc-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 10px;
+}
+
+.gc-dashboard-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  .gc-audited-screen .touch-target,
+  .gc-dashboard-grid .touch-target,
+  .login .touch-target,
+  .login__demo-toggle,
+  .nov-semana__flecha {
+    min-height: 44px !important;
+    min-width: 44px;
+  }
+}
+
+.gc-audited-screen {
+  overflow-wrap: anywhere;
+}

@@ -17,11 +17,11 @@ export function ConfirmarInvitacionDispositivo({ token, onConfirmar, onCancelar 
 
   return (
     <main style={{ maxWidth: 480, margin: "48px auto", padding: 20, color: T.text }}>
-      <h1>Enrolar equipo corporativo</h1>
+      <h1 className="fluid-title" style={{ color: T.focusText }}>Enrolar equipo corporativo</h1>
       {empresa && <p>Este equipo será registrado como corporativo de {empresa}.</p>}
-      {error && <p role="alert">{error}</p>}
+      {error && <p role="alert" style={{ color: T.alert }}>{error}</p>}
       {!empresa && !error && <p role="status">Comprobando la invitación…</p>}
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         <Btn onClick={onConfirmar} disabled={!empresa}>Confirmar</Btn>
         <Btn onClick={onCancelar} variant="outline">Cancelar</Btn>
       </div>
