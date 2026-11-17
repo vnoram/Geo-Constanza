@@ -4,6 +4,7 @@ import { T, FONT } from "../../theme/theme";
 import { Icon } from "../../components/ui/Icon";
 import { KPI } from "../../components/ui/KPI";
 import { SubHeader } from "../../components/ui/SubHeader";
+import { ResumenMensual } from "../../components/ResumenMensual";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
@@ -659,6 +660,8 @@ function MonitoreoPanel({ token }) {
           </div>
         </div>
       )}
+
+      <ResumenMensual />
 
       {/* Mapa en vivo */}
       <SubHeader title="Mapa en Vivo · Todas las Instalaciones" />

@@ -4,6 +4,7 @@ import { T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
 import { Input } from "../../components/ui/Input";
 import { SubHeader } from "../../components/ui/SubHeader";
+import { ResumenMensual } from "../../components/ResumenMensual";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
 import { API_URL as API_BASE } from "../../config/api";
@@ -492,6 +493,8 @@ export function SupReportes() {
   return (
     <div className="operations-screen">
       <SectionHeader title="Reportes OS-10" sub="Informes operacionales para fiscalización" />
+
+      <ResumenMensual />
 
       {/* Filtros */}
       <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 18, marginBottom: 16 }}>
