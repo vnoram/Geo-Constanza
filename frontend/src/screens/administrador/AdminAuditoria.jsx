@@ -8,18 +8,62 @@ import { api } from "../../services/api";
 import { API_URL } from "../../config/api";
 import { useAuth } from "../../context/AuthContext";
 
+// Etiquetas legibles de cada acción registrada y su categoría. Lo no listado se muestra con el nombre
+// de la acción en palabras ("subir_documento" → "Subir documento") dentro de Gestión.
+const ACCIONES = {
+  login: ["Inicio de sesión", "acceso"], login_2fa: ["Verificación en dos pasos", "acceso"], enviar_2fa_email: ["Código enviado por correo", "acceso"],
+  activar_2fa: ["2FA activado", "seguridad"], reiniciar_2fa: ["2FA reiniciado", "seguridad"], cambio_password: ["Cambio de contraseña", "seguridad"],
+  reset_password: ["Contraseña restablecida", "seguridad"], solicitar_reset_password: ["Restablecimiento solicitado", "seguridad"],
+  canjear_codigo_dispositivo: ["Código de equipo canjeado", "equipos"], confirmar_invitacion_dispositivo: ["Invitación de equipo abierta", "equipos"],
+  crear_codigo_dispositivo: ["Código de equipo creado", "equipos"], enrolar_dispositivo: ["Equipo enrolado", "equipos"],
+  invitar_dispositivo: ["Equipo invitado", "equipos"], reenviar_invitacion_dispositivo: ["Invitación reenviada", "equipos"],
+  revocar_dispositivo: ["Equipo revocado", "equipos"], invitar_dispositivo_plataforma: ["Equipo principal invitado", "equipos"],
+  revocar_dispositivo_plataforma: ["Equipo revocado por plataforma", "equipos"],
+  crear_empresa: ["Empresa creada", "gestion"], activar_empresa: ["Empresa reactivada", "gestion"], suspender_empresa: ["Empresa suspendida", "gestion"],
+  crear: ["Registro creado", "gestion"], editar: ["Registro editado", "gestion"], desactivar: ["Registro desactivado", "gestion"],
+  escalar: ["Novedad escalada", "gestion"], resolver: ["Novedad resuelta", "gestion"], revisar_marcaje: ["Marcaje revisado", "gestion"],
+  crear_pauta_4x4: ["Pauta 4x4 creada", "gestion"], subir_documento: ["Documento subido", "gestion"],
+};
+const CATEGORIAS = {
+  gestion: { texto: "Gestión", color: "accent" },
+  equipos: { texto: "Equipos", color: "focus" },
+  seguridad: { texto: "Seguridad", color: "yellow" },
+  acceso: { texto: "Acceso", color: null },
+};
+const TABLAS = {
+  usuarios: "Usuario", dispositivos: "Equipo", novedades: "Novedad", turnos: "Turno", instalaciones: "Instalación",
+  empresas: "Empresa", documentos: "Documento", asistencias: "Marcaje",
+};
+// Filtro por tipo (en vez de uno por cada acción): "relevantes" excluye los accesos, que son ruido.
+const TIPOS = [
+  ["relevantes", "Relevantes (sin accesos)"], ["gestion", "Gestión"], ["equipos", "Equipos"],
+  ["seguridad", "Seguridad"], ["acceso", "Accesos"], ["todo", "Todo"],
+];
+const accionesDe = (tipo) => {
+  if (tipo === "todo") return "";
+  const categorias = tipo === "relevantes" ? ["gestion", "equipos", "seguridad"] : [tipo];
+  return Object.entries(ACCIONES).filter(([, [, c]]) => categorias.includes(c)).map(([k]) => k).join(",");
+};
+const clave = (a) => String(a ?? "").toLowerCase();
+const describir = (a) => {
+  const k = clave(a);
+  if (ACCIONES[k]) return { texto: ACCIONES[k][0], categoria: ACCIONES[k][1] };
+  const palabras = k.replace(/_/g, " ").trim();
+  return { texto: palabras ? palabras[0].toUpperCase() + palabras.slice(1) : "—", categoria: "gestion" };
+};
+
 export function AdminAuditoria() {
   const { token } = useAuth();
   const [logs, setLogs] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
-  const [form, setForm] = useState({ usuario_id: "", accion: "", fecha_inicio: "", fecha_fin: "" });
+  const [form, setForm] = useState({ usuario_id: "", accion: "relevantes", fecha_inicio: "", fecha_fin: "" });
   const [filtros, setFiltros] = useState(form);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [exportando, setExportando] = useState(false);
   const [error, setError] = useState("");
-  const query = new URLSearchParams(Object.entries(filtros).filter(([, valor]) => valor)).toString();
+  const query = new URLSearchParams(Object.entries({ ...filtros, accion: accionesDe(filtros.accion) }).filter(([, valor]) => valor)).toString();
   useEffect(() => {
     api.get("/usuarios?limit=200").then(res => setUsuarios(res.data ?? [])).catch(() => {});
   }, []);
@@ -57,9 +101,10 @@ export function AdminAuditoria() {
       <SectionHeader title="Auditoría" sub="Log de cambios del sistema" />
       {!loading && !error && (
         <div className="gc-dashboard-kpis">
-          <KPI label="Registros" value={logs.length} sub="en esta página" />
-          <KPI label="Acciones distintas" value={new Set(logs.map(l => l.accion)).size} sub="en esta página" />
-          <KPI label="Páginas" value={totalPages} sub="para los filtros aplicados" />
+          {Object.entries(CATEGORIAS).filter(([id]) => id !== "acceso").map(([id, c]) => (
+            <KPI key={id} label={c.texto} value={logs.filter(l => describir(l.accion).categoria === id).length} sub="en esta página"
+              accent={id === "seguridad" ? T.yellow : id === "gestion" ? T.accent : undefined} />
+          ))}
         </div>
       )}
       <form onSubmit={e => { e.preventDefault(); setPage(1); setFiltros({ ...form }); }} style={{ marginBottom: 16 }}>
@@ -67,7 +112,9 @@ export function AdminAuditoria() {
           <label>Usuario<select name="usuario_id" value={form.usuario_id} onChange={actualizar} style={campo}>
             <option value="">Todos</option>{usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
           </select></label>
-          <label>Acción<input name="accion" value={form.accion} onChange={actualizar} placeholder="Todas" style={campo} /></label>
+          <label>Tipo<select name="accion" value={form.accion} onChange={actualizar} style={campo}>
+            {TIPOS.map(([id, texto]) => <option key={id} value={id}>{texto}</option>)}
+          </select></label>
           <label>Desde<input type="date" name="fecha_inicio" value={form.fecha_inicio} onChange={actualizar} style={campo} /></label>
           <label>Hasta<input type="date" name="fecha_fin" value={form.fecha_fin} onChange={actualizar} style={campo} /></label>
         </div>
@@ -80,19 +127,31 @@ export function AdminAuditoria() {
       {loading && <p style={{ color: T.textMut }}>Cargando auditoría...</p>}
       {!loading && !logs.length && !error && <p style={{ color: T.textMut }}>Sin registros para estos filtros.</p>}
       <div className="gc-dashboard-grid">
-        {logs.map(l => (
-          <div className="gc-dashboard-card" key={l.id} style={{
-            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
-            padding: 12, borderLeft: `3px solid ${T.accent}`,
-          }}>
-            <div className="admin-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-              <Badge color="accent">{l.accion}</Badge>
-              <span style={{ fontSize: 10, color: T.textMut, fontFamily: FONT.mono }}>{new Date(l.created_at).toLocaleString("es-CL", { timeZone: "America/Santiago" })}</span>
-          </div>
-          <div style={{ fontSize: 13, fontWeight: 600 }}>{l.usuario?.nombre ?? "—"}</div>
-          <div style={{ fontSize: 11, color: T.textSec, fontFamily: FONT.mono, background: T.bgInput, borderRadius: T.radius, padding: 8, overflowWrap: "anywhere" }}>{l.tabla_afectada} · {l.registro_id} · IP: {l.ip_address ?? "—"}</div>
-        </div>
-      ))}
+        {logs.map(l => {
+          const { texto, categoria } = describir(l.accion);
+          const cat = CATEGORIAS[categoria];
+          const sujeto = TABLAS[l.tabla_afectada] ?? l.tabla_afectada;
+          return (
+            <div className="gc-dashboard-card" key={l.id} style={{
+              background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
+              padding: 12, borderLeft: `3px solid ${cat.color === "yellow" ? T.yellow : cat.color === "focus" ? T.focusText : cat.color ? T.accent : T.border}`,
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                {cat.color ? <Badge color={cat.color}>{cat.texto}</Badge> : <span style={{ fontSize: 11, color: T.textMut }}>{cat.texto}</span>}
+                <time dateTime={l.created_at} style={{ fontSize: 11, color: T.textMut, fontFamily: FONT.mono }}>
+                  {new Date(l.created_at).toLocaleString("es-CL", { timeZone: "America/Santiago", dateStyle: "short", timeStyle: "short" })}
+                </time>
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>{texto}</div>
+              <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>
+                {l.usuario?.nombre ?? "Sistema"}{sujeto ? ` · ${sujeto}` : ""}
+              </div>
+              <div title={`ID ${l.registro_id ?? "—"}`} style={{ fontSize: 10, color: T.textMut, fontFamily: FONT.mono, marginTop: 6 }}>
+                {l.registro_id ? `#${String(l.registro_id).slice(-6)}` : ""}{l.ip_address ? ` · IP ${l.ip_address}` : ""}
+              </div>
+            </div>
+          );
+        })}
       </div>
       {totalPages > 1 && <div className="action-wrap" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
         <Btn variant="ghost" disabled={page <= 1 || loading} onClick={() => setPage(p => p - 1)}>Anterior</Btn>
