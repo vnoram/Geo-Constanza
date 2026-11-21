@@ -228,6 +228,7 @@ model Asistencia {
   revisado_en         DateTime?
   comentario_revision String?
   revision_estado     String?
+  comentario_guardia  String?      // explicación del guardia al pedir una nueva revisión tras un rechazo
   dispositivo         Dispositivo? @relation(fields: [empresa_id, dispositivo_id], references: [empresa_id, id], onDelete: Restrict)
   revisor_marcaje     Usuario? @relation("MarcajeRevisor", fields: [empresa_id, revisado_por], references: [empresa_id, id], onDelete: Restrict)
 

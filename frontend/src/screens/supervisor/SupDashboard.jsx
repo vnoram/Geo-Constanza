@@ -204,6 +204,11 @@ export function SupDashboard() {
                 <Btn variant="rechazar" onClick={() => revisar(g, "rechazar")} disabled={revisando === g.asistencia_id} style={{ minHeight: 32, padding: "0 12px", fontSize: 12 }}>Rechazar</Btn>
               </div>
             )}
+            {g.comentario_guardia && !g.revision_estado && (
+              <div style={{ fontSize: 11, color: T.text, marginTop: 4 }}>
+                <strong>Reenviado por el guardia:</strong> {g.comentario_guardia}
+              </div>
+            )}
             {g.revision_estado === "rechazado" && g.comentario_revision && (
               <div style={{ fontSize: 10, color: T.textMut, marginTop: 2 }}>Motivo: {g.comentario_revision}</div>
             )}

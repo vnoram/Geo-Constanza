@@ -63,6 +63,7 @@ const getDashboardHoy = async (user) => {
       ...(habilitada() ? {
         asistencia_id: asistencia?.id ?? null, dispositivo: asistencia?.dispositivo ?? null,
         revision_estado: asistencia?.revision_estado ?? null, comentario_revision: asistencia?.comentario_revision ?? null,
+        comentario_guardia: asistencia?.comentario_guardia ?? null,
       } : {}),
       distancia_entrada_m: asistencia?.distancia_entrada_m ?? null,
       precision_entrada_m: asistencia?.precision_entrada_m ?? null,

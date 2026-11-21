@@ -269,6 +269,9 @@ Con `DEVICE_POLICY=on`, un equipo asociado a una instalación solo acepta marcaj
 
 Solo con `DEVICE_POLICY=on` (404 si está apagada). Roles: supervisor (solo sus instalaciones), operador central y administrador. Cuerpo: `{ "decision": "aprobar" | "rechazar", "comentario": "..." }`; el comentario es obligatorio al rechazar. Solo marcajes con `verificacion_gps` `por_revisar` o `sin_ubicacion` (400 en otro caso). La decisión se aplica con una actualización condicional: repetir la misma decisión es idempotente y una decisión distinta responde 409. Se conserva el `verificacion_gps` original, se audita (`revisar_marcaje`) y se notifica al guardia.
 
+#### POST /asistencia/:id/solicitar-revision
+Solo con `DEVICE_POLICY=on`. Rol: ggss, únicamente sobre su propio marcaje, con el turno abierto y `revision_estado = 'rechazado'` (400 en otro caso). Cuerpo: `{ "comentario": "..." }` (5 a 500 caracteres, obligatorio). El marcaje vuelve a quedar pendiente de revisión (`revision_estado` y `comentario_revision` se limpian, la explicación se guarda en `comentario_guardia`), se avisa al supervisor de la instalación y el rechazo anterior queda en la auditoría (`reenviar_marcaje`). El supervisor decide de nuevo con `PATCH /asistencia/:id/revisar`.
+
 Con la política activa, el reporte exigido para marcar la salida excluye los tipos de rutina «Ronda», «Fin de ronda» y «Cambio de turno»; cuentan «Sin novedad» y las novedades reales.
 
 `GET /dispositivos/mis-invitaciones` (supervisor y operador central) lista las invitaciones pendientes dirigidas al usuario autenticado y `POST /dispositivos/:id/aceptar` registra el equipo actual sin volver a iniciar sesión, devolviendo `{ "token" }` una vez (400 si no es el destinatario o venció). El enlace por correo sigue siendo la vía para el primer equipo, cuando aún no hay otro corporativo desde el cual entrar.

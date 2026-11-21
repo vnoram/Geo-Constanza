@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const { z } = require('zod');
 const { validarBody } = require('../validators/auth.validators');
-const { revisar } = require('../services/revisionMarcajes.service');
+const { revisar, solicitarNuevaRevision } = require('../services/revisionMarcajes.service');
 const asistenciaController = require('../controllers/asistencia.controller');
 const { authenticate } = require('../middlewares/auth');
 const { authorize, exigirEmpresa } = require('../middlewares/rbac');
@@ -40,6 +40,15 @@ router.patch('/:id/revisar', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL,
   async (req, res, next) => {
     try {
       res.json(await revisar(req.params.id, req.body, req.user, { ip: req.ip, userAgent: req.get('user-agent') }));
+    } catch (err) { next(err); }
+  });
+
+// El guardia explica su caso y reenvía a revisión un marcaje rechazado.
+router.post('/:id/solicitar-revision', authorize(ROLES.GGSS),
+  validarBody(z.object({ comentario: z.string().trim().min(5).max(500) })),
+  async (req, res, next) => {
+    try {
+      res.json(await solicitarNuevaRevision(req.params.id, req.body, req.user, { ip: req.ip, userAgent: req.get('user-agent') }));
     } catch (err) { next(err); }
   });
 

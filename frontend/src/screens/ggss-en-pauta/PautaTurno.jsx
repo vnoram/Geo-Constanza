@@ -88,6 +88,7 @@ export function PautaTurno({ user }) {
   const [error,          setError]          = useState("");
   const [cierresAuto,    setCierresAuto]    = useState([]); // entradas olvidadas cerradas por el sistema
   const [precisionGps,   setPrecisionGps]   = useState(null);
+  const [explicacion,    setExplicacion]    = useState(""); // texto al reenviar un marcaje rechazado
   const [lecturaVivo,    setLecturaVivo]    = useState(null); // precisión de la lectura mientras se marca
 
   // ── Hidratación — servidor es la fuente de verdad ─────────────
@@ -113,6 +114,10 @@ export function PautaTurno({ user }) {
             hora_salida:     null,          // activo → sin salida
             estado:          estado.estado,
             minutos_retraso: estado.minutos_retraso ?? 0,
+            verificacion:    estado.verificacion_gps ?? null,
+            revision:        estado.revision_estado ?? null,
+            comentarioRevision: estado.comentario_revision ?? null,
+            comentarioGuardia: estado.comentario_guardia ?? null,
           };
           setMarcaje(m);
           cacheWrite(CACHE_KEYS.pautaMarcajeHoy, m);
@@ -160,6 +165,29 @@ export function PautaTurno({ user }) {
     return () => { activo = false; };
   }, [turno, marcaje?.hora_salida]);
 
+  // Mientras el supervisor no decide, consulta el resultado de la revisión (aprobado / rechazado).
+  const esperaRevision = !!marcaje?.hora_entrada && !marcaje?.hora_salida && !marcaje?.revision
+    && ["por_revisar", "sin_ubicacion"].includes(marcaje?.verificacion);
+  useEffect(() => {
+    if (!esperaRevision) return undefined;
+    let activo = true;
+    const consultar = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/asistencia/estado-actual`, { headers: { Authorization: `Bearer ${token}` } });
+        const d = await res.json();
+        if (!activo || !res.ok || !d.activo || !d.revision_estado) return;
+        setMarcaje((m) => {
+          if (!m || m.asistencia_id !== d.asistencia_id) return m;
+          const nuevo = { ...m, revision: d.revision_estado, comentarioRevision: d.comentario_revision ?? null };
+          cacheWrite(CACHE_KEYS.pautaMarcajeHoy, nuevo);
+          return nuevo;
+        });
+      } catch { /* sin red: se reintenta en el siguiente ciclo */ }
+    };
+    const id = setInterval(consultar, 20000);
+    return () => { activo = false; clearInterval(id); };
+  }, [esperaRevision, token]);
+
   // ── Marcar Entrada ─────────────────────────────────────────────
   const marcarEntrada = useCallback(async () => {
     setError("");
@@ -202,6 +230,31 @@ export function PautaTurno({ user }) {
       setLoadingMarcaje(false);
     }
   }, [token, turno]);
+
+  // ── Reenviar a revisión un marcaje rechazado, con una explicación ──
+  const solicitarRevision = useCallback(async () => {
+    setError("");
+    const texto = explicacion.trim();
+    if (texto.length < 5) { setError("Explica brevemente tu situación (mínimo 5 caracteres)."); return; }
+    setLoadingMarcaje(true);
+    try {
+      const res = await fetch(`${API_BASE}/asistencia/${marcaje.asistencia_id}/solicitar-revision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ comentario: texto }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo reenviar el marcaje");
+      const m = { ...marcaje, revision: null, comentarioRevision: null, comentarioGuardia: data.comentario_guardia ?? texto };
+      setMarcaje(m);
+      setExplicacion("");
+      cacheWrite(CACHE_KEYS.pautaMarcajeHoy, m);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingMarcaje(false);
+    }
+  }, [token, marcaje, explicacion]);
 
   // ── Marcar Salida ──────────────────────────────────────────────
   const marcarSalida = useCallback(async () => {
@@ -343,12 +396,16 @@ export function PautaTurno({ user }) {
                     : "—"
               }
               accent={
-                yaSalio ? T.accent : marcaje?.estado === "tardio" ? T.yellow : T.accent
+                marcaje?.revision === "rechazado" ? T.red
+                  : yaSalio ? T.accent : marcaje?.estado === "tardio" ? T.yellow : T.accent
               }
               sub={
                 yaSalio
                   ? "Registrada"
-                  : (marcaje?.minutos_retraso > 0 ? `${marcaje.minutos_retraso} min retraso` : "")
+                  : [
+                      marcaje?.minutos_retraso > 0 ? `${marcaje.minutos_retraso} min retraso` : "",
+                      marcaje?.revision ? `marcaje ${marcaje.revision}` : "",
+                    ].filter(Boolean).join(" · ")
               }
             />
           </div>
@@ -373,6 +430,53 @@ export function PautaTurno({ user }) {
               <strong>{VERIFICACION_GPS[marcaje.verificacion].texto}.</strong>
               {marcaje.mensaje_gps ? ` ${marcaje.mensaje_gps}` : ""}
               {marcaje.revision ? ` Revisión: ${marcaje.revision}${marcaje.comentarioRevision ? ` (${marcaje.comentarioRevision})` : ""}.` : ""}
+            </div>
+          )}
+          {yaEntro && marcaje.revision === "rechazado" && (
+            <div style={{
+              background: T.redGhost, border: `1px solid ${T.red}66`, borderRadius: T.radius,
+              padding: 12, marginBottom: 12, fontSize: 13, color: T.red, fontWeight: 600,
+            }}>
+              Tu supervisor rechazó este marcaje.{marcaje.comentarioRevision ? ` Motivo: ${marcaje.comentarioRevision}` : ""}
+              {!yaSalio && (
+                <div style={{ marginTop: 10, fontWeight: 400 }}>
+                  <div style={{ fontSize: 12, marginBottom: 6 }}>
+                    Si crees que es un error, explica tu situación y tu supervisor volverá a revisar el marcaje.
+                  </div>
+                  <textarea
+                    value={explicacion}
+                    onChange={(e) => setExplicacion(e.target.value)}
+                    maxLength={500}
+                    rows={3}
+                    placeholder="Ej.: Estoy en la instalación; el computador no tiene GPS."
+                    style={{
+                      width: "100%", boxSizing: "border-box", background: "#0E1714", color: T.text,
+                      border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 10, fontSize: 13, fontFamily: FONT.ui,
+                    }}
+                  />
+                  <div style={{ marginTop: 8 }}>
+                    <Btn variant="outline" onClick={solicitarRevision} disabled={loadingMarcaje || explicacion.trim().length < 5}>
+                      {loadingMarcaje ? "Enviando..." : "Reenviar a revisión"}
+                    </Btn>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {yaEntro && !marcaje.revision && marcaje.comentarioGuardia && !yaSalio && (
+            <div style={{
+              background: T.yellowGhost, border: `1px solid ${T.yellow}44`, borderRadius: T.radius,
+              padding: 12, marginBottom: 12, fontSize: 13, color: T.yellow,
+            }}>
+              <strong>Reenviaste tu marcaje a revisión.</strong> Tu supervisor lo revisará de nuevo. Tu explicación: «{marcaje.comentarioGuardia}»
+            </div>
+          )}
+          {yaEntro && marcaje.revision === "aprobado" && (
+            <div style={{
+              background: T.accentGhost, border: `1px solid ${T.accent}44`, borderRadius: T.radius,
+              padding: 12, marginBottom: 12, fontSize: 13, color: T.accent, fontWeight: 600,
+            }}>
+              Tu supervisor aprobó este marcaje.
             </div>
           )}
           {yaSalio && (
@@ -433,7 +537,7 @@ export function PautaTurno({ user }) {
 
               {!yaEntro ? (
                 <Btn onClick={marcarEntrada} loading={loadingMarcaje} full>
-                  📍 Marcar Entrada
+                  Marcar Entrada
                 </Btn>
               ) : (
                 /* Botón naranja para salida — usa button nativo porque Btn no admite color custom */
@@ -451,7 +555,7 @@ export function PautaTurno({ user }) {
                     boxShadow: loadingMarcaje ? "none" : "0 4px 20px #E05A0044",
                   }}
                 >
-                  {loadingMarcaje ? "⏳ Procesando..." : "📍 Marcar Salida"}
+                  {loadingMarcaje ? "⏳ Procesando..." : "Marcar Salida"}
                 </button>
               )}
             </div>

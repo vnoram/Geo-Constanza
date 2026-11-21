@@ -21,7 +21,7 @@ const ACCIONES = {
   revocar_dispositivo_plataforma: ["Equipo revocado por plataforma", "equipos"],
   crear_empresa: ["Empresa creada", "gestion"], activar_empresa: ["Empresa reactivada", "gestion"], suspender_empresa: ["Empresa suspendida", "gestion"],
   crear: ["Registro creado", "gestion"], editar: ["Registro editado", "gestion"], desactivar: ["Registro desactivado", "gestion"],
-  escalar: ["Novedad escalada", "gestion"], resolver: ["Novedad resuelta", "gestion"], revisar_marcaje: ["Marcaje revisado", "gestion"],
+  escalar: ["Novedad escalada", "gestion"], resolver: ["Novedad resuelta", "gestion"], revisar_marcaje: ["Marcaje revisado", "gestion"], reenviar_marcaje: ["Marcaje reenviado a revisión", "gestion"],
   crear_pauta_4x4: ["Pauta 4x4 creada", "gestion"], subir_documento: ["Documento subido", "gestion"],
 };
 const CATEGORIAS = {

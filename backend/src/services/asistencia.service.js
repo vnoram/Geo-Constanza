@@ -389,7 +389,7 @@ const obtenerEstadoActual = async (usuarioId) => {
       hora_entrada: abierta.hora_entrada,
       estado: abierta.estado,
       minutos_retraso: abierta.minutos_retraso,
-      ...(habilitada() ? { verificacion_gps: abierta.verificacion_gps, revision_estado: abierta.revision_estado, comentario_revision: abierta.comentario_revision } : {}),
+      ...(habilitada() ? { verificacion_gps: abierta.verificacion_gps, revision_estado: abierta.revision_estado, comentario_revision: abierta.comentario_revision, comentario_guardia: abierta.comentario_guardia } : {}),
       turno_id: abierta.turno_id,
       instalacion_id: abierta.instalacion_id,
       turno: abierta.turno,
