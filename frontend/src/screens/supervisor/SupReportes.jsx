@@ -8,6 +8,7 @@ import { SectionHeader } from "../../components/ui/SectionHeader";
 import { useAuth } from "../../context/AuthContext";
 import { API_URL as API_BASE } from "../../config/api";
 import { ahoraChile, ZONA_CHILE } from "../../utils/fechaChile";
+import { formatearRut } from "../../utils/rut";
 
 
 // ─── CARGA DINÁMICA DE jsPDF + autoTable ─────────────────────────
@@ -99,7 +100,7 @@ async function generarPDFOS10({ asistencias, novedades, rondas = [], instNombre,
   } else {
     const filas = asistencias.map((a) => [
       new Date(a.hora_entrada).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE }),
-      a.usuario?.rut  || "—",
+      formatearRut(a.usuario?.rut) || "—",
       a.usuario?.nombre || "—",
       a.instalacion?.nombre || "—",
       `${a.turno?.hora_inicio || "—"} – ${a.turno?.hora_fin || "—"}`,
@@ -254,7 +255,7 @@ function TablaPreview({ datos, tipo }) {
           {datos.slice(0, 50).map((a, i) => (
             <dl className="report-card" key={i}>
               <CampoReporte etiqueta="Fecha">{new Date(a.hora_entrada).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE })}</CampoReporte>
-              <CampoReporte etiqueta="RUT">{a.usuario?.rut || "—"}</CampoReporte>
+              <CampoReporte etiqueta="RUT">{formatearRut(a.usuario?.rut) || "—"}</CampoReporte>
               <CampoReporte etiqueta="Nombre">{a.usuario?.nombre || "—"}</CampoReporte>
               <CampoReporte etiqueta="Instalación">{a.instalacion?.nombre || "—"}</CampoReporte>
               <CampoReporte etiqueta="Entrada">{new Date(a.hora_entrada).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_CHILE })}</CampoReporte>
@@ -279,7 +280,7 @@ function TablaPreview({ datos, tipo }) {
             {datos.slice(0, 50).map((a, i) => (
               <tr key={i} style={{ borderBottom: `1px solid ${T.border}22` }}>
                 <td style={{ ...tdStyle, ...tdNoWrap, minWidth: 82 }}>{new Date(a.hora_entrada).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE })}</td>
-                <td style={{ ...tdStyle, ...tdNoWrap, minWidth: 96 }}>{a.usuario?.rut || "—"}</td>
+                <td style={{ ...tdStyle, ...tdNoWrap, minWidth: 96 }}>{formatearRut(a.usuario?.rut) || "—"}</td>
                 <td style={tdStyle}>{a.usuario?.nombre || "—"}</td>
                 <td style={tdStyle}>{a.instalacion?.nombre || "—"}</td>
                 <td style={{ ...tdStyle, ...tdNoWrap, minWidth: 74 }}>{new Date(a.hora_entrada).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", timeZone: ZONA_CHILE })}</td>

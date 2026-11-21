@@ -8,6 +8,7 @@ import { api } from "../../services/api";
 import { ahoraChile, sumarDias } from "../../utils/fechaChile";
 import { SemanaTurnos, lunesDe } from "./SemanaTurnos";
 import { CalendarioRango } from "../../components/ui/CalendarioRango";
+import { formatearRut } from "../../utils/rut";
 
 const hoyLocal = () => ahoraChile().fecha;
 
@@ -507,7 +508,7 @@ export function SupGuardias() {
             <div className="responsive-list-row__main">
               <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{g.nombre}</div>
               <div style={{ fontSize: 11, color: T.textMut }}>
-                GGSS {g.rut ? `· ${g.rut}` : ""}
+                GGSS {g.rut ? `· ${formatearRut(g.rut)}` : ""}
               </div>
             </div>
             <Badge color={g.estado === "activo" ? "accent" : "red"}>{g.estado}</Badge>

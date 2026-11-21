@@ -14,7 +14,7 @@ const passwordReset = require('../passwordReset.service');
 const service = require('../usuarios.service');
 const { ROLES } = require('../../constants/roles');
 const { ESTADO_USUARIO } = require('../../constants/estados');
-const datos = { nombre: 'Prueba', rut: 'rut-prueba', email: 'prueba@example.invalid', rol: ROLES.GGSS, password: 'entrada-simulada' };
+const datos = { nombre: 'Prueba', rut: '12345678-5', email: 'prueba@example.invalid', rol: ROLES.GGSS, password: 'entrada-simulada' };
 beforeEach(() => {
   jest.resetAllMocks(); prisma.$transaction.mockImplementation(fn => fn(prisma));
   bcrypt.hash.mockResolvedValue('hash-simulado');

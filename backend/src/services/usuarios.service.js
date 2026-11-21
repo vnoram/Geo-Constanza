@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const { prisma, prismaGlobal } = require('../config/database');
 const { ROLES } = require('../constants/roles');
 const passwordReset = require('./passwordReset.service');
+const { normalizarRut } = require('../utils/rut');
 
 const BCRYPT_ROUNDS = 12;
 
@@ -78,6 +79,13 @@ const rechazo = (mensaje) => Object.assign(new Error(mensaje), { statusCode: 400
 // El rol de plataforma (super_admin) no pertenece a ninguna empresa: nadie puede crearlo ni asignarlo desde aquí.
 const ROLES_DE_EMPRESA = Object.values(ROLES).filter((r) => r !== ROLES.SUPER_ADMIN);
 
+// RUT guardado siempre en formato canónico ("12345678-9") y con dígito verificador válido.
+const validarRut = (rut) => {
+  const normalizado = normalizarRut(rut);
+  if (!normalizado) throw rechazo('El RUT no es válido. Revisa el número y el dígito verificador.');
+  return normalizado;
+};
+
 // Nadie define la contraseña de otra persona: se guarda una clave aleatoria que nadie conoce y se envía
 // una invitación por correo para que la persona elija la suya. Si llega `password`, se descarta.
 const crear = async (data) => {
@@ -85,6 +93,7 @@ const crear = async (data) => {
   const { instalacionIds, comunas, password: _descartada, ...campos } = data;
   if (!ROLES_DE_EMPRESA.includes(campos.rol)) throw rechazo('Rol de usuario inválido.');
   if (campos.rol === ROLES.ADMINISTRADOR) throw rechazo('No se pueden crear administradores desde el sistema.');
+  campos.rut = validarRut(campos.rut);
 
   const password_hash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), BCRYPT_ROUNDS);
 
@@ -117,6 +126,7 @@ const crear = async (data) => {
 const editar = async (id, data) => {
   // eslint-disable-next-line no-unused-vars
   const { instalacionIds, comunas, password: _descartada, ...campos } = data;
+  if (campos.rut !== undefined) campos.rut = validarRut(campos.rut);
   if (campos.rol !== undefined) {
     if (!ROLES_DE_EMPRESA.includes(campos.rol)) throw rechazo('Rol de usuario inválido.');
     const actual = await prisma.usuario.findUnique({ where: { id }, select: { rol: true } });

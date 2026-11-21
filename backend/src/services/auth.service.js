@@ -20,6 +20,8 @@ const variantesRut = (rut) => {
   const limpio = String(rut).replace(/[.\s]/g, '').toUpperCase();
   const [cuerpo, dv] = limpio.split('-');
   const variantes = new Set([rut, limpio]);
+  // Usuarios antiguos pudieron quedar guardados sin guion ("203405701").
+  if (!dv && /^\d{7,8}[\dK]$/.test(limpio)) variantes.add(`${limpio.slice(0, -1)}-${limpio.slice(-1)}`);
   if (cuerpo && dv) variantes.add(`${cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${dv}`);
   return [...variantes];
 };

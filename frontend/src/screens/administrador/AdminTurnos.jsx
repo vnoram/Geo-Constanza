@@ -11,6 +11,7 @@ import { ROLES } from "../../constants/roles";
 import { ahoraChile, sumarDias as sumarDiasChile } from "../../utils/fechaChile";
 import { SemanaTurnos, lunesDe } from "../supervisor/SemanaTurnos";
 import { ModalEditarTurno } from "../supervisor/SupGuardias";
+import { formatearRut } from "../../utils/rut";
 
 // ─── SELECTOR GENÉRICO ───────────────────────────────────────────
 function Select({ label, value, onChange, options, placeholder }) {
@@ -179,7 +180,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
               placeholder="Seleccionar guardia..."
               options={guardias.map((g) => ({
                 value: g.id,
-                label: `${g.nombre} · ${g.rut}`,
+                label: `${g.nombre} · ${formatearRut(g.rut)}`,
               }))}
             />
 

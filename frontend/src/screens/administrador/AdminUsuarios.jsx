@@ -9,6 +9,7 @@ import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 import { esCentroOperativo } from "../../utils/instalaciones";
 import { ROLES as ROL } from "../../constants/roles";
+import { formatearRut } from "../../utils/rut";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 // Admin no se asigna desde la interfaz: las cuentas de administrador se crean fuera del sistema.
@@ -354,7 +355,7 @@ export function AdminUsuarios() {
                 </div>
                 <div className="admin-user-meta" style={{ fontSize: 11, color: T.textMut }}>
                   <span className="admin-user-meta__text admin-user-meta__email">{u.email}</span>
-                  <span className="admin-user-meta__text">· {u.rut}</span>
+                  <span className="admin-user-meta__text">· {formatearRut(u.rut)}</span>
                 </div>
 
                 {/* Área del supervisor: chips de instalaciones */}
