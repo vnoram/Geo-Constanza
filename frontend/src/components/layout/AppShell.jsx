@@ -39,6 +39,7 @@ import { AdminUsuarios } from "../../screens/administrador/AdminUsuarios";
 import { AdminInstalaciones } from "../../screens/administrador/AdminInstalaciones";
 import { AdminTurnos } from "../../screens/administrador/AdminTurnos";
 import { AdminAuditoria } from "../../screens/administrador/AdminAuditoria";
+import { AdminBI } from "../../screens/administrador/AdminBI";
 import { MisDispositivos } from "../../screens/MisDispositivos";
 import { AdminDocumentos } from "../../screens/administrador/AdminDocumentos";
 
@@ -99,6 +100,7 @@ function RoleContent({ user, rol, section }) {
   if (rol === ROL.ADMINISTRADOR) {
     // Admin ya no tiene el panel de monitoreo — solo gestión RRHH/config
     if (section === "dispositivos") return <AdminDispositivos />;
+    if (section === "indicadores")   return <AdminBI />;
     if (section === "documentos")    return <AdminDocumentos />;
     if (section === "usuarios")      return <AdminUsuarios />;
     if (section === "instalaciones") return <AdminInstalaciones />;

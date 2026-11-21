@@ -100,6 +100,7 @@ export const ROLES = {
     color: T.focusText,
     desc: "Gestión de usuarios, instalaciones y turnos",
     sections: [
+      { id: "indicadores",   icon: "chart-column", label: "Indicadores", badge: null },
       { id: "usuarios",      icon: "users", label: "Usuarios", badge: null },
       { id: "instalaciones", icon: "building-2", label: "Instalaciones", badge: null },
       { id: "turnos",        icon: "calendar-days", label: "Turnos", badge: null },
