@@ -1,3 +1,4 @@
+import "./PautaVisual.css";
 import { useState, useEffect, useRef } from "react";
 import { leerSesion } from "../../services/almacenSesion";
 import { io } from "socket.io-client";
@@ -138,7 +139,7 @@ function ReportarModal({ onClose, onSuccess }) {
   const gpsStyle = gpsColors[gpsStatus];
 
   return (
-    <div className="guard-modal-overlay" style={{
+    <div className="guard-modal-overlay pauta-visual" style={{
       position: "fixed", inset: 0, zIndex: 100,
       background: "rgba(14,23,20,0.85)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyContent: "center",
@@ -163,10 +164,10 @@ function ReportarModal({ onClose, onSuccess }) {
           background: gpsStyle.bg, border: `1px solid ${gpsStyle.border}`,
         }}>
           <span style={{ fontSize: 13, color: gpsStyle.text }}>
-            {gpsStatus === "loading" && "📡 Obteniendo ubicación..."}
-            {gpsStatus === "ok"      && `📍 Precisión de tu ubicación: ±${precisionGps} m`}
-            {gpsStatus === "error"   && "⚠️ GPS no disponible — se reportará sin coordenadas"}
-            {gpsStatus === "idle"    && "📡 Iniciando GPS..."}
+            {gpsStatus === "loading" && "Obteniendo ubicación..."}
+            {gpsStatus === "ok"      && `Precisión de tu ubicación: ±${precisionGps} m`}
+            {gpsStatus === "error"   && "GPS no disponible — se reportará sin coordenadas"}
+            {gpsStatus === "idle"    && "Iniciando GPS..."}
           </span>
         </div>
 
@@ -176,7 +177,7 @@ function ReportarModal({ onClose, onSuccess }) {
             borderRadius: 8, padding: "8px 12px", marginBottom: 16,
             fontSize: 12, color: T.yellow,
           }}>
-            ⚠️ Tu ubicación en este equipo es imprecisa. Usa tu celular o tablet en la instalación.
+            Tu ubicación en este equipo es imprecisa. Usa tu celular o tablet en la instalación.
           </div>
         )}
 
@@ -188,6 +189,7 @@ function ReportarModal({ onClose, onSuccess }) {
             </label>
             <select
               className="touch-target"
+              aria-label="Tipo de Novedad"
               value={tipo}
               onChange={e => setTipo(e.target.value)}
               style={{
@@ -216,6 +218,7 @@ function ReportarModal({ onClose, onSuccess }) {
             </label>
             <textarea
               className="touch-target"
+              aria-label="Descripción"
               value={descripcion}
               onChange={e => setDesc(e.target.value)}
               placeholder="Describe brevemente lo ocurrido..."
@@ -238,6 +241,7 @@ function ReportarModal({ onClose, onSuccess }) {
             <input
               className="touch-target"
               type="file"
+              aria-label="Foto (opcional)"
               accept="image/*"
               onChange={handleFoto}
               style={{
@@ -331,7 +335,7 @@ export function PautaNovedades({ user }) {
                     : pendientes;
 
   return (
-    <div className="guard-screen">
+    <div className="guard-screen pauta-visual">
       <SectionHeader
         title="Novedades"
         sub="Reporta incidencias durante tu turno"
@@ -362,9 +366,9 @@ export function PautaNovedades({ user }) {
               style={{
                 padding: "8px 14px", borderRadius: 8, cursor: "pointer",
                 fontSize: 13, fontWeight: 700, fontFamily: "var(--font-ui)",
-                background: activo ? "rgba(122,78,191,0.22)" : "transparent",
-                color: activo ? "#D2C6EE" : T.textSec,
-                border: `1px solid ${activo ? "rgba(159,131,214,0.75)" : T.border}`,
+                background: activo ? T.focusGhost : "transparent",
+                color: activo ? T.focusStrong : T.textSec,
+                border: `1px solid ${activo ? T.borderFocus : T.border}`,
               }}
             >
               {t.label} ({t.count})
@@ -380,7 +384,7 @@ export function PautaNovedades({ user }) {
         return (
           <div className="guard-card nov-card nov-card--sinfoto" key={n.id} style={{
             background: T.bgCard, border: `1px solid ${T.border}`,
-            borderLeft: `4px solid ${colors.border}`,
+            borderLeft: `3px solid ${colors.border}`,
             borderRadius: 8, padding: 14,
           }}>
             <div className="nov-card__body">

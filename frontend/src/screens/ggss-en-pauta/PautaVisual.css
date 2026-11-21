@@ -1,0 +1,125 @@
+.pauta-visual .responsive-section-header {
+  padding-bottom: 18px;
+  margin-bottom: 24px !important;
+  border-bottom: 1px solid var(--gc-line);
+}
+
+.pauta-visual button,
+.pauta-visual select,
+.pauta-visual input:not([type="checkbox"]):not([type="radio"]) {
+  min-height: 44px !important;
+  min-width: 44px;
+}
+
+.pauta-visual :is(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--gc-focus) !important;
+  outline-offset: 3px;
+}
+
+.pauta-visual textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.pauta-turno__resumen {
+  border-left: 3px solid var(--gc-ok) !important;
+}
+
+.pauta-turno__resumen .guard-card-header {
+  gap: 12px;
+}
+
+.pauta-visual .guard-kpi-grid > div {
+  padding: 18px !important;
+  min-width: 0;
+}
+
+.pauta-status {
+  border-left: 3px solid currentColor !important;
+  line-height: 1.6;
+}
+
+.pauta-turno__accion {
+  border: 1px solid var(--gc-line) !important;
+  border-left: 3px solid var(--gc-alert) !important;
+  padding: 20px !important;
+}
+
+.pauta-turno__accion > button {
+  min-height: 56px !important;
+  font-size: 17px !important;
+  letter-spacing: 0 !important;
+  box-shadow: none !important;
+}
+
+.pauta-historial__fila {
+  padding: 18px !important;
+  margin-bottom: 12px !important;
+  gap: 16px;
+}
+
+.pauta-historial__fila .guard-list-row__main > div + div {
+  margin-top: 6px;
+}
+
+.pauta-historial__fila > div:last-child > div {
+  font-family: var(--font-mono);
+}
+
+.pauta-alerta {
+  padding: 18px !important;
+  margin-bottom: 12px !important;
+  line-height: 1.6;
+}
+
+.pauta-visual [role="tablist"] {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--gc-line);
+}
+
+.pauta-visual .nov-card {
+  padding: 18px !important;
+}
+
+.pauta-visual .nov-card .guard-card-header {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pauta-visual .nov-card .guard-card-header > span {
+  flex-wrap: wrap;
+}
+
+.pauta-visual .nov-card__body > div:not(.guard-card-header) {
+  font-size: 13px !important;
+  color: var(--gc-text-2) !important;
+}
+
+/* Hora y urgencia se acomodan dentro de las celdas semanales angostas. */
+.pauta-visual .nov-semana__dia > div > div:not([role="separator"]) > div:first-child {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .pauta-turno__resumen,
+  .pauta-turno__accion,
+  .pauta-historial__fila,
+  .pauta-alerta,
+  .pauta-visual .nov-card {
+    padding: 16px !important;
+  }
+
+  .pauta-status button {
+    width: 100% !important;
+  }
+
+  .pauta-visual [role="tablist"] {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pauta-visual textarea,
+  .pauta-visual .guard-report-modal :is(input, select) {
+    font-size: 16px !important;
+  }
+}

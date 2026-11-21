@@ -1,3 +1,4 @@
+import "./PautaVisual.css";
 import { useState, useEffect, useCallback } from "react";
 import { FONT, T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
@@ -298,7 +299,7 @@ export function PautaTurno({ user }) {
     : 100;
 
   return (
-    <div className="guard-screen">
+    <div className="guard-screen pauta-visual">
       <SectionHeader title="Mi Turno Actual" sub="Información de tu turno en curso" />
 
       {cierresAuto.length > 0 && (
@@ -308,7 +309,7 @@ export function PautaTurno({ user }) {
         }}>
           {cierresAuto.map((c) => (
             <div key={c.asistencia_id}>
-              ⚠️ No marcaste salida del turno del {c.fecha.split("-").reverse().join("/")} ({c.hora_inicio}–{c.hora_fin}
+              No marcaste salida del turno del {c.fecha.split("-").reverse().join("/")} ({c.hora_inicio}–{c.hora_fin}
               {c.instalacion ? ` en ${c.instalacion}` : ""}). Se cerró automáticamente a las {c.hora_fin} y
               quedó marcado para revisión de tu supervisor.
             </div>
@@ -319,7 +320,7 @@ export function PautaTurno({ user }) {
       {/* Spinner solo en primera carga sin caché */}
       {cargando && (
         <div style={{ textAlign: "center", padding: 30, color: T.textMut, fontSize: 13 }}>
-          ⏳ Cargando turno...
+          Cargando turno...
         </div>
       )}
 
@@ -329,7 +330,6 @@ export function PautaTurno({ user }) {
           background: T.yellowGhost, border: `1px solid ${T.yellow}33`,
           borderRadius: T.radius, padding: 20, textAlign: "center",
         }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>📅</div>
           <div style={{ fontWeight: 700, color: T.yellow }}>Sin turno asignado hoy</div>
           <div style={{ fontSize: 12, color: T.textMut, marginTop: 4 }}>
             Contacta a tu supervisor si crees que es un error
@@ -341,13 +341,13 @@ export function PautaTurno({ user }) {
       {turno && (
         <>
           {/* Card de turno */}
-          <div style={{
+          <div className="pauta-turno__resumen" style={{
             background: `linear-gradient(135deg, ${T.accentGhost}, transparent)`,
             border: `1px solid ${T.accent}33`, borderRadius: T.radius, padding: 20, marginBottom: 16,
           }}>
             <div className="guard-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: T.accentDim, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>
+                <div style={{ fontSize: 11, color: T.accent, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>
                   EN TURNO
                 </div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: T.text, marginTop: 4 }}>
@@ -355,7 +355,7 @@ export function PautaTurno({ user }) {
                 </div>
                 <div style={{ fontSize: 13, color: T.textSec, marginTop: 4 }}>
                   {turno.hora_inicio} — {turno.hora_fin}
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5, marginLeft: 10, fontSize: 12, fontWeight: 700, color: franjaDeHora(turno.hora_inicio) === "dia" ? "#FFE14D" : "#B99CFF" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5, marginLeft: 10, fontSize: 12, fontWeight: 700, color: franjaDeHora(turno.hora_inicio) === "dia" ? T.neonDay : T.neonNight }}>
                     <IconoFranja hora={turno.hora_inicio} size={16} />
                     {franjaDeHora(turno.hora_inicio) === "dia" ? "Diurno" : "Nocturno"}
                   </span>
@@ -412,16 +412,16 @@ export function PautaTurno({ user }) {
 
           {/* Banners de estado */}
           {yaEntro && !yaSalio && (
-            <div style={{
-              background: "#0E1714", border: `1px solid ${T.yellow}44`,
+            <div className="pauta-status" style={{
+              background: T.bgInput, border: `1px solid ${T.yellow}44`,
               borderRadius: T.radius, padding: 14, marginBottom: 12,
               fontSize: 13, color: T.yellow, fontWeight: 600,
             }}>
-              🟡 Entrada registrada a las {marcaje.hora_entrada} — recuerda marcar la salida al terminar
+              Entrada registrada a las {marcaje.hora_entrada} — recuerda marcar la salida al terminar
             </div>
           )}
           {yaEntro && VERIFICACION_GPS[marcaje.verificacion] && (
-            <div style={{
+            <div className="pauta-status" style={{
               background: VERIFICACION_GPS[marcaje.verificacion].color === "accent" ? T.accentGhost : T.yellowGhost,
               border: `1px solid ${VERIFICACION_GPS[marcaje.verificacion].color === "accent" ? T.accent : T.yellow}44`,
               borderRadius: T.radius, padding: 12, marginBottom: 12, fontSize: 12,
@@ -433,7 +433,7 @@ export function PautaTurno({ user }) {
             </div>
           )}
           {yaEntro && marcaje.revision === "rechazado" && (
-            <div style={{
+            <div className="pauta-status" style={{
               background: T.redGhost, border: `1px solid ${T.red}66`, borderRadius: T.radius,
               padding: 12, marginBottom: 12, fontSize: 13, color: T.red, fontWeight: 600,
             }}>
@@ -444,13 +444,14 @@ export function PautaTurno({ user }) {
                     Si crees que es un error, explica tu situación y tu supervisor volverá a revisar el marcaje.
                   </div>
                   <textarea
+                    aria-label="Explicación para el supervisor"
                     value={explicacion}
                     onChange={(e) => setExplicacion(e.target.value)}
                     maxLength={500}
                     rows={3}
                     placeholder="Ej.: Estoy en la instalación; el computador no tiene GPS."
                     style={{
-                      width: "100%", boxSizing: "border-box", background: "#0E1714", color: T.text,
+                      width: "100%", boxSizing: "border-box", background: T.bgInput, color: T.text,
                       border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 10, fontSize: 13, fontFamily: FONT.ui,
                     }}
                   />
@@ -464,7 +465,7 @@ export function PautaTurno({ user }) {
             </div>
           )}
           {yaEntro && !marcaje.revision && marcaje.comentarioGuardia && !yaSalio && (
-            <div style={{
+            <div className="pauta-status" style={{
               background: T.yellowGhost, border: `1px solid ${T.yellow}44`, borderRadius: T.radius,
               padding: 12, marginBottom: 12, fontSize: 13, color: T.yellow,
             }}>
@@ -472,7 +473,7 @@ export function PautaTurno({ user }) {
             </div>
           )}
           {yaEntro && marcaje.revision === "aprobado" && (
-            <div style={{
+            <div className="pauta-status" style={{
               background: T.accentGhost, border: `1px solid ${T.accent}44`, borderRadius: T.radius,
               padding: 12, marginBottom: 12, fontSize: 13, color: T.accent, fontWeight: 600,
             }}>
@@ -480,28 +481,28 @@ export function PautaTurno({ user }) {
             </div>
           )}
           {yaSalio && (
-            <div style={{
+            <div className="pauta-status" style={{
               background: T.accentGhost, border: `1px solid ${T.accent}33`,
               borderRadius: T.radius, padding: 14, marginBottom: 12,
               fontSize: 13, color: T.accent, fontWeight: 600,
             }}>
-              ✅ Turno completado · Entrada {marcaje.hora_entrada} → Salida {marcaje.hora_salida}
+              Turno completado · Entrada {marcaje.hora_entrada} → Salida {marcaje.hora_salida}
             </div>
           )}
 
           {/* Error */}
           {error && (
-            <div style={{
+            <div className="pauta-status" style={{
               background: T.redGhost, border: `1px solid ${T.red}33`,
               borderRadius: T.radius, padding: 14, marginBottom: 12, fontSize: 12, color: T.red,
             }}>
-              ⚠️ {error}
+              {error}
             </div>
           )}
 
           {/* Zona de acción */}
           {!yaSalio && (
-            <div style={{
+            <div className="pauta-turno__accion" style={{
               background: T.bgCard, border: `1px dashed ${T.border}`,
               borderRadius: T.radius, padding: 16, textAlign: "center",
             }}>
@@ -522,7 +523,7 @@ export function PautaTurno({ user }) {
                   borderRadius: T.radius, padding: 10, marginBottom: 10,
                   fontSize: 12, color: T.yellow,
                 }}>
-                  ⚠️ Tu ubicación en este equipo es imprecisa (un computador no tiene GPS).
+                  Tu ubicación en este equipo es imprecisa (un computador no tiene GPS).
                   Puedes marcar igual, pero un supervisor revisará tu marcaje. Para que quede
                   verificado, márcalo desde un celular en la instalación.
                 </div>
@@ -547,15 +548,14 @@ export function PautaTurno({ user }) {
                   disabled={loadingMarcaje}
                   style={{
                     width: "100%", padding: "14px 32px",
-                    background: loadingMarcaje ? T.textMut : "#E86A2A",
-                    color: "#fff", border: "none", borderRadius: T.radius,
+                    background: loadingMarcaje ? T.textMut : T.alert,
+                    color: T.ink, border: "none", borderRadius: T.radius,
                     fontSize: 14, fontWeight: 700, cursor: loadingMarcaje ? "not-allowed" : "pointer",
                     fontFamily: FONT.ui, letterSpacing: 0.5, transition: "all 0.2s",
                     opacity: loadingMarcaje ? 0.7 : 1,
-                    boxShadow: loadingMarcaje ? "none" : "0 4px 20px #E05A0044",
                   }}
                 >
-                  {loadingMarcaje ? "⏳ Procesando..." : "Marcar Salida"}
+                  {loadingMarcaje ? "Procesando..." : "Marcar Salida"}
                 </button>
               )}
             </div>
@@ -567,7 +567,6 @@ export function PautaTurno({ user }) {
               background: T.bgCard, border: `1px solid ${T.accent}22`,
               borderRadius: T.radius, padding: 16, textAlign: "center",
             }}>
-              <div style={{ fontSize: 20, marginBottom: 6 }}>👋</div>
               <div style={{ fontSize: 13, color: T.textMut }}>Turno finalizado — ¡Buen trabajo!</div>
             </div>
           )}

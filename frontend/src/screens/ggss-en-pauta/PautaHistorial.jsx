@@ -1,3 +1,4 @@
+import "./PautaVisual.css";
 import { useState, useEffect } from "react";
 import { T } from "../../theme/theme";
 import { Badge } from "../../components/ui/Badge";
@@ -44,7 +45,7 @@ export function PautaHistorial({ user }) {
   }, [user?.id]);
 
   return (
-    <div className="guard-screen">
+    <div className="guard-screen pauta-visual">
       <SectionHeader title="Historial" sub="Tu registro de asistencia" />
 
       {loading && (
@@ -71,20 +72,20 @@ export function PautaHistorial({ user }) {
       {registros.map(a => {
         const est = resumen(a);
         return (
-          <div className="guard-list-row" key={a.id} style={{
-            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
+          <div className="guard-list-row pauta-historial__fila" key={a.id} style={{
+            background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, borderLeft: `3px solid ${T[est.color]}`,
             padding: 14, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center",
           }}>
             <div className="guard-list-row__main">
               <div style={{ fontWeight: 700, fontSize: 14 }}>{formatFecha(a.hora_entrada)}</div>
-              <div style={{ fontSize: 11, color: T.textMut }}>
+              <div style={{ fontSize: 13, color: T.textSec }}>
                 {formatHora(a.hora_entrada)} → {formatHora(a.hora_salida)}
                 {a.instalacion?.nombre ? ` · ${a.instalacion.nombre}` : ""}
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
               <Badge color={est.color}>{est.texto}</Badge>
-              <div style={{ fontSize: 10, color: T.textMut, marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: T.textSec, marginTop: 4 }}>
                 {a.hora_salida ? formatHoras(a.horas_trabajadas) : "—"}
               </div>
             </div>
