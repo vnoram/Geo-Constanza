@@ -67,7 +67,7 @@ Consume bastante RAM y CPU: apágalo cuando no lo uses.
 ## Notas
 - Todos los puertos quedan abiertos solo en tu PC (127.0.0.1). Si el puerto 5434 u otro está ocupado, cámbialo en `docker-compose.yml`.
 - Usuarios del seed: el login es con RUT y contraseña `geo2026` (solo datos de demostración locales).
-- Las fotos de reportes usan Azure Blob Storage; en local las atiende el emulador Azurite (servicio `azurite`, puerto 127.0.0.1:10000). El servicio `azurite-init` crea el contenedor `reportes` y termina; que figure como "Exited (0)" es normal.
+- Las fotos de reportes usan Azure Blob Storage; en local las atiende el emulador Azurite (servicio `azurite`, puerto 127.0.0.1:10000). Arranca solo con `docker compose up` (o con el botón Run de Docker Desktop) y sigue encendido aunque reconstruyas la API: la API usa la red de Azurite, no al revés. El servicio `azurite-init` crea el contenedor `reportes` y termina; que figure como "Exited (0)" es normal.
 - Para empezar de cero: `docker compose down -v` (borra la base local).
 - El panel de credenciales demo se muestra en el login porque `VITE_MOSTRAR_DEMO=true` solo en este compose.
 
@@ -85,4 +85,4 @@ El administrador puede preparar equipos con la política apagada. Si se activa a
 
 **Empresa nueva (equipo principal):** sin apagar la política, inicia sesión como super admin (no requiere equipo) y en **Dispositivos** pulsa **Enviar invitación** en la fila de la empresa (necesita su administrador de gestión creado). Al administrador le llega un correo (en local, revisa Mailpit en `localhost:8025`): abre el enlace en su navegador, confirma e inicia sesión; ese navegador queda como equipo principal. Desde ahí él invita los demás equipos en su panel **Dispositivos**. El enlace vence en 15 minutos y se usa una vez.
 
-Si ningún equipo corporativo puede entrar, apaga la política: pon `DEVICE_POLICY=off` en el `.env` local y ejecuta `docker compose up -d api` (luego `docker compose up -d --force-recreate azurite`). Con la política apagada todos los roles vuelven a entrar desde cualquier equipo; invita de nuevo un equipo desde **Dispositivos** y vuelve a `DEVICE_POLICY=on`. `DEVICE_TOKEN_MAX_INACTIVIDAD_DIAS` (90 por defecto) define cuándo un equipo sin uso deja de ser válido.
+Si ningún equipo corporativo puede entrar, apaga la política: pon `DEVICE_POLICY=off` en el `.env` local y ejecuta `docker compose up -d api` . Con la política apagada todos los roles vuelven a entrar desde cualquier equipo; invita de nuevo un equipo desde **Dispositivos** y vuelve a `DEVICE_POLICY=on`. `DEVICE_TOKEN_MAX_INACTIVIDAD_DIAS` (90 por defecto) define cuándo un equipo sin uso deja de ser válido.
