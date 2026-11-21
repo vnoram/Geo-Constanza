@@ -1,6 +1,6 @@
 import { T } from "../../theme/theme";
 
-// Solo tres estados: ok (verde), alerta (naranja) y atención (naranja claro).
+// Variantes de estado (verde, naranja y naranja claro) y selección (morado).
 export function Badge({ color = "accent", children }) {
   const colors = {
     accent: { bg: T.accentGhost, text: T.accent },
@@ -14,6 +14,8 @@ export function Badge({ color = "accent", children }) {
       background: c.bg, color: c.text, padding: "2px 8px",
       borderRadius: T.radius, fontSize: 11, fontWeight: 600, lineHeight: "18px",
       display: "inline-block", whiteSpace: "nowrap",
-    }}><span className="sentence">{children}</span></span>
+    }}>
+      <span className="sentence">{children}</span>
+    </span>
   );
 }

@@ -1,3 +1,4 @@
+import "./AdminVisual.css";
 import { useEffect, useId, useState } from "react";
 import { api } from "../../services/api";
 import { FONT, T } from "../../theme/theme";
@@ -108,8 +109,8 @@ export function AdminDispositivos() {
     const { texto, color, pendiente } = estadoDe(equipo);
     const revocado = equipo.estado === "revocado";
     return (
-      <div key={equipo.id} style={{
-        ...card, marginBottom: 10, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, opacity: revocado ? 0.65 : 1,
+      <div className="admin-visual__device" key={equipo.id} style={{
+        ...card, borderLeft: `3px solid ${T[color]}`, marginBottom: 10, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, opacity: revocado ? 0.65 : 1,
       }}>
         <Icon name="monitor" size={22} color={revocado ? T.textMut : T.focusText} />
         <div style={{ flex: 1, minWidth: "min(100%, 200px)", overflowWrap: "anywhere" }}>
@@ -134,10 +135,10 @@ export function AdminDispositivos() {
   };
 
   return (
-    <div className="admin-screen gc-audited-screen" style={{ maxWidth: 880 }}>
+    <div className="admin-screen gc-audited-screen admin-visual admindispositivos" style={{ maxWidth: 880 }}>
       <SectionHeader title="Dispositivos corporativos" sub="Equipos autorizados para marcar asistencia en las instalaciones" />
 
-      <div style={card}>
+      <div className="admin-visual__invitation" style={card}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
           <Icon name="monitor" size={18} color={T.focusText} /> Invitar un equipo
         </div>
@@ -205,7 +206,7 @@ export function AdminDispositivos() {
           <div style={{ fontWeight: 800, fontSize: 14, color: T.focusMuted, margin: "4px 0 10px" }}>
             {titulo} <span style={{ fontWeight: 500, color: T.textMut }}>({lista.length})</span>
           </div>
-          {lista.map(renderEquipo)}
+          <div className="admin-visual__grid">{lista.map(renderEquipo)}</div>
         </section>
       ))}
       {revocados.length > 0 && (
@@ -213,7 +214,7 @@ export function AdminDispositivos() {
           <Btn variant="ghost" onClick={() => setVerRevocados((v) => !v)}>
             {verRevocados ? "Ocultar" : "Ver"} revocados ({revocados.length})
           </Btn>
-          {verRevocados && <div style={{ marginTop: 10 }}>{revocados.map(renderEquipo)}</div>}
+          {verRevocados && <div className="admin-visual__grid" style={{ marginTop: 10 }}>{revocados.map(renderEquipo)}</div>}
         </section>
       )}
 

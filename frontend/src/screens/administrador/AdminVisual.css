@@ -1,0 +1,108 @@
+.admin-visual > .responsive-section-header {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--gc-line);
+  margin-bottom: 24px !important;
+}
+
+.admin-visual__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+}
+
+.admin-visual__grid > .admin-card,
+.admin-visual__device,
+.admin-visual .gc-dashboard-card {
+  padding: 20px !important;
+  margin-bottom: 0 !important;
+  min-width: 0;
+}
+
+.admin-visual .gc-dashboard-grid {
+  gap: 16px;
+}
+
+.adminusuarios .admin-card > .admin-list-row,
+.admininstalaciones .admin-card > .admin-list-row {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.adminusuarios .admin-card .admin-list-row__main,
+.admininstalaciones .admin-card .admin-list-row__main {
+  margin-right: 0 !important;
+  flex: 1 0 100%;
+  width: 100%;
+}
+
+.adminusuarios .admin-actions {
+  margin-left: 0 !important;
+  padding-top: 12px;
+  border-top: 1px solid var(--gc-line);
+  width: 100%;
+}
+
+.admin-visual__grid > .admin-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.admininstalaciones .admin-card .admin-list-row__main > div {
+  flex-wrap: wrap;
+}
+
+.admin-visual__invitation,
+.admin-visual__filters {
+  background: var(--gc-card);
+  border: 1px solid var(--gc-line);
+  border-top: 3px solid var(--gc-focus);
+  border-radius: var(--gc-radius);
+  padding: 20px;
+}
+
+.admin-visual__device {
+  align-items: flex-start !important;
+}
+
+.admin-visual__device > div:last-child {
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid var(--gc-line);
+  width: 100%;
+}
+
+.admin-visual .gc-dashboard-kpis > div {
+  padding: 18px !important;
+}
+
+@media (max-width: 639px) {
+  .admin-visual button,
+  .admin-visual input:not([type="checkbox"]):not([type="radio"]),
+  .admin-visual select {
+    min-height: 44px !important;
+  }
+
+  .admin-visual__grid > .admin-card,
+  .admin-visual__device,
+  .admin-visual .gc-dashboard-card,
+  .admin-visual__invitation,
+  .admin-visual__filters {
+    padding: 16px !important;
+  }
+
+  .adminturnos .admin-visual__filters > select {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .admin-visual label:has(input[type="checkbox"]),
+  .admin-visual label:has(input[type="radio"]) {
+    min-height: 44px;
+  }
+
+  .admin-visual .action-wrap,
+  .admin-visual .admin-actions {
+    flex-wrap: wrap;
+  }
+}

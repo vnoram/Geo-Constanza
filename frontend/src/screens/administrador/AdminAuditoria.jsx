@@ -1,3 +1,4 @@
+import "./AdminVisual.css";
 import { KPI } from "../../components/ui/KPI";
 import { useEffect, useState } from "react";
 import { FONT, T } from "../../theme/theme";
@@ -97,7 +98,7 @@ export function AdminAuditoria() {
   const campo = { width: "100%", minWidth: 0, boxSizing: "border-box", padding: 10, background: T.bgInput, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radius };
   const actualizar = e => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   return (
-    <div className="admin-screen">
+    <div className="admin-screen admin-visual adminauditoria">
       <SectionHeader title="Auditoría" sub="Log de cambios del sistema" />
       {!loading && !error && (
         <div className="gc-dashboard-kpis">
@@ -107,7 +108,7 @@ export function AdminAuditoria() {
           ))}
         </div>
       )}
-      <form onSubmit={e => { e.preventDefault(); setPage(1); setFiltros({ ...form }); }} style={{ marginBottom: 16 }}>
+      <form className="admin-visual__filters" onSubmit={e => { e.preventDefault(); setPage(1); setFiltros({ ...form }); }} style={{ marginBottom: 16 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))", gap: 12, marginBottom: 12 }}>
           <label>Usuario<select name="usuario_id" value={form.usuario_id} onChange={actualizar} style={campo}>
             <option value="">Todos</option>{usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}

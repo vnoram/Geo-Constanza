@@ -1,3 +1,4 @@
+import "./AdminVisual.css";
 import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect, useRef } from "react";
 import { FONT, T } from "../../theme/theme";
@@ -730,6 +731,7 @@ function InstCard({ inst, onEditar, onCambiarEstado }) {
       style={{
         background: esCentro ? T.focusGhost : T.bgCard,
         border: `1px solid ${esCentro ? T.focus : T.border}`,
+        borderLeft: `3px solid ${esActivo ? T.accent : T.red}`,
         borderRadius: T.radius,
         padding: "16px 18px",
         marginBottom: 10,
@@ -868,7 +870,7 @@ export function AdminInstalaciones() {
   ).sort((a, b) => Number(esCentroOperativo(b)) - Number(esCentroOperativo(a)));
 
   return (
-    <div className="admin-screen">
+    <div className="admin-screen admin-visual admininstalaciones">
       <SectionHeader
         title="Instalaciones"
         sub={`${instalaciones.length} recinto${instalaciones.length !== 1 ? "s" : ""} registrado${instalaciones.length !== 1 ? "s" : ""}`}
@@ -939,14 +941,14 @@ export function AdminInstalaciones() {
       ) : (
         <>
           <SubHeader title={`Mostrando ${listaFiltrada.length} de ${instalaciones.length}`} />
-          {listaFiltrada.map((inst) => (
+          <div className="admin-visual__grid">{listaFiltrada.map((inst) => (
             <InstCard
               key={inst.id}
               inst={inst}
               onEditar={(instalacionSeleccionada) => setModalData({ inicial: instalacionSeleccionada })}
               onCambiarEstado={setCambiandoEstado}
             />
-          ))}
+          ))}</div>
         </>
       )}
 

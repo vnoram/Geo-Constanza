@@ -1,3 +1,4 @@
+import "../PanelesCentral.css";
 import { useState, useEffect, useRef, memo } from "react";
 import { leerSesion } from "../../services/almacenSesion";
 import { io } from "socket.io-client";
@@ -287,7 +288,7 @@ function SocketBadge({ status }) {
 
 function MiniStat({ value, label, color }) {
   return (
-    <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
+    <div className="central-panel__metric" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderLeft: `3px solid ${color}`, borderRadius: T.radius, padding: "12px 14px", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
       <span style={{ fontSize: 12, color: T.textSec }}>{label}</span>
       <span style={{ fontSize: 22, fontWeight: 500, color, fontFamily: FONT.mono, fontVariantNumeric: "tabular-nums" }}>{value ?? "—"}</span>
     </div>
@@ -378,8 +379,8 @@ export function AdminPanel() {
   ];
 
   return (
-    <div className="admin-screen central-titulos">
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+    <div className="admin-screen central-titulos central-panel">
+      <div className="central-panel__header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <SectionHeader title="Panel central" sub="Vista general del sistema" />
         <SocketBadge status={socketStatus} />
       </div>
@@ -398,7 +399,7 @@ export function AdminPanel() {
       {/* El mapa es la pieza principal; los gráficos van en la columna lateral */}
       <div className="central-grid">
         <section aria-label="Instalaciones en el mapa">
-          <div className="central-subtitulo"><SubHeader title="Instalaciones · mapa en vivo" /></div>
+          <div className="central-subtitulo"><SubHeader title="Instalaciones" /></div>
           <MapaInstalaciones
             token={token}
             ultimaUbicacion={ultimaUbicacion}
@@ -407,8 +408,8 @@ export function AdminPanel() {
         </section>
 
         <aside style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
-          <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px" }}>
-            <div className="central-titulo-card" style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Novedades · últimos 7 días</div>
+          <div className="central-panel__card" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px" }}>
+            <div className="central-titulo-card" style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Novedades · 7 días</div>
             {analytics ? (
               <GraficoBarras data={analytics} />
             ) : (
@@ -424,14 +425,14 @@ export function AdminPanel() {
           </div>
 
           {k && (
-            <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px" }}>
-              <div className="central-titulo-card" style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Novedades pendientes · por urgencia</div>
+            <div className="central-panel__card" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px" }}>
+              <div className="central-titulo-card" style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Pendientes por urgencia</div>
               <GraficoDonut unidad="PENDIENTES" vacio="Sin novedades pendientes" items={novItems} />
             </div>
           )}
 
           {stats && (
-            <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px" }}>
+            <div className="central-panel__card" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px" }}>
               <div className="central-titulo-card" style={{ fontSize: 12, color: T.textSec, marginBottom: 10 }}>Estado hoy</div>
               <GraficoDonut presentes={stats.presentes} tardios={stats.tardios} faltantes={stats.faltantes} />
             </div>
@@ -441,7 +442,7 @@ export function AdminPanel() {
 
       <div style={{ fontSize: 11, color: T.textMut, marginTop: 14, display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: socketStatus === "connected" ? T.accent : T.textMut }} />
-        {socketStatus === "connected" ? "Sincronización automática activa" : "Actualización manual requerida"}
+        {socketStatus === "connected" ? "En vivo" : "Sin conexión"}
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import "../PanelesCentral.css";
 import { useState, useEffect, useRef, memo } from "react";
 import { leerSesion } from "../../services/almacenSesion";
 import { io } from "socket.io-client";
@@ -258,8 +259,8 @@ function SocketBadge({ status }) {
 
 function MiniStat({ value, label, color }) {
   return (
-    <div style={{ background: T.bgCard, border: `1px solid ${color}22`, borderRadius: T.radius, padding: "10px 12px", textAlign: "center" }}>
-      <div style={{ fontSize: 22, fontWeight: 800, color }}>{value ?? "—"}</div>
+    <div className="central-panel__metric" style={{ background: T.bgCard, border: `1px solid ${color}22`, borderLeft: `3px solid ${color}`, borderRadius: T.radius, padding: "10px 12px", textAlign: "center" }}>
+      <div style={{ fontSize: 22, fontWeight: 800, color, fontFamily: FONT.mono }}>{value ?? "—"}</div>
       <div style={{ fontSize: 10, color: T.textMut, marginTop: 2 }}>{label}</div>
     </div>
   );
@@ -418,7 +419,7 @@ function IncidentesPanel({ token }) {
   const visibles = grupos[vista];
 
   return (
-    <div className="operations-screen">
+    <div className="operations-screen central-panel">
       <SectionHeader title="Incidentes" sub="Escalaciones de supervisores y críticos de todas las instalaciones" />
       <AvisoEscalada data={alertaEscalada} onClose={() => setAlertaEscalada(null)} />
 
@@ -443,7 +444,7 @@ function IncidentesPanel({ token }) {
           border: `1px solid ${T.border}`, background: "transparent",
           color: T.textSec, fontSize: 12, cursor: "pointer", fontFamily: "var(--font-ui)",
         }}>
-          ↻ Actualizar
+          Actualizar
         </button>
       </div>
 
@@ -548,7 +549,7 @@ function MonitoreoPanel({ token }) {
   const kpis = stats?.kpis;
 
   return (
-    <div className="operations-screen">
+    <div className="operations-screen central-panel">
       <SectionHeader title="Monitoreo Central" sub="Vista global de todas las instalaciones" />
       <SocketBadge status={socketStatus} />
 
@@ -585,7 +586,7 @@ function MonitoreoPanel({ token }) {
       {/* Mini stats de asistencia */}
       {stats && (
         <div className="metrics-grid metrics-grid--compact" style={{ display: "grid", gap: 8, marginBottom: 14 }}>
-          <MiniStat value={stats.presentes} label="Presentes"  color={C_COLOR}  />
+          <MiniStat value={stats.presentes} label="Presentes"  color={T.accent}  />
           <MiniStat value={stats.tardios}   label="Tardíos"    color={T.yellow} />
           <MiniStat value={stats.faltantes} label="Faltantes"  color={T.red}    />
           <MiniStat value={stats.sinCobertura ?? 0} label="Sin cobertura" color={T.red} />
@@ -599,7 +600,7 @@ function MonitoreoPanel({ token }) {
           padding: "10px 14px", marginBottom: 14, fontSize: 13, color: T.red,
           display: "flex", alignItems: "center", gap: 8,
         }}>
-          <Icon name="triangle-alert" size={17} /> {kpis.novedadesEscaladas} incidente{kpis.novedadesEscaladas !== 1 ? "s" : ""} escalado{kpis.novedadesEscaladas !== 1 ? "s" : ""} requieren atención
+          <Icon name="triangle-alert" size={17} /> Escalados · {kpis.novedadesEscaladas}
         </div>
       )}
 
@@ -608,14 +609,15 @@ function MonitoreoPanel({ token }) {
         <div className="central-summary-grid" style={{ display: "grid", gap: 10, marginBottom: 20, alignItems: "start" }}>
           {/* Resumen por instalación */}
           {kpis?.resumenPorInstalacion?.length > 0 && (
-            <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "14px 14px 10px" }}>
+            <div className="central-panel__card" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "14px 14px 10px" }}>
               <div style={{ fontSize: 10, color: T.textSec, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 }}>
                 Estado por Instalación
               </div>
               {kpis.resumenPorInstalacion.map((inst) => (
-                <div className="responsive-list-row" key={inst.id} style={{
+                <div className="responsive-list-row central-panel__installation" key={inst.id} style={{
                   display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "6px 0", borderBottom: `1px solid ${T.border}`,
+                  padding: "10px 12px", borderBottom: `1px solid ${T.border}`,
+                  borderLeft: `3px solid ${inst.criticidad === "Alta" ? T.red : inst.criticidad === "Media" ? T.yellow : T.accent}`,
                   fontSize: 12,
                 }}>
                   <span style={{ color: T.textSec }}>{inst.nombre}</span>
@@ -638,7 +640,7 @@ function MonitoreoPanel({ token }) {
             </div>
           )}
 
-          <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "14px 12px" }}>
+          <div className="central-panel__card" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "14px 12px" }}>
             <div style={{ fontSize: 10, color: T.textSec, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 }}>
               Estado Hoy
             </div>
@@ -648,7 +650,7 @@ function MonitoreoPanel({ token }) {
       )}
 
       {/* Mapa en vivo */}
-      <SubHeader title="Mapa en Vivo · Todas las Instalaciones" />
+      <SubHeader title="Mapa" />
       <MapaInstalaciones
         token={token}
         ultimaUbicacion={ultimaUbicacion}
@@ -657,8 +659,8 @@ function MonitoreoPanel({ token }) {
 
       <div style={{ fontSize: 10, color: T.textMut, textAlign: "center", marginTop: 14 }}>
         {socketStatus === "connected"
-          ? "Sincronización automática activa"
-          : "Actualización manual requerida"}
+          ? "En vivo"
+          : "Sin conexión"}
       </div>
     </div>
   );

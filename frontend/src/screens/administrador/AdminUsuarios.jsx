@@ -1,3 +1,4 @@
+import "./AdminVisual.css";
 import { KPI } from "../../components/ui/KPI";
 import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect } from "react";
@@ -299,7 +300,7 @@ export function AdminUsuarios() {
   };
 
   return (
-    <div className="admin-screen">
+    <div className="admin-screen admin-visual adminusuarios">
       {confirmandoDesactivar && (
         <Dialogo titulo="Desactivar usuario" mensaje="El usuario ya no podrá iniciar sesión. Podrás verlo como inactivo en la lista." confirmarLabel="Desactivar" variante="rechazar"
           onConfirmar={desactivarConfirmado} onCancelar={() => setConfirmandoDesactivar(null)} />
@@ -338,12 +339,13 @@ export function AdminUsuarios() {
               <span style={{ fontSize: 12, fontWeight: 700, color: T.textSec, letterSpacing: 0.4, textTransform: "uppercase" }}>{titulo}</span>
               <Badge color={ROL_BADGE[roles[0]] ?? "accent"}>{delGrupo.length}</Badge>
             </div>
-            {delGrupo.map((u) => {
+            <div className="admin-visual__grid">{delGrupo.map((u) => {
         const instSup = u.instalaciones_sup ?? [];
         return (
           <div className="admin-card" key={u.id} style={{
             background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
             padding: "12px 14px", marginBottom: 6,
+            borderLeft: `3px solid ${u.estado === "activo" ? T.accent : T.red}`,
           }}>
             <div className="admin-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               {/* Info */}
@@ -443,7 +445,7 @@ export function AdminUsuarios() {
             </div>
           </div>
         );
-            })}
+            })}</div>
           </section>
         );
       })}

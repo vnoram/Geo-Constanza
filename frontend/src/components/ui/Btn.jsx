@@ -3,8 +3,19 @@ import { Icon } from "./Icon";
 
 // Estándar (docs/ESTANDAR_UI.md): los rellenos (primary / aprobar / rechazar) van suaves en reposo y se
 // rellenan del color al pasar el mouse (ver index.css). primary = acción principal (naranja)
-// · secondary = contorno neutro · ghost = sin borde. Secondary y ghost se decoloran a morado en hover.
-export function Btn({ children, onClick, loading, variant = "primary", disabled, full, className = "", icon, style: estilo, ...props }) {
+// · outline = contorno neutro · ghost = sin borde. Outline y ghost se decoloran a morado en hover.
+export function Btn({
+  children,
+  onClick,
+  loading,
+  variant = "primary",
+  disabled,
+  full,
+  className = "",
+  icon,
+  style: estilo,
+  ...props
+}) {
   // aprobar = verde oscuro (confirmar/aceptar) · rechazar = naranja (rechazar/destructivo) · primary = naranja (acción principal)
   const isAprobar = variant === "aprobar";
   const isPrimary = variant === "primary" || variant === "rechazar" || variant === "morado" || isAprobar;

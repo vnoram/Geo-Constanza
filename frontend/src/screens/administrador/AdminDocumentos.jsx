@@ -41,7 +41,9 @@ export function AdminDocumentos() {
   useEffect(() => { cargar(); }, [cargar]);
 
   const subir = async () => {
-    setError(""); setAviso(""); setOcupado(true);
+    setError("");
+    setAviso("");
+    setOcupado(true);
     try {
       const form = new FormData();
       form.append("usuario_id", usuarioId);
@@ -53,11 +55,15 @@ export function AdminDocumentos() {
       });
       const cuerpo = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(cuerpo.error || `Error ${res.status}`);
-      setArchivo(null); setNombre("");
+      setArchivo(null);
+      setNombre("");
       setAviso("Documento publicado. El guardia ya puede descargarlo.");
       await cargar();
-    } catch (err) { setError(err.message); }
-    finally { setOcupado(false); }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setOcupado(false);
+    }
   };
 
   return (
@@ -94,10 +100,10 @@ export function AdminDocumentos() {
             <div className="admin-list-row__main">
               <div style={{ fontSize: 13, fontWeight: 600 }}><Icon name="file-text" size={16} /> {d.nombre}</div>
               <div style={{ fontSize: 11, color: T.textSec, fontFamily: FONT.mono, background: T.bgInput, borderRadius: T.radius, padding: 8, marginTop: 6 }}>{TIPOS[d.tipo] ?? d.tipo} · {new Date(d.created_at).toLocaleDateString("es-CL")}{d.autor?.nombre ? ` · ${d.autor.nombre}` : ""}</div>
+            </div>
+            {d.url_firmada && <a href={d.url_firmada} target="_blank" rel="noreferrer" className="touch-target" style={{ color: T.focusText, fontSize: 12, fontWeight: 600, marginTop: "auto", display: "inline-flex", alignItems: "center", alignSelf: "start" }}>Abrir →</a>}
           </div>
-          {d.url_firmada && <a href={d.url_firmada} target="_blank" rel="noreferrer" className="touch-target" style={{ color: T.focusText, fontSize: 12, fontWeight: 600, marginTop: "auto", display: "inline-flex", alignItems: "center", alignSelf: "start" }}>Abrir →</a>}
-        </div>
-      ))}
+        ))}
       </div>
     </div>
   );

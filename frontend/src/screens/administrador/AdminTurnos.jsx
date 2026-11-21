@@ -1,3 +1,4 @@
+import "./AdminVisual.css";
 import { Icon } from "../../components/ui/Icon";
 import { useEffect, useState } from "react";
 import { FONT, T } from "../../theme/theme";
@@ -346,14 +347,14 @@ export function AdminTurnos() {
   };
 
   return (
-    <div className="admin-screen">
+    <div className="admin-screen admin-visual adminturnos">
       <SectionHeader
         title="Turnos"
         sub="Programación semanal de todas las instalaciones"
         action={{ label: <><Icon name="zap" size={16} />{" Generar Pauta 4×4"}</>, onClick: () => setModalAbierto(true) }}
       />
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", margin: "4px 0 12px" }}>
+      <div className="admin-visual__filters" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", margin: "4px 0 12px" }}>
         <select aria-label="Filtrar por instalación" value={filtroInstalacion} onChange={(e) => setFiltroInstalacion(e.target.value)} style={selStyle}>
           <option value="">Todas las instalaciones</option>
           {instalaciones.map((i) => <option key={i.id} value={i.id}>{i.nombre}</option>)}
