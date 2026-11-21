@@ -1,3 +1,5 @@
+import "./SupDashboard.css";
+import "./SupPantallas.css";
 import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect } from "react";
 import { FONT, T } from "../../theme/theme";
@@ -344,7 +346,7 @@ export function SupGuardias() {
   };
 
   return (
-    <div className="operations-screen">
+    <div className="operations-screen sup-dashboard sup-supervision sup-guardias">
       <SectionHeader
         title="Guardias"
         sub="Personal asignado a tus instalaciones"
@@ -358,7 +360,7 @@ export function SupGuardias() {
       />
 
       {mostrarForm && (
-        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 18, marginBottom: 16 }}>
+        <div className="sup-supervision__panel" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 18, marginBottom: 16 }}>
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, color: T.text }}>
             Nuevo turno extra
           </div>
@@ -496,13 +498,14 @@ export function SupGuardias() {
           No hay guardias registrados.
         </div>
       ) : (
-        guardias.map((g, i) => (
+        <div className="sup-supervision__grid">{guardias.map((g, i) => (
           <div
-            className="responsive-list-row"
+            className="responsive-list-row sup-supervision__person"
             key={g.id || i}
             style={{
               background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
               padding: 12, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center",
+              borderLeft: `3px solid ${g.estado === "activo" ? T.accent : T.red}`,
             }}
           >
             <div className="responsive-list-row__main">
@@ -513,7 +516,7 @@ export function SupGuardias() {
             </div>
             <Badge color={g.estado === "activo" ? "accent" : "red"}>{g.estado}</Badge>
           </div>
-        ))
+        ))}</div>
       )}
 
       {turnoEditando && (

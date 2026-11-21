@@ -1,3 +1,5 @@
+import "./SupDashboard.css";
+import "./SupPantallas.css";
 import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect } from "react";
 import { FONT, T } from "../../theme/theme";
@@ -492,11 +494,11 @@ export function SupReportes() {
   const instNombreActual = instalaciones.find((i) => i.id === instalacionId)?.nombre || "Todas";
 
   return (
-    <div className="operations-screen">
+    <div className="operations-screen sup-dashboard sup-supervision sup-reportes">
       <SectionHeader title="Reportes OS-10" sub="Informes operacionales para fiscalización" />
 
       {/* Filtros */}
-      <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 18, marginBottom: 16 }}>
+      <div className="sup-supervision__panel" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 18, marginBottom: 16 }}>
         <SubHeader title="Parámetros del Reporte" />
 
         <Select

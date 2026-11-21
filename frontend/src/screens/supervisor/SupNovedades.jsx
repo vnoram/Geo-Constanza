@@ -1,3 +1,5 @@
+import "./SupDashboard.css";
+import "./SupPantallas.css";
 import { useState, useEffect, useRef } from "react";
 import { leerSesion } from "../../services/almacenSesion";
 import { io } from "socket.io-client";
@@ -392,7 +394,7 @@ export function SupNovedades({ user }) {
                     : pendientes;
 
   return (
-    <div className="operations-screen">
+    <div className="operations-screen sup-dashboard sup-supervision sup-novedades">
       {dialogoError && <Dialogo titulo="No se pudo escalar" mensaje={dialogoError} soloMensaje onCancelar={() => setDialogoError("")} />}
       <SectionHeader title="Novedades" sub="Ordenadas por prioridad" />
 

@@ -1,0 +1,108 @@
+.sup-supervision__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+}
+
+.sup-supervision__panel,
+.sup-supervision__person,
+.sup-supervision__request {
+  padding: 20px !important;
+  min-width: 0;
+}
+
+.sup-supervision__person,
+.sup-supervision__request {
+  margin-bottom: 0 !important;
+}
+
+.sup-supervision__request {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sup-supervision__request > .action-wrap,
+.sup-supervision__request > div:last-child:has(textarea) {
+  margin-top: auto !important;
+  padding-top: 12px;
+  border-top: 1px solid var(--gc-line);
+}
+
+.sup-supervision__person .responsive-list-row__main > :first-child,
+.sup-supervision__request > .responsive-list-row > span {
+  font-size: 15px !important;
+}
+
+.sup-supervision__person .responsive-list-row__main > :last-child {
+  font-family: var(--font-mono);
+  padding: 6px 0 0;
+}
+
+.sup-supervision__panel {
+  border-top: 3px solid var(--gc-focus) !important;
+}
+
+.sup-supervision .filter-bar {
+  padding: 12px 0;
+}
+
+.sup-supervision [role="tablist"] {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--gc-line);
+}
+
+.sup-supervision .nov-semana {
+  gap: 12px;
+}
+
+.sup-supervision .nov-semana__dia {
+  padding: 12px;
+}
+
+.sup-supervision .report-card {
+  background: var(--gc-bg);
+  border-color: var(--gc-line);
+  border-left: 3px solid var(--gc-focus);
+}
+
+.sup-supervision .report-card__field {
+  overflow-wrap: anywhere;
+}
+
+.sup-supervision .action-wrap {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 639px) {
+  .sup-supervision .touch-target,
+  .sup-supervision button,
+  .sup-supervision input,
+  .sup-supervision select {
+    min-height: 44px !important;
+  }
+
+  .sup-supervision__panel,
+  .sup-supervision__person,
+  .sup-supervision__request {
+    padding: 16px !important;
+  }
+
+  .sup-supervision__request > div:nth-child(2) {
+    flex-wrap: wrap;
+  }
+
+  .sup-reportes .action-wrap > button,
+  .sup-supervision__request .action-wrap > button {
+    flex: 1 1 auto;
+  }
+}
+
+.sup-novedades .nov-card-compacta > div:first-child,
+.sup-novedades .nov-ronda {
+  flex-wrap: wrap;
+}
+
+.sup-reportes .report-card dt {
+  color: var(--gc-text-2);
+}

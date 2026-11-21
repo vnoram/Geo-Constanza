@@ -1,3 +1,5 @@
+import "./SupDashboard.css";
+import "./SupPantallas.css";
 import { useCallback, useEffect, useState } from "react";
 import { FONT, T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
@@ -59,7 +61,7 @@ export function SupSolicitudes() {
   };
 
   return (
-    <div className="operations-screen">
+    <div className="operations-screen sup-dashboard sup-supervision sup-solicitudes">
       <SectionHeader title="Solicitudes" sub="Peticiones de tus guardias" />
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
@@ -82,10 +84,10 @@ export function SupSolicitudes() {
         <div style={{ ...tarjeta, textAlign: "center", padding: 24, color: T.textMut, fontSize: 13 }}>
           <Icon name="inbox" size={16} /> {filtro === "pendiente" ? "No hay solicitudes pendientes." : "No hay solicitudes en esta vista."}
         </div>
-      ) : lista.map((s) => {
+      ) : <div className="sup-supervision__grid">{lista.map((s) => {
         const [color, etiqueta] = ESTADO[s.estado] || ["accent", s.estado];
         return (
-          <div className="responsive-card" key={s.id} style={tarjeta}>
+          <div className="responsive-card sup-supervision__request" key={s.id} style={{ ...tarjeta, borderLeft: `3px solid ${T[color]}` }}>
             <div className="responsive-list-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 8 }}>
               <span style={{ fontWeight: 700, fontSize: 14 }}>{s.usuario?.nombre || "Guardia"}</span>
               <Badge color={color}>{etiqueta}</Badge>
@@ -129,7 +131,7 @@ export function SupSolicitudes() {
             ))}
           </div>
         );
-      })}
+      })}</div>}
     </div>
   );
 }
