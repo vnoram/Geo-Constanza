@@ -87,8 +87,7 @@ describe('reportes agregados', () => {
     prisma.novedad.findMany.mockResolvedValue([]);
     prisma.turno.count.mockResolvedValue(0);
     prisma.asistencia.findMany.mockResolvedValue([]);
-    prisma.turno.groupBy.mockResolvedValue([]);
-    prisma.asistencia.groupBy.mockResolvedValue([]);
+    prisma.turno.findMany.mockResolvedValue([]);
     prisma.novedad.groupBy.mockResolvedValue([]);
     prisma.instalacion.findMany.mockResolvedValue([]);
   });
@@ -98,7 +97,7 @@ describe('reportes agregados', () => {
     await reportes.novedadesPorSemana(sup);
     await reportes.estadoGuardias(sup);
     await reportes.resumenMensual(10, 2026, sup);
-    for (const m of [prisma.novedad.findMany, prisma.turno.count, prisma.asistencia.findMany, prisma.turno.groupBy, prisma.asistencia.groupBy, prisma.novedad.groupBy]) {
+    for (const m of [prisma.novedad.findMany, prisma.turno.count, prisma.asistencia.findMany, prisma.turno.findMany, prisma.novedad.groupBy]) {
       expect(filtros(m).every((f) => f && f.in.join() === 'mia')).toBe(true);
     }
   });
@@ -131,6 +130,6 @@ describe('reportes agregados', () => {
     await reportes.novedadesPorSemana(admin);
     await reportes.estadoGuardias(admin);
     expect(filtros(prisma.novedad.findMany)).toEqual([undefined]);
-    expect(filtros(prisma.turno.count)).toEqual([undefined]);
+    expect(filtros(prisma.turno.count).every((f) => f === undefined)).toBe(true);
   });
 });

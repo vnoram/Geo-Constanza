@@ -2,7 +2,7 @@ jest.mock('../../config/database', () => ({ prisma: {
   usuario: { findUnique: jest.fn() },
   turno: { count: jest.fn(), findMany: jest.fn(), findUnique: jest.fn(), findUniqueOrThrow: jest.fn(), create: jest.fn(), update: jest.fn() },
   asistencia: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), findUniqueOrThrow: jest.fn(), update: jest.fn() },
-  solicitud: { findFirst: jest.fn() },
+  solicitud: { findFirst: jest.fn(), findMany: jest.fn() },
   novedad: { count: jest.fn() },
   $transaction: jest.fn(), $executeRaw: jest.fn(),
 } }));
@@ -38,6 +38,7 @@ beforeEach(() => {
   prisma.usuario.findUnique.mockResolvedValue({ instalacion_asignada_id: null });
   prisma.asistencia.findMany.mockResolvedValue([]);
   prisma.solicitud.findFirst.mockResolvedValue(null);
+  prisma.solicitud.findMany.mockResolvedValue([]);
   prisma.novedad.count.mockResolvedValue(1);
   prisma.asistencia.create.mockImplementation(async ({ data }) => ({ id: 'nueva', ...data }));
   prisma.asistencia.update.mockImplementation(async ({ data }) => data);

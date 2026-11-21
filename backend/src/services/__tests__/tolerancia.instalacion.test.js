@@ -1,5 +1,5 @@
 jest.mock('../../config/database', () => ({ prisma: {
-  turno: { findMany: jest.fn() }, novedad: { count: jest.fn(), groupBy: jest.fn() }, usuario: { count: jest.fn() },
+  turno: { findMany: jest.fn() }, solicitud: { findMany: jest.fn() }, novedad: { count: jest.fn(), groupBy: jest.fn() }, usuario: { count: jest.fn() },
   instalacion: { findMany: jest.fn(), count: jest.fn(), create: jest.fn(), update: jest.fn() },
   $transaction: jest.fn(),
 } }));
@@ -20,6 +20,7 @@ const turno = tolerancia => ({ id: `t${tolerancia}`, usuario_id: 'g1', usuario: 
 beforeEach(() => {
   jest.resetAllMocks(); jest.useFakeTimers().setSystemTime(instanteChile('2026-10-30', '08:20'));
   prisma.turno.findMany.mockResolvedValue([turno(5), turno(30)]);
+  prisma.solicitud.findMany.mockResolvedValue([]);
   prisma.novedad.count.mockResolvedValue(0); prisma.instalacion.findMany.mockResolvedValue([]); prisma.instalacion.count.mockResolvedValue(1);
   resolverInstalacionesSupervisor.mockResolvedValue(['i1']);
   prisma.$transaction.mockImplementation(fn => fn(prisma));

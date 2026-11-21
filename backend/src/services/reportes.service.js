@@ -3,6 +3,7 @@ const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { SOLO_INCIDENCIAS, TIPOS_RUTINA } = require('./priorizacion.service');
+const { AUSENCIAS } = require('../constants/solicitudes');
 const { ahoraChile, sumarDias, aFechaDB, inicioDiaChile, finDiaChile } = require('../utils/fechaChile');
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -123,9 +124,27 @@ const estadoGuardias = async (user) => {
   const inicio = inicioDiaChile(hoy);
   const manana = inicioDiaChile(sumarDias(hoy, 1));
 
-  const [totalTurnos, asistencias] = await Promise.all([
+  const { hora: horaAhora } = ahoraChile();
+
+  const hoyDB = aFechaDB(hoy);
+
+  const [totalTurnos, porIniciar, conAusencia, asistencias] = await Promise.all([
     prisma.turno.count({
       where: { fecha: aFechaDB(hoy), estado: { not: 'cancelado' }, ...porInstalacion },
+    }),
+    // Turnos de hoy que todavía no comienzan: no cuentan como ausentes
+    prisma.turno.count({
+      where: { fecha: aFechaDB(hoy), estado: { not: 'cancelado' }, hora_inicio: { gt: horaAhora }, ...porInstalacion },
+    }),
+    // Turnos ya iniciados cuyo guardia tiene vacaciones o una ausencia aprobada hoy: no son ausentes
+    prisma.turno.count({
+      where: {
+        fecha: hoyDB, estado: { not: 'cancelado' }, hora_inicio: { lte: horaAhora }, ...porInstalacion,
+        usuario: { solicitudes: { some: {
+          tipo: { in: Object.keys(AUSENCIAS) }, estado: 'aprobada', fecha_desde: { lte: hoyDB },
+          OR: [{ fecha_hasta: { gte: hoyDB } }, { fecha_hasta: null, fecha_desde: hoyDB }],
+        } } },
+      },
     }),
     prisma.asistencia.findMany({
       where: { hora_entrada: { gte: inicio, lt: manana }, ...porInstalacion },
@@ -135,70 +154,130 @@ const estadoGuardias = async (user) => {
 
   const presentes = asistencias.filter((a) => a.estado === 'normal').length;
   const tardios   = asistencias.filter((a) => a.estado === 'tardio').length;
-  const ausentes  = Math.max(0, totalTurnos - asistencias.length);
+  const ausentes  = Math.max(0, totalTurnos - porIniciar - conAusencia - asistencias.length);
 
-  return { presentes, tardios, ausentes, totalTurnos };
+  return { presentes, tardios, ausentes, totalTurnos, porIniciar, conAusencia };
+};
+
+// ── Cobertura por período ──────────────────────────────────────────
+// Un marcaje solo cuenta si pertenece a un turno programado del período que ya comenzó. Lo demás (turnos
+// extra, turnos de otro período o cancelados) es ajeno a la cobertura de la instalación: si alguien falta,
+// otro guardia lo compensa, pero el turno sigue sin cubrirse.
+// Un guardia pertenece a una sola instalación: los turnos programados en otra no cuentan para la cobertura.
+const turnosDelPeriodo = async (inicioISO, siguienteISO, porInstalacion) => {
+  const { fecha: hoy, hora: horaAhora } = ahoraChile();
+  const hoyDB = aFechaDB(hoy);
+  const turnos = await prisma.turno.findMany({
+    where: {
+      AND: [
+        { fecha: { gte: aFechaDB(inicioISO), lt: aFechaDB(siguienteISO) } },
+        { OR: [{ fecha: { lt: hoyDB } }, { fecha: hoyDB, hora_inicio: { lte: horaAhora } }] },
+      ],
+      estado: { not: 'cancelado' }, ...porInstalacion,
+    },
+    select: {
+      usuario_id: true, instalacion_id: true,
+      usuario: { select: { instalacion_asignada_id: true } },
+      asistencias: { select: { minutos_retraso: true, horas_trabajadas: true } },
+    },
+  });
+  return turnos.filter((t) => !t.usuario?.instalacion_asignada_id || t.usuario.instalacion_asignada_id === t.instalacion_id);
+};
+
+/** Agrupa turnos por clave: programados, cubiertos (con al menos un marcaje) y promedios sobre esos marcajes. */
+const acumularTurnos = (turnos, claveDe) => {
+  const mapa = new Map();
+  for (const t of turnos) {
+    const k = claveDe(t);
+    const a = mapa.get(k) ?? { usuario_id: t.usuario_id, instalacion_id: t.instalacion_id, programados: 0, cubiertos: 0, marcajes: 0, retraso: 0, conHoras: 0, horas: 0 };
+    a.programados += 1;
+    if (t.asistencias.length > 0) a.cubiertos += 1;
+    for (const m of t.asistencias) {
+      a.marcajes += 1;
+      a.retraso += m.minutos_retraso ?? 0;
+      if (m.horas_trabajadas != null) { a.conHoras += 1; a.horas += m.horas_trabajadas; }
+    }
+    mapa.set(k, a);
+  }
+  return mapa;
+};
+
+const filaCobertura = (a) => ({
+  turnos_programados: a.programados,
+  turnos_cubiertos: a.cubiertos,
+  cobertura: a.programados > 0 ? Math.round((a.cubiertos / a.programados) * 100) : 0,
+  promedio_retraso_min: a.marcajes ? Math.round(a.retraso / a.marcajes) : 0,
+  promedio_horas: a.conHoras ? parseFloat((a.horas / a.conHoras).toFixed(1)) : 0,
+});
+
+const rangoMeses = (mes, anio, cantidad) => {
+  const iso = (a, m) => new Date(Date.UTC(a, m, 1)).toISOString().slice(0, 10);
+  return { inicioISO: iso(anio, mes - 1), siguienteISO: iso(anio, mes - 1 + cantidad) };
+};
+
+// ── Resumen por guardia (mes o varios meses) ──────────────────────
+const resumenGuardias = async (mes, anio, user, cantidad = 1) => {
+  const alcance = await filtroAlcance(user);
+  const porInstalacion = alcance ? { instalacion_id: alcance } : {};
+  const { inicioISO, siguienteISO } = rangoMeses(mes, anio, cantidad);
+
+  const [turnos, novedades] = await Promise.all([
+    turnosDelPeriodo(inicioISO, siguienteISO, porInstalacion),
+    prisma.novedad.groupBy({
+      by: ['usuario_id', 'instalacion_id'],
+      where: { created_at: { gte: inicioDiaChile(inicioISO), lt: inicioDiaChile(siguienteISO) }, ...SOLO_INCIDENCIAS, ...porInstalacion },
+      _count: { id: true },
+    }),
+  ]);
+
+  const filas = acumularTurnos(turnos, (t) => `${t.usuario_id}|${t.instalacion_id}`);
+  const [usuarios, instalaciones] = await Promise.all([
+    prisma.usuario.findMany({ where: { id: { in: [...new Set(turnos.map((t) => t.usuario_id))] } }, select: { id: true, nombre: true, rut: true } }),
+    prisma.instalacion.findMany({ where: { id: { in: [...new Set(turnos.map((t) => t.instalacion_id))] } }, select: { id: true, nombre: true } }),
+  ]);
+
+  return [...filas.values()].map((a) => {
+    const u = usuarios.find((x) => x.id === a.usuario_id);
+    const n = novedades.find((x) => x.usuario_id === a.usuario_id && x.instalacion_id === a.instalacion_id);
+    return {
+      usuario_id: a.usuario_id,
+      guardia: u?.nombre ?? 'Sin asignar',
+      rut: u?.rut ?? null,
+      instalacion_id: a.instalacion_id,
+      instalacion: instalaciones.find((x) => x.id === a.instalacion_id)?.nombre ?? '',
+      ...filaCobertura(a),
+      novedades: n?._count.id ?? 0,
+    };
+  }).sort((x, y) => x.instalacion.localeCompare(y.instalacion) || x.guardia.localeCompare(y.guardia));
 };
 
 // ── Resumen mensual por instalación — para tabla analítica ─────────
 const resumenMensual = async (mes, anio, user) => {
   const alcance = await filtroAlcance(user);
   const porInstalacion = alcance ? { instalacion_id: alcance } : {};
-  const inicioISO = `${anio}-${String(mes).padStart(2, '0')}-01`;
-  const siguienteISO = mes === 12
-    ? `${anio + 1}-01-01`
-    : `${anio}-${String(mes + 1).padStart(2, '0')}-01`;
-  const inicioTurnos = aFechaDB(inicioISO);
-  const siguienteTurnos = aFechaDB(siguienteISO);
-  const inicioInstantes = inicioDiaChile(inicioISO);
-  const siguienteInstantes = inicioDiaChile(siguienteISO);
+  const { inicioISO, siguienteISO } = rangoMeses(mes, anio, 1);
 
-  const [turnos, asistencias, novedades] = await Promise.all([
-    prisma.turno.groupBy({
-      by: ['instalacion_id'],
-      where: { fecha: { gte: inicioTurnos, lt: siguienteTurnos }, estado: { not: 'cancelado' }, ...porInstalacion },
-      _count: { id: true },
-    }),
-    prisma.asistencia.groupBy({
-      by: ['instalacion_id'],
-      where: { hora_entrada: { gte: inicioInstantes, lt: siguienteInstantes }, ...porInstalacion },
-      _count: { id: true },
-      _avg:   { minutos_retraso: true, horas_trabajadas: true },
-    }),
+  const [turnos, novedades] = await Promise.all([
+    turnosDelPeriodo(inicioISO, siguienteISO, porInstalacion),
     prisma.novedad.groupBy({
       by: ['instalacion_id'],
-      where: { created_at: { gte: inicioInstantes, lt: siguienteInstantes }, ...SOLO_INCIDENCIAS, ...porInstalacion },
+      where: { created_at: { gte: inicioDiaChile(inicioISO), lt: inicioDiaChile(siguienteISO) }, ...SOLO_INCIDENCIAS, ...porInstalacion },
       _count: { id: true },
     }),
   ]);
 
-  const ids = [...new Set([
-    ...turnos.map((t) => t.instalacion_id),
-    ...asistencias.map((a) => a.instalacion_id),
-  ])];
-
+  const porInst = acumularTurnos(turnos, (t) => t.instalacion_id);
   const instalaciones = await prisma.instalacion.findMany({
-    where: { id: { in: ids } },
+    where: { id: { in: [...porInst.keys()] } },
     select: { id: true, nombre: true },
   });
 
-  return instalaciones.map((inst) => {
-    const t  = turnos.find((x) => x.instalacion_id === inst.id);
-    const a  = asistencias.find((x) => x.instalacion_id === inst.id);
-    const n  = novedades.find((x) => x.instalacion_id === inst.id);
-    const nT = t?._count.id ?? 0;
-    const nA = a?._count.id ?? 0;
-    return {
-      instalacion:          inst.nombre,
-      instalacion_id:       inst.id,
-      turnos_programados:   nT,
-      asistencias:          nA,
-      cobertura:            nT > 0 ? Math.min(100, Math.round((nA / nT) * 100)) : 0,
-      promedio_retraso_min: Math.round(a?._avg?.minutos_retraso ?? 0),
-      promedio_horas:       parseFloat((a?._avg?.horas_trabajadas ?? 0).toFixed(1)),
-      novedades:            n?._count.id ?? 0,
-    };
-  }).sort((a, b) => b.asistencias - a.asistencias);
+  return instalaciones.filter((inst) => porInst.has(inst.id)).map((inst) => ({
+    instalacion: inst.nombre,
+    instalacion_id: inst.id,
+    ...filaCobertura(porInst.get(inst.id)),
+    novedades: novedades.find((x) => x.instalacion_id === inst.id)?._count.id ?? 0,
+  }));
 };
 
 // ── Exportar a CSV (sin dependencias externas) ────────────────────
@@ -237,5 +316,6 @@ module.exports = {
   novedadesPorSemana,
   estadoGuardias,
   resumenMensual,
+  resumenGuardias,
   exportarCSV,
 };

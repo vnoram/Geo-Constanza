@@ -4,7 +4,8 @@ const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { ROLES } = require('../constants/roles');
 const { SOLO_INCIDENCIAS } = require('./priorizacion.service');
 const { sinCobertura } = require('../utils/cobertura');
-const { ahoraChile, aFechaDB, instanteChile, turnosDeHoy } = require('../utils/fechaChile');
+const { AUSENCIAS } = require('../constants/solicitudes');
+const { ahoraChile, aFechaDB, instanteChile, turnosDeHoy, intervaloTurno } = require('../utils/fechaChile');
 
 /**
  * Dashboard principal del día.
@@ -44,11 +45,31 @@ const getDashboardHoy = async (user) => {
     orderBy: [{ fecha: 'asc' }, { hora_inicio: 'asc' }],
   })).filter(ventana.incluir);
 
+  const ahora = new Date();
+
+  // Vacaciones / ausencias de los guardias que tienen turno hoy (aprobadas o aún pendientes)
+  const dia = (d) => new Date(d).toISOString().slice(0, 10);
+  const usuariosTurno = [...new Set(turnos.map(t => t.usuario_id).filter(Boolean))];
+  const solicitudesAusencia = usuariosTurno.length === 0 ? [] : await prisma.solicitud.findMany({
+    where: { usuario_id: { in: usuariosTurno }, tipo: { in: Object.keys(AUSENCIAS) }, estado: { in: ['aprobada', 'pendiente'] } },
+    select: { usuario_id: true, tipo: true, estado: true, fecha_desde: true, fecha_hasta: true },
+  });
+  const ausenciasDe = (t) => {
+    const f = dia(t.fecha);
+    return solicitudesAusencia.filter(s => s.usuario_id === t.usuario_id && dia(s.fecha_desde) <= f && f <= dia(s.fecha_hasta ?? s.fecha_desde));
+  };
+
   const lista = turnos.map(t => {
     const asistencia = t.asistencias[0] || null;
-    let estadoActual = 'faltante';
+    // Sin entrada: "por iniciar" mientras el turno no ha comenzado; "faltante" recién cuando ya empezó.
+    let estadoActual = ahora < intervaloTurno(t).inicio ? 'por_iniciar' : 'faltante';
+    const ausencias = ausenciasDe(t);
+    const aprobada = ausencias.find(s => s.estado === 'aprobada');
+    const pendiente = ausencias.find(s => s.estado === 'pendiente');
     if (asistencia) {
       estadoActual = asistencia.estado === 'tardio' ? 'tardio' : 'presente';
+    } else if (aprobada) {
+      estadoActual = 'ausencia';
     }
     return {
       turno_id: t.id,
@@ -68,6 +89,8 @@ const getDashboardHoy = async (user) => {
       distancia_entrada_m: asistencia?.distancia_entrada_m ?? null,
       precision_entrada_m: asistencia?.precision_entrada_m ?? null,
       estado: estadoActual,
+      ausencia: estadoActual === 'ausencia' ? { tipo: aprobada.tipo, etiqueta: AUSENCIAS[aprobada.tipo] } : null,
+      solicitud_pendiente: !asistencia && !aprobada && pendiente ? { tipo: pendiente.tipo, etiqueta: AUSENCIAS[pendiente.tipo] } : null,
       sin_cobertura: sinCobertura(t),
     };
   });
@@ -75,10 +98,12 @@ const getDashboardHoy = async (user) => {
   const presentes = lista.filter(t => t.estado === 'presente').length;
   const tardios = lista.filter(t => t.estado === 'tardio').length;
   const faltantes = lista.filter(t => t.estado === 'faltante').length;
+  const porIniciar = lista.filter(t => t.estado === 'por_iniciar').length;
+  const conAusencia = lista.filter(t => t.estado === 'ausencia').length;
   const fallbacks = lista.filter(t => t.es_fallback).length;
 
   const sinCoberturaTotal = lista.filter(t => t.sin_cobertura).length;
-  const base = { total: turnos.length, presentes, tardios, faltantes, fallbacks, lista, sinCobertura: sinCoberturaTotal };
+  const base = { total: turnos.length, presentes, tardios, faltantes, porIniciar, conAusencia, fallbacks, lista, sinCobertura: sinCoberturaTotal };
 
   // ── KPIs para Supervisor (sus instalaciones asignadas) ─────────────────────
   if (user.rol === ROLES.SUPERVISOR && instalacionIds) {
