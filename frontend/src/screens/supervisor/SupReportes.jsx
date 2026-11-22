@@ -1,3 +1,5 @@
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Selector } from "../../components/ui/Selector";
 import "./SupDashboard.css";
 import "./SupPantallas.css";
 import { Icon } from "../../components/ui/Icon";
@@ -386,16 +388,7 @@ function Select({ label, value, onChange, options, placeholder }) {
   return (
     <div style={{ marginBottom: 18 }}>
       {label && <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: T.textSec, marginBottom: 6, letterSpacing: 1.5, textTransform: "uppercase" }}>{label}</label>}
-      <select
-        aria-label={label}
-        className="touch-target"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", background: T.bgInput, border: `1.5px solid ${T.border}`, borderRadius: T.radius, padding: "12px 14px", color: value ? T.text : T.textMut, fontSize: 14, fontFamily: FONT.ui }}
-      >
-        <option value="">{placeholder || "Seleccionar..."}</option>
-        {options.map((o) => <option key={o.value} value={o.value} style={{ background: T.bgCard }}>{o.label}</option>)}
-      </select>
+      <Selector bloque etiqueta={label} value={value || "__todos__"} onChange={(valor) => { const v = valor === "__todos__" ? "" : valor; onChange(v); }} opciones={[{ valor: "__todos__", etiqueta: placeholder || "Seleccionar..." }, ...options.map((o) => ({ valor: o.value, etiqueta: o.label }))]} />
     </div>
   );
 }
@@ -494,11 +487,11 @@ export function SupReportes() {
   const instNombreActual = instalaciones.find((i) => i.id === instalacionId)?.nombre || "Todas";
 
   return (
-    <div className="operations-screen sup-dashboard sup-supervision sup-reportes">
+    <Aparecer className="operations-screen sup-dashboard sup-supervision sup-reportes">
       <SectionHeader title="Reportes OS-10" sub="Informes operacionales para fiscalización" />
 
       {/* Filtros */}
-      <div className="sup-supervision__panel" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 18, marginBottom: 16 }}>
+      <Aparecer grupo="SupReportes.jsx:secciones" className="sup-supervision__panel" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 18, marginBottom: 16 }}>
         <SubHeader title="Parámetros del Reporte" />
 
         <Select
@@ -536,7 +529,7 @@ export function SupReportes() {
         <Btn full onClick={consultar} loading={cargando}>
           Consultar {vistaActiva === "asistencia" ? "Asistencia" : vistaActiva === "rondas" ? "Libro de rondas" : "Novedades"}
         </Btn>
-      </div>
+      </Aparecer>
 
       {/* Error */}
       {error && (
@@ -570,6 +563,6 @@ export function SupReportes() {
           </div>
         </>
       )}
-    </div>
+    </Aparecer>
   );
 }

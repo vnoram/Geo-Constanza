@@ -1,3 +1,4 @@
+import { Aparecer } from "../components/ui/Aparecer";
 import "./ggss-libre/LibreVisual.css";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../services/api";
@@ -41,7 +42,7 @@ export function MisDispositivos({ user }) {
   const banner = { display: "flex", alignItems: "center", gap: 8, borderRadius: T.radius, padding: "10px 14px", marginBottom: 12, fontSize: 13 };
 
   return (
-    <div className="gc-audited-screen libre-visual libre-dispositivos">
+    <Aparecer className="gc-audited-screen libre-visual libre-dispositivos">
       {porAceptar && (
         <Dialogo titulo="Registrar este equipo" mensaje={`Este equipo quedará registrado como corporativo («${porAceptar.nombre}»).`} confirmarLabel="Registrar equipo"
           onConfirmar={() => aceptar(porAceptar)} onCancelar={() => setPorAceptar(null)} />
@@ -84,7 +85,7 @@ export function MisDispositivos({ user }) {
           <div style={{ fontSize: 12, color: T.textMut, marginTop: 4 }}>Pídele a un administrador que te invite desde su panel de Dispositivos.</div>
         </div>
       ) : invitaciones.map(inv => (
-        <div className="libre-dispositivo__invitacion" key={inv.id} style={{ ...tarjeta, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
+        <Aparecer grupo="MisDispositivos.jsx:4576" className="libre-dispositivo__invitacion" key={inv.id} style={{ ...tarjeta, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
           <Icon name="monitor" size={22} color={T.focusText} />
           <div style={{ flex: 1, minWidth: "min(100%, 180px)", overflowWrap: "anywhere" }}>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
@@ -96,8 +97,8 @@ export function MisDispositivos({ user }) {
             </div>
           </div>
           <Btn variant="morado" disabled={ocupado} onClick={() => setPorAceptar(inv)}>Aceptar en este equipo</Btn>
-        </div>
+        </Aparecer>
       ))}
-    </div>
+    </Aparecer>
   );
 }

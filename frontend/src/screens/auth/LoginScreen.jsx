@@ -1,3 +1,4 @@
+import { Aparecer } from "../../components/ui/Aparecer";
 import { useState } from "react";
 import { T, FONT } from "../../theme/theme";
 import { Input } from "../../components/ui/Input";
@@ -54,7 +55,7 @@ export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacio
   const enrolando = !!invitacion;
 
   return (
-    <div className="login">
+    <Aparecer className="login">
       {/* Marca: panel lateral callado, solo en pantallas anchas */}
       <aside className="login__brand">
         {/* Ilustración decorativa: la imagen se ve completa en el panel */}
@@ -168,6 +169,6 @@ export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacio
           <div className="login__footer">Geo Constanza v1.1 · Noviembre 2026</div>
         </div>
       </main>
-    </div>
+    </Aparecer>
   );
 }

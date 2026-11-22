@@ -1,3 +1,6 @@
+import { AnimatePresence } from "framer-motion";
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
 import "./SupDashboard.css";
 import "./SupPantallas.css";
 import { useState, useEffect, useRef } from "react";
@@ -57,13 +60,13 @@ export function ResolverModal({ novedad, onClose, onSuccess }) {
   };
 
   return (
-    <div className="responsive-modal-overlay" style={{
+    <Aparecer salida desplazar={false} className="responsive-modal-overlay" style={{
       position: "fixed", inset: 0, zIndex: 100,
       background: "rgba(14,23,20,0.85)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: 16,
     }}>
-      <div className="responsive-modal" style={{
+      <Aparecer salida className="responsive-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`,
         borderRadius: T.radius, padding: 24, width: "100%", maxWidth: 400,
       }}>
@@ -110,8 +113,8 @@ export function ResolverModal({ novedad, onClose, onSuccess }) {
             <Btn variant="ghost" className="gc-accion-btn gc-accion-btn--verde" loading={loading}>Marcar como resuelta</Btn>
           </div>
         </form>
-      </div>
-    </div>
+      </Aparecer>
+    </Aparecer>
   );
 }
 
@@ -158,11 +161,11 @@ export function DetalleNovedadModal({ novedad: n, onClose, onResolver, onEscalar
     </div>
   ) : null;
   return (
-    <div className="responsive-modal-overlay" onClick={onClose} style={{
+    <Aparecer salida desplazar={false} className="responsive-modal-overlay" onClick={onClose} style={{
       position: "fixed", inset: 0, zIndex: 100, background: "rgba(14,23,20,0.85)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
     }}>
-      <div className="responsive-modal" onClick={e => e.stopPropagation()} style={{
+      <Aparecer salida className="responsive-modal" onClick={e => e.stopPropagation()} style={{
         background: T.bgCard, border: `2px solid ${colors.border}`, borderRadius: T.radius, padding: 24,
         width: "100%", maxWidth: 760, maxHeight: "90vh", overflowY: "auto",
       }}>
@@ -214,8 +217,8 @@ export function DetalleNovedadModal({ novedad: n, onClose, onResolver, onEscalar
             )}
           </div>
         )}
-      </div>
-    </div>
+      </Aparecer>
+    </Aparecer>
   );
 }
 
@@ -254,8 +257,8 @@ function FotoNovedad({ url }) {
         />
       </button>
 
-      {abierta && (
-          <div
+      <AnimatePresence>{abierta && (
+          <Aparecer salida desplazar={false}
             className="responsive-modal-overlay"
           onClick={() => setAbierta(false)}
           style={{
@@ -287,8 +290,8 @@ function FotoNovedad({ url }) {
               ✕
             </button>
           </div>
-        </div>
-      )}
+        </Aparecer>
+      )}</AnimatePresence>
     </>
   );
 }
@@ -394,7 +397,7 @@ export function SupNovedades({ user }) {
                     : pendientes;
 
   return (
-    <div className="operations-screen sup-dashboard sup-supervision sup-novedades">
+    <Aparecer className="operations-screen sup-dashboard sup-supervision sup-novedades">
       {dialogoError && <Dialogo titulo="No se pudo escalar" mensaje={dialogoError} soloMensaje onCancelar={() => setDialogoError("")} />}
       <SectionHeader title="Novedades" sub="Ordenadas por prioridad" />
 
@@ -424,9 +427,7 @@ export function SupNovedades({ user }) {
       )}
 
       {loading && (
-        <div style={{ textAlign: "center", color: T.textMut, padding: 32, fontSize: 14 }}>
-          Cargando novedades...
-        </div>
+        <Esqueleto filas={3} alto={64} />
       )}
 
       <div role="tablist" style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
@@ -464,7 +465,7 @@ export function SupNovedades({ user }) {
           : <TarjetaNovedadCompacta key={n.id} n={n} onClick={() => setDetalle(n)} />
       )} />
 
-      {detalle && (
+      <AnimatePresence>{detalle && (
         <DetalleNovedadModal
           novedad={novedades.find(x => x.id === detalle.id) ?? detalle}
           onClose={() => setDetalle(null)}
@@ -472,15 +473,15 @@ export function SupNovedades({ user }) {
           onResolver={() => { const n = detalle; setDetalle(null); setResolver(n); }}
           onEscalar={async () => { await handleEscalar(detalle.id); setDetalle(null); }}
         />
-      )}
+      )}</AnimatePresence>
 
-      {resolverTarget && (
+      <AnimatePresence>{resolverTarget && (
         <ResolverModal
           novedad={resolverTarget}
           onClose={() => setResolver(null)}
           onSuccess={handleResuelta}
         />
-      )}
-    </div>
+      )}</AnimatePresence>
+    </Aparecer>
   );
 }

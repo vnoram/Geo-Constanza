@@ -1,3 +1,4 @@
+import { Aparecer } from "../../components/ui/Aparecer";
 import { useState } from "react";
 import { T, FONT } from "../../theme/theme";
 import { Input } from "../../components/ui/Input";
@@ -51,8 +52,8 @@ export function ResetPasswordScreen({ token, invitacion = false, onBack }) {
     : token ? (invitacion ? "Crea tu contraseña" : "Nueva contraseña") : "Restablecer contraseña";
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: T.bg }}>
-      <div style={{ width: "100%", maxWidth: 400 }}>
+    <Aparecer className="gc-access" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: T.bg }}>
+      <div className="gc-access__panel" style={{ width: "100%", maxWidth: 400 }}>
         <div style={{ marginBottom: 20 }}><Wordmark conLogo size={18} /></div>
         <h1 style={{ fontSize: 20, fontWeight: 600, color: T.text, margin: "0 0 6px", fontFamily: FONT.ui }}>{titulo}</h1>
 
@@ -88,7 +89,7 @@ export function ResetPasswordScreen({ token, invitacion = false, onBack }) {
                 <div>{error}</div>
               </div>
             )}
-            <div style={{ display: "flex", gap: 10 }}>
+            <div className="gc-access__acciones" style={{ display: "flex", gap: 10 }}>
               <Btn variant="outline" onClick={onBack}>Cancelar</Btn>
               <Btn onClick={token ? confirmar : solicitar} loading={loading} full>
                 {token ? (invitacion ? "Crear contraseña" : "Cambiar contraseña") : "Enviar enlace"}
@@ -97,6 +98,6 @@ export function ResetPasswordScreen({ token, invitacion = false, onBack }) {
           </div>
         )}
       </div>
-    </div>
+    </Aparecer>
   );
 }

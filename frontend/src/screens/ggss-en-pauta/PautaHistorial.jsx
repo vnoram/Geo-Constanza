@@ -1,3 +1,5 @@
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
 import "./PautaVisual.css";
 import { useState, useEffect } from "react";
 import { T } from "../../theme/theme";
@@ -45,13 +47,11 @@ export function PautaHistorial({ user }) {
   }, [user?.id]);
 
   return (
-    <div className="guard-screen pauta-visual">
+    <Aparecer className="guard-screen pauta-visual">
       <SectionHeader title="Historial" sub="Tu registro de asistencia" />
 
       {loading && (
-        <div style={{ textAlign: "center", color: T.textMut, padding: 32, fontSize: 14 }}>
-          Cargando historial...
-        </div>
+        <Esqueleto filas={3} alto={64} />
       )}
 
       {error && (
@@ -72,7 +72,7 @@ export function PautaHistorial({ user }) {
       {registros.map(a => {
         const est = resumen(a);
         return (
-          <div className="guard-list-row pauta-historial__fila" key={a.id} style={{
+          <Aparecer grupo="PautaHistorial.jsx:2415" className="guard-list-row pauta-historial__fila" key={a.id} style={{
             background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, borderLeft: `3px solid ${T[est.color]}`,
             padding: 14, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center",
           }}>
@@ -89,9 +89,9 @@ export function PautaHistorial({ user }) {
                 {a.hora_salida ? formatHoras(a.horas_trabajadas) : "—"}
               </div>
             </div>
-          </div>
+          </Aparecer>
         );
       })}
-    </div>
+    </Aparecer>
   );
 }

@@ -1,3 +1,4 @@
+import { Aparecer } from "../../components/ui/Aparecer";
 import "./LibreVisual.css";
 import { Icon } from "../../components/ui/Icon";
 import { FONT, T } from "../../theme/theme";
@@ -5,7 +6,7 @@ import { SectionHeader } from "../../components/ui/SectionHeader";
 
 export function LibreSolicitudes() {
   return (
-    <div className="guard-screen libre-visual libre-libresolicitudes">
+    <Aparecer className="guard-screen libre-visual libre-libresolicitudes">
       <SectionHeader title="Solicitudes" sub="Gestiona tus peticiones" action={{ label: "+ Nueva", onClick: () => {} }} />
       <div className="guard-action-grid" style={{ display: "grid", gap: 8, marginBottom: 16 }}>
         {[
@@ -25,6 +26,6 @@ export function LibreSolicitudes() {
       <div style={{ textAlign: "center", padding: 30, color: T.textMut, fontSize: 13 }}>
         <Icon name="file-pen" size={16} /> No tienes solicitudes activas
       </div>
-    </div>
+    </Aparecer>
   );
 }

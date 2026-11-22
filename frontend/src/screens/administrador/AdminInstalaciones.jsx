@@ -1,3 +1,7 @@
+import { AnimatePresence } from "framer-motion";
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
+import { Selector } from "../../components/ui/Selector";
 import "./AdminVisual.css";
 import { Icon } from "../../components/ui/Icon";
 import { useState, useEffect, useRef } from "react";
@@ -90,33 +94,7 @@ function Select({ label, value, onChange, options }) {
           {label}
         </label>
       )}
-      <select
-        className="touch-target"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          width: "100%",
-          background: T.bgInput,
-          border: `1.5px solid ${T.border}`,
-          borderRadius: T.radius,
-          padding: "12px 14px",
-          color: value ? T.text : T.textMut,
-          fontSize: 14,
-          fontFamily: FONT.ui,
-          cursor: "pointer",
-        }}
-      >
-        <option value="">Seleccionar...</option>
-        {options.map((o) => {
-          const val = typeof o === "object" ? o.value : o;
-          const lbl = typeof o === "object" ? o.label : o;
-          return (
-            <option key={val} value={val} style={{ background: T.bgCard }}>
-              {lbl}
-            </option>
-          );
-        })}
-      </select>
+      <Selector bloque etiqueta={label} value={value || "__todos__"} onChange={(valor) => { const v = valor === "__todos__" ? "" : valor; onChange(v); }} opciones={[{ valor: "__todos__", etiqueta: "Seleccionar..." }, ...options.map((o) => ({ valor: String(typeof o === "object" ? o.value : o), etiqueta: typeof o === "object" ? o.label : o }))]} />
     </div>
   );
 }
@@ -344,7 +322,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
   };
 
   return (
-    <div
+    <Aparecer salida desplazar={false}
       className="admin-modal-overlay"
       style={{
         position: "fixed",
@@ -509,7 +487,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                   Los centros operativos se asignan a operadores centrales.
                 </div>
                 {cargandoOp ? (
-                  <div style={{ fontSize: 12, color: T.textMut }}>Cargando operadores...</div>
+                  <Esqueleto filas={3} alto={64} />
                 ) : operadores.length === 0 ? (
                   <div style={{ fontSize: 12, color: T.textMut }}>No hay operadores centrales registrados todavía.</div>
                 ) : (
@@ -548,7 +526,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
                 Los supervisores marcados verán esta instalación en sus dashboards y turnos.
               </div>
               {cargandoSup ? (
-                <div style={{ fontSize: 12, color: T.textMut }}>Cargando supervisores...</div>
+                <Esqueleto filas={3} alto={64} />
               ) : supervisores.length === 0 ? (
                 <div style={{ fontSize: 12, color: T.textMut }}>No hay supervisores registrados todavía.</div>
               ) : (
@@ -715,7 +693,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
           </Btn>
         </div>
       </div>
-    </div>
+    </Aparecer>
   );
 }
 
@@ -727,7 +705,7 @@ function InstCard({ inst, onEditar, onCambiarEstado }) {
   const tipo = esCentro ? "Centro operativo" : tipoRecinto(inst.tipo_recinto);
 
   return (
-    <div
+    <Aparecer elemento="div" grupo="administrador/AdminInstalaciones:tarjetas"
       className="admin-card"
       style={{
         background: esCentro ? T.focusGhost : T.bgCard,
@@ -808,7 +786,7 @@ function InstCard({ inst, onEditar, onCambiarEstado }) {
           {esActivo ? "● Activo" : "○ Inactivo"}
         </span>
       </div>
-    </div>
+    </Aparecer>
   );
 }
 
@@ -871,7 +849,7 @@ export function AdminInstalaciones() {
   ).sort((a, b) => Number(esCentroOperativo(b)) - Number(esCentroOperativo(a)));
 
   return (
-    <div className="admin-screen admin-visual admininstalaciones">
+    <Aparecer className="admin-screen admin-visual admininstalaciones">
       <SectionHeader
         title="Instalaciones"
         sub={`${instalaciones.length} recinto${instalaciones.length !== 1 ? "s" : ""} registrado${instalaciones.length !== 1 ? "s" : ""}`}
@@ -907,9 +885,7 @@ export function AdminInstalaciones() {
 
       {/* Lista */}
       {cargando ? (
-        <div style={{ textAlign: "center", padding: 40, fontSize: 13, color: T.textMut }}>
-          Cargando instalaciones...
-        </div>
+        <Esqueleto filas={3} alto={64} />
       ) : listaFiltrada.length === 0 ? (
         <div style={{ textAlign: "center", padding: 40 }}>
           <div style={{ fontSize: 36, marginBottom: 10 }}><Icon name="building-2" size={36} /></div>
@@ -951,13 +927,13 @@ export function AdminInstalaciones() {
       )}
 
       {/* Modal Crear / Editar */}
-      {modalData && (
+      <AnimatePresence>{modalData && (
         <ModalInstalacion
           inicial={modalData.inicial}
           onClose={() => setModalData(null)}
           onGuardada={handleGuardada}
         />
-      )}
-    </div>
+      )}</AnimatePresence>
+    </Aparecer>
   );
 }

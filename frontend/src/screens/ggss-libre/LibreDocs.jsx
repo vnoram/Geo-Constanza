@@ -1,3 +1,5 @@
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
 import "./LibreVisual.css";
 import { useCallback, useEffect, useState } from "react";
 import { leerSesion } from "../../services/almacenSesion";
@@ -56,12 +58,12 @@ export function LibreDocs() {
   ];
 
   return (
-    <div className="guard-screen libre-visual libre-libredocs">
+    <Aparecer className="guard-screen libre-visual libre-libredocs">
       <SectionHeader title="Documentos" sub="Tu documentación personal" />
       {cargando ? (
-        <div style={{ textAlign: "center", padding: 24, fontSize: 13, color: T.textMut }}>Cargando documentos...</div>
+        <Esqueleto filas={3} alto={64} />
       ) : filas.map((f, i) => (
-        <div className="guard-list-row libre-documento" key={f.doc?.id ?? `${f.tipo}-${i}`} style={{ ...tarjeta, borderLeft: `3px solid ${f.doc ? T.accent : T.yellow}`, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+        <Aparecer grupo="LibreDocs.jsx:2870" className="guard-list-row libre-documento" key={f.doc?.id ?? `${f.tipo}-${i}`} style={{ ...tarjeta, borderLeft: `3px solid ${f.doc ? T.accent : T.yellow}`, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
           <div className="guard-list-row__main" style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Icon name={ICONOS[f.tipo] ?? "file-text"} size={18} />
             <div>
@@ -81,10 +83,10 @@ export function LibreDocs() {
               </label>
             )}
           </div>
-        </div>
+        </Aparecer>
       ))}
       <Aviso mensaje={aviso} />
       {error && <div role="alert" style={{ fontSize: 12, color: T.alert, marginTop: 10 }}>{error}</div>}
-    </div>
+    </Aparecer>
   );
 }

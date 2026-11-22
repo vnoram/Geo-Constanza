@@ -1,3 +1,7 @@
+import { AnimatePresence } from "framer-motion";
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
+import { Selector } from "../../components/ui/Selector";
 import { useState, useEffect, useCallback } from "react";
 import { T, FONT } from "../../theme/theme";
 import { Icon } from "../../components/ui/Icon";
@@ -20,7 +24,7 @@ const fechaCorta = (iso) => (iso ? new Date(iso).toLocaleDateString("es-CL") : "
 // ─── Cuadro de diálogo base ──────────────────────────────────────
 function Dialogo({ titulo, subtitulo, onClose, children }) {
   return (
-    <div
+    <Aparecer salida desplazar={false}
       className="admin-modal-overlay"
       role="dialog"
       aria-modal="true"
@@ -30,7 +34,7 @@ function Dialogo({ titulo, subtitulo, onClose, children }) {
         display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16,
       }}
     >
-      <div className="admin-modal" style={{
+      <Aparecer salida className="admin-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 24,
         width: "100%", maxWidth: 480, maxHeight: "92vh", overflowY: "auto", boxShadow: "0 16px 40px rgba(0,0,0,0.6)",
       }}>
@@ -45,8 +49,8 @@ function Dialogo({ titulo, subtitulo, onClose, children }) {
           </button>
         </div>
         {children}
-      </div>
-    </div>
+      </Aparecer>
+    </Aparecer>
   );
 }
 
@@ -96,12 +100,7 @@ function ModalEmpresa({ inicial, onClose, onGuardada }) {
       <Input label="RUT de la empresa" value={form.rut} onChange={set("rut")} placeholder="76.111.111-K" mono maxLength={14} />
       <div style={{ marginBottom: 18 }}>
         <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: T.textSec, marginBottom: 6 }}>Plan</label>
-        <select aria-label="Plan" className="touch-target" value={form.plan} onChange={(e) => set("plan")(e.target.value)} style={{
-          width: "100%", background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: T.radius,
-          padding: "0 12px", minHeight: 42, color: T.text, fontSize: 14, fontFamily: FONT.ui,
-        }}>
-          {PLANES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-        </select>
+        <Selector bloque etiqueta="Plan" value={form.plan} onChange={(valor) => set("plan")(valor)} opciones={PLANES.map((p) => ({ valor: p.value, etiqueta: p.label }))} />
       </div>
       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
         <Btn variant="outline" onClick={onClose}>Cancelar</Btn>
@@ -294,7 +293,7 @@ export function EmpresasPanel() {
   );
 
   return (
-    <div className="gc-audited-screen">
+    <Aparecer className="gc-audited-screen gc-platform">
       <SectionHeader title="Empresas"
         action={{ label: "Nueva empresa", onClick: () => setDialogo({ tipo: "empresa" }) }} />
 
@@ -302,9 +301,9 @@ export function EmpresasPanel() {
       <MensajeError>{error}</MensajeError>
 
       {cargando ? (
-        <div style={{ color: T.textMut, fontSize: 13, padding: 24 }}>Cargando empresas…</div>
+        <Esqueleto filas={3} alto={64} />
       ) : empresas.length === 0 && !error ? (
-        <div style={{ color: T.textMut, fontSize: 13, padding: 24, textAlign: "center" }}>
+        <div className="gc-empty" style={{ color: T.textMut, fontSize: 13, padding: 24, textAlign: "center" }}>
           Aún no hay empresas. Crea la primera con “Nueva empresa”.
         </div>
       ) : (
@@ -321,7 +320,7 @@ export function EmpresasPanel() {
               const admin = e.administradores?.find((a) => a.estado === "activo");
               const activa = e.estado === "activa";
               return (
-                <article key={e.id} aria-label={e.nombre} style={{
+                <Aparecer elemento="article" grupo="plataforma/EmpresasPanel:15041" key={e.id} aria-label={e.nombre} style={{
                   background: T.bgCard, border: `1px solid ${T.border}`, borderLeft: `3px solid ${activa ? T.accent : T.yellow}`,
                   borderRadius: T.radius, padding: 16, display: "flex", flexDirection: "column", gap: 14, opacity: activa ? 1 : 0.8,
                 }}>
@@ -362,14 +361,14 @@ export function EmpresasPanel() {
                       : accion("plus", "Crear admin", () => setDialogo({ tipo: "admin", empresa: e }), "morado")}
                     {accion(activa ? "ban" : "check", activa ? "Suspender" : "Reactivar", () => setDialogo({ tipo: "estado", empresa: e }), activa ? "naranja" : "verde")}
                   </div>
-                </article>
+                </Aparecer>
               );
             })}
           </div>
         </>
       )}
 
-      {dialogo?.tipo === "empresa" && (
+      <AnimatePresence>{dialogo?.tipo === "empresa" && (
         <ModalEmpresa inicial={dialogo.empresa} onClose={cerrar}
           onGuardada={(resultado, nueva) => {
             if (!nueva) return terminar("Empresa actualizada.");
@@ -378,17 +377,17 @@ export function EmpresasPanel() {
             setDialogo({ tipo: "admin", empresa: resultado });
             return cargar();
           }} />
-      )}
-      {dialogo?.tipo === "admin" && (
+      )}</AnimatePresence>
+      <AnimatePresence>{dialogo?.tipo === "admin" && (
         <ModalAdmin empresa={dialogo.empresa} onClose={() => terminar("")} onCreado={() => terminar("Administrador creado. Recibirá un correo para definir su contraseña.")} />
-      )}
-      {dialogo?.tipo === "gestionAdmin" && (
+      )}</AnimatePresence>
+      <AnimatePresence>{dialogo?.tipo === "gestionAdmin" && (
         <ModalGestionAdmin empresa={dialogo.empresa} admin={dialogo.admin} onClose={cerrar} onTerminado={terminar} />
-      )}
-      {dialogo?.tipo === "estado" && (
+      )}</AnimatePresence>
+      <AnimatePresence>{dialogo?.tipo === "estado" && (
         <ModalEstado empresa={dialogo.empresa} onClose={cerrar}
           onCambiado={() => terminar(dialogo.empresa.estado === "activa" ? "Empresa suspendida." : "Empresa reactivada.")} />
-      )}
-    </div>
+      )}</AnimatePresence>
+    </Aparecer>
   );
 }

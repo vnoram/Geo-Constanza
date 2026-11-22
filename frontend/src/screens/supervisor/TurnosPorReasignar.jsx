@@ -1,3 +1,5 @@
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Selector } from "../../components/ui/Selector";
 import { useEffect, useState, useCallback } from "react";
 import { T } from "../../theme/theme";
 import { api } from "../../services/api";
@@ -47,7 +49,7 @@ export function TurnosPorReasignar() {
   if (turnos.length === 0) return null;
 
   return (
-    <div style={{ background: T.bgCard, border: `1px solid ${T.alert}`, borderLeft: `3px solid ${T.alert}`, borderRadius: 8, padding: "14px 16px", marginBottom: 16 }}>
+    <Aparecer style={{ background: T.bgCard, border: `1px solid ${T.alert}`, borderLeft: `3px solid ${T.alert}`, borderRadius: 8, padding: "14px 16px", marginBottom: 16 }}>
       {error && <Dialogo titulo="No se pudo reasignar" mensaje={error} soloMensaje onCancelar={() => setError("")} />}
       <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, fontSize: 14, color: T.text, marginBottom: 4 }}>
         <Icon name="triangle-alert" size={16} /> Turnos por reasignar ({turnos.length})
@@ -63,17 +65,10 @@ export function TurnosPorReasignar() {
               {fechaCorta(t.fecha)} · {t.hora_inicio}–{t.hora_fin} · antes en {t.instalacion?.nombre} (desactivada)
             </div>
           </div>
-          <select
-            value={elegido[t.id] || ""}
-            onChange={(e) => setElegido((p) => ({ ...p, [t.id]: e.target.value }))}
-            style={{ background: T.bgInput, color: T.text, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px", fontSize: 12, fontFamily: "var(--font-ui)" }}
-          >
-            <option value="">Nueva instalación…</option>
-            {destinos.filter((d) => d.id !== t.instalacion_id).map((d) => <option key={d.id} value={d.id}>{d.nombre}</option>)}
-          </select>
+          <Selector etiqueta="Nueva instalación" value={elegido[t.id] || "__todos__"} onChange={(valor) => { const v = valor === "__todos__" ? "" : valor; setElegido((p) => ({ ...p, [t.id]: v })); }} opciones={[{ valor: "__todos__", etiqueta: "Nueva instalación…" }, ...destinos.filter((d) => d.id !== t.instalacion_id).map((d) => ({ valor: d.id, etiqueta: d.nombre }))]} />
           <Btn variant="morado" onClick={() => reasignar(t)} disabled={!elegido[t.id]} loading={ocupado === t.id}>Reasignar</Btn>
         </div>
       ))}
-    </div>
+    </Aparecer>
   );
 }

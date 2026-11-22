@@ -1,3 +1,5 @@
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
 import "./AdminVisual.css";
 import { KPI } from "../../components/ui/KPI";
 import { useEffect, useState } from "react";
@@ -98,15 +100,15 @@ export function AdminAuditoria() {
   const campo = { width: "100%", minWidth: 0, boxSizing: "border-box", padding: 10, background: T.bgInput, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radius };
   const actualizar = e => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   return (
-    <div className="admin-screen admin-visual adminauditoria">
+    <Aparecer className="admin-screen admin-visual adminauditoria">
       <SectionHeader title="Auditoría" sub="Log de cambios del sistema" />
       {!loading && !error && (
-        <div className="gc-dashboard-kpis">
+        <Aparecer grupo="AdminAuditoria.jsx:secciones" className="gc-dashboard-kpis">
           {Object.entries(CATEGORIAS).filter(([id]) => id !== "acceso").map(([id, c]) => (
             <KPI key={id} label={c.texto} value={logs.filter(l => describir(l.accion).categoria === id).length} sub="en esta página"
               accent={id === "seguridad" ? T.yellow : id === "gestion" ? T.accent : undefined} />
           ))}
-        </div>
+        </Aparecer>
       )}
       <form className="admin-visual__filters" onSubmit={e => { e.preventDefault(); setPage(1); setFiltros({ ...form }); }} style={{ marginBottom: 16 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))", gap: 12, marginBottom: 12 }}>
@@ -125,15 +127,15 @@ export function AdminAuditoria() {
         </div>
       </form>
       {error && <p role="alert" style={{ color: T.red }}>{error}</p>}
-      {loading && <p style={{ color: T.textMut }}>Cargando auditoría...</p>}
+      {loading && <Esqueleto filas={3} alto={64} />}
       {!loading && !logs.length && !error && <p style={{ color: T.textMut }}>Sin registros para estos filtros.</p>}
-      <div className="gc-dashboard-grid">
+      <Aparecer grupo="AdminAuditoria.jsx:secciones" className="gc-dashboard-grid">
         {logs.map(l => {
           const { texto, categoria } = describir(l.accion);
           const cat = CATEGORIAS[categoria];
           const sujeto = TABLAS[l.tabla_afectada] ?? l.tabla_afectada;
           return (
-            <div className="gc-dashboard-card" key={l.id} style={{
+            <Aparecer grupo="AdminAuditoria.jsx:8196" className="gc-dashboard-card" key={l.id} style={{
               background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
               padding: 12, borderLeft: `3px solid ${cat.color === "yellow" ? T.yellow : cat.color === "focus" ? T.focusText : cat.color ? T.accent : T.border}`,
             }}>
@@ -150,15 +152,15 @@ export function AdminAuditoria() {
               <div title={`ID ${l.registro_id ?? "—"}`} style={{ fontSize: 10, color: T.textMut, fontFamily: FONT.mono, marginTop: 6 }}>
                 {l.registro_id ? `#${String(l.registro_id).slice(-6)}` : ""}{l.ip_address ? ` · IP ${l.ip_address}` : ""}
               </div>
-            </div>
+            </Aparecer>
           );
         })}
-      </div>
+      </Aparecer>
       {totalPages > 1 && <div className="action-wrap" style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
         <Btn variant="ghost" disabled={page <= 1 || loading} onClick={() => setPage(p => p - 1)}>Anterior</Btn>
         <span>{page} / {totalPages}</span>
         <Btn variant="ghost" disabled={page >= totalPages || loading} onClick={() => setPage(p => p + 1)}>Siguiente</Btn>
       </div>}
-    </div>
+    </Aparecer>
   );
 }

@@ -1,3 +1,7 @@
+import { AnimatePresence } from "framer-motion";
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
+import { Selector } from "../../components/ui/Selector";
 import "./AdminVisual.css";
 import { Icon } from "../../components/ui/Icon";
 import { useEffect, useState } from "react";
@@ -109,12 +113,12 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
   };
 
   return (
-    <div className="admin-modal-overlay" style={{
+    <Aparecer salida desplazar={false} className="admin-modal-overlay" style={{
       position: "fixed", inset: 0, background: "rgba(14,23,20,0.85)",
       display: "flex", alignItems: "center", justifyContent: "center",
       zIndex: 1000, padding: 16,
     }}>
-      <div className="admin-modal" style={{
+      <Aparecer salida className="admin-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
         padding: 28, width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto",
       }}>
@@ -278,8 +282,8 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
             </div>
           </>
         )}
-      </div>
-    </div>
+      </Aparecer>
+    </Aparecer>
   );
 }
 
@@ -337,10 +341,6 @@ export function AdminTurnos() {
     .filter((t) => !filtroInstalacion || t.instalacion_id === filtroInstalacion)
     .filter((t) => !filtroGuardia || t.usuario_id === filtroGuardia);
 
-  const selStyle = {
-    background: T.bgCard, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radius,
-    padding: "8px 10px", fontSize: 12, fontFamily: FONT.ui, minWidth: 160, maxWidth: 240,
-  };
   const inputStyle = {
     width: "100%", padding: "10px 12px", borderRadius: T.radius, border: `1px solid ${T.border}`,
     background: T.bgCard, color: T.text, fontSize: 13, marginBottom: 10, boxSizing: "border-box",
@@ -348,7 +348,7 @@ export function AdminTurnos() {
   };
 
   return (
-    <div className="admin-screen admin-visual adminturnos">
+    <Aparecer className="admin-screen admin-visual adminturnos">
       <SectionHeader
         title="Turnos"
         sub="Programación semanal de todas las instalaciones"
@@ -356,14 +356,8 @@ export function AdminTurnos() {
       />
 
       <div className="admin-visual__filters" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", margin: "4px 0 12px" }}>
-        <select aria-label="Filtrar por instalación" value={filtroInstalacion} onChange={(e) => setFiltroInstalacion(e.target.value)} style={selStyle}>
-          <option value="">Todas las instalaciones</option>
-          {instalaciones.map((i) => <option key={i.id} value={i.id}>{i.nombre}</option>)}
-        </select>
-        <select aria-label="Filtrar por guardia" value={filtroGuardia} onChange={(e) => setFiltroGuardia(e.target.value)} style={selStyle}>
-          <option value="">Todos los guardias</option>
-          {guardias.map((g) => <option key={g.id} value={g.id}>{g.nombre}</option>)}
-        </select>
+        <Selector etiqueta="Filtrar por instalación" value={filtroInstalacion || "__todos__"} onChange={(valor) => { const v = valor === "__todos__" ? "" : valor; setFiltroInstalacion(v); }} opciones={[{ valor: "__todos__", etiqueta: "Todas las instalaciones" }, ...instalaciones.map((i) => ({ valor: i.id, etiqueta: i.nombre }))]} />
+        <Selector etiqueta="Filtrar por guardia" value={filtroGuardia || "__todos__"} onChange={(valor) => { const v = valor === "__todos__" ? "" : valor; setFiltroGuardia(v); }} opciones={[{ valor: "__todos__", etiqueta: "Todos los guardias" }, ...guardias.map((g) => ({ valor: g.id, etiqueta: g.nombre }))]} />
         <div style={{ fontSize: 12, color: T.textMut, marginLeft: "auto" }}>
           {visibles.length} turno{visibles.length === 1 ? "" : "s"} esta semana
         </div>
@@ -372,7 +366,7 @@ export function AdminTurnos() {
       <Aviso mensaje={aviso} />
 
       {cargando && turnos.length === 0 ? (
-        <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 30 }}>Cargando turnos...</div>
+        <Esqueleto filas={3} alto={64} />
       ) : (
         <SemanaTurnos
           lunes={lunes}
@@ -395,16 +389,16 @@ export function AdminTurnos() {
         <Btn variant="outline" disabled>Seleccionar archivo</Btn>
       </div>
 
-      {modalAbierto && (
+      <AnimatePresence>{modalAbierto && (
         <ModalPauta4x4
           onClose={() => setModalAbierto(false)}
           onSuccess={cargarTurnos}
           guardias={guardias}
           instalaciones={instalaciones}
         />
-      )}
+      )}</AnimatePresence>
 
-      {turnoEditando && (
+      <AnimatePresence>{turnoEditando && (
         <ModalEditarTurno
           turno={turnoEditando}
           turnos={turnos}
@@ -414,7 +408,7 @@ export function AdminTurnos() {
           onClose={() => setTurnoEditando(null)}
           onGuardado={onTurnoGuardado}
         />
-      )}
-    </div>
+      )}</AnimatePresence>
+    </Aparecer>
   );
 }

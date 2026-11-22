@@ -1,3 +1,7 @@
+import { AnimatePresence } from "framer-motion";
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
+import { Selector } from "../../components/ui/Selector";
 import "../PanelesCentral.css";
 import { useState, useEffect, useRef, memo } from "react";
 import { leerSesion } from "../../services/almacenSesion";
@@ -164,13 +168,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
   return (
     <div style={{ position: "relative", marginBottom: 20 }}>
       {cargando && (
-        <div style={{
-          position: "absolute", inset: 0, zIndex: 10,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          background: T.bgCard, borderRadius: T.radius, fontSize: 12, color: T.textMut,
-        }}>
-          Cargando mapa...
-        </div>
+        <Esqueleto filas={1} alto={240} />
       )}
       <div
         className="central-map"
@@ -322,11 +320,11 @@ function DerivarModal({ novedad, token, onClose, onSuccess }) {
   };
 
   return (
-    <div className="responsive-modal-overlay" style={{
+    <Aparecer salida desplazar={false} className="responsive-modal-overlay" style={{
       position: "fixed", inset: 0, zIndex: 100, background: "rgba(14,23,20,0.85)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
     }}>
-      <div className="responsive-modal" style={{
+      <Aparecer salida className="responsive-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 24, width: "100%", maxWidth: 400,
       }}>
         <div style={{ fontWeight: 700, fontSize: 15, color: T.focusText, marginBottom: 12 }}>Derivar a supervisor</div>
@@ -336,20 +334,14 @@ function DerivarModal({ novedad, token, onClose, onSuccess }) {
         <label style={{ display: "block", fontSize: 12, color: T.textSec, marginBottom: 6 }}>
           Supervisores que cubren esta instalación
         </label>
-        {opciones === null && <div style={{ fontSize: 12, color: T.textMut, marginBottom: 12 }}>Cargando…</div>}
+        {opciones === null && <Esqueleto filas={3} alto={64} />}
         {opciones && opciones.length === 0 && (
           <div style={{ fontSize: 12, color: T.textMut, marginBottom: 12 }}>
             No hay otros supervisores activos que cubran esta instalación.
           </div>
         )}
         {opciones && opciones.length > 0 && (
-          <select value={elegido} onChange={(e) => { setElegido(e.target.value); setError(null); }} style={{
-            width: "100%", padding: "10px 12px", marginBottom: 12, background: T.bgInput, border: `1px solid ${T.border}`,
-            borderRadius: T.radius, color: elegido ? T.text : T.textMut, fontSize: 14, fontFamily: FONT.ui,
-          }}>
-            <option value="">Selecciona un supervisor…</option>
-            {opciones.map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
-          </select>
+          <Selector bloque etiqueta="Supervisor" value={elegido || "__todos__"} onChange={(valor) => { const v = valor === "__todos__" ? "" : valor; setElegido(v); setError(null); }} opciones={[{ valor: "__todos__", etiqueta: "Selecciona un supervisor…" }, ...opciones.map((o) => ({ valor: o.id, etiqueta: o.nombre }))]} />
         )}
         {error && (
           <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: T.radius, background: T.redGhost, color: T.red, fontSize: 13 }}>{error}</div>
@@ -365,8 +357,8 @@ function DerivarModal({ novedad, token, onClose, onSuccess }) {
             minHeight: 40, padding: "0 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: FONT.ui,
           }}>{loading ? "Derivando…" : "Derivar"}</button>
         </div>
-      </div>
-    </div>
+      </Aparecer>
+    </Aparecer>
   );
 }
 
@@ -419,7 +411,7 @@ function IncidentesPanel({ token }) {
   const visibles = grupos[vista];
 
   return (
-    <div className="operations-screen central-panel">
+    <Aparecer className="operations-screen central-panel">
       <SectionHeader title="Incidentes" sub="Escalaciones de supervisores y críticos de todas las instalaciones" />
       <AvisoEscalada data={alertaEscalada} onClose={() => setAlertaEscalada(null)} />
 
@@ -449,16 +441,14 @@ function IncidentesPanel({ token }) {
       </div>
 
       {loading && (
-        <div style={{ textAlign: "center", color: T.textMut, fontSize: 13, padding: 32 }}>
-          Cargando incidentes...
-        </div>
+        <Esqueleto filas={3} alto={64} />
       )}
 
       <NovedadesPorDia items={visibles} render={(n) => (
         <NovedadMini key={n.id} n={n} instalacion={n.instalacion?.nombre} onClick={() => setDetalle(n)} />
       )} />
 
-      {detalle && (
+      <AnimatePresence>{detalle && (
         <DetalleNovedadModal
           novedad={novedades.find((x) => x.id === detalle.id) ?? detalle}
           onClose={() => setDetalle(null)}
@@ -467,9 +457,9 @@ function IncidentesPanel({ token }) {
           // Escalada, o crítica abierta que nadie atiende (p. ej. supervisor ausente): Central la deriva
           onDerivar={detalle.estado === "escalada" || (detalle.estado === "abierta" && detalle.urgencia === "rojo") ? () => { const n = detalle; setDetalle(null); setDerivar(n); } : undefined}
         />
-      )}
+      )}</AnimatePresence>
 
-      {derivarTarget && (
+      <AnimatePresence>{derivarTarget && (
         <DerivarModal
           novedad={derivarTarget}
           token={token}
@@ -479,9 +469,9 @@ function IncidentesPanel({ token }) {
             setDerivar(null);
           }}
         />
-      )}
+      )}</AnimatePresence>
 
-      {resolverTarget && (
+      <AnimatePresence>{resolverTarget && (
         <ResolverModal
           novedad={resolverTarget}
           onClose={() => setResolver(null)}
@@ -490,8 +480,8 @@ function IncidentesPanel({ token }) {
             setResolver(null);
           }}
         />
-      )}
-    </div>
+      )}</AnimatePresence>
+    </Aparecer>
   );
 }
 
@@ -549,7 +539,7 @@ function MonitoreoPanel({ token }) {
   const kpis = stats?.kpis;
 
   return (
-    <div className="operations-screen central-panel">
+    <Aparecer className="operations-screen central-panel">
       <SectionHeader title="Monitoreo Central" sub="Vista global de todas las instalaciones" />
       <SocketBadge status={socketStatus} />
 
@@ -606,7 +596,7 @@ function MonitoreoPanel({ token }) {
 
       {/* Donut de estado de guardias + instalaciones */}
       {stats && (
-        <div className="central-summary-grid" style={{ display: "grid", gap: 10, marginBottom: 20, alignItems: "start" }}>
+        <Aparecer grupo="CentralPanel.jsx:secciones" className="central-summary-grid" style={{ display: "grid", gap: 10, marginBottom: 20, alignItems: "start" }}>
           {/* Resumen por instalación */}
           {kpis?.resumenPorInstalacion?.length > 0 && (
             <div className="central-panel__card" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "14px 14px 10px" }}>
@@ -614,7 +604,7 @@ function MonitoreoPanel({ token }) {
                 Estado por Instalación
               </div>
               {kpis.resumenPorInstalacion.map((inst) => (
-                <div className="responsive-list-row central-panel__installation" key={inst.id} style={{
+                <Aparecer grupo="CentralPanel.jsx:28391" className="responsive-list-row central-panel__installation" key={inst.id} style={{
                   display: "flex", justifyContent: "space-between", alignItems: "center",
                   padding: "10px 12px", borderBottom: `1px solid ${T.border}`,
                   borderLeft: `3px solid ${inst.criticidad === "Alta" ? T.red : inst.criticidad === "Media" ? T.yellow : T.accent}`,
@@ -635,7 +625,7 @@ function MonitoreoPanel({ token }) {
                       </span>
                     )}
                   </div>
-                </div>
+                </Aparecer>
               ))}
             </div>
           )}
@@ -646,7 +636,7 @@ function MonitoreoPanel({ token }) {
             </div>
             <GraficoDonut presentes={stats.presentes} tardios={stats.tardios} faltantes={stats.faltantes} />
           </div>
-        </div>
+        </Aparecer>
       )}
 
       {/* Mapa en vivo */}
@@ -662,7 +652,7 @@ function MonitoreoPanel({ token }) {
           ? "En vivo"
           : "Sin conexión"}
       </div>
-    </div>
+    </Aparecer>
   );
 }
 

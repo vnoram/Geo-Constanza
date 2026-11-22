@@ -1,0 +1,120 @@
+:where([data-gc-presentacion]) :is(button, a.gc-accion-btn, label.gc-accion-btn) {
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  :where([data-gc-presentacion]) button:not(:disabled):not([style*="transform"]):hover,
+  :where([data-gc-presentacion]) a.gc-accion-btn:hover,
+  :where([data-gc-presentacion]) label.gc-accion-btn:hover {
+    transform: translateY(-1px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :where([data-gc-presentacion]) button:not(:disabled):not([style*="transform"]):active,
+  :where([data-gc-presentacion]) a.gc-accion-btn:active {
+    transform: scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where([data-gc-presentacion]) :is(button, a, label.gc-accion-btn),
+  .esqueleto {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.selector-trigger {
+  min-height: 44px !important;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.selector-item {
+  min-height: 44px !important;
+}
+
+.gc-access,
+.gc-invitacion,
+.gc-platform {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.gc-access__panel {
+  padding: 24px;
+  background: var(--gc-card);
+  border: 1px solid var(--gc-line);
+  border-top: 3px solid var(--gc-focus);
+  border-radius: var(--gc-radius);
+}
+
+.gc-invitacion {
+  background: var(--gc-card);
+  border: 1px solid var(--gc-line);
+  border-top: 3px solid var(--gc-focus);
+  border-radius: var(--gc-radius);
+}
+
+:is(.gc-access, .gc-invitacion, .gc-platform) button {
+  min-height: 44px !important;
+  min-width: 44px;
+}
+
+:is(.gc-access, .gc-invitacion, .gc-platform) :is(button, input, a):focus-visible {
+  outline: 2px solid var(--gc-focus) !important;
+  outline-offset: 3px;
+}
+
+.gc-platform .responsive-section-header {
+  padding-bottom: 18px;
+  margin-bottom: 24px !important;
+  border-bottom: 1px solid var(--gc-line);
+}
+
+.gc-platform article,
+.gc-platform section[aria-label] {
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .gc-access__panel {
+    padding: 16px;
+  }
+
+  .gc-access input,
+  .login input {
+    font-size: 16px !important;
+  }
+
+  .gc-platform .admin-modal {
+    padding: 16px !important;
+  }
+
+  .gc-invitacion > div:last-child > button {
+    flex: 1;
+  }
+}
+
+.gc-access__acciones {
+  display: grid !important;
+  grid-template-columns: minmax(88px, auto) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.gc-access__panel p > span {
+  display: inline-block;
+  max-width: 100%;
+}
+
+:is(.responsive-modal, .sup-supervision__panel) > .selector-trigger {
+  margin-bottom: 12px;
+}
+
+.gc-empty {
+  background: var(--gc-card);
+  border: 1px solid var(--gc-line);
+  border-left: 3px solid var(--gc-focus);
+  border-radius: var(--gc-radius);
+}

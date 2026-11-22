@@ -1,3 +1,5 @@
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
 import "../PanelesCentral.css";
 import { useState, useEffect, useRef, memo } from "react";
 import { leerSesion } from "../../services/almacenSesion";
@@ -161,9 +163,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
       </div>
       <div style={{ position: "relative", flex: "1 1 320px", minWidth: 0 }}>
         {cargando && (
-          <div style={{ position: "absolute", inset: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center", background: T.bgCard, borderRadius: 8, fontSize: 12, color: T.textMut }}>
-            Cargando mapa...
-          </div>
+          <Esqueleto filas={1} alto={240} />
         )}
         <div ref={containerRef} className="central-map" style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }} />
       </div>
@@ -379,7 +379,7 @@ export function AdminPanel() {
   ];
 
   return (
-    <div className="admin-screen central-titulos central-panel">
+    <Aparecer className="admin-screen central-titulos central-panel">
       <div className="central-panel__header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <SectionHeader title="Panel central" sub="Vista general del sistema" />
         <SocketBadge status={socketStatus} />
@@ -413,9 +413,7 @@ export function AdminPanel() {
             {analytics ? (
               <GraficoBarras data={analytics} />
             ) : (
-              <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", color: T.textMut, fontSize: 12 }}>
-                Cargando…
-              </div>
+              <Esqueleto filas={3} alto={64} />
             )}
             <div style={{ display: "flex", gap: 12, marginTop: 8, fontSize: 11, color: T.textSec }}>
               <span><span style={{ color: T.alert }}>■</span> Crítico</span>
@@ -444,6 +442,6 @@ export function AdminPanel() {
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: socketStatus === "connected" ? T.accent : T.textMut }} />
         {socketStatus === "connected" ? "En vivo" : "Sin conexión"}
       </div>
-    </div>
+    </Aparecer>
   );
 }

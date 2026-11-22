@@ -1,3 +1,5 @@
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
 import "./LibreVisual.css";
 import { Icon } from "../../components/ui/Icon";
 import { useEffect, useState } from "react";
@@ -29,7 +31,7 @@ function TurnoRow({ turno }) {
   }[turno.estado] || "yellow";
 
   return (
-    <div className="guard-list-row libre-turno" style={{
+    <Aparecer elemento="div" grupo="ggss-libre/LibreTurnos:tarjetas" className="guard-list-row libre-turno" style={{
       background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, borderLeft: `3px solid ${T[estadoColor]}`,
       padding: "12px 16px", marginBottom: 6,
       display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
@@ -52,7 +54,7 @@ function TurnoRow({ turno }) {
         )}
       </div>
       <Badge color={estadoColor}>{turno.estado}</Badge>
-    </div>
+    </Aparecer>
   );
 }
 
@@ -169,16 +171,14 @@ export function LibreTurnos() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="guard-screen libre-visual libre-libreturnos">
+    <Aparecer className="guard-screen libre-visual libre-libreturnos">
       <SectionHeader
         title="Mi pauta"
         sub="Toca un día con turno para ver el detalle"
       />
 
       {cargando && (
-        <div style={{ textAlign: "center", padding: 40, fontSize: 13, color: T.textMut }}>
-          Cargando turnos...
-        </div>
+        <Esqueleto filas={3} alto={64} />
       )}
 
       {!cargando && error && (
@@ -203,6 +203,6 @@ export function LibreTurnos() {
       )}
 
       {!cargando && !error && turnos.length > 0 && <PautaMensual turnos={turnos} />}
-    </div>
+    </Aparecer>
   );
 }

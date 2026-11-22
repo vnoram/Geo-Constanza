@@ -1,3 +1,5 @@
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
 import { useCallback, useEffect, useState } from "react";
 import { T, FONT } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
@@ -75,7 +77,7 @@ export function PlataformaDispositivos() {
   const card = { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 16, marginBottom: 10 };
 
   return (
-    <div className="gc-audited-screen">
+    <Aparecer className="gc-audited-screen gc-platform">
       <SectionHeader title="Dispositivos" sub="Equipo principal de cada empresa. El administrador de gestión enrola los demás desde su panel." />
       <Aviso mensaje={aviso} />
       {error && <div role="alert" style={{ border: `1px solid ${T.alert}`, background: T.alertGhost, color: T.text, borderRadius: T.radius, padding: "8px 12px", fontSize: 13, marginBottom: 14 }}>{error}</div>}
@@ -93,14 +95,14 @@ export function PlataformaDispositivos() {
           <KPI label="Invitaciones pendientes" value={pendientes} sub="esperando al administrador" accent={pendientes ? T.yellow : undefined} />
         </div>
       )}
-      {cargando ? <div style={{ color: T.textMut, fontSize: 13, padding: 24 }}>Cargando…</div> : empresas.map((empresa) => {
+      {cargando ? <Esqueleto filas={3} alto={64} /> : empresas.map((empresa) => {
         const activa = empresa.estado === "activa";
         const visibles = empresa.equipos.filter((q) => q.estado !== "revocado" && q.estado !== "vencido");
         const principal = visibles.find((q) => q.principal && q.estado === "enrolado");
         const pendiente = visibles.find((q) => q.principal && q.estado === "pendiente");
         const motivo = !activa ? "Empresa suspendida" : !empresa.administrador ? "Sin administrador activo" : "";
         return (
-          <section key={empresa.id} aria-label={empresa.nombre} style={{ ...card, padding: 0, marginBottom: 18, overflow: "hidden" }}>
+          <Aparecer elemento="section" grupo="plataforma/PlataformaDispositivos:5514" key={empresa.id} aria-label={empresa.nombre} style={{ ...card, padding: 0, marginBottom: 18, overflow: "hidden" }}>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, padding: 16, borderBottom: `1px solid ${T.border}` }}>
               <Icon name="building-2" size={22} color={T.focusText} />
               <div style={{ flex: 1, minWidth: "min(100%, 220px)", overflowWrap: "anywhere" }}>
@@ -126,7 +128,7 @@ export function PlataformaDispositivos() {
             {visibles.length === 0 ? (
               <div style={{ padding: "12px 16px", fontSize: 12, color: T.textMut }}>Sin equipos registrados.</div>
             ) : visibles.map((q) => (
-              <div key={q.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, padding: "10px 16px", borderTop: `1px solid ${T.border}` }}>
+              <Aparecer elemento="div" grupo="plataforma/PlataformaDispositivos:7553" key={q.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, padding: "10px 16px", borderTop: `1px solid ${T.border}` }}>
                 <Icon name="monitor" size={16} color={q.estado === "enrolado" ? T.focusText : T.textMut} />
                 <span style={{ fontWeight: 600, fontSize: 13 }}>{q.nombre}</span>
                 <Badge color={ESTADOS[q.estado].color}>{ESTADOS[q.estado].texto}</Badge>
@@ -138,9 +140,9 @@ export function PlataformaDispositivos() {
                   <Btn variant="rechazar" style={{ marginLeft: "auto", minHeight: 30, fontSize: 12 }}
                     onClick={() => setRevocando({ empresa, equipo: q, secundario: true })}>Revocar</Btn>
                 )}
-              </div>
+              </Aparecer>
             ))}
-          </section>
+          </Aparecer>
         );
       })}
       {revocando && (
@@ -152,6 +154,6 @@ export function PlataformaDispositivos() {
               : `«${revocando.equipo.nombre}» de ${revocando.empresa.nombre} quedará sin efecto y el enlace enviado dejará de funcionar.`}
           onConfirmar={revocar} onCancelar={() => setRevocando(null)} />
       )}
-    </div>
+    </Aparecer>
   );
 }

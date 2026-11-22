@@ -1,3 +1,5 @@
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
 import "./PautaVisual.css";
 import { useState, useEffect, useCallback } from "react";
 import { FONT, T } from "../../theme/theme";
@@ -299,7 +301,7 @@ export function PautaTurno({ user }) {
     : 100;
 
   return (
-    <div className="guard-screen pauta-visual">
+    <Aparecer className="guard-screen pauta-visual">
       <SectionHeader title="Mi Turno Actual" sub="Información de tu turno en curso" />
 
       {cierresAuto.length > 0 && (
@@ -319,9 +321,7 @@ export function PautaTurno({ user }) {
 
       {/* Spinner solo en primera carga sin caché */}
       {cargando && (
-        <div style={{ textAlign: "center", padding: 30, color: T.textMut, fontSize: 13 }}>
-          Cargando turno...
-        </div>
+        <Esqueleto filas={3} alto={64} />
       )}
 
       {/* Sin turno asignado */}
@@ -574,6 +574,6 @@ export function PautaTurno({ user }) {
       )}
 
       <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
-    </div>
+    </Aparecer>
   );
 }

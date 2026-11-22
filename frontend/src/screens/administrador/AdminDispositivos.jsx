@@ -1,3 +1,4 @@
+import { Aparecer } from "../../components/ui/Aparecer";
 import "./AdminVisual.css";
 import { useEffect, useId, useState } from "react";
 import { api } from "../../services/api";
@@ -105,7 +106,7 @@ export function AdminDispositivos() {
     const { texto, color, pendiente } = estadoDe(equipo);
     const revocado = equipo.estado === "revocado";
     return (
-      <div className="admin-visual__device" key={equipo.id} style={{
+      <Aparecer elemento="div" grupo="administrador/AdminDispositivos:4181" className="admin-visual__device" key={equipo.id} style={{
         ...card, borderLeft: `3px solid ${T[color]}`, marginBottom: 10, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, opacity: revocado ? 0.65 : 1,
       }}>
         <Icon name="monitor" size={22} color={revocado ? T.textMut : T.focusText} />
@@ -126,12 +127,12 @@ export function AdminDispositivos() {
           })}>Reenviar invitación</Btn>}
           {equipo.estado === "activo" && <Btn variant="outline" disabled={ocupado} onClick={() => setRevocando(equipo)}>{pendiente ? "Cancelar invitación" : "Revocar"}</Btn>}
         </div>
-      </div>
+      </Aparecer>
     );
   };
 
   return (
-    <div className="admin-screen gc-audited-screen admin-visual admindispositivos" style={{ maxWidth: 880 }}>
+    <Aparecer className="admin-screen gc-audited-screen admin-visual admindispositivos" style={{ maxWidth: 880 }}>
       <SectionHeader title="Dispositivos corporativos" sub="Equipos autorizados para marcar asistencia en las instalaciones" />
 
       <div className="admin-visual__invitation" style={card}>
@@ -214,6 +215,6 @@ export function AdminDispositivos() {
           onCancelar={() => setRevocando(null)}
         />
       )}
-    </div>
+    </Aparecer>
   );
 }

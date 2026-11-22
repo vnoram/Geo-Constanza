@@ -1,3 +1,4 @@
+import { Aparecer } from "../../components/ui/Aparecer";
 import { Icon } from "../../components/ui/Icon";
 import { FONT, T } from "../../theme/theme";
 import { sumarDias } from "../../utils/fechaChile";
@@ -42,7 +43,7 @@ export function SemanaTurnos({ lunes, hoy, turnos, onCambiarSemana, onEditar }) 
   const totalTurnos = turnos.length;
 
   return (
-    <div>
+    <Aparecer>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button type="button" className="gc-accion-btn gc-accion-btn--morado" aria-label="Semana anterior" onClick={() => onCambiarSemana(sumarDias(lunes, -7))} style={flecha}><Icon name="arrow-left" size={16} /></button>
@@ -128,6 +129,6 @@ export function SemanaTurnos({ lunes, hoy, turnos, onCambiarSemana, onEditar }) 
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="moon" size={14} color={VERDE_NEON} />Nocturno (termina al día siguiente)</span>
         <span>Toca un turno programado para editarlo</span>
       </div>
-    </div>
+    </Aparecer>
   );
 }

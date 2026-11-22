@@ -1,3 +1,4 @@
+import { Aparecer } from "../../components/ui/Aparecer";
 import { useEffect, useState } from "react";
 import { api } from "../../services/api";
 import { Btn } from "../../components/ui/Btn";
@@ -16,7 +17,7 @@ export function ConfirmarInvitacionDispositivo({ token, onConfirmar, onCancelar 
   }, [token]);
 
   return (
-    <main style={{ maxWidth: 480, margin: "48px auto", padding: 20, color: T.text }}>
+    <Aparecer elemento="main" className="gc-invitacion" style={{ maxWidth: 480, margin: "48px auto", padding: 20, color: T.text }}>
       <h1 className="fluid-title" style={{ color: T.focusText }}>Enrolar equipo corporativo</h1>
       {empresa && <p>Este equipo será registrado como corporativo de {empresa}.</p>}
       {error && <p role="alert" style={{ color: T.alert }}>{error}</p>}
@@ -25,6 +26,6 @@ export function ConfirmarInvitacionDispositivo({ token, onConfirmar, onCancelar 
         <Btn onClick={onConfirmar} disabled={!empresa}>Confirmar</Btn>
         <Btn onClick={onCancelar} variant="outline">Cancelar</Btn>
       </div>
-    </main>
+    </Aparecer>
   );
 }

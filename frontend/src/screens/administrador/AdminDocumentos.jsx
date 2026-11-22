@@ -1,3 +1,4 @@
+import { Aparecer } from "../../components/ui/Aparecer";
 import { KPI } from "../../components/ui/KPI";
 import { useCallback, useEffect, useState } from "react";
 import { leerSesion } from "../../services/almacenSesion";
@@ -68,13 +69,13 @@ export function AdminDocumentos() {
   };
 
   return (
-    <div>
+    <Aparecer>
       <SectionHeader title="Documentos del personal" sub="Publica contratos, liquidaciones y anexos para cada guardia" />
-      <div className="gc-dashboard-kpis">
+      <Aparecer grupo="AdminDocumentos.jsx:secciones" className="gc-dashboard-kpis">
         <KPI label="Guardias" value={guardias.length} sub="disponibles para seleccionar" />
         <KPI label="Documentos" value={usuarioId ? docs.length : "—"} sub="del guardia seleccionado" accent={T.accent} />
         <KPI label="Tipos de documento" value={usuarioId ? new Set(docs.map(d => d.tipo)).size : "—"} sub="entre los archivos listados" />
-      </div>
+      </Aparecer>
       <div style={{ ...tarjeta, marginBottom: 20, maxWidth: 560 }}>
         <div style={etiqueta}>Nuevo documento</div>
         <label style={{ display: "block", fontSize: 12, color: T.textSec, marginBottom: 6 }}>Guardia</label>
@@ -95,17 +96,17 @@ export function AdminDocumentos() {
 
       {usuarioId && <div style={etiqueta}>Documentos del guardia</div>}
       {usuarioId && docs.length === 0 && <div style={{ ...tarjeta, color: T.textMut, fontSize: 13, maxWidth: 560 }}>Este guardia aún no tiene documentos.</div>}
-      <div className="gc-dashboard-grid">
+      <Aparecer grupo="AdminDocumentos.jsx:secciones" className="gc-dashboard-grid">
         {docs.map(d => (
-          <div key={d.id} className="gc-dashboard-card" style={{ ...tarjeta, borderLeft: `3px solid ${d.url_firmada ? T.accent : T.border}` }}>
+          <Aparecer grupo="AdminDocumentos.jsx:5334" key={d.id} className="gc-dashboard-card" style={{ ...tarjeta, borderLeft: `3px solid ${d.url_firmada ? T.accent : T.border}` }}>
             <div className="admin-list-row__main">
               <div style={{ fontSize: 13, fontWeight: 600 }}><Icon name="file-text" size={16} /> {d.nombre}</div>
               <div style={{ fontSize: 11, color: T.textSec, fontFamily: FONT.mono, background: T.bgInput, borderRadius: T.radius, padding: 8, marginTop: 6 }}>{TIPOS[d.tipo] ?? d.tipo} · {new Date(d.created_at).toLocaleDateString("es-CL")}{d.autor?.nombre ? ` · ${d.autor.nombre}` : ""}</div>
             </div>
             {d.url_firmada && <a href={d.url_firmada} target="_blank" rel="noreferrer" className="touch-target" style={{ color: T.focusText, fontSize: 12, fontWeight: 600, marginTop: "auto", display: "inline-flex", alignItems: "center", alignSelf: "start" }}>Abrir →</a>}
-          </div>
+          </Aparecer>
         ))}
-      </div>
-    </div>
+      </Aparecer>
+    </Aparecer>
   );
 }

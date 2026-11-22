@@ -1,3 +1,4 @@
+import { Aparecer } from "../../components/ui/Aparecer";
 import "./LibreVisual.css";
 import { useEffect, useRef, useState } from "react";
 import { leerSesion } from "../../services/almacenSesion";
@@ -111,7 +112,7 @@ export function SolicitudesPersonales() {
       : `${fechas.length} ${fechas.length === 1 ? "día" : "días"}: ${fechas.map(corta).join(", ")}`;
 
   return (
-    <div className="guard-screen libre-visual libre-solicitudespersonales">
+    <Aparecer className="guard-screen libre-visual libre-solicitudespersonales">
       <SectionHeader title="Mis solicitudes" sub="Pide vacaciones, días libres o turnos extra" />
       <form className="libre-personales__form" onSubmit={crear} style={{ ...tarjeta, marginBottom: 20 }}>
         <div style={etiqueta}>Tipo de solicitud</div>
@@ -153,15 +154,15 @@ export function SolicitudesPersonales() {
           <Icon name="file-pen" size={16} /> Aún no tienes solicitudes registradas
         </div>
       ) : solicitudes.map(s => (
-        <div className="libre-solicitud" key={s.id} style={{ ...tarjeta, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, borderLeft: `3px solid ${T[colorEstado(s.estado)]}` }}>
+        <Aparecer grupo="SolicitudesPersonales.jsx:9052" className="libre-solicitud" key={s.id} style={{ ...tarjeta, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, borderLeft: `3px solid ${T[colorEstado(s.estado)]}` }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}><Icon name={ICONOS[s.tipo] ?? "file-pen"} size={16} /> {TIPOS[s.tipo] ?? s.tipo}</div>
             <div style={{ fontSize: 13, color: T.textSec, marginTop: 4 }}>{fechaLarga(s.fecha_desde)}{s.fecha_hasta && s.fecha_hasta.slice(0, 10) !== s.fecha_desde?.slice(0, 10) ? ` → ${fechaLarga(s.fecha_hasta)}` : ""}{s.motivo ? ` · ${s.motivo}` : ""}</div>
             {s.adjunto_url_firmada && <a className="libre-adjunto" href={s.adjunto_url_firmada} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: T.focusText }}><Icon name="file-pen" size={14} /> {s.adjunto_nombre || "Ver adjunto"}</a>}
           </div>
           <Badge color={colorEstado(s.estado)}>{s.estado}</Badge>
-        </div>
+        </Aparecer>
       ))}
-    </div>
+    </Aparecer>
   );
 }

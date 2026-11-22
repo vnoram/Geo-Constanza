@@ -1,3 +1,7 @@
+import { AnimatePresence } from "framer-motion";
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
+import { Selector } from "../../components/ui/Selector";
 import "./AdminVisual.css";
 import { KPI } from "../../components/ui/KPI";
 import { Icon } from "../../components/ui/Icon";
@@ -95,13 +99,13 @@ function UsuarioModal({ inicial, instalaciones: todas, onClose, onSaved }) {
   };
 
   return (
-    <div className="admin-modal-overlay" style={{
+    <Aparecer salida desplazar={false} className="admin-modal-overlay" style={{
       position: "fixed", inset: 0, zIndex: 100,
       background: "rgba(14,23,20,0.88)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: 16,
     }}>
-      <div className="admin-modal" style={{
+      <Aparecer salida className="admin-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`,
         borderRadius: T.radius, padding: 24, width: "100%", maxWidth: 480,
         maxHeight: "90vh", overflowY: "auto",
@@ -151,34 +155,14 @@ function UsuarioModal({ inicial, instalaciones: todas, onClose, onSaved }) {
           {/* Instalación única — solo para GGSS */}
           {[ROL.GGSS].includes(form.rol) && (
             <Field label="Instalación asignada">
-              <select
-                className="touch-target"
-                style={{ ...inputStyle, appearance: "none", color: form.instalacion_asignada_id ? T.text : T.textMut }}
-                value={form.instalacion_asignada_id}
-                onChange={(e) => set("instalacion_asignada_id", e.target.value)}
-              >
-                <option value="">Sin asignar</option>
-                {instalaciones.map((i) => (
-                  <option key={i.id} value={i.id} style={{ background: T.bgCard }}>{i.nombre}</option>
-                ))}
-              </select>
+              <Selector bloque etiqueta="Instalación asignada" value={form.instalacion_asignada_id || "__todos__"} onChange={(valor) => { const v = valor === "__todos__" ? "" : valor; set("instalacion_asignada_id", v); }} opciones={[{ valor: "__todos__", etiqueta: "Sin asignar" }, ...instalaciones.map((i) => ({ valor: i.id, etiqueta: i.nombre }))]} />
             </Field>
           )}
 
           {/* Centro operativo — solo para el Operador Central */}
           {form.rol === ROL.OPERADOR_CENTRAL && (
             <Field label="Centro operativo asignado">
-              <select
-                className="touch-target"
-                style={{ ...inputStyle, appearance: "none", color: form.instalacion_asignada_id ? T.text : T.textMut }}
-                value={form.instalacion_asignada_id}
-                onChange={(e) => set("instalacion_asignada_id", e.target.value)}
-              >
-                <option value="">Sin asignar</option>
-                {centros.map((i) => (
-                  <option key={i.id} value={i.id} style={{ background: T.bgCard }}>{i.nombre}</option>
-                ))}
-              </select>
+              <Selector bloque etiqueta="Centro operativo asignado" value={form.instalacion_asignada_id || "__todos__"} onChange={(valor) => { const v = valor === "__todos__" ? "" : valor; set("instalacion_asignada_id", v); }} opciones={[{ valor: "__todos__", etiqueta: "Sin asignar" }, ...centros.map((i) => ({ valor: i.id, etiqueta: i.nombre }))]} />
             </Field>
           )}
 
@@ -237,12 +221,12 @@ function UsuarioModal({ inicial, instalaciones: todas, onClose, onSaved }) {
           )}
 
           <div className="admin-actions" style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <Btn variant="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn>
+            <Btn type="button" variant="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn>
             <Btn loading={loading}>{esEdicion ? "Guardar cambios" : "Crear usuario"}</Btn>
           </div>
         </form>
-      </div>
-    </div>
+      </Aparecer>
+    </Aparecer>
   );
 }
 
@@ -300,7 +284,7 @@ export function AdminUsuarios() {
   };
 
   return (
-    <div className="admin-screen admin-visual adminusuarios">
+    <Aparecer className="admin-screen admin-visual adminusuarios">
       {confirmandoDesactivar && (
         <Dialogo titulo="Desactivar usuario" mensaje="El usuario ya no podrá iniciar sesión. Podrás verlo como inactivo en la lista." confirmarLabel="Desactivar" variante="rechazar"
           onConfirmar={desactivarConfirmado} onCancelar={() => setConfirmandoDesactivar(null)} />
@@ -312,19 +296,17 @@ export function AdminUsuarios() {
       />
 
       {!loading && (
-        <div className="gc-dashboard-kpis">
+        <Aparecer grupo="AdminUsuarios.jsx:secciones" className="gc-dashboard-kpis">
           <KPI label="Total" value={usuarios.length} sub="usuarios cargados" />
           <KPI label="Activos" value={usuarios.filter(u => u.estado === "activo").length} sub="entre los usuarios cargados" accent={T.accent} />
           {GRUPOS.map(({ clave, roles, titulo }) => (
             <KPI key={clave} label={titulo} value={usuarios.filter(u => roles.includes(u.rol)).length} sub="usuarios cargados" />
           ))}
-        </div>
+        </Aparecer>
       )}
 
       {loading && (
-        <div style={{ textAlign: "center", color: T.textMut, padding: 32, fontSize: 14 }}>
-          Cargando usuarios...
-        </div>
+        <Esqueleto filas={3} alto={64} />
       )}
 
       {!loading && GRUPOS.map(({ clave, roles, titulo }) => {
@@ -342,7 +324,7 @@ export function AdminUsuarios() {
             <div className="admin-visual__grid">{delGrupo.map((u) => {
         const instSup = u.instalaciones_sup ?? [];
         return (
-          <div className="admin-card" key={u.id} style={{
+          <Aparecer grupo="AdminUsuarios.jsx:14994" className="admin-card" key={u.id} style={{
             background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
             padding: "12px 14px", marginBottom: 6,
             borderLeft: `3px solid ${u.estado === "activo" ? T.accent : T.red}`,
@@ -443,21 +425,21 @@ export function AdminUsuarios() {
                 )}
               </div>
             </div>
-          </div>
+          </Aparecer>
         );
             })}</div>
           </section>
         );
       })}
 
-      {modal && (
+      <AnimatePresence>{modal && (
         <UsuarioModal
           inicial={modal}
           instalaciones={instalaciones}
           onClose={() => setModal(null)}
           onSaved={() => { setModal(null); cargar(); }}
         />
-      )}
-    </div>
+      )}</AnimatePresence>
+    </Aparecer>
   );
 }

@@ -1,3 +1,6 @@
+import { AnimatePresence } from "framer-motion";
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
 import "./PautaVisual.css";
 import { useState, useEffect, useRef } from "react";
 import { leerSesion } from "../../services/almacenSesion";
@@ -139,13 +142,13 @@ function ReportarModal({ onClose, onSuccess }) {
   const gpsStyle = gpsColors[gpsStatus];
 
   return (
-    <div className="guard-modal-overlay pauta-visual" style={{
+    <Aparecer salida desplazar={false} className="guard-modal-overlay pauta-visual" style={{
       position: "fixed", inset: 0, zIndex: 100,
       background: "rgba(14,23,20,0.85)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: 16,
     }}>
-      <div className="responsive-modal guard-report-modal" style={{
+      <Aparecer salida className="responsive-modal guard-report-modal" style={{
         background: T.bgCard, border: `1px solid ${T.border}`,
         borderRadius: 8, padding: 24, width: "100%", maxWidth: 420,
       }}>
@@ -273,12 +276,12 @@ function ReportarModal({ onClose, onSuccess }) {
           )}
 
           <div className="guard-modal-actions" style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <Btn variant="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn>
+            <Btn type="button" variant="ghost" onClick={onClose} disabled={loading}>Cancelar</Btn>
             <Btn loading={loading}>Enviar Reporte</Btn>
           </div>
         </form>
-      </div>
-    </div>
+      </Aparecer>
+    </Aparecer>
   );
 }
 
@@ -335,7 +338,7 @@ export function PautaNovedades({ user }) {
                     : pendientes;
 
   return (
-    <div className="guard-screen pauta-visual">
+    <Aparecer className="guard-screen pauta-visual">
       <SectionHeader
         title="Novedades"
         sub="Reporta incidencias durante tu turno"
@@ -343,9 +346,7 @@ export function PautaNovedades({ user }) {
       />
 
       {loading && (
-        <div style={{ textAlign: "center", color: T.textMut, padding: 32, fontSize: 14 }}>
-          Cargando novedades...
-        </div>
+        <Esqueleto filas={3} alto={64} />
       )}
 
       <div role="tablist" style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
@@ -382,7 +383,7 @@ export function PautaNovedades({ user }) {
         const colors   = URGENCIA_COLOR[urgencia] ?? URGENCIA_COLOR.verde;
         if (compacta) return <NovedadMini key={n.id} n={n} />;
         return (
-          <div className="guard-card nov-card nov-card--sinfoto" key={n.id} style={{
+          <Aparecer grupo="PautaNovedades.jsx:15382" className="guard-card nov-card nov-card--sinfoto" key={n.id} style={{
             background: T.bgCard, border: `1px solid ${T.border}`,
             borderLeft: `3px solid ${colors.border}`,
             borderRadius: 8, padding: 14,
@@ -421,16 +422,16 @@ export function PautaNovedades({ user }) {
                 )}
               </div>
             </div>
-          </div>
+          </Aparecer>
         );
       }} />
 
-      {showModal && (
+      <AnimatePresence>{showModal && (
         <ReportarModal
           onClose={() => setShowModal(false)}
           onSuccess={handleSuccess}
         />
-      )}
-    </div>
+      )}</AnimatePresence>
+    </Aparecer>
   );
 }

@@ -1,3 +1,7 @@
+import { AnimatePresence } from "framer-motion";
+import { Aparecer } from "../../components/ui/Aparecer";
+import { Esqueleto } from "../../components/ui/Esqueleto";
+import { Selector } from "../../components/ui/Selector";
 import "./SupDashboard.css";
 import "./SupPantallas.css";
 import { Icon } from "../../components/ui/Icon";
@@ -103,14 +107,14 @@ export function ModalEditarTurno({ turno, turnos, guardias, instalaciones, input
   };
 
   return (
-    <div
+    <Aparecer salida desplazar={false}
       className="responsive-modal-overlay"
       style={{
         position: "fixed", inset: 0, background: "rgba(14,23,20,0.88)", backdropFilter: "blur(6px)",
         display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16,
       }}
     >
-      <div
+      <Aparecer salida
         className="responsive-modal"
         style={{
           background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 22,
@@ -136,28 +140,10 @@ export function ModalEditarTurno({ turno, turnos, guardias, instalaciones, input
         </div>
 
         <div style={etiquetaStyle}>GUARDIA *</div>
-        <select aria-label="Guardia" className="touch-target" style={inputStyle} value={form.usuario_id} onChange={set("usuario_id")}>
-          {!guardias.some((g) => g.id === turno.usuario_id) && (
-            <option value={turno.usuario_id}>{turno.usuario?.nombre || "Guardia actual"}</option>
-          )}
-          {guardias.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.nombre}
-            </option>
-          ))}
-        </select>
+        <Selector bloque etiqueta="Guardia" value={form.usuario_id} onChange={(valor) => set("usuario_id")({ target: { value: valor } })} opciones={[...(!guardias.some((g) => g.id === turno.usuario_id) ? [{ valor: turno.usuario_id, etiqueta: turno.usuario?.nombre || "Guardia actual" }] : []), ...guardias.map((g) => ({ valor: g.id, etiqueta: g.nombre }))]} />
 
         <div style={etiquetaStyle}>INSTALACIÓN *</div>
-        <select aria-label="Instalación" className="touch-target" style={inputStyle} value={form.instalacion_id} onChange={set("instalacion_id")}>
-          {!instalaciones.some((i) => i.id === turno.instalacion_id) && (
-            <option value={turno.instalacion_id}>{turno.instalacion?.nombre || "Instalación actual"}</option>
-          )}
-          {instalaciones.map((i) => (
-            <option key={i.id} value={i.id}>
-              {i.nombre} {i.comuna ? `(${i.comuna})` : ""}
-            </option>
-          ))}
-        </select>
+        <Selector bloque etiqueta="Instalación" value={form.instalacion_id} onChange={(valor) => set("instalacion_id")({ target: { value: valor } })} opciones={[...(!instalaciones.some((i) => i.id === turno.instalacion_id) ? [{ valor: turno.instalacion_id, etiqueta: turno.instalacion?.nombre || "Instalación actual" }] : []), ...instalaciones.map((i) => ({ valor: i.id, etiqueta: <>{i.nombre} {i.comuna ? `(${i.comuna})` : ""}</> }))]} />
 
         <div style={etiquetaStyle}>FECHA DE INICIO *</div>
         <div style={{ marginBottom: 10 }}>
@@ -191,8 +177,8 @@ export function ModalEditarTurno({ turno, turnos, guardias, instalaciones, input
           <Btn variant="outline" onClick={onClose} disabled={guardando}>Cancelar</Btn>
           <Btn full onClick={guardar} loading={guardando}>Guardar Cambios</Btn>
         </div>
-      </div>
-    </div>
+      </Aparecer>
+    </Aparecer>
   );
 }
 
@@ -347,7 +333,7 @@ export function SupGuardias() {
   };
 
   return (
-    <div className="operations-screen sup-dashboard sup-supervision sup-guardias">
+    <Aparecer className="operations-screen sup-dashboard sup-supervision sup-guardias">
       <SectionHeader
         title="Guardias"
         sub="Personal asignado a tus instalaciones"
@@ -361,40 +347,16 @@ export function SupGuardias() {
       />
 
       {mostrarForm && (
-        <div className="sup-supervision__panel" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 18, marginBottom: 16 }}>
+        <Aparecer grupo="SupGuardias.jsx:secciones" className="sup-supervision__panel" style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 18, marginBottom: 16 }}>
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, color: T.text }}>
             Nuevo turno extra
           </div>
 
           <div style={etiquetaStyle}>GUARDIA *</div>
-          <select
-            className="touch-target"
-            style={inputStyle}
-            value={form.usuario_id}
-            onChange={(e) => setForm((f) => ({ ...f, usuario_id: e.target.value }))}
-          >
-            <option value="">Seleccionar guardia...</option>
-            {guardias.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.nombre}
-              </option>
-            ))}
-          </select>
+          <Selector bloque etiqueta="Guardia" value={form.usuario_id || "__todos__"} onChange={(valor) => { const v = valor === "__todos__" ? "" : valor; setForm((f) => ({ ...f, usuario_id: v })); }} opciones={[{ valor: "__todos__", etiqueta: "Seleccionar guardia..." }, ...guardias.map((g) => ({ valor: g.id, etiqueta: g.nombre }))]} />
 
           <div style={etiquetaStyle}>INSTALACIÓN *</div>
-          <select
-            className="touch-target"
-            style={inputStyle}
-            value={form.instalacion_id}
-            onChange={(e) => setForm((f) => ({ ...f, instalacion_id: e.target.value }))}
-          >
-            <option value="">Seleccionar instalación...</option>
-            {instalaciones.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.nombre} {i.comuna ? `(${i.comuna})` : ""}
-              </option>
-            ))}
-          </select>
+          <Selector bloque etiqueta="Instalación" value={form.instalacion_id || "__todos__"} onChange={(valor) => { const v = valor === "__todos__" ? "" : valor; setForm((f) => ({ ...f, instalacion_id: v })); }} opciones={[{ valor: "__todos__", etiqueta: "Seleccionar instalación..." }, ...instalaciones.map((i) => ({ valor: i.id, etiqueta: <>{i.nombre} {i.comuna ? `(${i.comuna})` : ""}</> }))]} />
 
           <div style={etiquetaStyle}>DÍAS DEL TURNO EXTRA *</div>
           <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>
@@ -454,29 +416,19 @@ export function SupGuardias() {
           <Btn onClick={crearTurno} disabled={loading} full>
             {loading ? "Creando..." : form.fechas.length > 1 ? `Confirmar ${form.fechas.length} turnos` : "Confirmar turno"}
           </Btn>
-        </div>
+        </Aparecer>
       )}
 
       {/* ── Próximos turnos ── */}
       <div className="filter-bar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, margin: "4px 0 10px" }}>
         <div style={{ fontWeight: 800, fontSize: 14, color: "#9F8FC4" }}>Turnos de la semana</div>
-        <select
-          className="touch-target filter-control"
-          value={filtroGuardia}
-          onChange={(e) => setFiltroGuardia(e.target.value)}
-          style={{ ...inputStyle, width: "auto", maxWidth: 220, marginBottom: 0, padding: "6px 10px", fontSize: 12 }}
-        >
-          <option value="">Todos los guardias</option>
-          {guardias.map((g) => (
-            <option key={g.id} value={g.id}>{g.nombre}</option>
-          ))}
-        </select>
+        <Selector etiqueta="Todos los guardias" value={filtroGuardia || "__todos__"} onChange={(valor) => { const v = valor === "__todos__" ? "" : valor; setFiltroGuardia(v); }} opciones={[{ valor: "__todos__", etiqueta: "Todos los guardias" }, ...guardias.map((g) => ({ valor: g.id, etiqueta: g.nombre }))]} />
       </div>
 
       <Aviso mensaje={aviso} />
 
       {cargandoTurnos ? (
-        <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 16 }}>Cargando turnos...</div>
+        <Esqueleto filas={3} alto={64} />
       ) : (
         <SemanaTurnos lunes={lunes} hoy={hoy} turnos={turnosVisibles} onCambiarSemana={setLunes} onEditar={setTurnoEditando} />
       )}
@@ -484,16 +436,14 @@ export function SupGuardias() {
       <div style={{ fontWeight: 800, fontSize: 14, color: "#9F8FC4", margin: "18px 0 10px" }}>Personal</div>
 
       {cargandoDatos ? (
-        <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 20 }}>
-          Cargando personal e instalaciones...
-        </div>
+        <Esqueleto filas={3} alto={64} />
       ) : guardias.length === 0 ? (
         <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 20 }}>
           No hay guardias registrados.
         </div>
       ) : (
         <div className="sup-supervision__grid">{guardias.map((g, i) => (
-          <div
+          <Aparecer grupo="SupGuardias.jsx:19538"
             className="responsive-list-row sup-supervision__person"
             key={g.id || i}
             style={{
@@ -509,11 +459,11 @@ export function SupGuardias() {
               </div>
             </div>
             <Badge color={g.estado === "activo" ? "accent" : "red"}>{g.estado}</Badge>
-          </div>
+          </Aparecer>
         ))}</div>
       )}
 
-      {turnoEditando && (
+      <AnimatePresence>{turnoEditando && (
         <ModalEditarTurno
           turno={turnoEditando}
           turnos={turnos}
@@ -523,7 +473,7 @@ export function SupGuardias() {
           onClose={() => setTurnoEditando(null)}
           onGuardado={onTurnoGuardado}
         />
-      )}
-    </div>
+      )}</AnimatePresence>
+    </Aparecer>
   );
 }
