@@ -1,3 +1,4 @@
+import "./LibreVisual.css";
 import { useCallback, useEffect, useState } from "react";
 import { leerSesion } from "../../services/almacenSesion";
 import { Icon } from "../../components/ui/Icon";
@@ -54,25 +55,25 @@ export function LibreDocs() {
   ];
 
   return (
-    <div className="guard-screen">
+    <div className="guard-screen libre-visual libre-libredocs">
       <SectionHeader title="Documentos" sub="Tu documentación personal" />
       {cargando ? (
         <div style={{ textAlign: "center", padding: 24, fontSize: 13, color: T.textMut }}>Cargando documentos...</div>
       ) : filas.map((f, i) => (
-        <div className="guard-list-row" key={f.doc?.id ?? `${f.tipo}-${i}`} style={{ ...tarjeta, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+        <div className="guard-list-row libre-documento" key={f.doc?.id ?? `${f.tipo}-${i}`} style={{ ...tarjeta, borderLeft: `3px solid ${f.doc ? T.accent : T.yellow}`, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
           <div className="guard-list-row__main" style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Icon name={ICONOS[f.tipo] ?? "file-text"} size={18} />
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>{f.titulo}</div>
-              <div style={{ fontSize: 11, color: f.doc ? T.accent : T.textMut }}>
+              <div style={{ fontSize: 15, fontWeight: 600 }}>{f.titulo}</div>
+              <div style={{ fontSize: 13, color: f.doc ? T.accent : T.textSec }}>
                 {f.doc ? `Disponible · ${fecha(f.doc.created_at)}` : "Pendiente"}
               </div>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {f.doc?.url_firmada && <a href={f.doc.url_firmada} target="_blank" rel="noreferrer" style={{ color: T.accent, fontSize: 11, fontWeight: 600, textDecoration: "none" }}>Descargar →</a>}
+            {f.doc?.url_firmada && <a className="gc-accion-btn gc-accion-btn--verde libre-documento__accion" href={f.doc.url_firmada} target="_blank" rel="noreferrer" style={{ color: T.accent, fontSize: 11, fontWeight: 600, textDecoration: "none" }}>Descargar →</a>}
             {f.tipo === "os10" && (
-              <label style={{ color: T.accent, fontSize: 11, fontWeight: 600, cursor: ocupado ? "default" : "pointer", opacity: ocupado ? 0.5 : 1 }}>
+              <label className="gc-accion-btn gc-accion-btn--verde libre-documento__accion" style={{ color: T.accent, fontSize: 11, fontWeight: 600, cursor: ocupado ? "default" : "pointer", opacity: ocupado ? 0.5 : 1 }}>
                 {ocupado ? "Subiendo..." : f.doc ? "Reemplazar" : "Subir →"}
                 <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" disabled={ocupado} style={{ display: "none" }}
                   onChange={e => { subir(e.target.files?.[0]); e.target.value = ""; }} />

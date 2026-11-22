@@ -1,3 +1,4 @@
+import "./LibreVisual.css";
 import { useEffect, useRef, useState } from "react";
 import { leerSesion } from "../../services/almacenSesion";
 import { api } from "../../services/api";
@@ -110,9 +111,9 @@ export function SolicitudesPersonales() {
       : `${fechas.length} ${fechas.length === 1 ? "día" : "días"}: ${fechas.map(corta).join(", ")}`;
 
   return (
-    <div className="guard-screen">
+    <div className="guard-screen libre-visual libre-solicitudespersonales">
       <SectionHeader title="Mis solicitudes" sub="Pide vacaciones, días libres o turnos extra" />
-      <form onSubmit={crear} style={{ ...tarjeta, marginBottom: 20 }}>
+      <form className="libre-personales__form" onSubmit={crear} style={{ ...tarjeta, marginBottom: 20 }}>
         <div style={etiqueta}>Tipo de solicitud</div>
         <div className="guard-action-grid" style={{ display: "grid", gap: 8, marginBottom: 16 }}>
           {Object.entries(TIPOS).map(([id, label]) => (
@@ -128,14 +129,14 @@ export function SolicitudesPersonales() {
           {tipo === "vacaciones" ? "Primer día de vacaciones" : tipo === "traslado" ? "Fecha del traslado" : "Fechas"}
         </div>
         <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>{AYUDA[tipo]}</div>
-        <CalendarioRango marcados={fechas} destacados={destacados} onElegir={elegir} />
+        <div className="libre-calendario"><CalendarioRango marcados={fechas} destacados={destacados} onElegir={elegir} /></div>
         <div style={{ fontSize: 12, color: fechas.length ? T.focusText : T.textMut, margin: "12px 0 16px" }}>
           {resumen}
         </div>
         <Input label="Motivo (opcional)" icon="file-pen" value={motivo} onChange={setMotivo} maxLength={500} placeholder="Cuéntale brevemente al supervisor" />
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: T.textSec, marginBottom: 6 }}>Adjuntar archivo (opcional)</label>
-          <input ref={archivoRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={e => {
+          <input aria-label="Adjuntar archivo (opcional)" ref={archivoRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={e => {
             const f = e.target.files?.[0] ?? null;
             if (f && f.size > MAX_ADJUNTO_MB * 1024 * 1024) { setError(`El archivo supera los ${MAX_ADJUNTO_MB} MB.`); e.target.value = ""; setArchivo(null); return; }
             setError(""); setArchivo(f);
@@ -152,11 +153,11 @@ export function SolicitudesPersonales() {
           <Icon name="file-pen" size={16} /> Aún no tienes solicitudes registradas
         </div>
       ) : solicitudes.map(s => (
-        <div key={s.id} style={{ ...tarjeta, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, borderLeft: `3px solid ${T[colorEstado(s.estado)]}` }}>
+        <div className="libre-solicitud" key={s.id} style={{ ...tarjeta, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, borderLeft: `3px solid ${T[colorEstado(s.estado)]}` }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}><Icon name={ICONOS[s.tipo] ?? "file-pen"} size={16} /> {TIPOS[s.tipo] ?? s.tipo}</div>
-            <div style={{ fontSize: 11, color: T.textMut, marginTop: 2 }}>{fechaLarga(s.fecha_desde)}{s.fecha_hasta && s.fecha_hasta.slice(0, 10) !== s.fecha_desde?.slice(0, 10) ? ` → ${fechaLarga(s.fecha_hasta)}` : ""}{s.motivo ? ` · ${s.motivo}` : ""}</div>
-            {s.adjunto_url_firmada && <a href={s.adjunto_url_firmada} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: T.focusText }}><Icon name="file-pen" size={14} /> {s.adjunto_nombre || "Ver adjunto"}</a>}
+            <div style={{ fontSize: 13, color: T.textSec, marginTop: 4 }}>{fechaLarga(s.fecha_desde)}{s.fecha_hasta && s.fecha_hasta.slice(0, 10) !== s.fecha_desde?.slice(0, 10) ? ` → ${fechaLarga(s.fecha_hasta)}` : ""}{s.motivo ? ` · ${s.motivo}` : ""}</div>
+            {s.adjunto_url_firmada && <a className="libre-adjunto" href={s.adjunto_url_firmada} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: T.focusText }}><Icon name="file-pen" size={14} /> {s.adjunto_nombre || "Ver adjunto"}</a>}
           </div>
           <Badge color={colorEstado(s.estado)}>{s.estado}</Badge>
         </div>

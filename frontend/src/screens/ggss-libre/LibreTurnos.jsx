@@ -1,3 +1,4 @@
+import "./LibreVisual.css";
 import { Icon } from "../../components/ui/Icon";
 import { useEffect, useState } from "react";
 import { T } from "../../theme/theme";
@@ -28,15 +29,15 @@ function TurnoRow({ turno }) {
   }[turno.estado] || "yellow";
 
   return (
-    <div className="guard-list-row" style={{
-      background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8,
+    <div className="guard-list-row libre-turno" style={{
+      background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, borderLeft: `3px solid ${T[estadoColor]}`,
       padding: "12px 16px", marginBottom: 6,
       display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
     }}>
       <div className="guard-list-row__main" style={{ flex: 1 }}>
         <div className="guard-card-header" style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
           <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{fechaStr}</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: franjaDeHora(turno.hora_inicio) === "dia" ? "#FFE14D" : "#B99CFF" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: franjaDeHora(turno.hora_inicio) === "dia" ? T.neonDay : T.neonNight }}>
             <IconoFranja hora={turno.hora_inicio} size={15} />
             {franjaDeHora(turno.hora_inicio) === "dia" ? "Diurno" : "Nocturno"}
           </span>
@@ -45,7 +46,7 @@ function TurnoRow({ turno }) {
           {formatHorario(turno.hora_inicio, turno.hora_fin)}
         </div>
         {turno.instalacion?.nombre && (
-          <div style={{ fontSize: 11, color: T.textMut, marginTop: 2 }}>
+          <div style={{ fontSize: 13, color: T.textSec, marginTop: 4 }}>
             <Icon name="map-pin" size={16} /> {turno.instalacion.nombre}
           </div>
         )}
@@ -92,7 +93,7 @@ function PautaMensual({ turnos }) {
         <button type="button" aria-label="Mes siguiente" onClick={() => mover(1)} style={{ ...flecha, transform: "scaleX(-1)" }} className="gc-accion-btn gc-accion-btn--morado"><Icon name="arrow-left" size={16} /></button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 4 }}>
+      <div className="libre-turnos__calendario" style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 4 }}>
         {DIAS.map(d => <div key={d} style={{ textAlign: "center", fontSize: 11, color: T.textMut, padding: "4px 0" }}>{d}</div>)}
         {celdas.map((iso, i) => {
           if (!iso) return <div key={`h${i}`} />;
@@ -168,7 +169,7 @@ export function LibreTurnos() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="guard-screen">
+    <div className="guard-screen libre-visual libre-libreturnos">
       <SectionHeader
         title="Mi pauta"
         sub="Toca un día con turno para ver el detalle"

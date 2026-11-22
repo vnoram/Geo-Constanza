@@ -1,10 +1,11 @@
+import "./LibreVisual.css";
 import { Icon } from "../../components/ui/Icon";
 import { FONT, T } from "../../theme/theme";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 
 export function LibreSolicitudes() {
   return (
-    <div className="guard-screen">
+    <div className="guard-screen libre-visual libre-libresolicitudes">
       <SectionHeader title="Solicitudes" sub="Gestiona tus peticiones" action={{ label: "+ Nueva", onClick: () => {} }} />
       <div className="guard-action-grid" style={{ display: "grid", gap: 8, marginBottom: 16 }}>
         {[
@@ -13,7 +14,7 @@ export function LibreSolicitudes() {
           { icon: "ban", label: "Ausencia" },
           { icon: "refresh-cw", label: "Cambio Inst." },
         ].map((t, i) => (
-          <button className="touch-target" key={i} style={{
+          <button className="touch-target gc-accion-btn gc-accion-btn--morado" key={i} style={{
             background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
             padding: "14px 10px", color: T.text, fontSize: 12, fontWeight: 600,
             cursor: "pointer", textAlign: "center", fontFamily: FONT.ui,

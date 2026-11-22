@@ -1,3 +1,4 @@
+import "./ggss-libre/LibreVisual.css";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../services/api";
 import { guardarDeviceToken } from "../services/dispositivos";
@@ -39,7 +40,7 @@ export function MisDispositivos({ user }) {
   const banner = { display: "flex", alignItems: "center", gap: 8, borderRadius: T.radius, padding: "10px 14px", marginBottom: 12, fontSize: 13 };
 
   return (
-    <div className="gc-audited-screen">
+    <div className="gc-audited-screen libre-visual libre-dispositivos">
       {porAceptar && (
         <Dialogo titulo="Registrar este equipo" mensaje={`Este equipo quedará registrado como corporativo («${porAceptar.nombre}»).`} confirmarLabel="Registrar equipo"
           onConfirmar={() => aceptar(porAceptar)} onCancelar={() => setPorAceptar(null)} />
@@ -47,7 +48,7 @@ export function MisDispositivos({ user }) {
       <SectionHeader title="Dispositivos" sub="Equipos corporativos" />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 12, marginBottom: 16 }}>
-        <div style={tarjeta}>
+        <div className="libre-dispositivo__resumen" style={tarjeta}>
           <div style={etiqueta}>Este equipo</div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Icon name={corporativo ? "monitor" : "smartphone"} size={26} color={corporativo ? T.accent : T.textMut} />
@@ -56,7 +57,7 @@ export function MisDispositivos({ user }) {
             </div>
           </div>
         </div>
-        <div style={tarjeta}>
+        <div className="libre-dispositivo__resumen" style={tarjeta}>
           <div style={etiqueta}>Invitaciones pendientes</div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Icon name="key-round" size={26} color={invitaciones.length > 0 ? T.focusText : T.textMut} />
@@ -86,7 +87,7 @@ export function MisDispositivos({ user }) {
           <div style={{ fontSize: 12, color: T.textMut, marginTop: 4 }}>Pídele a un administrador que te invite desde su panel de Dispositivos.</div>
         </div>
       ) : invitaciones.map(inv => (
-        <div key={inv.id} style={{ ...tarjeta, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
+        <div className="libre-dispositivo__invitacion" key={inv.id} style={{ ...tarjeta, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
           <Icon name="monitor" size={22} color={T.focusText} />
           <div style={{ flex: 1, minWidth: "min(100%, 180px)", overflowWrap: "anywhere" }}>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
