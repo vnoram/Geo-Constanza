@@ -15,6 +15,7 @@
     "@radix-ui/react-select": "^2.4.1",
     "@radix-ui/react-tabs": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.4.1",
+    "@tanstack/react-table": "^8.21.3",
     "axios": "^1.19.0",
     "framer-motion": "^14.14.0",
     "lucide-react": "^1.52.0",

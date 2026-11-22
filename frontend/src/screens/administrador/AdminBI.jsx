@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { flexRender, getCoreRowModel, getSortedRowModel, useReactTable } from "@tanstack/react-table";
 import { FONT, T } from "../../theme/theme";
 import { KPI } from "../../components/ui/KPI";
 import { Badge } from "../../components/ui/Badge";
@@ -82,6 +83,22 @@ export function AdminBI() {
   // Guardias que deberían estar trabajando: turnos ya iniciados, sin contar vacaciones ni ausencias aprobadas
   const iniciados = (estado?.totalTurnos ?? 0) - (estado?.porIniciar ?? 0) - (estado?.conAusencia ?? 0);
   const instalaciones = useMemo(() => agruparPorInstalacion(mensual), [mensual]);
+  const [orden, setOrden] = useState([]);
+  const columnas = useMemo(() => [
+    { accessorKey: "instalacion", header: "Instalación" },
+    { accessorKey: "guardias", header: "Guardias" },
+    { accessorKey: "cobertura", header: "Cobertura" },
+    { accessorKey: "turnos_cubiertos", header: "Cubiertos / turnos" },
+    { accessorKey: "promedio_retraso_min", header: "Retraso prom." },
+    { accessorKey: "promedio_horas", header: "Horas prom." },
+    { accessorKey: "novedades", header: "Novedades" },
+  ], []);
+  // TanStack Table no es compatible con el compilador de React (solo avisa); no se memoriza nada a mano aquí.
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const tabla = useReactTable({
+    data: instalaciones, columns: columnas, state: { sorting: orden }, onSortingChange: setOrden,
+    getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(),
+  });
   const instAbierta = instalaciones.find((i) => i.instalacion_id === instSel) ?? null;
   const diasInst = diario.filter((d) => d.instalacion_id === instSel);
   const guardiasInst = instAbierta ? mensual.filter((g) => g.instalacion_id === instSel) : [];
@@ -138,35 +155,54 @@ export function AdminBI() {
           : (
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, color: T.text }}>
               <thead>
-                <tr style={{ color: T.textSec, textAlign: "left" }}>
-                  {["Instalación", "Guardias", "Cobertura", "Cubiertos / turnos", "Retraso prom.", "Horas prom.", "Novedades"].map((h) => <th key={h} style={{ padding: "10px 14px", fontWeight: 600, borderBottom: `1px solid ${T.border}`, whiteSpace: "nowrap" }}>{h}</th>)}
-                </tr>
-              </thead>
-              <tbody>
-                {instalaciones.map((f) => (
-                  <tr key={f.instalacion_id} role="button" tabIndex={0} onClick={() => setInstSel(f.instalacion_id)}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setInstSel(f.instalacion_id); } }}
-                    style={{ cursor: "pointer" }}>
-                    <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, fontWeight: 600, maxWidth: 240 }}>
-                      <Tip texto={f.instalacion}><span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.instalacion}</span></Tip>
-                    </td>
-                    <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, fontFamily: FONT.mono }}>{f.guardias}</td>
-                    <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, minWidth: 140 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <Tip texto={`${f.turnos_cubiertos} de ${f.turnos_programados} turnos cubiertos`}>
-                          <div style={{ flex: 1 }}><Barra valor={f.cobertura} max={100} color={f.cobertura >= 90 ? T.accent : f.cobertura >= 70 ? T.yellow : T.red} /></div>
-                        </Tip>
-                        <span style={{ fontFamily: FONT.mono, width: 38, textAlign: "right" }}>{f.cobertura}%</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, fontFamily: FONT.mono }}>{f.turnos_cubiertos}/{f.turnos_programados}</td>
-                    <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}` }}>
-                      {f.turnos_cubiertos === 0 ? "—" : f.promedio_retraso_min > 0 ? <Badge color="yellow">{f.promedio_retraso_min} min</Badge> : <Badge color="accent">Puntual</Badge>}
-                    </td>
-                    <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, fontFamily: FONT.mono }}>{f.turnos_cubiertos === 0 ? "—" : `${f.promedio_horas} h`}</td>
-                    <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, fontFamily: FONT.mono }}>{f.novedades}</td>
+                {tabla.getHeaderGroups().map((grupo) => (
+                  <tr key={grupo.id} style={{ color: T.textSec, textAlign: "left" }}>
+                    {grupo.headers.map((h) => {
+                      const orden = h.column.getIsSorted();
+                      return (
+                        <th key={h.id} aria-sort={orden === "asc" ? "ascending" : orden === "desc" ? "descending" : "none"}
+                          style={{ padding: 0, fontWeight: 600, borderBottom: `1px solid ${T.border}`, whiteSpace: "nowrap" }}>
+                          <button type="button" onClick={h.column.getToggleSortingHandler()} style={{
+                            display: "flex", alignItems: "center", gap: 4, width: "100%", padding: "10px 14px", background: "none", border: 0,
+                            color: orden ? T.text : T.textSec, font: "inherit", fontWeight: 600, cursor: "pointer", textAlign: "left",
+                          }}>
+                            {flexRender(h.column.columnDef.header, h.getContext())}
+                            <span aria-hidden="true" style={{ fontSize: 10, width: 10, color: T.accent }}>{orden === "asc" ? "▲" : orden === "desc" ? "▼" : ""}</span>
+                          </button>
+                        </th>
+                      );
+                    })}
                   </tr>
                 ))}
+              </thead>
+              <tbody>
+                {tabla.getRowModel().rows.map((fila) => {
+                  const f = fila.original;
+                  return (
+                    <tr key={f.instalacion_id} role="button" tabIndex={0} onClick={() => setInstSel(f.instalacion_id)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setInstSel(f.instalacion_id); } }}
+                      style={{ cursor: "pointer" }}>
+                      <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, fontWeight: 600, maxWidth: 240 }}>
+                        <Tip texto={f.instalacion}><span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.instalacion}</span></Tip>
+                      </td>
+                      <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, fontFamily: FONT.mono }}>{f.guardias}</td>
+                      <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, minWidth: 140 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <Tip texto={`${f.turnos_cubiertos} de ${f.turnos_programados} turnos cubiertos`}>
+                            <div style={{ flex: 1 }}><Barra valor={f.cobertura} max={100} color={f.cobertura >= 90 ? T.accent : f.cobertura >= 70 ? T.yellow : T.red} /></div>
+                          </Tip>
+                          <span style={{ fontFamily: FONT.mono, width: 38, textAlign: "right" }}>{f.cobertura}%</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, fontFamily: FONT.mono }}>{f.turnos_cubiertos}/{f.turnos_programados}</td>
+                      <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}` }}>
+                        {f.turnos_cubiertos === 0 ? "—" : f.promedio_retraso_min > 0 ? <Badge color="yellow">{f.promedio_retraso_min} min</Badge> : <Badge color="accent">Puntual</Badge>}
+                      </td>
+                      <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, fontFamily: FONT.mono }}>{f.turnos_cubiertos === 0 ? "—" : `${f.promedio_horas} h`}</td>
+                      <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, fontFamily: FONT.mono }}>{f.novedades}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
