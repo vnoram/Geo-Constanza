@@ -11,6 +11,8 @@ import { agruparPorInstalacion } from "../../utils/unirResumenMensual";
 import { Selector } from "../../components/ui/Selector";
 import { Tip } from "../../components/ui/Tip";
 import { AnimatePresence, motion as Motion } from "framer-motion";
+import { Segmentado } from "../../components/ui/Segmentado";
+import { Esqueleto } from "../../components/ui/Esqueleto";
 
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
@@ -118,7 +120,7 @@ export function AdminBI() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
         <h3 style={{ ...titulo, margin: 0 }}>{trimestral ? "Resumen trimestral" : "Resumen mensual"}</h3>
         <div style={{ display: "flex", gap: 8 }}>
-          <Selector etiqueta="Vista" value={vista} onChange={setVista} opciones={[{ valor: "mensual", etiqueta: "Mensual" }, { valor: "trimestral", etiqueta: "Trimestral" }]} />
+          <Segmentado etiqueta="Vista" value={vista} onChange={setVista} opciones={[{ valor: "mensual", etiqueta: "Mensual" }, { valor: "trimestral", etiqueta: "Trimestral" }]} />
           {trimestral
             ? <Selector etiqueta="Trimestre" value={trimestre} onChange={setTrimestre} opciones={TRIMESTRES.map((t, i) => ({ valor: i + 1, etiqueta: t }))} />
             : <Selector etiqueta="Mes" value={mes} onChange={setMes} capitalizar opciones={MESES.map((m, i) => ({ valor: i + 1, etiqueta: m }))} />}
@@ -131,7 +133,7 @@ export function AdminBI() {
         <KPI label="Novedades" value={totales.novedades} />
       </div>
       <div style={{ ...card, padding: 0, overflowX: "auto" }}>
-        {cargando ? <div style={{ padding: 16, fontSize: 12, color: T.textMut }}>Cargando…</div>
+        {cargando ? <Esqueleto filas={4} alto={16} />
           : mensual.length === 0 ? <div style={{ padding: 16, fontSize: 12, color: T.textMut }}>No hay turnos programados en {periodo}.</div>
           : (
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, color: T.text }}>

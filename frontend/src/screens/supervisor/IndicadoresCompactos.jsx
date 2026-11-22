@@ -4,6 +4,7 @@ import { api } from "../../services/api";
 import { GraficoCobertura, GraficoNovedades } from "../../components/ui/Graficos";
 import { unir } from "../../utils/unirResumenMensual";
 import { Selector } from "../../components/ui/Selector";
+import { Segmentado } from "../../components/ui/Segmentado";
 
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const TRIMESTRES = ["T1 (ene–mar)", "T2 (abr–jun)", "T3 (jul–sep)", "T4 (oct–dic)"];
@@ -50,7 +51,7 @@ export function IndicadoresCompactos() {
         <div><div style={etiqueta}>Retraso prom.</div><div style={valor}>{retraso}</div></div>
         <div><div style={etiqueta}>Novedades</div><div style={valor}>{t.novedades}</div></div>
         <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
-          <Selector etiqueta="Vista" value={vista} onChange={setVista} opciones={[{ valor: "mensual", etiqueta: "Mensual" }, { valor: "trimestral", etiqueta: "Trimestral" }]} />
+          <Segmentado etiqueta="Vista" value={vista} onChange={setVista} opciones={[{ valor: "mensual", etiqueta: "Mensual" }, { valor: "trimestral", etiqueta: "Trimestral" }]} />
           {trimestral
             ? <Selector etiqueta="Trimestre" value={trimestre} onChange={setTrimestre} opciones={TRIMESTRES.map((x, i) => ({ valor: i + 1, etiqueta: x }))} />
             : <Selector etiqueta="Mes" value={mes} onChange={setMes} capitalizar opciones={MESES.map((m, i) => ({ valor: i + 1, etiqueta: m }))} />}

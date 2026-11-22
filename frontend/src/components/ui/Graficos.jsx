@@ -1,5 +1,6 @@
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { FONT, T } from "../../theme/theme";
+import { ahoraChile } from "../../utils/fechaChile";
 
 const URGENCIAS = [
   { clave: "rojo", etiqueta: "Críticas", color: T.red },
@@ -13,18 +14,29 @@ const cajaTooltip = {
   fontSize: 12, color: T.text, fontFamily: FONT.ui, boxShadow: "0 8px 24px rgba(0,0,0,0.45)",
 };
 
+/** Etiqueta del eje X: el día actual va en negrita y color de acento. */
+function EtiquetaDia({ x, y, payload, hoy, texto }) {
+  const esHoy = hoy !== undefined && payload.value === hoy;
+  return (
+    <text x={x} y={y + 12} textAnchor="middle"
+      style={{ ...eje, textTransform: "capitalize", fill: esHoy ? T.accent : T.textMut, fontWeight: esHoy ? 700 : 400 }}>{esHoy && texto ? texto : payload.value}</text>
+  );
+}
+
 const colorCobertura = (c) => (c >= 90 ? T.accent : c >= 70 ? T.yellow : T.red);
 
 /** Novedades por día, apiladas por urgencia (últimos 7 días). */
 export function GraficoNovedades({ semana, alto = 180, leyenda = true }) {
   const datos = semana.map((d) => ({ ...d, dia: String(d.label).slice(0, 3) }));
+  const diaHoy = datos.find((d) => d.fecha === ahoraChile().fecha)?.dia;
   return (
     <div>
       <div style={{ width: "100%", height: alto }}>
         <ResponsiveContainer>
           <BarChart data={datos} margin={{ top: 6, right: 4, left: -22, bottom: 0 }}>
             <CartesianGrid vertical={false} stroke={T.border} strokeDasharray="3 3" />
-            <XAxis dataKey="dia" tickLine={false} axisLine={false} tick={{ ...eje, textTransform: "capitalize" }} />
+            {diaHoy && <ReferenceArea x1={diaHoy} x2={diaHoy} fill={T.accent} fillOpacity={0.12} stroke={T.accent} strokeOpacity={0.35} />}
+            <XAxis dataKey="dia" tickLine={false} axisLine={false} tick={(p) => <EtiquetaDia {...p} hoy={diaHoy} texto="hoy" />} />
             <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={eje} />
             <Tooltip cursor={{ fill: T.bgHover ?? "rgba(255,255,255,0.04)" }} contentStyle={cajaTooltip} itemStyle={{ color: T.text }} labelStyle={{ color: T.textSec, textTransform: "capitalize" }}
               labelFormatter={(_, p) => p?.[0]?.payload?.label ?? ""}
@@ -70,12 +82,14 @@ export function GraficoCobertura({ filas }) {
 /** Cobertura (%) de cada día del período para una instalación. */
 export function GraficoCoberturaDiaria({ dias, alto = 150 }) {
   const datos = dias.map((d) => ({ ...d, dia: Number(d.fecha.slice(8, 10)) }));
+  const diaHoy = datos.find((d) => d.fecha === ahoraChile().fecha)?.dia;
   return (
     <div style={{ width: "100%", height: alto }}>
       <ResponsiveContainer>
         <BarChart data={datos} margin={{ top: 6, right: 4, left: -22, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke={T.border} strokeDasharray="3 3" />
-          <XAxis dataKey="dia" tickLine={false} axisLine={false} tick={eje} interval="preserveStartEnd" />
+          {diaHoy !== undefined && <ReferenceArea x1={diaHoy} x2={diaHoy} fill={T.accent} fillOpacity={0.12} stroke={T.accent} strokeOpacity={0.35} />}
+          <XAxis dataKey="dia" tickLine={false} axisLine={false} tick={(p) => <EtiquetaDia {...p} hoy={diaHoy} />} interval="preserveStartEnd" />
           <YAxis domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} tick={eje} />
           <Tooltip cursor={{ fill: "rgba(255,255,255,0.04)" }} contentStyle={cajaTooltip} itemStyle={{ color: T.text }} labelStyle={{ color: T.textSec }}
             labelFormatter={(_, p) => (p?.[0]?.payload?.fecha ? p[0].payload.fecha.split("-").reverse().join("-") : "")}
