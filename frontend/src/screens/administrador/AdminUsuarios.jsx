@@ -1,3 +1,4 @@
+import "../Grupo8Visual.css";
 import { AnimatePresence } from "framer-motion";
 import { Aparecer } from "../../components/ui/Aparecer";
 import { Esqueleto } from "../../components/ui/Esqueleto";
@@ -124,13 +125,7 @@ function UsuarioModal({ inicial, instalaciones: todas, onClose, onSaved }) {
               <input className="touch-target" style={inputStyle} value={form.rut} onChange={(e) => set("rut", e.target.value)} placeholder="12345678-9" />
             </Field>
             <Field label="Rol" required>
-              <select className="touch-target" style={{ ...inputStyle, appearance: "none" }} value={form.rol} onChange={(e) => set("rol", e.target.value)}
-                disabled={form.rol === ROL.ADMINISTRADOR}>
-                {form.rol === ROL.ADMINISTRADOR && <option value={ROL.ADMINISTRADOR}>{ROL_LABEL[ROL.ADMINISTRADOR]}</option>}
-                {ROLES_DISPONIBLES.map((r) => (
-                  <option key={r} value={r} style={{ background: T.bgCard }}>{ROL_LABEL[r]}</option>
-                ))}
-              </select>
+              <fieldset className="g8-rol" disabled={form.rol === ROL.ADMINISTRADOR}><Selector bloque etiqueta="Rol" value={form.rol} onChange={(valor) => set("rol", valor)} opciones={[...(form.rol === ROL.ADMINISTRADOR ? [{ valor: ROL.ADMINISTRADOR, etiqueta: ROL_LABEL[ROL.ADMINISTRADOR] }] : []), ...ROLES_DISPONIBLES.map(r => ({ valor: r, etiqueta: ROL_LABEL[r] }))]} /></fieldset>
             </Field>
           </div>
 
@@ -284,7 +279,7 @@ export function AdminUsuarios() {
   };
 
   return (
-    <Aparecer className="admin-screen admin-visual adminusuarios">
+    <Aparecer className="admin-screen admin-visual adminusuarios g8-visual">
       {confirmandoDesactivar && (
         <Dialogo titulo="Desactivar usuario" mensaje="El usuario ya no podrá iniciar sesión. Podrás verlo como inactivo en la lista." confirmarLabel="Desactivar" variante="rechazar"
           onConfirmar={desactivarConfirmado} onCancelar={() => setConfirmandoDesactivar(null)} />
@@ -308,6 +303,8 @@ export function AdminUsuarios() {
       {loading && (
         <Esqueleto filas={3} alto={64} />
       )}
+
+      {!loading && usuarios.length === 0 && <div className="g8-vacio">No hay usuarios para mostrar.</div>}
 
       {!loading && GRUPOS.map(({ clave, roles, titulo }) => {
         const delGrupo = usuarios.filter((u) => roles.includes(u.rol));

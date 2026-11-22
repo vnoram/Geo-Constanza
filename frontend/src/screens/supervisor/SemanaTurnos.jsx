@@ -1,7 +1,7 @@
 import { Aparecer } from "../../components/ui/Aparecer";
 import { Icon } from "../../components/ui/Icon";
 import { FONT, T } from "../../theme/theme";
-import { sumarDias } from "../../utils/fechaChile";
+import { lunesDe, sumarDias } from "../../utils/fechaChile";
 
 const VERDE_NEON = "#39FF88";
 const NARANJA = "#E8893A";
@@ -11,12 +11,6 @@ const COLUMNAS = "150px repeat(7, minmax(84px, 1fr))";
 const fechaDeTurno = (t) => String(t.fecha).slice(0, 10);
 const esNocturno = (t) => t.hora_inicio && t.hora_fin && t.hora_fin < t.hora_inicio;
 const corto = (h) => h.slice(0, 5);
-
-export function lunesDe(iso) {
-  const [a, m, d] = iso.split("-").map(Number);
-  const dow = new Date(Date.UTC(a, m - 1, d)).getUTCDay();
-  return sumarDias(iso, -((dow + 6) % 7));
-}
 
 const etiquetaFecha = (iso) => {
   const [a, m, d] = iso.split("-").map(Number);

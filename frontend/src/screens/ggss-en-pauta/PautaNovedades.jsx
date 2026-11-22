@@ -1,3 +1,5 @@
+import "../Grupo8Visual.css";
+import { Selector } from "../../components/ui/Selector";
 import { AnimatePresence } from "framer-motion";
 import { Aparecer } from "../../components/ui/Aparecer";
 import { Esqueleto } from "../../components/ui/Esqueleto";
@@ -142,7 +144,7 @@ function ReportarModal({ onClose, onSuccess }) {
   const gpsStyle = gpsColors[gpsStatus];
 
   return (
-    <Aparecer salida desplazar={false} className="guard-modal-overlay pauta-visual" style={{
+    <Aparecer salida desplazar={false} className="guard-modal-overlay pauta-visual g8-visual" style={{
       position: "fixed", inset: 0, zIndex: 100,
       background: "rgba(14,23,20,0.85)", backdropFilter: "blur(4px)",
       display: "flex", alignItems: "center", justifyContent: "center",
@@ -190,28 +192,7 @@ function ReportarModal({ onClose, onSuccess }) {
             <label style={{ display: "block", fontSize: 12, color: T.textSec, marginBottom: 6 }}>
               Tipo de Novedad *
             </label>
-            <select
-              className="touch-target"
-              aria-label="Tipo de Novedad"
-              value={tipo}
-              onChange={e => setTipo(e.target.value)}
-              style={{
-                width: "100%", padding: "10px 12px",
-                background: T.bgInput, border: `1px solid ${T.border}`,
-                borderRadius: 8, color: tipo ? T.text : T.textMut,
-                fontSize: 14, outline: "none", fontFamily: "var(--font-ui)",
-                appearance: "none", boxSizing: "border-box",
-              }}
-            >
-              <option value="" disabled>Selecciona un tipo...</option>
-              {GRUPOS_NOVEDAD.map(g => (
-                <optgroup key={g.grupo} label={g.grupo} style={{ background: T.bgCard, color: `${g.color}CC` }}>
-                  {g.tipos.map(t => (
-                    <option key={t} value={t} style={{ background: T.bgCard, color: `${g.color}99` }}>{t}</option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+            <Selector bloque etiqueta="Tipo de Novedad" value={tipo || "__todos__"} onChange={(valor) => setTipo(valor === "__todos__" ? "" : valor)} placeholder="Selecciona un tipo..." opciones={GRUPOS_NOVEDAD.flatMap(g => g.tipos.map(t => ({ valor: t, etiqueta: <span className="g8-opcion" aria-label={t}><span>{t}</span><span className="g8-opcion__grupo" aria-hidden="true" style={{ color: g.color }}>{g.grupo}</span></span> })))} />
           </div>
 
           {/* Descripción */}
@@ -338,7 +319,7 @@ export function PautaNovedades({ user }) {
                     : pendientes;
 
   return (
-    <Aparecer className="guard-screen pauta-visual">
+    <Aparecer className="guard-screen pauta-visual g8-visual">
       <SectionHeader
         title="Novedades"
         sub="Reporta incidencias durante tu turno"
@@ -381,7 +362,7 @@ export function PautaNovedades({ user }) {
       <NovedadesPorDia items={visibles} semanal={vista !== "recientes"} vacio="No hay novedades en las últimas 12 h." render={(n, { compacta }) => {
         const urgencia = n.urgencia ?? "verde";
         const colors   = URGENCIA_COLOR[urgencia] ?? URGENCIA_COLOR.verde;
-        if (compacta) return <NovedadMini key={n.id} n={n} />;
+        if (compacta) return <Aparecer key={n.id} grupo="PautaNovedades:compactas" className="g8-novedad-compacta"><NovedadMini n={n} /></Aparecer>;
         return (
           <Aparecer grupo="PautaNovedades.jsx:15382" className="guard-card nov-card nov-card--sinfoto" key={n.id} style={{
             background: T.bgCard, border: `1px solid ${T.border}`,

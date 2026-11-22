@@ -20,3 +20,18 @@ export function sumarDias(fechaISO, dias) {
   const [anio, mes, dia] = fechaISO.split("-").map(Number);
   return new Date(Date.UTC(anio, mes - 1, dia + dias)).toISOString().slice(0, 10);
 }
+
+/** Lista de fechas ISO entre dos días, ambos incluidos (acepta el rango al revés). */
+export function rangoDias(desde, hasta) {
+  const [a, b] = desde <= hasta ? [desde, hasta] : [hasta, desde];
+  const lista = [];
+  for (let d = a; d <= b; d = sumarDias(d, 1)) lista.push(d);
+  return lista;
+}
+
+/** Lunes de la semana de una fecha ISO. */
+export function lunesDe(iso) {
+  const [a, m, d] = iso.split("-").map(Number);
+  const dow = new Date(Date.UTC(a, m - 1, d)).getUTCDay();
+  return sumarDias(iso, -((dow + 6) % 7));
+}

@@ -1,3 +1,5 @@
+import "../Grupo8Visual.css";
+import { Selector } from "../../components/ui/Selector";
 import { Aparecer } from "../../components/ui/Aparecer";
 import { Esqueleto } from "../../components/ui/Esqueleto";
 import "./AdminVisual.css";
@@ -9,7 +11,7 @@ import { SectionHeader } from "../../components/ui/SectionHeader";
 import { Btn } from "../../components/ui/Btn";
 import { api } from "../../services/api";
 import { API_URL } from "../../config/api";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authCtx";
 
 // Etiquetas legibles de cada acción registrada y su categoría. Lo no listado se muestra con el nombre
 // de la acción en palabras ("subir_documento" → "Subir documento") dentro de Gestión.
@@ -100,7 +102,7 @@ export function AdminAuditoria() {
   const campo = { width: "100%", minWidth: 0, boxSizing: "border-box", padding: 10, background: T.bgInput, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radius };
   const actualizar = e => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   return (
-    <Aparecer className="admin-screen admin-visual adminauditoria">
+    <Aparecer className="admin-screen admin-visual adminauditoria g8-visual">
       <SectionHeader title="Auditoría" sub="Log de cambios del sistema" />
       {!loading && !error && (
         <Aparecer grupo="AdminAuditoria.jsx:secciones" className="gc-dashboard-kpis">
@@ -112,12 +114,8 @@ export function AdminAuditoria() {
       )}
       <form className="admin-visual__filters" onSubmit={e => { e.preventDefault(); setPage(1); setFiltros({ ...form }); }} style={{ marginBottom: 16 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))", gap: 12, marginBottom: 12 }}>
-          <label>Usuario<select name="usuario_id" value={form.usuario_id} onChange={actualizar} style={campo}>
-            <option value="">Todos</option>{usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
-          </select></label>
-          <label>Tipo<select name="accion" value={form.accion} onChange={actualizar} style={campo}>
-            {TIPOS.map(([id, texto]) => <option key={id} value={id}>{texto}</option>)}
-          </select></label>
+          <label>Usuario<><input type="hidden" name="usuario_id" value={form.usuario_id} /><Selector bloque etiqueta="Usuario" value={form.usuario_id || "__todos__"} onChange={(valor) => actualizar({ target: { name: "usuario_id", value: valor === "__todos__" ? "" : valor } })} opciones={[{ valor: "__todos__", etiqueta: "Todos" }, ...usuarios.map(u => ({ valor: u.id, etiqueta: u.nombre }))]} /></></label>
+          <label>Tipo<><input type="hidden" name="accion" value={form.accion} /><Selector bloque etiqueta="Tipo" value={form.accion} onChange={(valor) => actualizar({ target: { name: "accion", value: valor } })} opciones={TIPOS.map(([id, texto]) => ({ valor: id, etiqueta: texto }))} /></></label>
           <label>Desde<input type="date" name="fecha_inicio" value={form.fecha_inicio} onChange={actualizar} style={campo} /></label>
           <label>Hasta<input type="date" name="fecha_fin" value={form.fecha_fin} onChange={actualizar} style={campo} /></label>
         </div>
@@ -128,7 +126,7 @@ export function AdminAuditoria() {
       </form>
       {error && <p role="alert" style={{ color: T.red }}>{error}</p>}
       {loading && <Esqueleto filas={3} alto={64} />}
-      {!loading && !logs.length && !error && <p style={{ color: T.textMut }}>Sin registros para estos filtros.</p>}
+      {!loading && !logs.length && !error && <div className="g8-vacio">Sin registros para estos filtros.</div>}
       <Aparecer grupo="AdminAuditoria.jsx:secciones" className="gc-dashboard-grid">
         {logs.map(l => {
           const { texto, categoria } = describir(l.accion);

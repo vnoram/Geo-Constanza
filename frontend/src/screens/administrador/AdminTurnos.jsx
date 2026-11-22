@@ -1,3 +1,4 @@
+import "../Grupo8Visual.css";
 import { AnimatePresence } from "framer-motion";
 import { Aparecer } from "../../components/ui/Aparecer";
 import { Esqueleto } from "../../components/ui/Esqueleto";
@@ -8,13 +9,13 @@ import { useEffect, useState } from "react";
 import { FONT, T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
 import { Input } from "../../components/ui/Input";
-import { CalendarioRango, sumarDias } from "../../components/ui/CalendarioRango";
+import { CalendarioRango } from "../../components/ui/CalendarioRango";
 import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 import { ROLES } from "../../constants/roles";
-import { ahoraChile, sumarDias as sumarDiasChile } from "../../utils/fechaChile";
-import { SemanaTurnos, lunesDe } from "../supervisor/SemanaTurnos";
+import { ahoraChile, lunesDe, sumarDias } from "../../utils/fechaChile";
+import { SemanaTurnos } from "../supervisor/SemanaTurnos";
 import { ModalEditarTurno } from "../supervisor/SupGuardias";
 import { formatearRut } from "../../utils/rut";
 import { Aviso } from "../../components/ui/Aviso";
@@ -31,24 +32,7 @@ function Select({ label, value, onChange, options, placeholder }) {
           {label}
         </label>
       )}
-      <select
-        className="touch-target"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          width: "100%", background: T.bgInput, border: `1.5px solid ${T.border}`,
-          borderRadius: T.radius, padding: "12px 14px", color: value ? T.text : T.textMut,
-          fontSize: 14, fontFamily: FONT.ui,
-          cursor: "pointer",
-        }}
-      >
-        <option value="" disabled>{placeholder || "Seleccionar..."}</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value} style={{ background: T.bgCard }}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <Selector bloque etiqueta={label || placeholder || "Seleccionar..."} value={value || "__todos__"} onChange={(valor) => onChange(valor === "__todos__" ? "" : valor)} placeholder={placeholder || "Seleccionar..."} opciones={options.map((o) => ({ valor: String(o.value), etiqueta: o.label }))} />
     </div>
   );
 }
@@ -302,7 +286,7 @@ export function AdminTurnos() {
   const cargarTurnos = async () => {
     setCargando(true);
     try {
-      const data = await api.get(`/turnos?desde=${lunes}&hasta=${sumarDiasChile(lunes, 6)}`);
+      const data = await api.get(`/turnos?desde=${lunes}&hasta=${sumarDias(lunes, 6)}`);
       setTurnos(Array.isArray(data) ? data : (data.data ?? []));
     } catch (e) {
       console.error("Error cargando turnos:", e);
@@ -348,7 +332,7 @@ export function AdminTurnos() {
   };
 
   return (
-    <Aparecer className="admin-screen admin-visual adminturnos">
+    <Aparecer className="admin-screen admin-visual adminturnos g8-visual">
       <SectionHeader
         title="Turnos"
         sub="Programación semanal de todas las instalaciones"
@@ -364,6 +348,8 @@ export function AdminTurnos() {
       </div>
 
       <Aviso mensaje={aviso} />
+
+      {!cargando && visibles.length === 0 && <div className="g8-vacio">No hay turnos para esta semana y estos filtros.</div>}
 
       {cargando && turnos.length === 0 ? (
         <Esqueleto filas={3} alto={64} />

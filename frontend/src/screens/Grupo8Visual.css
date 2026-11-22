@@ -1,0 +1,80 @@
+.g8-visual {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.g8-vacio {
+  background: var(--gc-card);
+  border: 1px solid var(--gc-line);
+  border-left: 3px solid var(--gc-focus);
+  border-radius: var(--gc-radius);
+  color: var(--gc-text-2);
+  padding: 20px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.g8-rol {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.g8-rol:disabled .selector-trigger {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.g8-opcion {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.g8-opcion__grupo {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.g8-novedad-compacta > div > div:first-child {
+  flex-wrap: wrap;
+}
+
+.g8-visual :is(button, input:not([type="checkbox"]):not([type="hidden"]):not([type="radio"])) {
+  min-height: 44px !important;
+}
+
+.g8-visual :is(button, input, textarea):focus-visible {
+  outline: 2px solid var(--gc-focus) !important;
+  outline-offset: 3px;
+}
+
+body:has(.g8-visual) .selector-contenido {
+  max-width: calc(100vw - 24px);
+}
+
+@media (hover: hover) {
+  .g8-visual .selector-trigger:hover:not(:disabled),
+  .g8-visual :is(input, textarea):hover:not(:disabled),
+  .g8-visual div:has(> input:not([type="hidden"])):hover {
+    border-color: var(--gc-focus) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .g8-visual .selector-trigger {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .g8-visual .admin-visual__filters label {
+    min-width: 0;
+  }
+
+  .g8-vacio {
+    padding: 16px;
+  }
+}

@@ -10,7 +10,7 @@ import { KPI } from "../../components/ui/KPI";
 import { Dialogo } from "../../components/ui/Dialogo";
 import { Btn } from "../../components/ui/Btn";
 import { SectionHeader } from "../../components/ui/SectionHeader";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authCtx";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { TurnosPorReasignar } from "./TurnosPorReasignar";
 import { IndicadoresCompactos } from "./IndicadoresCompactos";

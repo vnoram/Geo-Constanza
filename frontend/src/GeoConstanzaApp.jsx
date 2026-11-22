@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { leerSesion } from "./services/almacenSesion";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
+import { useAuth } from "./context/authCtx";
 import { ConfirmarInvitacionDispositivo } from "./screens/auth/ConfirmarInvitacionDispositivo";
 import { LoginScreen } from "./screens/auth/LoginScreen";
 import { Enroll2FAScreen } from "./screens/auth/Enroll2FAScreen";

@@ -1,3 +1,4 @@
+import "../../components/ui/Grupo9Visual.css";
 import { Aparecer } from "../../components/ui/Aparecer";
 import { Esqueleto } from "../../components/ui/Esqueleto";
 import "../PanelesCentral.css";
@@ -9,7 +10,7 @@ import { T, FONT } from "../../theme/theme";
 import { KPI } from "../../components/ui/KPI";
 import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authCtx";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
@@ -147,7 +148,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
   }, [ultimaUbicacion]);
 
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start", marginBottom: 20 }}>
+    <div className="g9-mapa-layout" style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start", marginBottom: 20 }}>
       {/* Leyenda a la izquierda, ordenada por prioridad */}
       <div className="admin-map-legend" style={{
         flex: "0 0 150px", display: "flex", flexDirection: "column", gap: 7, fontSize: 12, color: T.textSec,
@@ -163,9 +164,9 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
       </div>
       <div style={{ position: "relative", flex: "1 1 320px", minWidth: 0 }}>
         {cargando && (
-          <Esqueleto filas={1} alto={240} />
+          <div className="g9-mapa-carga"><Esqueleto filas={1} alto={240} /></div>
         )}
-        <div ref={containerRef} className="central-map" style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }} />
+        <div ref={containerRef} className="central-map" role="region" aria-label="Mapa de instalaciones y guardias" aria-busy={cargando} style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }} />
       </div>
     </div>
   );
@@ -191,7 +192,7 @@ function GraficoBarras({ data }) {
   const svgW = data.length * (slotW + gap) - gap;
 
   return (
-    <svg
+    <svg className="g9-barras" role="img" aria-label="Novedades de los últimos siete días"
       width="100%" height={H + 24}
       viewBox={`0 0 ${svgW} ${H + 24}`}
       preserveAspectRatio="xMidYMid meet"
@@ -253,7 +254,7 @@ function GraficoDonut({ presentes = 0, tardios = 0, faltantes = 0, unidad = "GGS
 
   return (
     <div>
-      <svg width={110} height={110} viewBox="0 0 110 110">
+      <svg role="img" aria-label="Distribución por estado" width={110} height={110} viewBox="0 0 110 110">
         {paths.map((p, i) => <path key={i} d={p.d} fill={p.color} opacity={0.9} />)}
         <circle cx={CX} cy={CY} r={r - 2} fill="#0E1714" />
         <text x={CX} y={CY - 5} textAnchor="middle" fontSize="15" fontWeight="800" fill="#F3EFE6">{total}</text>
@@ -379,7 +380,7 @@ export function AdminPanel() {
   ];
 
   return (
-    <Aparecer className="admin-screen central-titulos central-panel">
+    <Aparecer className="admin-screen central-titulos central-panel g9-visual">
       <div className="central-panel__header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <SectionHeader title="Panel central" sub="Vista general del sistema" />
         <SocketBadge status={socketStatus} />

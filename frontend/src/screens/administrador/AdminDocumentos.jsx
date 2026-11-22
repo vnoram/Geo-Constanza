@@ -1,3 +1,5 @@
+import "../Grupo8Visual.css";
+import { Selector } from "../../components/ui/Selector";
 import { Aparecer } from "../../components/ui/Aparecer";
 import { KPI } from "../../components/ui/KPI";
 import { useCallback, useEffect, useState } from "react";
@@ -15,7 +17,6 @@ import { Aviso } from "../../components/ui/Aviso";
 const TIPOS = { contrato: "Contrato", liquidacion: "Liquidación", os10: "Certificado OS-10", anexo: "Anexo", otro: "Otro" };
 const tarjeta = { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 14 };
 const etiqueta = { fontSize: 10, color: T.textMut, textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 };
-const selectEstilo = { background: T.bgInput, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "10px 12px", fontSize: 14, minHeight: 42, width: "100%" };
 
 /** Administración publica documentos para un guardia (contrato, liquidaciones, anexos...). */
 export function AdminDocumentos() {
@@ -69,7 +70,7 @@ export function AdminDocumentos() {
   };
 
   return (
-    <Aparecer>
+    <Aparecer className="g8-visual">
       <SectionHeader title="Documentos del personal" sub="Publica contratos, liquidaciones y anexos para cada guardia" />
       <Aparecer grupo="AdminDocumentos.jsx:secciones" className="gc-dashboard-kpis">
         <KPI label="Guardias" value={guardias.length} sub="disponibles para seleccionar" />
@@ -79,14 +80,9 @@ export function AdminDocumentos() {
       <div style={{ ...tarjeta, marginBottom: 20, maxWidth: 560 }}>
         <div style={etiqueta}>Nuevo documento</div>
         <label style={{ display: "block", fontSize: 12, color: T.textSec, marginBottom: 6 }}>Guardia</label>
-        <select aria-label="Guardia" value={usuarioId} onChange={e => setUsuarioId(e.target.value)} style={{ ...selectEstilo, marginBottom: 16 }}>
-          <option value="">Selecciona un guardia</option>
-          {guardias.map(g => <option key={g.id} value={g.id}>{g.nombre}</option>)}
-        </select>
+        <div style={{ marginBottom: 16 }}><Selector bloque etiqueta="Guardia" value={usuarioId || "__todos__"} onChange={(valor) => setUsuarioId(valor === "__todos__" ? "" : valor)} opciones={[{ valor: "__todos__", etiqueta: "Selecciona un guardia" }, ...guardias.map(g => ({ valor: g.id, etiqueta: g.nombre }))]} /></div>
         <label style={{ display: "block", fontSize: 12, color: T.textSec, marginBottom: 6 }}>Tipo</label>
-        <select aria-label="Tipo" value={tipo} onChange={e => setTipo(e.target.value)} style={{ ...selectEstilo, marginBottom: 16 }}>
-          {Object.entries(TIPOS).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-        </select>
+        <div style={{ marginBottom: 16 }}><Selector bloque etiqueta="Tipo" value={tipo} onChange={setTipo} opciones={Object.entries(TIPOS).map(([id, label]) => ({ valor: id, etiqueta: label }))} /></div>
         <Input label="Nombre del documento (opcional)" value={nombre} onChange={setNombre} maxLength={100} placeholder="Ej. Liquidación marzo 2026" />
         <SubirArchivo label="Archivo" archivo={archivo} onChange={setArchivo} onError={setError} />
         <Btn onClick={subir} loading={ocupado} disabled={!archivo || !usuarioId} full>Publicar documento</Btn>
@@ -95,7 +91,8 @@ export function AdminDocumentos() {
       </div>
 
       {usuarioId && <div style={etiqueta}>Documentos del guardia</div>}
-      {usuarioId && docs.length === 0 && <div style={{ ...tarjeta, color: T.textMut, fontSize: 13, maxWidth: 560 }}>Este guardia aún no tiene documentos.</div>}
+      {!usuarioId && <div className="g8-vacio" style={{ maxWidth: 560 }}>Selecciona un guardia para ver sus documentos.</div>}
+      {usuarioId && docs.length === 0 && <div className="g8-vacio" style={{ maxWidth: 560 }}>Este guardia aún no tiene documentos.</div>}
       <Aparecer grupo="AdminDocumentos.jsx:secciones" className="gc-dashboard-grid">
         {docs.map(d => (
           <Aparecer grupo="AdminDocumentos.jsx:5334" key={d.id} className="gc-dashboard-card" style={{ ...tarjeta, borderLeft: `3px solid ${d.url_firmada ? T.accent : T.border}` }}>

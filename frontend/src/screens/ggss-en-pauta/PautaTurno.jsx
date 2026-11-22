@@ -9,7 +9,7 @@ import { KPI } from "../../components/ui/KPI";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { IconoFranja } from "../../components/ui/IconoFranja";
 import { franjaDeHora } from "../../utils/novedades";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authCtx";
 import { API_URL as API_BASE } from "../../config/api";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 
@@ -65,7 +65,7 @@ function capturarGPS(onLectura) {
 const VERIFICACION_GPS = {
   verificado:    { texto: "Ubicación verificada", color: "accent" },
   tablet:        { texto: "Marcaje desde la tablet", color: "accent" },
-  por_revisar:   { texto: "Ubicación imprecisa: un supervisor revisará tu marcaje", color: "yellow" },
+  por_revisar:   { texto: "Fuera de rango o ubicación imprecisa: un supervisor debe autorizar tu marcaje", color: "yellow" },
   sin_ubicacion: { texto: "Sin ubicación: un supervisor revisará tu marcaje", color: "yellow" },
 };
 

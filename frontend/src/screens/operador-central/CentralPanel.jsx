@@ -1,3 +1,4 @@
+import "../../components/ui/Grupo9Visual.css";
 import { AnimatePresence } from "framer-motion";
 import { Aparecer } from "../../components/ui/Aparecer";
 import { Esqueleto } from "../../components/ui/Esqueleto";
@@ -12,7 +13,7 @@ import { Icon } from "../../components/ui/Icon";
 import { KPI } from "../../components/ui/KPI";
 import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authCtx";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
@@ -168,14 +169,14 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
   return (
     <div style={{ position: "relative", marginBottom: 20 }}>
       {cargando && (
-        <Esqueleto filas={1} alto={240} />
+        <div className="g9-mapa-carga"><Esqueleto filas={1} alto={240} /></div>
       )}
       <div
-        className="central-map"
+        className="central-map" role="region" aria-label="Mapa de instalaciones y guardias" aria-busy={cargando}
         ref={containerRef}
         style={{ borderRadius: T.radius, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }}
       />
-      <div style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: T.textMut }}>
+      <div className="g9-leyenda" style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: T.textMut }}>
         <span><span style={{ color: C_COLOR }}>●</span> Instalación</span>
         <span><span style={{ color: C_COLOR }}>●</span> A tiempo</span>
         <span><span style={{ color: T.yellow }}>●</span> Tardío</span>
@@ -219,7 +220,7 @@ function GraficoDonut({ presentes = 0, tardios = 0, faltantes = 0 }) {
 
   return (
     <div>
-      <svg width={110} height={110} viewBox="0 0 110 110">
+      <svg role="img" aria-label="Asistencia de hoy" width={110} height={110} viewBox="0 0 110 110">
         {paths.map((p, i) => <path key={i} d={p.d} fill={p.color} opacity={0.9} />)}
         <circle cx={CX} cy={CY} r={r - 2} fill="#0E1714" />
         <text x={CX} y={CY - 5} textAnchor="middle" fontSize="15" fontWeight="800" fill="#F3EFE6">{total}</text>
@@ -245,7 +246,7 @@ function SocketBadge({ status }) {
     disconnected: { dot: T.red,     label: "Sin conexión" },
   }[status] ?? { dot: T.textMut, label: status };
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.textMut, marginBottom: 14 }}>
+    <div role="status" className="g9-conexion" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.textMut, marginBottom: 14 }}>
       <div style={{
         width: 7, height: 7, borderRadius: "50%", background: cfg.dot,
         boxShadow: status === "connected" ? `0 0 6px ${cfg.dot}` : "none",
@@ -344,7 +345,7 @@ function DerivarModal({ novedad, token, onClose, onSuccess }) {
           <Selector bloque etiqueta="Supervisor" value={elegido || "__todos__"} onChange={(valor) => { const v = valor === "__todos__" ? "" : valor; setElegido(v); setError(null); }} opciones={[{ valor: "__todos__", etiqueta: "Selecciona un supervisor…" }, ...opciones.map((o) => ({ valor: o.id, etiqueta: o.nombre }))]} />
         )}
         {error && (
-          <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: T.radius, background: T.redGhost, color: T.red, fontSize: 13 }}>{error}</div>
+          <div role="alert" style={{ marginBottom: 12, padding: "8px 12px", borderRadius: T.radius, background: T.redGhost, color: T.red, fontSize: 13 }}>{error}</div>
         )}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <button className="touch-target gc-accion-btn gc-accion-btn--naranja" onClick={onClose} disabled={loading} style={{
@@ -411,7 +412,7 @@ function IncidentesPanel({ token }) {
   const visibles = grupos[vista];
 
   return (
-    <Aparecer className="operations-screen central-panel">
+    <Aparecer className="operations-screen central-panel g9-visual">
       <SectionHeader title="Incidentes" sub="Escalaciones de supervisores y críticos de todas las instalaciones" />
       <AvisoEscalada data={alertaEscalada} onClose={() => setAlertaEscalada(null)} />
 
@@ -539,7 +540,7 @@ function MonitoreoPanel({ token }) {
   const kpis = stats?.kpis;
 
   return (
-    <Aparecer className="operations-screen central-panel">
+    <Aparecer className="operations-screen central-panel g9-visual">
       <SectionHeader title="Monitoreo Central" sub="Vista global de todas las instalaciones" />
       <SocketBadge status={socketStatus} />
 

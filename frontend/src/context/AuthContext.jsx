@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { AuthCtx } from "./authCtx";
 import { borrarSesion, guardarSesion, leerSesion, limpiarSesionAntigua } from "../services/almacenSesion";
 import { cacheClearAll } from "../utils/cache";
 import { DISPOSITIVO_ACTUAL, SESION_EXPIRADA } from "../services/sesion";
@@ -10,7 +11,6 @@ const USER_KEY  = "gc_user";
 const REFRESH_KEY = "gc_refresh";
 
 // ─── AUTH CONTEXT ───────────────────────────────────────────────
-export const AuthCtx = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user,  setUser]  = useState(null);
@@ -87,8 +87,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthCtx.Provider>
   );
-}
-
-export function useAuth() {
-  return useContext(AuthCtx);
 }

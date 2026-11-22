@@ -8,15 +8,7 @@ const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "
 // Fechas como "YYYY-MM-DD"; el cálculo va en UTC para evitar corrimientos por zona horaria.
 const aFecha = (iso) => new Date(`${iso}T00:00:00Z`);
 const aIso = (d) => d.toISOString().slice(0, 10);
-export const sumarDias = (iso, dias) => { const d = aFecha(iso); d.setUTCDate(d.getUTCDate() + dias); return aIso(d); };
 const hoyIso = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Santiago" });
-
-export const rangoDias = (desde, hasta) => {
-  const [a, b] = desde <= hasta ? [desde, hasta] : [hasta, desde];
-  const lista = [];
-  for (let d = a; d <= b; d = sumarDias(d, 1)) lista.push(d);
-  return lista;
-};
 
 /**
  * Calendario mensual. Los días de `enPauta` se ven en verde y no se pueden elegir. No decide nada: pinta `marcados` en morado suave, `destacados` en morado
