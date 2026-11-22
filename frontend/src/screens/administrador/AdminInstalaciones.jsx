@@ -1,3 +1,4 @@
+import "../../components/ui/Grupo9Visual.css";
 import { AnimatePresence } from "framer-motion";
 import { Aparecer } from "../../components/ui/Aparecer";
 import { Esqueleto } from "../../components/ui/Esqueleto";
@@ -380,7 +381,7 @@ function ModalInstalacion({ inicial, onClose, onGuardada }) {
 
         {/* Error global */}
         {errores._global && (
-          <div
+          <div role="alert"
             style={{
               background: T.redGhost,
               border: `1px solid ${T.red}`,
@@ -849,7 +850,7 @@ export function AdminInstalaciones() {
   ).sort((a, b) => Number(esCentroOperativo(b)) - Number(esCentroOperativo(a)));
 
   return (
-    <Aparecer className="admin-screen admin-visual admininstalaciones">
+    <Aparecer className="admin-screen admin-visual admininstalaciones g9-visual">
       <SectionHeader
         title="Instalaciones"
         sub={`${instalaciones.length} recinto${instalaciones.length !== 1 ? "s" : ""} registrado${instalaciones.length !== 1 ? "s" : ""}`}
@@ -868,6 +869,7 @@ export function AdminInstalaciones() {
           className="touch-target"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
+          aria-label="Buscar instalaciones"
           placeholder="Buscar por nombre, dirección, comuna o tipo..."
           style={{
             width: "100%",
@@ -887,7 +889,7 @@ export function AdminInstalaciones() {
       {cargando ? (
         <Esqueleto filas={3} alto={64} />
       ) : listaFiltrada.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 40 }}>
+        <div className="g9-vacio" style={{ textAlign: "center", padding: 40 }}>
           <div style={{ fontSize: 36, marginBottom: 10 }}><Icon name="building-2" size={36} /></div>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 6 }}>
             {busqueda ? "Sin resultados" : "Sin instalaciones registradas"}

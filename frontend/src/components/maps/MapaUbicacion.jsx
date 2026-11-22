@@ -1,3 +1,5 @@
+import { Esqueleto } from "../ui/Esqueleto";
+import "../ui/Grupo9Visual.css";
 import { useEffect, useRef } from "react";
 import { T } from "../../theme/theme";
 import { useLeaflet } from "../../hooks/useLeaflet";
@@ -135,6 +137,7 @@ export function MapaUbicacion({ latitud, longitud, radio, onCambio, alto = 420, 
   return (
     <div
       className={className}
+      data-gc-mapa=""
       style={{
         position: "relative",
         height: alto,
@@ -144,10 +147,10 @@ export function MapaUbicacion({ latitud, longitud, radio, onCambio, alto = 420, 
         background: T.bgInput,
       }}
     >
-      <div ref={contenedorRef} className="gc-map-picker" style={{ position: "absolute", inset: 0 }} />
+      <div ref={contenedorRef} className="gc-map-picker" role="region" aria-label="Ubicación de la instalación" aria-busy={!leafletListo} style={{ position: "absolute", inset: 0 }} />
 
       {!leafletListo && (
-        <div style={overlayCentro}>Cargando mapa...</div>
+        <div style={overlayCentro}><Esqueleto filas={3} alto={20} ancho="100%" /></div>
       )}
 
       {leafletListo && !hayPunto && (

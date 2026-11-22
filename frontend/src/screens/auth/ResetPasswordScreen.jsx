@@ -1,3 +1,4 @@
+import "../../components/ui/Grupo9Visual.css";
 import { Aparecer } from "../../components/ui/Aparecer";
 import { useState } from "react";
 import { T, FONT } from "../../theme/theme";
@@ -52,7 +53,7 @@ export function ResetPasswordScreen({ token, invitacion = false, onBack }) {
     : token ? (invitacion ? "Crea tu contraseña" : "Nueva contraseña") : "Restablecer contraseña";
 
   return (
-    <Aparecer className="gc-access" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: T.bg }}>
+    <Aparecer className="gc-access g9-visual" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: T.bg }}>
       <div className="gc-access__panel" style={{ width: "100%", maxWidth: 400 }}>
         <div style={{ marginBottom: 20 }}><Wordmark conLogo size={18} /></div>
         <h1 style={{ fontSize: 20, fontWeight: 600, color: T.text, margin: "0 0 6px", fontFamily: FONT.ui }}>{titulo}</h1>

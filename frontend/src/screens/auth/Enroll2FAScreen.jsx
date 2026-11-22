@@ -1,3 +1,5 @@
+import { Esqueleto } from "../../components/ui/Esqueleto";
+import "../../components/ui/Grupo9Visual.css";
 import { Aparecer } from "../../components/ui/Aparecer";
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
@@ -65,7 +67,7 @@ export function Enroll2FAScreen({ onDone, onLogout }) {
   );
 
   return (
-    <Aparecer className="gc-access" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: T.bg }}>
+    <Aparecer className="gc-access g9-visual" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: T.bg }}>
       <div className="gc-access__panel" style={{ width: "100%", maxWidth: 420 }}>
 
         {paso === "qr" && (
@@ -79,7 +81,7 @@ export function Enroll2FAScreen({ onDone, onLogout }) {
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
               {qr
                 ? <img src={qr} alt="Código QR para la app authenticator" width={220} height={220} style={{ background: "#fff", borderRadius: T.radius }} />
-                : <div style={{ height: 220, display: "flex", alignItems: "center", color: T.textMut, fontSize: 13 }}>Generando código QR…</div>}
+                : <div className="g9-qr-carga"><Esqueleto filas={1} alto={188} ancho={220} /></div>}
             </div>
             {setup && (
               <p style={{ fontSize: 12, color: T.textSec, margin: "0 0 16px", wordBreak: "break-all" }}>
@@ -105,7 +107,7 @@ export function Enroll2FAScreen({ onDone, onLogout }) {
             <p style={{ fontSize: 13, color: T.textSec, margin: "0 0 16px" }}>
               Cada código sirve una sola vez si pierdes tu teléfono. No se volverán a mostrar.
             </p>
-            <div style={{
+            <div className="g9-codigos" style={{
               display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: 12, marginBottom: 12,
               border: `1px solid ${T.border}`, borderRadius: T.radius, fontFamily: FONT.mono, fontSize: 14, color: T.text,
             }}>
@@ -115,7 +117,7 @@ export function Enroll2FAScreen({ onDone, onLogout }) {
               <Btn variant="outline" icon="clipboard-list" onClick={copiar}>Copiar</Btn>
               <Btn variant="outline" icon="download" onClick={descargar}>Descargar</Btn>
             </div>
-            <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: T.text, marginBottom: 16 }}>
+            <label className="g9-confirmacion" style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: T.text, marginBottom: 16 }}>
               <input type="checkbox" checked={guardados} onChange={e => setGuardados(e.target.checked)} />
               Ya guardé mis códigos en un lugar seguro
             </label>

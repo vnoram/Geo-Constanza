@@ -1,3 +1,5 @@
+import { Esqueleto } from "../../components/ui/Esqueleto";
+import "../../components/ui/Grupo9Visual.css";
 import { Aparecer } from "../../components/ui/Aparecer";
 import { Selector } from "../../components/ui/Selector";
 import "./SupDashboard.css";
@@ -9,7 +11,7 @@ import { Btn } from "../../components/ui/Btn";
 import { Input } from "../../components/ui/Input";
 import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/authCtx";
 import { API_URL as API_BASE } from "../../config/api";
 import { ahoraChile, ZONA_CHILE } from "../../utils/fechaChile";
 import { formatearRut } from "../../utils/rut";
@@ -247,7 +249,7 @@ async function generarPDFOS10({ asistencias, novedades, rondas = [], instNombre,
 // ─── COMPONENTE TABLA PREVIEW ─────────────────────────────────────
 function TablaPreview({ datos, tipo }) {
   if (!datos || datos.length === 0) return (
-    <div style={{ textAlign: "center", padding: 20, fontSize: 12, color: T.textMut }}>
+    <div className="g9-vacio" style={{ textAlign: "center", padding: 20, fontSize: 12, color: T.textMut }}>
       Sin registros para el período seleccionado.
     </div>
   );
@@ -255,9 +257,9 @@ function TablaPreview({ datos, tipo }) {
   if (tipo === "asistencia") {
     return (
       <>
-        <div className="report-cards">
+        <Aparecer grupo="SupReportes:tarjetas" className="report-cards">
           {datos.slice(0, 50).map((a, i) => (
-            <dl className="report-card" key={i}>
+            <dl className="report-card" key={i} style={{ borderLeft: `3px solid ${a.estado === "tardio" ? T.yellow : T.accent}` }}>
               <CampoReporte etiqueta="Fecha">{new Date(a.hora_entrada).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE })}</CampoReporte>
               <CampoReporte etiqueta="RUT">{formatearRut(a.usuario?.rut) || "—"}</CampoReporte>
               <CampoReporte etiqueta="Nombre">{a.usuario?.nombre || "—"}</CampoReporte>
@@ -268,9 +270,9 @@ function TablaPreview({ datos, tipo }) {
               <CampoReporte etiqueta="Retraso">{a.minutos_retraso > 0 ? `${a.minutos_retraso} min` : "—"}</CampoReporte>
             </dl>
           ))}
-        </div>
+        </Aparecer>
         <div className="table-scroll report-table">
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+        <table aria-label="Asistencia del período" style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
           <thead>
             <tr style={{ background: T.bgInput }}>
               {["Fecha", "RUT", "Nombre", "Instalación", "Entrada", "Salida", "Estado", "Retraso"].map((h) => (
@@ -313,11 +315,11 @@ function TablaPreview({ datos, tipo }) {
   const URGENCIA = { rojo: { label: "Crítico", color: T.red }, amarillo: { label: "Medio", color: T.yellow }, verde: { label: "Bajo", color: T.accent } };
   return (
     <>
-      <div className="report-cards">
+      <Aparecer grupo="SupReportes:tarjetas" className="report-cards">
         {datos.slice(0, 50).map((n, i) => {
           const u = URGENCIA[n.urgencia] || { label: n.urgencia, color: T.textMut };
           return (
-            <dl className="report-card" key={i}>
+            <dl className="report-card" key={i} style={{ borderLeft: `3px solid ${u.color}` }}>
               <CampoReporte etiqueta="Fecha">{new Date(n.created_at).toLocaleDateString("es-CL", { timeZone: ZONA_CHILE })}</CampoReporte>
               <CampoReporte etiqueta="Tipo">{n.tipo || "—"}</CampoReporte>
               <CampoReporte etiqueta="Urgencia"><span style={{ color: u.color, fontWeight: 700 }}>{u.label}</span></CampoReporte>
@@ -328,9 +330,9 @@ function TablaPreview({ datos, tipo }) {
             </dl>
           );
         })}
-      </div>
+      </Aparecer>
       <div className="table-scroll report-table">
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+      <table aria-label={tipo === "rondas" ? "Libro de rondas" : "Novedades del período"} style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
         <thead>
           <tr style={{ background: T.bgInput }}>
             {["Fecha", "Tipo", "Urgencia", "Descripción", "Guardia", "Instalación", "Estado"].map((h) => (
@@ -487,7 +489,7 @@ export function SupReportes() {
   const instNombreActual = instalaciones.find((i) => i.id === instalacionId)?.nombre || "Todas";
 
   return (
-    <Aparecer className="operations-screen sup-dashboard sup-supervision sup-reportes">
+    <Aparecer className="operations-screen sup-dashboard sup-supervision sup-reportes g9-visual">
       <SectionHeader title="Reportes OS-10" sub="Informes operacionales para fiscalización" />
 
       {/* Filtros */}
@@ -508,7 +510,7 @@ export function SupReportes() {
         </div>
 
         {/* Tabs: Asistencia / Novedades */}
-        <div className="action-wrap" style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <div className="action-wrap g9-reportes-tipos" role="group" aria-label="Tipo de reporte" style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           {[
             { id: "asistencia", label: <><Icon name="clipboard-list" size={16} />{" Asistencia"}</> },
             { id: "novedades",  label: <><Icon name="siren" size={16} />{" Novedades"}</>  },
@@ -533,10 +535,12 @@ export function SupReportes() {
 
       {/* Error */}
       {error && (
-        <div style={{ background: T.redGhost, border: `1px solid ${T.red}`, borderRadius: T.radius, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: T.red }}>
+        <div role="alert" style={{ background: T.redGhost, border: `1px solid ${T.red}`, borderRadius: T.radius, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: T.red }}>
           {error}
         </div>
       )}
+
+      {cargando && <Esqueleto filas={3} alto={72} />}
 
       {/* Resultados */}
       {datos !== null && (

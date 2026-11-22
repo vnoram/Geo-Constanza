@@ -110,6 +110,7 @@ export function DireccionAutocomplete({ label, value, onChange, comuna, onSelecc
         <span style={{ fontSize: 18, opacity: 0.5 }}><Icon name="map-pin" size={16} /></span>
         <input
           className="touch-target"
+          aria-label="Dirección"
           value={value}
           onChange={(e) => {
             tecleadoRef.current = e.target.value;

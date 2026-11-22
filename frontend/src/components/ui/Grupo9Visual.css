@@ -1,0 +1,189 @@
+.g9-visual {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.g9-visual .responsive-section-header {
+  padding-bottom: 18px;
+  margin-bottom: 24px !important;
+  border-bottom: 1px solid var(--gc-line);
+}
+
+.g9-visual :is(button, input:not([type="checkbox"]):not([type="radio"]), select),
+.g9-visual .leaflet-control-zoom a,
+[data-gc-mapa] .leaflet-control-zoom a {
+  min-height: 44px !important;
+}
+
+.g9-visual :is(button, input, textarea, select, a):focus-visible,
+[data-gc-mapa] :is(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--gc-focus) !important;
+  outline-offset: 3px;
+}
+
+.g9-conexion,
+.g9-leyenda {
+  font-size: 12px !important;
+  color: var(--gc-text-2) !important;
+}
+
+.g9-leyenda {
+  flex-wrap: wrap;
+  gap: 8px 16px !important;
+}
+
+.g9-mapa-carga {
+  position: absolute;
+  inset: 0;
+  z-index: 500;
+  border-radius: var(--gc-radius);
+  overflow: hidden;
+  background: var(--gc-card);
+  pointer-events: none;
+}
+
+.g9-mapa-carga [role="status"] {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.g9-mapa-carga .esqueleto {
+  height: 100% !important;
+}
+
+.g9-vacio {
+  padding: 20px !important;
+  border-left: 3px solid var(--gc-focus);
+  border-radius: var(--gc-radius);
+  background: var(--gc-card);
+  color: var(--gc-text-2) !important;
+  font-size: 14px !important;
+  line-height: 1.6;
+}
+
+@media (max-width: 420px) {
+  .g9-mapa-layout .admin-map-legend {
+    flex-basis: auto !important;
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 12px !important;
+  }
+
+  .g9-mapa-layout .admin-map-legend > div {
+    grid-column: 1 / -1;
+  }
+
+  .g9-visual .central-kpis,
+  .g9-visual .metrics-grid {
+    gap: 10px !important;
+  }
+}
+
+.g9-visual .leaflet-control-zoom a,
+[data-gc-mapa] .leaflet-control-zoom a {
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+}
+
+.g9-visual .report-card {
+  padding: 16px;
+  gap: 10px;
+}
+
+.g9-visual .report-card__field dt {
+  font-size: 11px;
+  color: var(--gc-text-2);
+}
+
+.g9-visual .report-card__field dd {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.g9-dato-personal {
+  font-size: 13px !important;
+  color: var(--gc-text-2) !important;
+  font-family: var(--font-mono);
+}
+
+.g9-visual .admin-modal label:has(input[type="checkbox"]) {
+  min-height: 44px;
+}
+
+@media (max-width: 420px) {
+  .g9-visual .gc-inst-mapa-box {
+    height: clamp(260px, 46dvh, 360px) !important;
+  }
+
+  .g9-reportes-tipos {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .g9-reportes-tipos button:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.g9-visual [role="alert"] {
+  line-height: 1.6;
+}
+
+.login.g9-visual .admin-actions {
+  display: grid !important;
+  grid-template-columns: minmax(88px, auto) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.g9-visual .gc-access__panel {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.g9-visual .g9-confirmacion {
+  min-height: 44px;
+  padding-block: 6px;
+}
+
+.g9-qr-carga {
+  width: 220px;
+  height: 220px;
+  max-width: 100%;
+}
+
+.g9-visual .g9-codigos > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 360px) {
+  .g9-visual .g9-codigos {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+.g9-visual .central-panel__header .responsive-section-header {
+  padding-bottom: 0;
+  margin-bottom: 0 !important;
+  border-bottom: 0;
+}
+
+.g9-visual .g9-barras text {
+  font-size: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .g9-visual svg *,
+  .g9-visual [style*="animation"] {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.g9-visual .central-map:focus-visible,
+[data-gc-mapa] .gc-map-picker:focus-visible {
+  outline-offset: -3px;
+}

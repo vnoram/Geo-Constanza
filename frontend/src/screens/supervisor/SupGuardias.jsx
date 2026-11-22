@@ -1,3 +1,4 @@
+import "../../components/ui/Grupo9Visual.css";
 import { AnimatePresence } from "framer-motion";
 import { Aparecer } from "../../components/ui/Aparecer";
 import { Esqueleto } from "../../components/ui/Esqueleto";
@@ -11,8 +12,8 @@ import { Badge } from "../../components/ui/Badge";
 import { Btn } from "../../components/ui/Btn";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
-import { ahoraChile, sumarDias } from "../../utils/fechaChile";
-import { SemanaTurnos, lunesDe } from "./SemanaTurnos";
+import { ahoraChile, lunesDe, sumarDias } from "../../utils/fechaChile";
+import { SemanaTurnos } from "./SemanaTurnos";
 import { CalendarioRango } from "../../components/ui/CalendarioRango";
 import { formatearRut } from "../../utils/rut";
 import { Aviso } from "../../components/ui/Aviso";
@@ -333,7 +334,7 @@ export function SupGuardias() {
   };
 
   return (
-    <Aparecer className="operations-screen sup-dashboard sup-supervision sup-guardias">
+    <Aparecer className="operations-screen sup-dashboard sup-supervision sup-guardias g9-visual">
       <SectionHeader
         title="Guardias"
         sub="Personal asignado a tus instalaciones"
@@ -379,6 +380,7 @@ export function SupGuardias() {
               <div style={etiquetaStyle}>HORA INICIO</div>
               <input
                 className="touch-target"
+                aria-label="Hora de inicio"
                 type="time"
                 style={inputStyle}
                 value={form.hora_inicio}
@@ -389,6 +391,7 @@ export function SupGuardias() {
               <div style={etiquetaStyle}>HORA FIN</div>
               <input
                 className="touch-target"
+                aria-label="Hora de fin"
                 type="time"
                 style={inputStyle}
                 value={form.hora_fin}
@@ -438,7 +441,7 @@ export function SupGuardias() {
       {cargandoDatos ? (
         <Esqueleto filas={3} alto={64} />
       ) : guardias.length === 0 ? (
-        <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 20 }}>
+        <div className="g9-vacio" style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 20 }}>
           No hay guardias registrados.
         </div>
       ) : (
@@ -454,7 +457,7 @@ export function SupGuardias() {
           >
             <div className="responsive-list-row__main">
               <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{g.nombre}</div>
-              <div style={{ fontSize: 11, color: T.textMut }}>
+              <div className="g9-dato-personal" style={{ fontSize: 11, color: T.textMut }}>
                 GGSS {g.rut ? `· ${formatearRut(g.rut)}` : ""}
               </div>
             </div>

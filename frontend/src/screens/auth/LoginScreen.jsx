@@ -1,3 +1,4 @@
+import "../../components/ui/Grupo9Visual.css";
 import { Aparecer } from "../../components/ui/Aparecer";
 import { useState } from "react";
 import { T, FONT } from "../../theme/theme";
@@ -55,7 +56,7 @@ export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacio
   const enrolando = !!invitacion;
 
   return (
-    <Aparecer className="login">
+    <Aparecer className="login g9-visual">
       {/* Marca: panel lateral callado, solo en pantallas anchas */}
       <aside className="login__brand">
         {/* Ilustración decorativa: la imagen se ve completa en el panel */}
