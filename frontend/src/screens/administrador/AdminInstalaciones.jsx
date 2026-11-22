@@ -13,6 +13,7 @@ import { direccionDesdeCoordenadas } from "../../services/geocoding";
 import { MapaUbicacion } from "../../components/maps/MapaUbicacion";
 import { esCentroOperativo } from "../../utils/instalaciones";
 import { DireccionAutocomplete } from "../../components/maps/DireccionAutocomplete";
+import { Aviso } from "../../components/ui/Aviso";
 
 // ─── HELPERS ─────────────────────────────────────────────────────
 const CRITICIDAD_COLOR = { Alta: "red", Media: "yellow", Baja: "accent" };
@@ -881,23 +882,7 @@ export function AdminInstalaciones() {
       />
 
       {/* Confirmación */}
-      {confirmacion && (
-        <div
-          style={{
-            background: T.accentGhost,
-            border: `1px solid ${T.accent}`,
-            borderRadius: T.radius,
-            padding: "10px 14px",
-            marginBottom: 14,
-            fontSize: 13,
-            color: T.accent,
-            fontWeight: 600,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-          }}
-        >
-          {confirmacion}
-        </div>
-      )}
+      <Aviso mensaje={confirmacion} />
 
       {/* Buscador */}
       <div style={{ marginBottom: 14 }}>

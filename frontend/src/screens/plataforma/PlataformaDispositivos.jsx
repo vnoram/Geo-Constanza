@@ -7,6 +7,7 @@ import { Icon } from "../../components/ui/Icon";
 import { KPI } from "../../components/ui/KPI";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
+import { Aviso } from "../../components/ui/Aviso";
 
 const ESTADOS = {
   enrolado: { texto: "Enrolado", color: "accent" },
@@ -76,7 +77,7 @@ export function PlataformaDispositivos() {
   return (
     <div className="gc-audited-screen">
       <SectionHeader title="Dispositivos" sub="Equipo principal de cada empresa. El administrador de gestión enrola los demás desde su panel." />
-      {aviso && <div role="status" style={{ border: `1px solid ${T.accent}`, background: T.accentGhost, color: T.accent, borderRadius: T.radius, padding: "8px 12px", fontSize: 13, marginBottom: 14 }}>{aviso}</div>}
+      <Aviso mensaje={aviso} />
       {error && <div role="alert" style={{ border: `1px solid ${T.alert}`, background: T.alertGhost, color: T.text, borderRadius: T.radius, padding: "8px 12px", fontSize: 13, marginBottom: 14 }}>{error}</div>}
       {enlace && (
         <div style={{ ...card, borderColor: T.accent }}>

@@ -6,6 +6,7 @@ import { T } from "../../theme/theme";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
 import { API_URL as API_BASE } from "../../config/api";
+import { Aviso } from "../../components/ui/Aviso";
 
 const ICONOS = { contrato: "file-text", liquidacion: "banknote", os10: "graduation-cap", anexo: "paperclip", otro: "file-text" };
 const tarjeta = { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: 14 };
@@ -82,7 +83,7 @@ export function LibreDocs() {
           </div>
         </div>
       ))}
-      {aviso && <div role="status" style={{ fontSize: 12, color: T.accent, marginTop: 10 }}>{aviso}</div>}
+      <Aviso mensaje={aviso} />
       {error && <div role="alert" style={{ fontSize: 12, color: T.alert, marginTop: 10 }}>{error}</div>}
     </div>
   );

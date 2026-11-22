@@ -15,6 +15,7 @@ import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { TurnosPorReasignar } from "./TurnosPorReasignar";
 import { IndicadoresCompactos } from "./IndicadoresCompactos";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
+import { AnimatePresence, motion as Motion } from "framer-motion";
 
 
 const ESTADO_COLOR    = { presente: T.accent, tardio: T.yellow, faltante: T.red, por_iniciar: T.textMut, ausencia: T.focusText };
@@ -252,10 +253,11 @@ export function SupDashboard() {
         </div>
       )}
 
+      <AnimatePresence>
       {instAbierta && (
-        <div role="dialog" aria-modal="true" aria-label={`Guardias de ${instAbierta.nombre}`} onClick={() => setInstSel(null)}
+        <Motion.div key="modal-instalacion" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} role="dialog" aria-modal="true" aria-label={`Guardias de ${instAbierta.nombre}`} onClick={() => setInstSel(null)}
           style={{ position: "fixed", inset: 0, background: "rgba(14,23,20,0.88)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-          <div onClick={(e) => e.stopPropagation()}
+          <Motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.98 }} transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }} onClick={(e) => e.stopPropagation()}
             style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, width: "100%", maxWidth: 760, maxHeight: "88vh", display: "flex", flexDirection: "column", boxShadow: "0 16px 40px rgba(0,0,0,0.6)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, padding: "16px 18px", borderBottom: `1px solid ${T.border}` }}>
               <div style={{ minWidth: 0 }}>
@@ -282,9 +284,10 @@ export function SupDashboard() {
                 </section>
               ))}
             </div>
-          </div>
-        </div>
+          </Motion.div>
+        </Motion.div>
       )}
+      </AnimatePresence>
 
       <div style={{ fontSize: 10, color: T.textMut, textAlign: "center", marginTop: 12 }}>
         <Badge color="red"><span aria-hidden="true" style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: T.red, verticalAlign: "middle" }} /></Badge> En vivo · Se actualiza automáticamente

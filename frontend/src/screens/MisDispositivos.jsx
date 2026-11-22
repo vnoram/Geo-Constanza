@@ -8,6 +8,7 @@ import { Icon } from "../components/ui/Icon";
 import { Btn } from "../components/ui/Btn";
 import { Dialogo } from "../components/ui/Dialogo";
 import { SectionHeader } from "../components/ui/SectionHeader";
+import { Aviso } from "../components/ui/Aviso";
 
 /** Invitaciones de equipo dirigidas al usuario (supervisor / operador central). */
 export function MisDispositivos({ user }) {
@@ -66,11 +67,7 @@ export function MisDispositivos({ user }) {
         </div>
       </div>
 
-      {aviso && (
-        <div role="status" style={{ ...banner, color: T.accent, background: T.accentGhost, border: `1px solid ${T.accent}` }}>
-          <Icon name="circle-check" size={16} /> {aviso}
-        </div>
-      )}
+      <Aviso mensaje={aviso} />
       {error && (
         <div role="alert" style={{ ...banner, color: T.red, background: T.redGhost, border: `1px solid ${T.red}` }}>
           <Icon name="circle-alert" size={16} /> {error}

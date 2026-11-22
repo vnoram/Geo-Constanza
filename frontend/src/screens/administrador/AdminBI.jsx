@@ -4,16 +4,14 @@ import { KPI } from "../../components/ui/KPI";
 import { Badge } from "../../components/ui/Badge";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { Btn } from "../../components/ui/Btn";
+import { GraficoNovedades } from "../../components/ui/Graficos";
 import { api } from "../../services/api";
 import { formatearRut } from "../../utils/rut";
 import { agruparPorInstalacion } from "../../utils/unirResumenMensual";
+import { Selector } from "../../components/ui/Selector";
+import { AnimatePresence, motion as Motion } from "framer-motion";
 
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-const URGENCIAS = [
-  { clave: "rojo", etiqueta: "Críticas", color: T.red },
-  { clave: "amarillo", etiqueta: "Medias", color: T.yellow },
-  { clave: "verde", etiqueta: "Bajas", color: T.accent },
-];
 
 const TRIMESTRES = ["T1 (ene–mar)", "T2 (abr–jun)", "T3 (jul–sep)", "T4 (oct–dic)"];
 
@@ -89,7 +87,6 @@ export function AdminBI() {
     turnos: t.turnos + f.turnos_programados, turnos_cubiertos: t.turnos_cubiertos + f.turnos_cubiertos,
     novedades: t.novedades + f.novedades, retraso: t.retraso + f.promedio_retraso_min * f.turnos_cubiertos,
   }), { turnos: 0, turnos_cubiertos: 0, novedades: 0, retraso: 0 }), [mensual]);
-  const maxSemana = Math.max(1, ...semana.map((d) => d.total));
   const anios = [hoy.getFullYear(), hoy.getFullYear() - 1];
 
   return (
@@ -108,39 +105,17 @@ export function AdminBI() {
 
       <div style={{ ...card, marginBottom: 20 }}>
         <h3 style={titulo}>Novedades de los últimos 7 días</h3>
-        {semana.length === 0 ? <div style={{ fontSize: 12, color: T.textMut }}>Sin datos.</div> : semana.map((d) => (
-          <div key={d.fecha} style={{ display: "grid", gridTemplateColumns: "70px 1fr 28px", gap: 10, alignItems: "center", marginBottom: 8, fontSize: 12, color: T.textSec }}>
-            <span style={{ textTransform: "capitalize" }}>{d.label}</span>
-            <div style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden", background: T.bg }}>
-              {URGENCIAS.map((u) => d[u.clave] > 0 && <div key={u.clave} title={`${u.etiqueta}: ${d[u.clave]}`} style={{ width: `${(d[u.clave] / maxSemana) * 100}%`, background: u.color }} />)}
-            </div>
-            <span style={{ fontFamily: FONT.mono, textAlign: "right", color: T.text }}>{d.total}</span>
-          </div>
-        ))}
-        <div style={{ display: "flex", gap: 14, marginTop: 10, fontSize: 11, color: T.textMut }}>
-          {URGENCIAS.map((u) => <span key={u.clave}><span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: u.color, marginRight: 5 }} />{u.etiqueta}</span>)}
-        </div>
+        {semana.length === 0 ? <div style={{ fontSize: 12, color: T.textMut }}>Sin datos.</div> : <GraficoNovedades semana={semana} />}
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
         <h3 style={{ ...titulo, margin: 0 }}>{trimestral ? "Resumen trimestral" : "Resumen mensual"}</h3>
         <div style={{ display: "flex", gap: 8 }}>
-          <select aria-label="Vista" value={vista} onChange={(e) => setVista(e.target.value)} style={{ background: T.bgCard, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "6px 10px", fontSize: 12 }}>
-            <option value="mensual">Mensual</option>
-            <option value="trimestral">Trimestral</option>
-          </select>
-          {trimestral ? (
-            <select aria-label="Trimestre" value={trimestre} onChange={(e) => setTrimestre(Number(e.target.value))} style={{ background: T.bgCard, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "6px 10px", fontSize: 12 }}>
-              {TRIMESTRES.map((t, i) => <option key={t} value={i + 1}>{t}</option>)}
-            </select>
-          ) : (
-            <select aria-label="Mes" value={mes} onChange={(e) => setMes(Number(e.target.value))} style={{ background: T.bgCard, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "6px 10px", fontSize: 12 }}>
-              {MESES.map((m, i) => <option key={m} value={i + 1} style={{ textTransform: "capitalize" }}>{m}</option>)}
-            </select>
-          )}
-          <select aria-label="Año" value={anio} onChange={(e) => setAnio(Number(e.target.value))} style={{ background: T.bgCard, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "6px 10px", fontSize: 12 }}>
-            {anios.map((a) => <option key={a} value={a}>{a}</option>)}
-          </select>
+          <Selector etiqueta="Vista" value={vista} onChange={setVista} opciones={[{ valor: "mensual", etiqueta: "Mensual" }, { valor: "trimestral", etiqueta: "Trimestral" }]} />
+          {trimestral
+            ? <Selector etiqueta="Trimestre" value={trimestre} onChange={setTrimestre} opciones={TRIMESTRES.map((t, i) => ({ valor: i + 1, etiqueta: t }))} />
+            : <Selector etiqueta="Mes" value={mes} onChange={setMes} capitalizar opciones={MESES.map((m, i) => ({ valor: i + 1, etiqueta: m }))} />}
+          <Selector etiqueta="Año" value={anio} onChange={setAnio} opciones={anios.map((x) => ({ valor: x, etiqueta: String(x) }))} />
         </div>
       </div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
@@ -183,10 +158,11 @@ export function AdminBI() {
             </table>
           )}
       </div>
+      <AnimatePresence>
       {instAbierta && (
-        <div role="dialog" aria-modal="true" aria-label={`Guardias de ${instAbierta.instalacion}`} onClick={() => setInstSel(null)}
+        <Motion.div key="modal-instalacion" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} role="dialog" aria-modal="true" aria-label={`Guardias de ${instAbierta.instalacion}`} onClick={() => setInstSel(null)}
           style={{ position: "fixed", inset: 0, background: "rgba(14,23,20,0.88)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
-          <div onClick={(e) => e.stopPropagation()}
+          <Motion.div initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.98 }} transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }} onClick={(e) => e.stopPropagation()}
             style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, width: "100%", maxWidth: 820, maxHeight: "88vh", display: "flex", flexDirection: "column", boxShadow: "0 16px 40px rgba(0,0,0,0.6)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, padding: "16px 18px", borderBottom: `1px solid ${T.border}` }}>
               <div style={{ minWidth: 0 }}>
@@ -222,9 +198,10 @@ export function AdminBI() {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
+          </Motion.div>
+        </Motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }

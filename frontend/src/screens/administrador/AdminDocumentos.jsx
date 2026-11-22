@@ -9,6 +9,7 @@ import { Input } from "../../components/ui/Input";
 import { Icon } from "../../components/ui/Icon";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { SubirArchivo } from "../../components/ui/SubirArchivo";
+import { Aviso } from "../../components/ui/Aviso";
 
 const TIPOS = { contrato: "Contrato", liquidacion: "Liquidación", os10: "Certificado OS-10", anexo: "Anexo", otro: "Otro" };
 const tarjeta = { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 14 };
@@ -88,7 +89,7 @@ export function AdminDocumentos() {
         <Input label="Nombre del documento (opcional)" value={nombre} onChange={setNombre} maxLength={100} placeholder="Ej. Liquidación marzo 2026" />
         <SubirArchivo label="Archivo" archivo={archivo} onChange={setArchivo} onError={setError} />
         <Btn onClick={subir} loading={ocupado} disabled={!archivo || !usuarioId} full>Publicar documento</Btn>
-        {aviso && <div role="status" style={{ fontSize: 12, color: T.accent, marginTop: 10 }}>{aviso}</div>}
+        <Aviso mensaje={aviso} />
         {error && <div role="alert" style={{ fontSize: 12, color: T.alert, marginTop: 10 }}>{error}</div>}
       </div>
 

@@ -7,6 +7,7 @@ import { Badge } from "../../components/ui/Badge";
 import { KPI } from "../../components/ui/KPI";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
+import { Aviso } from "../../components/ui/Aviso";
 
 const PLANES = [
   { value: "basico", label: "Básico" },
@@ -297,12 +298,7 @@ export function EmpresasPanel() {
       <SectionHeader title="Empresas"
         action={{ label: "Nueva empresa", onClick: () => setDialogo({ tipo: "empresa" }) }} />
 
-      {aviso && (
-        <div role="status" style={{
-          border: `1px solid ${T.accent}`, background: T.accentGhost, color: T.accent,
-          borderRadius: T.radius, padding: "8px 12px", fontSize: 13, marginBottom: 14,
-        }}>{aviso}</div>
-      )}
+      <Aviso mensaje={aviso} />
       <MensajeError>{error}</MensajeError>
 
       {cargando ? (

@@ -11,6 +11,7 @@ import { ahoraChile, sumarDias } from "../../utils/fechaChile";
 import { SemanaTurnos, lunesDe } from "./SemanaTurnos";
 import { CalendarioRango } from "../../components/ui/CalendarioRango";
 import { formatearRut } from "../../utils/rut";
+import { Aviso } from "../../components/ui/Aviso";
 
 const hoyLocal = () => ahoraChile().fecha;
 
@@ -472,14 +473,7 @@ export function SupGuardias() {
         </select>
       </div>
 
-      {aviso && (
-        <div style={{
-          fontSize: 12, padding: "8px 12px", borderRadius: T.radius, marginBottom: 10,
-          background: T.accentGhost, color: T.accent, border: `1px solid ${T.accent}`, fontWeight: 600,
-        }}>
-          {aviso}
-        </div>
-      )}
+      <Aviso mensaje={aviso} />
 
       {cargandoTurnos ? (
         <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 16 }}>Cargando turnos...</div>

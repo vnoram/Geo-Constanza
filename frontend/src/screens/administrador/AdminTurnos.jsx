@@ -13,6 +13,7 @@ import { ahoraChile, sumarDias as sumarDiasChile } from "../../utils/fechaChile"
 import { SemanaTurnos, lunesDe } from "../supervisor/SemanaTurnos";
 import { ModalEditarTurno } from "../supervisor/SupGuardias";
 import { formatearRut } from "../../utils/rut";
+import { Aviso } from "../../components/ui/Aviso";
 
 // ─── SELECTOR GENÉRICO ───────────────────────────────────────────
 function Select({ label, value, onChange, options, placeholder }) {
@@ -368,11 +369,7 @@ export function AdminTurnos() {
         </div>
       </div>
 
-      {aviso && (
-        <div style={{ background: T.bgCard, color: T.accent, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: "8px 12px", fontSize: 12, fontWeight: 600, marginBottom: 10 }}>
-          <Icon name="circle-check" size={16} />{" "}{aviso}
-        </div>
-      )}
+      <Aviso mensaje={aviso} />
 
       {cargando && turnos.length === 0 ? (
         <div style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 30 }}>Cargando turnos...</div>

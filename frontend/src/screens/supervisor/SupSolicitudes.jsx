@@ -7,6 +7,7 @@ import { Badge } from "../../components/ui/Badge";
 import { Icon } from "../../components/ui/Icon";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { api } from "../../services/api";
+import { Aviso } from "../../components/ui/Aviso";
 
 const TIPOS = { vacaciones: "Vacaciones", dias_libres: "Ausentarse", turno_extra: "Turno extra", traslado: "Traslado", turno: "Turno" };
 const ICONOS = { vacaciones: "umbrella", dias_libres: "ban", turno_extra: "plus", traslado: "refresh-cw", turno: "calendar-days" };
@@ -75,7 +76,7 @@ export function SupSolicitudes() {
         ))}
       </div>
 
-      {aviso && <div role="status" style={{ fontSize: 12, color: T.accent, marginBottom: 10 }}>{aviso}</div>}
+      <Aviso mensaje={aviso} />
       {error && <div role="alert" style={{ fontSize: 12, color: T.alert, marginBottom: 10 }}>{error}</div>}
 
       {cargando ? (
