@@ -172,7 +172,16 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
         precision_m,
       );
       if (!gps.permitido) {
-        throw Object.assign(new Error(gps.mensaje), { statusCode: 400 });
+        // Con la política de dispositivos activa existe la revisión del supervisor: el marcaje fuera de
+        // rango queda registrado como pendiente de autorización (flujo del informe). Sin ella se rechaza.
+        if (!habilitada()) throw Object.assign(new Error(gps.mensaje), { statusCode: 400 });
+        gps = {
+          ...gps,
+          resultado: 'por_revisar',
+          permitido: true,
+          mensaje: `Estás a ${gps.distanciaMetros} m de la instalación (máximo permitido: ${turno.instalacion.radio_geofence_m} m). `
+            + 'Tu marcaje quedó pendiente de autorización del supervisor.',
+        };
       }
     }
 
