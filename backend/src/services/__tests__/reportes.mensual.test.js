@@ -4,7 +4,7 @@ jest.mock('../../config/database', () => ({ prisma: {
 } }));
 jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn(), exigirAlcanceInstalacion: jest.fn() }));
 const { prisma } = require('../../config/database');
-const { resumenMensual, resumenGuardias } = require('../reportes.service');
+const { resumenMensual, resumenGuardias, resumenDiario } = require('../reportes.service');
 const { aFechaDB, instanteChile } = require('../../utils/fechaChile');
 
 const admin = { rol: 'administrador' };
@@ -89,5 +89,26 @@ describe('resumen por guardia', () => {
     await resumenGuardias(10, 2026, admin, 3);
     const { where } = prisma.turno.findMany.mock.calls[0][0];
     expect(where.AND[0]).toEqual({ fecha: { gte: aFechaDB('2026-10-01'), lt: aFechaDB('2027-01-01') } });
+  });
+});
+
+describe('cobertura diaria por instalación', () => {
+  const turnoDia = (fecha, asistencias = []) => ({ ...turno('u1', asistencias), fecha: new Date(`${fecha}T00:00:00.000Z`) });
+
+  test('agrupa por día: programados, cubiertos y porcentaje, en orden de fecha', async () => {
+    prisma.turno.findMany.mockResolvedValue([
+      turnoDia('2026-11-03', [marca(0)]), turnoDia('2026-11-03', []),
+      turnoDia('2026-11-02', [marca(0)]),
+    ]);
+    const filas = await resumenDiario(11, 2026, admin);
+    expect(filas).toEqual([
+      { instalacion_id: 'i1', fecha: '2026-11-02', turnos_programados: 1, turnos_cubiertos: 1, cobertura: 100 },
+      { instalacion_id: 'i1', fecha: '2026-11-03', turnos_programados: 2, turnos_cubiertos: 1, cobertura: 50 },
+    ]);
+  });
+
+  test('un turno de un guardia asignado a otra instalación no cuenta', async () => {
+    prisma.turno.findMany.mockResolvedValue([{ ...turnoDia('2026-11-02', [marca(0)]), usuario: { instalacion_asignada_id: 'otra' } }]);
+    expect(await resumenDiario(11, 2026, admin)).toEqual([]);
   });
 });

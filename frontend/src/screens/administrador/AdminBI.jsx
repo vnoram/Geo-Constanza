@@ -4,11 +4,12 @@ import { KPI } from "../../components/ui/KPI";
 import { Badge } from "../../components/ui/Badge";
 import { SectionHeader } from "../../components/ui/SectionHeader";
 import { Btn } from "../../components/ui/Btn";
-import { GraficoNovedades } from "../../components/ui/Graficos";
+import { GraficoCoberturaDiaria, GraficoNovedades } from "../../components/ui/Graficos";
 import { api } from "../../services/api";
 import { formatearRut } from "../../utils/rut";
 import { agruparPorInstalacion } from "../../utils/unirResumenMensual";
 import { Selector } from "../../components/ui/Selector";
+import { Tip } from "../../components/ui/Tip";
 import { AnimatePresence, motion as Motion } from "framer-motion";
 
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
@@ -38,6 +39,7 @@ export function AdminBI() {
   const [estado, setEstado] = useState(null);
   const [semana, setSemana] = useState([]);
   const [mensual, setMensual] = useState([]);
+  const [diario, setDiario] = useState([]); // cobertura por día y por instalación
   const [error, setError] = useState("");
   const [cargadoPara, setCargadoPara] = useState(""); // período cuyos datos ya llegaron
 
@@ -62,7 +64,11 @@ export function AdminBI() {
   useEffect(() => {
     let activo = true;
     const primerMes = trimestral ? (trimestre - 1) * 3 + 1 : mes;
-    api.get(`/reportes/mensual/guardias?mes=${primerMes}&anio=${anio}&meses=${trimestral ? 3 : 1}`)
+    const consulta = `mes=${primerMes}&anio=${anio}&meses=${trimestral ? 3 : 1}`;
+    api.get(`/reportes/mensual/diario?${consulta}`)
+      .then((r) => { if (activo) setDiario(Array.isArray(r) ? r : []); })
+      .catch(() => { if (activo) setDiario([]); });
+    api.get(`/reportes/mensual/guardias?${consulta}`)
       .then((r) => { if (activo) { setMensual(Array.isArray(r) ? r : []); setError(""); } })
       .catch((err) => { if (activo) setError(err.message); })
       .finally(() => { if (activo) setCargadoPara(clave); });
@@ -75,6 +81,7 @@ export function AdminBI() {
   const iniciados = (estado?.totalTurnos ?? 0) - (estado?.porIniciar ?? 0) - (estado?.conAusencia ?? 0);
   const instalaciones = useMemo(() => agruparPorInstalacion(mensual), [mensual]);
   const instAbierta = instalaciones.find((i) => i.instalacion_id === instSel) ?? null;
+  const diasInst = diario.filter((d) => d.instalacion_id === instSel);
   const guardiasInst = instAbierta ? mensual.filter((g) => g.instalacion_id === instSel) : [];
 
   useEffect(() => {
@@ -138,11 +145,15 @@ export function AdminBI() {
                   <tr key={f.instalacion_id} role="button" tabIndex={0} onClick={() => setInstSel(f.instalacion_id)}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setInstSel(f.instalacion_id); } }}
                     style={{ cursor: "pointer" }}>
-                    <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, fontWeight: 600 }}>{f.instalacion}</td>
+                    <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, fontWeight: 600, maxWidth: 240 }}>
+                      <Tip texto={f.instalacion}><span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.instalacion}</span></Tip>
+                    </td>
                     <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, fontFamily: FONT.mono }}>{f.guardias}</td>
                     <td style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}`, minWidth: 140 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ flex: 1 }}><Barra valor={f.cobertura} max={100} color={f.cobertura >= 90 ? T.accent : f.cobertura >= 70 ? T.yellow : T.red} /></div>
+                        <Tip texto={`${f.turnos_cubiertos} de ${f.turnos_programados} turnos cubiertos`}>
+                          <div style={{ flex: 1 }}><Barra valor={f.cobertura} max={100} color={f.cobertura >= 90 ? T.accent : f.cobertura >= 70 ? T.yellow : T.red} /></div>
+                        </Tip>
                         <span style={{ fontFamily: FONT.mono, width: 38, textAlign: "right" }}>{f.cobertura}%</span>
                       </div>
                     </td>
@@ -173,7 +184,14 @@ export function AdminBI() {
               </div>
               <Btn variant="outline" onClick={() => setInstSel(null)} style={{ minHeight: 36, padding: "0 14px", fontSize: 13 }}>Cerrar</Btn>
             </div>
-            <div style={{ overflow: "auto", padding: 16, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))", gap: 10 }}>
+            <div style={{ overflow: "auto", padding: 16 }}>
+              {diasInst.length > 1 && (
+                <div style={{ marginBottom: 14 }}>
+                  <h4 style={{ ...titulo, margin: "0 0 6px", fontSize: 12 }}>Cobertura por día</h4>
+                  <GraficoCoberturaDiaria dias={diasInst} />
+                </div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 340px), 1fr))", gap: 10 }}>
               {guardiasInst.map((g) => (
                 <div key={g.usuario_id} style={{ background: T.bg, border: `1px solid ${T.border}`, borderLeft: `3px solid ${g.cobertura >= 90 ? T.accent : g.cobertura >= 70 ? T.yellow : T.red}`, borderRadius: T.radius, padding: 14 }}>
                   <div style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{g.guardia}</div>
@@ -197,6 +215,7 @@ export function AdminBI() {
                   </div>
                 </div>
               ))}
+              </div>
             </div>
           </Motion.div>
         </Motion.div>

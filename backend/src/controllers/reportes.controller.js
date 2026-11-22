@@ -61,6 +61,18 @@ const mensualGuardias = async (req, res, next) => {
   }
 };
 
+const mensualDiario = async (req, res, next) => {
+  try {
+    const [anioChile, mesChile] = ahoraChile().fecha.split('-').map(Number);
+    const mes  = Math.min(12, Math.max(1, parseInt(req.query.mes, 10) || mesChile));
+    const anio = parseInt(req.query.anio, 10) || anioChile;
+    const meses = Math.min(12, Math.max(1, parseInt(req.query.meses, 10) || 1));
+    res.json(await reportesService.resumenDiario(mes, anio, req.user, meses));
+  } catch (error) {
+    next(error);
+  }
+};
+
 const exportar = async (req, res, next) => {
   try {
     const { tipo } = req.params;
@@ -87,4 +99,4 @@ const exportar = async (req, res, next) => {
   }
 };
 
-module.exports = { asistencia, incidentes, semana, estadoHoy, mensual, mensualGuardias, exportar };
+module.exports = { asistencia, incidentes, semana, estadoHoy, mensual, mensualGuardias, mensualDiario, exportar };

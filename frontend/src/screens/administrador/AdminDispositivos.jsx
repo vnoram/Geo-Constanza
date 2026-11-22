@@ -8,6 +8,7 @@ import { Badge } from "../../components/ui/Badge";
 import { Dialogo } from "../../components/ui/Dialogo";
 import { Icon } from "../../components/ui/Icon";
 import { SectionHeader } from "../../components/ui/SectionHeader";
+import { Selector } from "../../components/ui/Selector";
 
 export function AdminDispositivos() {
   const destinatarioId = useId();
@@ -96,11 +97,6 @@ export function AdminDispositivos() {
 
   const card = { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: 16, marginBottom: 16 };
   const etiqueta = { display: "block", fontSize: 12, fontWeight: 500, color: T.textSec, marginBottom: 6 };
-  const selectStyle = {
-    width: "100%", background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: T.radius,
-    padding: "0 12px", minHeight: 42, color: usuario ? T.text : T.textMut, fontSize: 13,
-    fontFamily: FONT.ui, boxSizing: "border-box",
-  };
   const revocados = equipos.filter((e) => e.estado === "revocado");
   const pendientes = equipos.filter((e) => e.estado !== "revocado" && estadoDe(e).pendiente);
   const enrolados = equipos.filter((e) => e.estado !== "revocado" && !estadoDe(e).pendiente);
@@ -139,22 +135,15 @@ export function AdminDispositivos() {
       <SectionHeader title="Dispositivos corporativos" sub="Equipos autorizados para marcar asistencia en las instalaciones" />
 
       <div className="admin-visual__invitation" style={card}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14, marginBottom: 14 }}>
           <Icon name="monitor" size={18} color={T.focusText} /> Invitar un equipo
-        </div>
-        <div style={{ fontSize: 12, color: T.textMut, marginBottom: 14 }}>
-          Se envía un enlace al correo del supervisor u operador central; vence en 15 minutos.
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: 14, alignItems: "end" }}>
           <Input label="Nombre del equipo" value={nombre} onChange={setNombre} maxLength={100} placeholder="Ej: PC Central" />
           <div style={{ marginBottom: 16 }}>
             <label htmlFor={destinatarioId} style={etiqueta}>Destinatario</label>
-            <select id={destinatarioId} className="touch-target" value={usuario} onChange={evento => setUsuario(evento.target.value)} style={selectStyle}>
-              <option value="">Selecciona un supervisor u operador central</option>
-              {destinatarios.map(persona => <option key={persona.id} value={persona.id}>
-                {persona.nombre} · {persona.rol === "supervisor" ? "Supervisor" : "Operador central"}
-              </option>)}
-            </select>
+            <Selector id={destinatarioId} etiqueta="Destinatario" bloque value={usuario} onChange={setUsuario} placeholder="Selecciona un supervisor u operador central"
+              opciones={destinatarios.map(persona => ({ valor: persona.id, etiqueta: `${persona.nombre} · ${persona.rol === "supervisor" ? "Supervisor" : "Operador central"}` }))} />
           </div>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -164,9 +153,6 @@ export function AdminDispositivos() {
 
         {manual && (
           <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${T.border}` }}>
-            <div style={{ fontSize: 12, color: T.textMut, marginBottom: 10 }}>
-              Si el equipo no puede recibir el correo, genera un código de un solo uso con el nombre indicado arriba.
-            </div>
             <Btn variant="outline" onClick={crearCodigo} disabled={ocupado || !nombre.trim()}>Generar código manual</Btn>
           </div>
         )}

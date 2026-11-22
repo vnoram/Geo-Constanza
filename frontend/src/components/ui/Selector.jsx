@@ -6,7 +6,7 @@ import { FONT, T } from "../../theme/theme";
  * Selector desplegable (Radix Select) para filtros compactos.
  * `opciones`: [{ valor, etiqueta }]; `valor` puede ser número o texto y `onChange` devuelve el mismo tipo.
  */
-export function Selector({ etiqueta, value, onChange, opciones, capitalizar = false }) {
+export function Selector({ id, etiqueta, value, onChange, opciones, placeholder, bloque = false, capitalizar = false }) {
   const actual = opciones.find((o) => o.valor === value);
   const cambiar = (texto) => {
     const elegida = opciones.find((o) => String(o.valor) === texto);
@@ -14,13 +14,14 @@ export function Selector({ etiqueta, value, onChange, opciones, capitalizar = fa
   };
   const mayuscula = capitalizar ? { textTransform: "capitalize" } : null;
   return (
-    <Select.Root value={String(value)} onValueChange={cambiar}>
-      <Select.Trigger aria-label={etiqueta} className="selector-trigger" style={{
-        display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: 8, minHeight: 32,
-        background: T.bgCard, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radius,
-        padding: "0 10px", fontSize: 12, fontFamily: FONT.ui, cursor: "pointer", ...mayuscula,
+    <Select.Root value={value === "" || value == null ? "" : String(value)} onValueChange={cambiar}>
+      <Select.Trigger id={id} aria-label={id ? undefined : etiqueta} className="selector-trigger" style={{
+        display: bloque ? "flex" : "inline-flex", width: bloque ? "100%" : undefined, boxSizing: "border-box",
+        alignItems: "center", justifyContent: "space-between", gap: 8, minHeight: bloque ? 44 : 32,
+        background: bloque ? T.bgInput : T.bgCard, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radius,
+        padding: bloque ? "0 12px" : "0 10px", fontSize: bloque ? 13 : 12, fontFamily: FONT.ui, cursor: "pointer", textAlign: "left", ...mayuscula,
       }}>
-        <span style={mayuscula}>{actual?.etiqueta ?? ""}</span>
+        <span style={{ ...mayuscula, color: actual ? T.text : T.textMut, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{actual?.etiqueta ?? placeholder ?? ""}</span>
         <Select.Icon asChild><ChevronDown size={14} color={T.textMut} /></Select.Icon>
       </Select.Trigger>
       <Select.Portal>

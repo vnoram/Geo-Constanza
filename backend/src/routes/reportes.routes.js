@@ -17,6 +17,7 @@ router.get('/semana',            authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENT
 router.get('/estado',            authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), reportesController.estadoHoy);
 router.get('/mensual',           authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), reportesController.mensual);
 router.get('/mensual/guardias',  authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), reportesController.mensualGuardias);
+router.get('/mensual/diario',     authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), reportesController.mensualDiario);
 
 // Exportación — antes de /:tipo para que no capture rutas con nombre
 router.get('/exportar/:tipo',    authorize(ROLES.SUPERVISOR, ROLES.ADMINISTRADOR), reportesController.exportar);

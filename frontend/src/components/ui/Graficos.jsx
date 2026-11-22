@@ -26,8 +26,9 @@ export function GraficoNovedades({ semana, alto = 180, leyenda = true }) {
             <CartesianGrid vertical={false} stroke={T.border} strokeDasharray="3 3" />
             <XAxis dataKey="dia" tickLine={false} axisLine={false} tick={{ ...eje, textTransform: "capitalize" }} />
             <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={eje} />
-            <Tooltip cursor={{ fill: T.bgHover ?? "rgba(255,255,255,0.04)" }} contentStyle={cajaTooltip} labelStyle={{ color: T.textSec, textTransform: "capitalize" }}
-              labelFormatter={(_, p) => p?.[0]?.payload?.label ?? ""} />
+            <Tooltip cursor={{ fill: T.bgHover ?? "rgba(255,255,255,0.04)" }} contentStyle={cajaTooltip} itemStyle={{ color: T.text }} labelStyle={{ color: T.textSec, textTransform: "capitalize" }}
+              labelFormatter={(_, p) => p?.[0]?.payload?.label ?? ""}
+              itemSorter={(item) => URGENCIAS.findIndex((u) => u.clave === item.dataKey)} />
             {URGENCIAS.map((u, i) => (
               <Bar key={u.clave} dataKey={u.clave} name={u.etiqueta} stackId="n" fill={u.color}
                 radius={i === URGENCIAS.length - 1 ? [3, 3, 0, 0] : 0} maxBarSize={34} isAnimationActive animationDuration={500} />
@@ -55,10 +56,32 @@ export function GraficoCobertura({ filas }) {
           <XAxis type="number" domain={[0, 100]} hide />
           <YAxis type="category" dataKey="nombre" width={110} tickLine={false} axisLine={false} tick={{ ...eje, fill: T.text }}
             tickFormatter={(v) => (String(v).length > 14 ? `${String(v).slice(0, 13)}…` : v)} />
-          <Tooltip cursor={{ fill: "rgba(255,255,255,0.04)" }} contentStyle={cajaTooltip} formatter={(v) => [`${v}%`, "Cobertura"]} />
+          <Tooltip cursor={{ fill: "rgba(255,255,255,0.04)" }} contentStyle={cajaTooltip} itemStyle={{ color: T.text }} formatter={(v) => [`${v}%`, "Cobertura"]} />
           <Bar dataKey="cobertura" radius={[0, 4, 4, 0]} barSize={12} background={{ fill: T.bg, radius: 4 }}
             label={{ position: "right", fontSize: 11, fill: T.text, fontFamily: FONT.mono, formatter: (v) => `${v}%` }} animationDuration={500}>
             {datos.map((d) => <Cell key={d.nombre} fill={colorCobertura(d.cobertura)} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+/** Cobertura (%) de cada día del período para una instalación. */
+export function GraficoCoberturaDiaria({ dias, alto = 150 }) {
+  const datos = dias.map((d) => ({ ...d, dia: Number(d.fecha.slice(8, 10)) }));
+  return (
+    <div style={{ width: "100%", height: alto }}>
+      <ResponsiveContainer>
+        <BarChart data={datos} margin={{ top: 6, right: 4, left: -22, bottom: 0 }}>
+          <CartesianGrid vertical={false} stroke={T.border} strokeDasharray="3 3" />
+          <XAxis dataKey="dia" tickLine={false} axisLine={false} tick={eje} interval="preserveStartEnd" />
+          <YAxis domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} tick={eje} />
+          <Tooltip cursor={{ fill: "rgba(255,255,255,0.04)" }} contentStyle={cajaTooltip} itemStyle={{ color: T.text }} labelStyle={{ color: T.textSec }}
+            labelFormatter={(_, p) => (p?.[0]?.payload?.fecha ? p[0].payload.fecha.split("-").reverse().join("-") : "")}
+            formatter={(v, _n, p) => [`${v}% (${p.payload.turnos_cubiertos} de ${p.payload.turnos_programados} turnos)`, "Cobertura"]} />
+          <Bar dataKey="cobertura" radius={[3, 3, 0, 0]} maxBarSize={22} animationDuration={500}>
+            {datos.map((d) => <Cell key={d.fecha} fill={colorCobertura(d.cobertura)} />)}
           </Bar>
         </BarChart>
       </ResponsiveContainer>

@@ -176,7 +176,7 @@ const turnosDelPeriodo = async (inicioISO, siguienteISO, porInstalacion) => {
       estado: { not: 'cancelado' }, ...porInstalacion,
     },
     select: {
-      usuario_id: true, instalacion_id: true,
+      usuario_id: true, instalacion_id: true, fecha: true,
       usuario: { select: { instalacion_asignada_id: true } },
       asistencias: { select: { minutos_retraso: true, horas_trabajadas: true } },
     },
@@ -251,6 +251,27 @@ const resumenGuardias = async (mes, anio, user, cantidad = 1) => {
   }).sort((x, y) => x.instalacion.localeCompare(y.instalacion) || x.guardia.localeCompare(y.guardia));
 };
 
+// ── Cobertura diaria por instalación (gráfico del detalle de cada instalación) ──
+const resumenDiario = async (mes, anio, user, cantidad = 1) => {
+  const alcance = await filtroAlcance(user);
+  const porInstalacion = alcance ? { instalacion_id: alcance } : {};
+  const { inicioISO, siguienteISO } = rangoMeses(mes, anio, cantidad);
+  const turnos = await turnosDelPeriodo(inicioISO, siguienteISO, porInstalacion);
+
+  const dias = new Map();
+  for (const t of turnos) {
+    const fecha = new Date(t.fecha).toISOString().slice(0, 10);
+    const k = `${t.instalacion_id}|${fecha}`;
+    const d = dias.get(k) ?? { instalacion_id: t.instalacion_id, fecha, turnos_programados: 0, turnos_cubiertos: 0 };
+    d.turnos_programados += 1;
+    if (t.asistencias.length > 0) d.turnos_cubiertos += 1;
+    dias.set(k, d);
+  }
+  return [...dias.values()]
+    .map((d) => ({ ...d, cobertura: Math.round((d.turnos_cubiertos / d.turnos_programados) * 100) }))
+    .sort((a, b) => a.fecha.localeCompare(b.fecha));
+};
+
 // ── Resumen mensual por instalación — para tabla analítica ─────────
 const resumenMensual = async (mes, anio, user) => {
   const alcance = await filtroAlcance(user);
@@ -316,6 +337,7 @@ module.exports = {
   novedadesPorSemana,
   estadoGuardias,
   resumenMensual,
+  resumenDiario,
   resumenGuardias,
   exportarCSV,
 };
