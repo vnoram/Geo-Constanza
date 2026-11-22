@@ -1,7 +1,7 @@
 // Alcance por instalación: un supervisor no opera ni lee fuera de lo suyo.
 jest.mock('../../config/database', () => ({ prisma: {
   turno: { findUniqueOrThrow: jest.fn(), findUnique: jest.fn(), findMany: jest.fn(), count: jest.fn(), groupBy: jest.fn(), update: jest.fn() },
-  solicitud: { findUniqueOrThrow: jest.fn(), update: jest.fn() },
+  solicitud: { findUniqueOrThrow: jest.fn(), update: jest.fn(), findMany: jest.fn() },
   usuario: { findUnique: jest.fn(), findMany: jest.fn() },
   supervisor_Instalacion: { findMany: jest.fn() },
   instalacion: { findMany: jest.fn(), findUnique: jest.fn() },

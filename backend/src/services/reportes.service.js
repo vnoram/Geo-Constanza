@@ -4,7 +4,7 @@ const { ROLES } = require('../constants/roles');
 const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
 const { SOLO_INCIDENCIAS, TIPOS_RUTINA } = require('./priorizacion.service');
 const { AUSENCIAS } = require('../constants/solicitudes');
-const { ahoraChile, sumarDias, aFechaDB, inicioDiaChile, finDiaChile } = require('../utils/fechaChile');
+const { ahoraChile, sumarDias, aFechaDB, inicioDiaChile, finDiaChile, turnosDeHoy, intervaloTurno } = require('../utils/fechaChile');
 
 // ── Helpers ────────────────────────────────────────────────────────
 /** Devuelve los instalacion_ids accesibles según el rol del usuario */
@@ -117,46 +117,43 @@ const novedadesPorSemana = async (user) => {
 };
 
 // ── Estado de guardias hoy — para gráfico de torta ────────────────
+// Mismos turnos y reglas que el dashboard del supervisor: los que comienzan hoy más los nocturnos de ayer
+// que todavía no terminan. Sin entrada, un turno está "por iniciar" hasta que comienza y "ausente" desde entonces,
+// salvo que el guardia tenga vacaciones o una ausencia aprobada ese día.
 const estadoGuardias = async (user) => {
   const alcance = await filtroAlcance(user);
   const porInstalacion = alcance ? { instalacion_id: alcance } : {};
-  const hoy = ahoraChile().fecha;
-  const inicio = inicioDiaChile(hoy);
-  const manana = inicioDiaChile(sumarDias(hoy, 1));
+  const ventana = turnosDeHoy();
+  const ahora = new Date();
+  const dia = (d) => new Date(d).toISOString().slice(0, 10);
 
-  const { hora: horaAhora } = ahoraChile();
+  const turnos = (await prisma.turno.findMany({
+    where: { ...ventana.where, estado: { not: 'cancelado' }, ...porInstalacion },
+    select: {
+      fecha: true, hora_inicio: true, hora_fin: true, usuario_id: true,
+      asistencias: { orderBy: { hora_entrada: 'desc' }, take: 1, select: { estado: true } },
+    },
+  })).filter(ventana.incluir);
 
-  const hoyDB = aFechaDB(hoy);
+  const usuarios = [...new Set(turnos.map((t) => t.usuario_id).filter(Boolean))];
+  const ausencias = usuarios.length === 0 ? [] : await prisma.solicitud.findMany({
+    where: { usuario_id: { in: usuarios }, tipo: { in: Object.keys(AUSENCIAS) }, estado: 'aprobada' },
+    select: { usuario_id: true, fecha_desde: true, fecha_hasta: true },
+  });
+  const conAusenciaAprobada = (t) => {
+    const f = dia(t.fecha);
+    return ausencias.some((x) => x.usuario_id === t.usuario_id && dia(x.fecha_desde) <= f && f <= dia(x.fecha_hasta ?? x.fecha_desde));
+  };
 
-  const [totalTurnos, porIniciar, conAusencia, asistencias] = await Promise.all([
-    prisma.turno.count({
-      where: { fecha: aFechaDB(hoy), estado: { not: 'cancelado' }, ...porInstalacion },
-    }),
-    // Turnos de hoy que todavía no comienzan: no cuentan como ausentes
-    prisma.turno.count({
-      where: { fecha: aFechaDB(hoy), estado: { not: 'cancelado' }, hora_inicio: { gt: horaAhora }, ...porInstalacion },
-    }),
-    // Turnos ya iniciados cuyo guardia tiene vacaciones o una ausencia aprobada hoy: no son ausentes
-    prisma.turno.count({
-      where: {
-        fecha: hoyDB, estado: { not: 'cancelado' }, hora_inicio: { lte: horaAhora }, ...porInstalacion,
-        usuario: { solicitudes: { some: {
-          tipo: { in: Object.keys(AUSENCIAS) }, estado: 'aprobada', fecha_desde: { lte: hoyDB },
-          OR: [{ fecha_hasta: { gte: hoyDB } }, { fecha_hasta: null, fecha_desde: hoyDB }],
-        } } },
-      },
-    }),
-    prisma.asistencia.findMany({
-      where: { hora_entrada: { gte: inicio, lt: manana }, ...porInstalacion },
-      select: { estado: true },
-    }),
-  ]);
-
-  const presentes = asistencias.filter((a) => a.estado === 'normal').length;
-  const tardios   = asistencias.filter((a) => a.estado === 'tardio').length;
-  const ausentes  = Math.max(0, totalTurnos - porIniciar - conAusencia - asistencias.length);
-
-  return { presentes, tardios, ausentes, totalTurnos, porIniciar, conAusencia };
+  const cuenta = { presentes: 0, tardios: 0, ausentes: 0, porIniciar: 0, conAusencia: 0 };
+  for (const t of turnos) {
+    const asistencia = t.asistencias[0];
+    if (asistencia) cuenta[asistencia.estado === 'tardio' ? 'tardios' : 'presentes'] += 1;
+    else if (conAusenciaAprobada(t)) cuenta.conAusencia += 1;
+    else if (ahora < intervaloTurno(t).inicio) cuenta.porIniciar += 1;
+    else cuenta.ausentes += 1;
+  }
+  return { ...cuenta, totalTurnos: turnos.length };
 };
 
 // ── Cobertura por período ──────────────────────────────────────────
