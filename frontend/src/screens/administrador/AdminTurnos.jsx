@@ -45,9 +45,9 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
     fecha_inicio: "",
     hora_inicio: "19:00",
     hora_fin: "07:00",
-    reemplazar: false,
   });
   const [loading, setLoading] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState("");
 
@@ -59,7 +59,6 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
   };
   const guardiaSel = guardias.find((x) => x.id === form.usuario_id);
   const asignadaId = guardiaSel?.instalacion_asignada_id || null;
-  const setCheck = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.checked }));
 
   // Detectar turno nocturno para mostrar aviso informativo
   const esNocturno = form.hora_fin < form.hora_inicio;
@@ -73,9 +72,15 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
     return null;
   };
 
-  const handleConfirmar = async () => {
+  // Primer paso: valida y pide aceptar el reemplazo de la pauta anterior.
+  const pedirConfirmacion = () => {
     const err = validar();
     if (err) { setError(err); return; }
+    setError("");
+    setConfirmando(true);
+  };
+
+  const handleConfirmar = async () => {
     setError("");
     setLoading(true);
     try {
@@ -85,11 +90,12 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
         fecha_inicio:  form.fecha_inicio,
         hora_inicio:   form.hora_inicio,
         hora_fin:      form.hora_fin,
-        reemplazar:    form.reemplazar,
+        reemplazar:    true,
       });
       setResultado(res);
       onSuccess();
     } catch (e) {
+      setConfirmando(false);
       setError(e.message || "Error al generar la pauta.");
     } finally {
       setLoading(false);
@@ -229,26 +235,17 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
               </div>
             )}
 
-            {/* Checkbox reemplazar */}
-            <label style={{
-              display: "flex", alignItems: "center", gap: 10, marginBottom: 18,
-              cursor: "pointer", userSelect: "none",
-            }}>
-              <input
-                type="checkbox"
-                checked={form.reemplazar}
-                onChange={setCheck("reemplazar")}
-                style={{ width: 16, height: 16, accentColor: T.accent, cursor: "pointer" }}
-              />
-              <div>
-                <div style={{ fontSize: 13, color: T.text, fontWeight: 600 }}>
-                  Reemplazar pautas existentes en este rango
-                </div>
-                <div style={{ fontSize: 11, color: T.textMut }}>
-                  Elimina los turnos previos del guardia en los 6 meses de la pauta antes de crear los nuevos.
+            {confirmando && (
+              <div role="alert" style={{
+                background: T.yellowGhost, border: `1px solid ${T.yellow}`, borderRadius: T.radius,
+                padding: "12px 14px", marginBottom: 16, fontSize: 13, color: T.text,
+              }}>
+                <div style={{ fontWeight: 700, color: T.yellow, marginBottom: 4 }}>Se reemplazará la pauta actual</div>
+                <div style={{ fontSize: 12, color: T.textSec, lineHeight: 1.5 }}>
+                  Los turnos programados de {guardiaSel?.nombre || "este guardia"} entre el {form.fecha_inicio} y el {sumarDias(form.fecha_inicio, 183)} se eliminarán y se crearán 92 turnos nuevos.
                 </div>
               </div>
-            </label>
+            )}
 
             {error && (
               <div style={{
@@ -261,8 +258,17 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
             )}
 
             <div className="admin-actions" style={{ display: "flex", gap: 10 }}>
-              <Btn variant="outline" onClick={onClose} disabled={loading}>Cancelar</Btn>
-              <Btn full onClick={handleConfirmar} loading={loading}>Confirmar Pauta</Btn>
+              {confirmando ? (
+                <>
+                  <Btn variant="outline" onClick={() => setConfirmando(false)} disabled={loading}>Volver</Btn>
+                  <Btn full onClick={handleConfirmar} loading={loading}>Aceptar y reemplazar</Btn>
+                </>
+              ) : (
+                <>
+                  <Btn variant="outline" onClick={onClose} disabled={loading}>Cancelar</Btn>
+                  <Btn full onClick={pedirConfirmacion}>Generar pauta</Btn>
+                </>
+              )}
             </div>
           </>
         )}
