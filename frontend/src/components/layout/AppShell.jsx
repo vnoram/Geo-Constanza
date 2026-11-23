@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../services/api";
 import { T, FONT, ROLES, SECCIONES_GGSS_PERSONAL } from "../../theme/theme";
 import { Icon } from "../ui/Icon";
+import { TarjetaUsuario } from "./TarjetaUsuario";
 import { Wordmark } from "../ui/Wordmark";
 import { ROLES as ROL } from "../../constants/roles";
 import { Placeholder } from "../ui/Placeholder";
@@ -234,22 +235,7 @@ export function AppShell({ user, onLogout }) {
           <aside className="app-shell__sidebar" style={{
             background: T.surface, borderRight: `1px solid ${T.border}`,
           }}>
-            <div style={{ borderBottom: `1px solid ${T.border}`, paddingBottom: 16, marginBottom: 16 }}>
-              <div style={{ fontWeight: 600, fontSize: 15, color: T.focusText }}>{user.nombre}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.focusText, marginTop: 4 }}>
-                <Icon name={role.icon} size={15} color={T.focusText} />
-                {etiquetaRol}
-              </div>
-              {user.empresa?.nombre && (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.textSec, marginTop: 4 }}>
-                  <Icon name="building-2" size={15} color={T.textMut} />
-                  {user.empresa.nombre}
-                </div>
-              )}
-              <div style={{ fontSize: 11, color: T.textMut, marginTop: 8, fontFamily: FONT.mono }}>
-                ID {user.id} · RUT •••••{user.id.slice(-2)}
-              </div>
-            </div>
+            <TarjetaUsuario user={user} etiquetaRol={etiquetaRol} iconoRol={role.icon} />
 
             <div style={{ fontSize: 11, color: T.textMut, marginBottom: 6, fontWeight: 500 }}>
               Navegación

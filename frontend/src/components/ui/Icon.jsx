@@ -6,7 +6,7 @@ import {
   UserRoundCheck, Users, Wifi, WifiOff, X,
   ArrowUpRight, Ban, Banknote, CircleCheck, FilePen, Globe, GraduationCap,
   Hourglass, Moon, Paperclip, RefreshCw, Siren, Smartphone, Sun, Umbrella, Wrench, Zap,
-  Factory, House, Landmark, Monitor, Store,
+  Factory, House, Landmark, Monitor, Store, Copy,
 } from "lucide-react";
 
 // Un solo set lineal (Lucide), trazo de 1.5 px. Se importa por nombre para que
@@ -25,7 +25,7 @@ const ICONS = {
   "layout-dashboard": LayoutDashboard, "log-out": LogOut, map: Map, "map-pin": MapPin, menu: Menu,
   pencil: Pencil, plus: Plus, "radio-tower": RadioTower, "scroll-text": ScrollText, search: Search,
   settings: Settings, "triangle-alert": TriangleAlert, "user-round": UserRound,
-  "user-round-check": UserRoundCheck, users: Users, wifi: Wifi, "wifi-off": WifiOff, x: X,
+  copy: Copy, "user-round-check": UserRoundCheck, users: Users, wifi: Wifi, "wifi-off": WifiOff, x: X,
 };
 
 export function Icon({ name, size = 18, color = "currentColor", style }) {
