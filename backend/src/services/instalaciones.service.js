@@ -75,7 +75,7 @@ const resumen = async (id, user, ahora = new Date()) => {
     }),
     prisma.novedad.findMany({
       where: { instalacion_id: id, ...SOLO_INCIDENCIAS, estado: { not: ESTADO_NOVEDAD.RESUELTA } },
-      select: { numero: true, tipo: true, urgencia: true, estado: true, created_at: true },
+      select: { id: true, numero: true, tipo: true, urgencia: true, estado: true, created_at: true },
       orderBy: { created_at: 'desc' },
     }),
   ]);
@@ -94,7 +94,7 @@ const resumen = async (id, user, ahora = new Date()) => {
     instalacion: datos,
     supervisores: supervisores.map((s) => s.supervisor.nombre),
     turnos_hoy,
-    novedades_abiertas: { total: abiertas.length, ...por_urgencia, ultimas: abiertas.slice(0, 3) },
+    novedades_abiertas: { total: abiertas.length, ...por_urgencia, ultimas: abiertas.slice(0, 8) },
   };
 };
 

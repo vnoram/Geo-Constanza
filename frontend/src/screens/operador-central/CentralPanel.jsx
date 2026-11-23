@@ -17,7 +17,7 @@ import { useAuth } from "../../context/authCtx";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
-import { FichaInstalacion } from "../../components/ui/FichaInstalacion";
+import { PanelInstalacion } from "../../components/ui/FichaInstalacion";
 import { iconoInstalacion, iniciarAnillos, COLORES_ANILLO } from "../../utils/anilloNovedades";
 import { esRutina } from "../../utils/novedades";
 import { DetalleNovedadModal, ResolverModal } from "../supervisor/SupNovedades";
@@ -169,7 +169,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
       {cargando && (
         <div className="g9-mapa-carga"><Esqueleto filas={1} alto={240} /></div>
       )}
-      {sel && <div style={{ marginTop: 10 }}><FichaInstalacion inst={sel} color={C_COLOR} token={token} onCerrar={() => setSel(null)} /></div>}
+      {sel && <div style={{ marginTop: 10 }}><PanelInstalacion inst={sel} color={C_COLOR} token={token} onCerrar={() => setSel(null)} /></div>}
       <div
         className="central-map" role="region" aria-label="Mapa de instalaciones y guardias" aria-busy={cargando}
         ref={containerRef}
@@ -368,7 +368,7 @@ function DerivarModal({ novedad, token, onClose, onSuccess }) {
 // ─── PANEL DE INCIDENTES (sección "incidentes") ───────────────────
 // Central ve las novedades de TODAS las instalaciones. Mismo diseño que el supervisor:
 // tarjetas compactas y, al pulsar una, ventana de detalle.
-function IncidentesPanel({ token }) {
+function IncidentesPanel({ token, novedadId, onNovedadAbierta }) {
   const [novedades, setNovedades] = useState([]);
   const [loading, setLoading]    = useState(true);
   const [vista, setVista]        = useState("escaladas"); // escaladas | criticas | resueltas
@@ -391,6 +391,18 @@ function IncidentesPanel({ token }) {
   };
 
   useEffect(() => { cargar(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Acceso directo desde el mapa: abre el detalle de esa novedad (cualquiera sea su estado, aunque no esté en las pestañas)
+  useEffect(() => {
+    if (!novedadId) return undefined;
+    let vigente = true;
+    fetch(`${API_BASE}/novedades/${encodeURIComponent(novedadId)}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((n) => { if (vigente) setDetalle(n.data ?? n); })
+      .catch((e) => console.error("[CentralIncidentes] abrir novedad:", e))
+      .finally(() => { if (vigente) onNovedadAbierta?.(); });
+    return () => { vigente = false; };
+  }, [novedadId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Aviso en vivo cuando un supervisor escala una novedad
   useEffect(() => {
@@ -661,9 +673,9 @@ function MonitoreoPanel({ token }) {
 
 // ─── EXPORT PRINCIPAL ─────────────────────────────────────────────
 // AppShell llama a este componente pasando `section` ("monitoreo" | "incidentes").
-export function CentralPanel({ section = "monitoreo" }) {
+export function CentralPanel({ section = "monitoreo", novedadId = null, onNovedadAbierta }) {
   const { token } = useAuth();
 
-  if (section === "incidentes") return <IncidentesPanel token={token} />;
+  if (section === "incidentes") return <IncidentesPanel token={token} novedadId={novedadId} onNovedadAbierta={onNovedadAbierta} />;
   return <MonitoreoPanel token={token} />;
 }

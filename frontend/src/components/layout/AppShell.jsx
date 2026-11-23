@@ -56,7 +56,7 @@ function seccionesPara(user) {
   return [...secciones, ...extra];
 }
 
-function RoleContent({ user, rol, section }) {
+function RoleContent({ user, rol, section, enfoqueNovedad, onAbrirNovedad, onNovedadAbierta }) {
   const allowed = seccionesPara(user).map(s => s.id);
   if (!allowed.includes(section)) {
     return (
@@ -92,8 +92,8 @@ function RoleContent({ user, rol, section }) {
   }
   if (rol === ROL.OPERADOR_CENTRAL) {
     // "panel" reutiliza el dashboard completo con mapa + KPIs de AdminPanel
-    if (section === "panel")      return <AdminPanel />;
-    if (section === "incidentes") return <CentralPanel section="incidentes" />;
+    if (section === "panel")      return <AdminPanel onAbrirNovedad={onAbrirNovedad} />;
+    if (section === "incidentes") return <CentralPanel section="incidentes" novedadId={enfoqueNovedad} onNovedadAbierta={onNovedadAbierta} />;
   }
   if (rol === ROL.SUPER_ADMIN) {
     if (section === "empresas") return <EmpresasPanel />;
@@ -154,6 +154,9 @@ export function AppShell({ user, onLogout }) {
   // Todo guardia (en pauta o libre, en cualquier equipo) se muestra solo como «GGSS».
   const etiquetaRol = [ROL.GGSS].includes(user.rol) ? "GGSS" : role.label;
   const [seleccion, setActiveSection] = useState(sections[0].id);
+  // Acceso directo desde el mapa a una novedad (Central): se abre su detalle en la pantalla de novedades
+  const [enfoqueNovedad, setEnfoqueNovedad] = useState(null);
+  const abrirNovedad = (id) => { setEnfoqueNovedad(id); setActiveSection("incidentes"); };
   const activeSection = sections.some(s => s.id === seleccion) ? seleccion : sections[0].id;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cambiandoPassword, setCambiandoPassword] = useState(false);
@@ -289,7 +292,7 @@ export function AppShell({ user, onLogout }) {
             ? "app-shell__main--guardia"
             : "app-shell__main--operativo"
         }`}>
-          <RoleContent user={user} rol={user.rol} section={activeSection} />
+          <RoleContent user={user} rol={user.rol} section={activeSection} enfoqueNovedad={enfoqueNovedad} onAbrirNovedad={abrirNovedad} onNovedadAbierta={() => setEnfoqueNovedad(null)} />
         </main>
       </div>
       {perfilAbierto && (

@@ -43,6 +43,7 @@ test('excluye novedades resueltas y turnos cancelados en la consulta', async () 
   prisma.turno.findMany.mockResolvedValue([]);
   await service.resumen('i1', { id: 'c1', rol: ROLES.OPERADOR_CENTRAL }, ahora);
   expect(prisma.turno.findMany.mock.calls[0][0].where).toMatchObject({ instalacion_id: 'i1', estado: { not: 'cancelado' } });
+  expect(prisma.novedad.findMany.mock.calls[0][0].select).toMatchObject({ id: true, numero: true }); // el id permite abrir la novedad desde el mapa
   expect(prisma.novedad.findMany.mock.calls[0][0].where).toEqual({ instalacion_id: 'i1', tipo: { notIn: expect.any(Array) }, estado: { not: 'resuelta' } });
 });
 

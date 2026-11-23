@@ -14,7 +14,7 @@ import { useAuth } from "../../context/authCtx";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
-import { FichaInstalacion } from "../../components/ui/FichaInstalacion";
+import { PanelInstalacion } from "../../components/ui/FichaInstalacion";
 import { iconoInstalacion, iniciarAnillos, COLORES_ANILLO } from "../../utils/anilloNovedades";
 
 // ─── ESTILOS POPUP LEAFLET ───────────────────────────────────────
@@ -60,7 +60,7 @@ function useLeafletCDN(onReady) {
 }
 
 // ─── MAPA DE INSTALACIONES ───────────────────────────────────────
-const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicacion, guardiasIniciales = {} }) {
+const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicacion, guardiasIniciales = {}, onAbrirNovedad }) {
   const containerRef         = useRef(null);
   const mapRef               = useRef(null);
   const guardiasRef          = useRef({});
@@ -155,7 +155,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
       {/* Ficha de la instalación elegida: en pantalla ancha ocupa el espacio libre a la izquierda de la leyenda */}
       {sel && (
         <div className="admin-map-ficha">
-          <FichaInstalacion inst={sel.inst} color={sel.col} token={token} onCerrar={() => setSel(null)} />
+          <PanelInstalacion inst={sel.inst} color={sel.col} token={token} onCerrar={() => setSel(null)} onAbrirNovedad={onAbrirNovedad} />
         </div>
       )}
       {/* Leyenda a la izquierda, ordenada por prioridad */}
@@ -310,7 +310,7 @@ function MiniStat({ value, label, color }) {
 }
 
 // ─── PANTALLA PRINCIPAL ──────────────────────────────────────────
-export function AdminPanel() {
+export function AdminPanel({ onAbrirNovedad }) {
   const { token } = useAuth();
 
   // ── Estado con semilla desde caché (silent refresh en segundo plano) ──
@@ -418,6 +418,7 @@ export function AdminPanel() {
             token={token}
             ultimaUbicacion={ultimaUbicacion}
             guardiasIniciales={guardiasUbicacion}
+            onAbrirNovedad={onAbrirNovedad}
           />
         </section>
 

@@ -247,3 +247,9 @@
 @media (prefers-reduced-motion: reduce) {
   .gc-anillo-rojo { animation: none; }
 }
+
+/* Acceso directo a una novedad desde la ficha de la instalación */
+.gc-novedad-acceso:hover,
+.gc-novedad-acceso:focus-visible {
+  background: rgba(122, 78, 191, 0.16) !important;
+}
