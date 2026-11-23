@@ -93,3 +93,54 @@
     padding: 16px !important;
   }
 }
+
+/* ─── Panel central compacto en pantallas de escritorio: todo en una pantalla, sin scroll ───
+   · cabecera e indicadores más bajos
+   · el mapa toma el alto que sobra de la ventana
+   · gráficos en la columna lateral: barras arriba y los dos donuts lado a lado */
+@media (min-width: 1100px) {
+  .central-panel .central-panel__header {
+    padding-bottom: 8px;
+    margin-bottom: 10px !important;
+  }
+
+  .central-panel .central-kpis,
+  .central-panel .metrics-grid {
+    margin-bottom: 12px !important;
+  }
+
+  .central-panel .central-kpis > div {
+    padding: 10px 14px !important;
+  }
+
+  .central-panel .central-grid {
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 14px;
+  }
+
+  .central-panel .central-grid .central-map {
+    height: clamp(380px, calc(100dvh - 330px), 780px);
+  }
+
+  .central-panel .central-grid > aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px !important;
+    align-content: start;
+  }
+
+  .central-panel .central-grid > aside > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .central-panel .central-grid > aside .central-panel__card {
+    padding: 12px 14px !important;
+  }
+
+  .central-panel .g9-mapa-layout {
+    margin-bottom: 8px !important;
+  }
+
+  .central-panel .g9-mapa-layout .admin-map-ficha {
+    max-height: clamp(380px, calc(100dvh - 330px), 780px);
+  }
+}
