@@ -93,8 +93,8 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
           pts.push([inst.latitud, inst.longitud]);
           const col = colorTipo(inst.tipo_recinto);
           const icon = L.divIcon({
-            html: `<div style="width:14px;height:14px;background:${col};border:2.5px solid #0E1714;border-radius:50%;box-shadow:0 0 10px ${col};"></div>`,
-            className: "", iconSize: [14, 14], iconAnchor: [7, 7],
+            html: `<div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer"><div style="width:20px;height:20px;background:${col};border:2.5px solid #0E1714;border-radius:50%;box-shadow:0 0 10px ${col};"></div></div>`,
+            className: "", iconSize: [30, 30], iconAnchor: [15, 15], // área de clic de 30 px: el punto visible mide unos 25 px
           });
           // Al hacer clic se muestra la ficha en el panel lateral (junto a la leyenda).
           L.marker([inst.latitud, inst.longitud], { icon })

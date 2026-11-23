@@ -102,8 +102,8 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
           if (!inst.latitud || !inst.longitud) return;
           pts.push([inst.latitud, inst.longitud]);
           const icon = L.divIcon({
-            html: `<div style="width:14px;height:14px;background:${C_COLOR};border:2.5px solid #0E1714;border-radius:50%;box-shadow:0 0 10px ${C_COLOR},0 0 20px ${C_COLOR}22;"></div>`,
-            className: "", iconSize: [14, 14], iconAnchor: [7, 7],
+            html: `<div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer"><div style="width:20px;height:20px;background:${C_COLOR};border:2.5px solid #0E1714;border-radius:50%;box-shadow:0 0 10px ${C_COLOR},0 0 20px ${C_COLOR}22;"></div></div>`,
+            className: "", iconSize: [30, 30], iconAnchor: [15, 15], // área de clic de 30 px: el punto visible mide unos 25 px
           });
           // Al hacer clic se muestra la ficha bajo el mapa.
           L.marker([inst.latitud, inst.longitud], { icon })
