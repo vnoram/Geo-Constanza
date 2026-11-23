@@ -1,7 +1,7 @@
 jest.mock('../../middlewares/auth', () => ({
   authenticate: (req, _res, next) => { req.user = JSON.parse(req.get('x-test-user')); next(); },
 }));
-jest.mock('../../services/instalaciones.service', () => ({ resumen: jest.fn().mockResolvedValue({ instalacion: { id: 'i1' } }) }));
+jest.mock('../../services/instalaciones.service', () => ({ resumen: jest.fn().mockResolvedValue({ instalacion: { id: 'i1' } }), estadoNovedades: jest.fn().mockResolvedValue({ i1: { total: 1, rojo: 1, amarillo: 0, verde: 0 } }) }));
 jest.mock('../../middlewares/auditLog', () => ({ registrarAuditoria: jest.fn() }));
 jest.mock('../../config/database', () => ({ prismaGlobal: {}, prisma: {} }));
 
@@ -25,5 +25,16 @@ test.each([ROLES.OPERADOR_CENTRAL, ROLES.SUPERVISOR, ROLES.ADMINISTRADOR])('%s p
 
 test('un guardia no puede', async () => {
   const res = await request(app).get('/instalaciones/i1/resumen').set(como({ id: 'g', rol: ROLES.GGSS, empresaId: 'e1' }));
+  expect(res.status).toBe(403);
+});
+
+test('estado-novedades responde a central y no se confunde con :id', async () => {
+  const res = await request(app).get('/instalaciones/estado-novedades').set(como({ id: 'c', rol: ROLES.OPERADOR_CENTRAL, empresaId: 'e1' }));
+  expect(res.status).toBe(200);
+  expect(res.body.data.i1.rojo).toBe(1);
+});
+
+test('un guardia no puede ver estado-novedades', async () => {
+  const res = await request(app).get('/instalaciones/estado-novedades').set(como({ id: 'g', rol: ROLES.GGSS, empresaId: 'e1' }));
   expect(res.status).toBe(403);
 });

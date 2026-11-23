@@ -1,7 +1,8 @@
 jest.mock('../../config/database', () => ({ prisma: {
-  instalacion: { findUniqueOrThrow: jest.fn() }, turno: { findMany: jest.fn() }, novedad: { findMany: jest.fn() },
+  instalacion: { findUniqueOrThrow: jest.fn() }, turno: { findMany: jest.fn() }, novedad: { findMany: jest.fn(), groupBy: jest.fn() },
 } }));
 jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn(), exigirAlcanceInstalacion: jest.fn() }));
+const { resolverInstalacionesSupervisor } = require('../supervisor.helper');
 const { prisma } = require('../../config/database');
 const { exigirAlcanceInstalacion } = require('../supervisor.helper');
 const service = require('../instalaciones.service');
@@ -42,11 +43,32 @@ test('excluye novedades resueltas y turnos cancelados en la consulta', async () 
   prisma.turno.findMany.mockResolvedValue([]);
   await service.resumen('i1', { id: 'c1', rol: ROLES.OPERADOR_CENTRAL }, ahora);
   expect(prisma.turno.findMany.mock.calls[0][0].where).toMatchObject({ instalacion_id: 'i1', estado: { not: 'cancelado' } });
-  expect(prisma.novedad.findMany.mock.calls[0][0].where).toEqual({ instalacion_id: 'i1', estado: { not: 'resuelta' } });
+  expect(prisma.novedad.findMany.mock.calls[0][0].where).toEqual({ instalacion_id: 'i1', tipo: { notIn: expect.any(Array) }, estado: { not: 'resuelta' } });
 });
 
 test('respeta el alcance del supervisor antes de consultar', async () => {
   exigirAlcanceInstalacion.mockRejectedValue(Object.assign(new Error('No tienes acceso a esta instalación'), { statusCode: 403 }));
   await expect(service.resumen('i9', { id: 's1', rol: ROLES.SUPERVISOR }, ahora)).rejects.toMatchObject({ statusCode: 403 });
   expect(prisma.instalacion.findUniqueOrThrow).not.toHaveBeenCalled();
+});
+
+test('estado de novedades agrupa por instalación y urgencia, sin resueltas ni rutina', async () => {
+  prisma.novedad.groupBy.mockResolvedValue([
+    { instalacion_id: 'i1', urgencia: 'rojo', _count: { _all: 2 } },
+    { instalacion_id: 'i1', urgencia: 'verde', _count: { _all: 1 } },
+    { instalacion_id: 'i2', urgencia: 'amarillo', _count: { _all: 3 } },
+  ]);
+  const r = await service.estadoNovedades({ id: 'c1', rol: ROLES.OPERADOR_CENTRAL });
+  expect(r).toEqual({ i1: { total: 3, rojo: 2, amarillo: 0, verde: 1 }, i2: { total: 3, rojo: 0, amarillo: 3, verde: 0 } });
+  const arg = prisma.novedad.groupBy.mock.calls[0][0];
+  expect(arg.by).toEqual(['instalacion_id', 'urgencia']);
+  expect(arg.where).toMatchObject({ estado: { not: 'resuelta' }, tipo: { notIn: expect.any(Array) } });
+  expect(arg.where.instalacion_id).toBeUndefined();
+});
+
+test('el supervisor solo cuenta sus instalaciones', async () => {
+  resolverInstalacionesSupervisor.mockResolvedValue(['i1']);
+  prisma.novedad.groupBy.mockResolvedValue([]);
+  await service.estadoNovedades({ id: 's1', rol: ROLES.SUPERVISOR });
+  expect(prisma.novedad.groupBy.mock.calls[0][0].where.instalacion_id).toEqual({ in: ['i1'] });
 });

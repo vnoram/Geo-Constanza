@@ -18,6 +18,14 @@ const resumen = async (req, res, next) => {
   }
 };
 
+const estadoNovedades = async (req, res, next) => {
+  try {
+    res.json({ data: await instalacionesService.estadoNovedades(req.user) });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const crear = async (req, res, next) => {
   try {
     const instalacion = await instalacionesService.crear(req.body);
@@ -59,4 +67,4 @@ const editar = async (req, res, next) => {
   }
 };
 
-module.exports = { listar, resumen, crear, editar };
+module.exports = { listar, resumen, estadoNovedades, crear, editar };

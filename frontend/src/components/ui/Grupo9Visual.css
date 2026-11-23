@@ -214,3 +214,36 @@
 [data-gc-mapa] .gc-map-picker:focus-visible {
   outline-offset: -3px;
 }
+
+/* Marcador de instalación con anillo según la urgencia de sus novedades abiertas (utils/anilloNovedades.js) */
+.gc-marcador {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.gc-anillo {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.gc-anillo-rojo     { border-color: #E86A2A; animation: gc-pulso 1.8s ease-out infinite; }
+.gc-anillo-amarillo { border-color: #F0A35E; }
+.gc-anillo-verde    { border-color: #4CC38A; }
+
+@keyframes gc-pulso {
+  0%   { box-shadow: 0 0 0 0 rgba(232, 106, 42, 0.55); }
+  100% { box-shadow: 0 0 0 12px rgba(232, 106, 42, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gc-anillo-rojo { animation: none; }
+}

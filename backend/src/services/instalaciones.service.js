@@ -4,6 +4,7 @@ const { resolverInstalacionesSupervisor, exigirAlcanceInstalacion } = require('.
 const { TOLERANCIA_POR_DEFECTO_MINUTOS } = require('../constants/cobertura');
 const { ESTADO_TURNO, ESTADO_NOVEDAD } = require('../constants/estados');
 const { turnosDeHoy, intervaloTurno } = require('../utils/fechaChile');
+const { SOLO_INCIDENCIAS } = require('./priorizacion.service');
 
 const validarTolerancia = (valor) => {
   const numero = Number(valor);
@@ -72,7 +73,7 @@ const resumen = async (id, user, ahora = new Date()) => {
       orderBy: [{ fecha: 'asc' }, { hora_inicio: 'asc' }],
     }),
     prisma.novedad.findMany({
-      where: { instalacion_id: id, estado: { not: ESTADO_NOVEDAD.RESUELTA } },
+      where: { instalacion_id: id, ...SOLO_INCIDENCIAS, estado: { not: ESTADO_NOVEDAD.RESUELTA } },
       select: { numero: true, tipo: true, urgencia: true, estado: true, created_at: true },
       orderBy: { created_at: 'desc' },
     }),
@@ -94,6 +95,23 @@ const resumen = async (id, user, ahora = new Date()) => {
     turnos_hoy,
     novedades_abiertas: { total: abiertas.length, ...por_urgencia, ultimas: abiertas.slice(0, 3) },
   };
+};
+
+// Novedades abiertas (no resueltas, sin rutina) por instalación y urgencia, para el anillo de color del mapa.
+// Devuelve { [instalacion_id]: { total, rojo, amarillo, verde } } solo para instalaciones con pendientes.
+const estadoNovedades = async (user) => {
+  const where = { ...SOLO_INCIDENCIAS, estado: { not: ESTADO_NOVEDAD.RESUELTA } };
+  if (user && user.rol === ROLES.SUPERVISOR) {
+    where.instalacion_id = { in: await resolverInstalacionesSupervisor(user) };
+  }
+  const grupos = await prisma.novedad.groupBy({ by: ['instalacion_id', 'urgencia'], where, _count: { _all: true } });
+  const porInstalacion = {};
+  for (const g of grupos) {
+    const fila = porInstalacion[g.instalacion_id] ??= { total: 0, rojo: 0, amarillo: 0, verde: 0 };
+    if (g.urgencia in fila) fila[g.urgencia] += g._count._all;
+    fila.total += g._count._all;
+  }
+  return porInstalacion;
 };
 
 const crear = async (data) => {
@@ -210,4 +228,4 @@ const editar = async (id, data) => {
   });
 };
 
-module.exports = { listar, obtenerPorId, resumen, crear, editar };
+module.exports = { listar, obtenerPorId, resumen, estadoNovedades, crear, editar };

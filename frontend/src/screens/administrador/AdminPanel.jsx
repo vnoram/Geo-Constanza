@@ -15,6 +15,7 @@ import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
 import { FichaInstalacion } from "../../components/ui/FichaInstalacion";
+import { iconoInstalacion, iniciarAnillos, COLORES_ANILLO } from "../../utils/anilloNovedades";
 
 // ─── ESTILOS POPUP LEAFLET ───────────────────────────────────────
 const LEAFLET_STYLES = `
@@ -63,6 +64,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
   const containerRef         = useRef(null);
   const mapRef               = useRef(null);
   const guardiasRef          = useRef({});
+  const detenerAnillosRef    = useRef(null);
   // Capturar en ref para no relanzar el efecto de init cuando cambie el prop
   const guardiasInicialesRef = useRef(guardiasIniciales);
   const [mapReady,  setMapReady]  = useState(false);
@@ -88,24 +90,23 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
       .then((data) => {
         const lista = Array.isArray(data) ? data : (data.data ?? []);
         const pts = [];
+        const marcadores = {};
         lista.forEach((inst) => {
           if (!inst.latitud || !inst.longitud) return;
           pts.push([inst.latitud, inst.longitud]);
           const col = colorTipo(inst.tipo_recinto);
-          const icon = L.divIcon({
-            html: `<div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer"><div style="width:20px;height:20px;background:${col};border:2.5px solid #0E1714;border-radius:50%;box-shadow:0 0 10px ${col};"></div></div>`,
-            className: "", iconSize: [30, 30], iconAnchor: [15, 15], // área de clic de 30 px: el punto visible mide unos 25 px
-          });
-          // Al hacer clic se muestra la ficha en el panel lateral (junto a la leyenda).
-          L.marker([inst.latitud, inst.longitud], { icon })
+          // Al hacer clic se muestra la ficha; el anillo indica novedades abiertas (se refresca solo).
+          const marcador = L.marker([inst.latitud, inst.longitud], { icon: iconoInstalacion(L, col) })
             .addTo(map)
             .on("click", () => setSel({ inst, col }));
+          marcadores[inst.id] = { marker: marcador, col: col, urgencia: null };
           L.circle([inst.latitud, inst.longitud], {
             radius: inst.radio_geofence_m ?? 100, color: col,
             fillColor: col, fillOpacity: 0.06, weight: 1.5, dashArray: "4 4",
           }).addTo(map);
         });
         if (pts.length) map.fitBounds(pts, { padding: [40, 40], maxZoom: 14 });
+        if (mapRef.current === map) detenerAnillosRef.current = iniciarAnillos({ L, apiBase: API_BASE, token, marcadores });
 
         // Trazar ubicaciones de guardias persistidas en caché (marcadores semitransparentes)
         Object.values(guardiasInicialesRef.current).forEach((ub) => {
@@ -128,7 +129,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
       .catch((e) => console.error("[Mapa] Error cargando instalaciones:", e))
       .finally(() => setCargando(false));
 
-    return () => { map.remove(); mapRef.current = null; };
+    return () => { detenerAnillosRef.current?.(); detenerAnillosRef.current = null; map.remove(); mapRef.current = null; };
   }, [mapReady, token]);
 
   useEffect(() => {
@@ -169,6 +170,10 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
         <div style={{ fontSize: 11, color: T.focusText, letterSpacing: 0.5, textTransform: "uppercase", marginTop: 6 }}>Guardias</div>
         <span><span style={{ color: T.accent }}>●</span> A tiempo</span>
         <span><span style={{ color: T.yellow }}>●</span> Tardío</span>
+        <div style={{ fontSize: 11, color: T.focusText, letterSpacing: 0.5, textTransform: "uppercase", marginTop: 6 }}>Novedades abiertas</div>
+        <span><span style={{ color: COLORES_ANILLO.rojo }}>◯</span> Crítica</span>
+        <span><span style={{ color: COLORES_ANILLO.amarillo }}>◯</span> Media</span>
+        <span><span style={{ color: COLORES_ANILLO.verde }}>◯</span> Baja</span>
       </div>
       <div style={{ position: "relative", flex: "1 1 320px", minWidth: 0 }}>
         {cargando && (

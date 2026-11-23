@@ -18,6 +18,7 @@ import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
 import { FichaInstalacion } from "../../components/ui/FichaInstalacion";
+import { iconoInstalacion, iniciarAnillos, COLORES_ANILLO } from "../../utils/anilloNovedades";
 import { esRutina } from "../../utils/novedades";
 import { DetalleNovedadModal, ResolverModal } from "../supervisor/SupNovedades";
 import { NovedadesPorDia } from "../../components/ui/NovedadesPorDia";
@@ -74,6 +75,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
   const containerRef         = useRef(null);
   const mapRef               = useRef(null);
   const guardiasRef          = useRef({});
+  const detenerAnillosRef    = useRef(null);
   const guardiasInicialesRef = useRef(guardiasIniciales);
   const [mapReady,  setMapReady]  = useState(false);
   const [cargando,  setCargando]  = useState(true);
@@ -98,23 +100,22 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
       .then((data) => {
         const lista = Array.isArray(data) ? data : (data.data ?? []);
         const pts = [];
+        const marcadores = {};
         lista.forEach((inst) => {
           if (!inst.latitud || !inst.longitud) return;
           pts.push([inst.latitud, inst.longitud]);
-          const icon = L.divIcon({
-            html: `<div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer"><div style="width:20px;height:20px;background:${C_COLOR};border:2.5px solid #0E1714;border-radius:50%;box-shadow:0 0 10px ${C_COLOR},0 0 20px ${C_COLOR}22;"></div></div>`,
-            className: "", iconSize: [30, 30], iconAnchor: [15, 15], // área de clic de 30 px: el punto visible mide unos 25 px
-          });
-          // Al hacer clic se muestra la ficha bajo el mapa.
-          L.marker([inst.latitud, inst.longitud], { icon })
+          // Al hacer clic se muestra la ficha; el anillo indica novedades abiertas (se refresca solo).
+          const marcador = L.marker([inst.latitud, inst.longitud], { icon: iconoInstalacion(L, C_COLOR) })
             .addTo(map)
             .on("click", () => setSel(inst));
+          marcadores[inst.id] = { marker: marcador, col: C_COLOR, urgencia: null };
           L.circle([inst.latitud, inst.longitud], {
             radius: inst.radio_geofence_m ?? 100, color: C_COLOR,
             fillColor: C_COLOR, fillOpacity: 0.06, weight: 1.5, dashArray: "4 4",
           }).addTo(map);
         });
         if (pts.length) map.fitBounds(pts, { padding: [40, 40], maxZoom: 14 });
+        if (mapRef.current === map) detenerAnillosRef.current = iniciarAnillos({ L, apiBase: API_BASE, token, marcadores });
 
         // Pintar ubicaciones persistidas en caché
         Object.values(guardiasInicialesRef.current).forEach((ub) => {
@@ -138,7 +139,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
       .catch((e) => console.error("[CentralMapa] Error:", e))
       .finally(() => setCargando(false));
 
-    return () => { map.remove(); mapRef.current = null; };
+    return () => { detenerAnillosRef.current?.(); detenerAnillosRef.current = null; map.remove(); mapRef.current = null; };
   }, [mapReady, token]);
 
   // Actualizar marcador en tiempo real al recibir evento de socket
@@ -178,6 +179,9 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
         <span><span style={{ color: C_COLOR }}>●</span> Instalación</span>
         <span><span style={{ color: C_COLOR }}>●</span> A tiempo</span>
         <span><span style={{ color: T.yellow }}>●</span> Tardío</span>
+        <span><span style={{ color: COLORES_ANILLO.rojo }}>◯</span> Novedad crítica</span>
+        <span><span style={{ color: COLORES_ANILLO.amarillo }}>◯</span> Media</span>
+        <span><span style={{ color: COLORES_ANILLO.verde }}>◯</span> Baja</span>
       </div>
     </div>
   );
