@@ -102,7 +102,9 @@ function CarruselSemanal({ items, render, campoFecha }) {
       </div>
         <div className="nov-semana">
             {Array.from({ length: 7 }, (_, i) => sumarDias(clave, i)).map((dia) => {
-              const delDia = lista.filter((item) => ahoraChile(new Date(item[campoFecha])).fecha === dia);
+              // Dentro de cada día se lee como línea de tiempo: de la madrugada a la noche
+              const delDia = lista.filter((item) => ahoraChile(new Date(item[campoFecha])).fecha === dia)
+                .sort((a, b) => new Date(a[campoFecha]) - new Date(b[campoFecha]));
               const esHoy = dia === ahoraChile().fecha;
               const [a, m, d] = partes(dia);
               return (
