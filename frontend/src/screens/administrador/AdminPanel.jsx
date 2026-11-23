@@ -173,7 +173,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
         <div style={{ fontSize: 11, color: T.focusText, letterSpacing: 0.5, textTransform: "uppercase", marginTop: 6 }}>Anillo</div>
         <span><span style={{ color: COLORES_ANILLO.rojo }}>◯</span> Crítica</span>
         <span><span style={{ color: COLORES_ANILLO.amarillo }}>◯</span> Media</span>
-        <span><span style={{ color: COLORES_ANILLO.sinmarcar }}>◌</span> Guardia sin marcar</span>
+        <span><span style={{ color: COLORES_ANILLO.sinmarcar }}>◌</span> GGSS sin marcar</span>
       </div>
       <div style={{ position: "relative", flex: "1 1 320px", minWidth: 0 }}>
         {cargando && (
