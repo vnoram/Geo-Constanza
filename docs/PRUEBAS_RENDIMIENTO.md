@@ -44,3 +44,21 @@ Ninguna solicitud falló en los 6 escenarios (más de 60.000 respuestas 2xx).
 1. Cambiar `bcryptjs` por una implementación nativa (`bcrypt` o `argon2`), que corre fuera del hilo principal. Los hashes existentes de bcrypt siguen siendo compatibles.
 2. Mantener el límite de peticiones específico para `/auth/login` (ya existe protección contra fuerza bruta en el 2FA).
 3. Repetir esta medición con más datos y contra un entorno de pruebas en Azure antes de comprometer niveles de servicio.
+
+## Medición de los KPI del informe (pendiente de ejecutar)
+
+Los KPI "validación de geocerca < 3 s" y "alerta crítica < 5 s" **todavía no tienen medición propia**. El script `backend/scripts/medicion-kpi.js` los mide contra un entorno desplegado y guarda p50, p95 y p99 en `resultados-kpi/kpi-<fecha>.json` y `.md`. Los números que salgan son los únicos que se pueden citar; hasta entonces el informe no debe afirmar que se cumplen.
+
+- **KPI-1 (geocerca):** tiempo de `POST /asistencia/entrada-fallback` (incluye validación Haversine, consultas y escritura), una entrada por guardia de prueba.
+- **KPI-2 (alerta):** desde que el guardia envía una novedad roja hasta que el operador central recibe `alerta_critica_central` por Socket.IO (exige instalación con criticidad Alta).
+- Mide desde el cliente, así que incluye la red. Con pocos guardias de prueba la muestra de KPI-1 es pequeña (el script lo avisa: p95 y p99 equivalen al máximo); para más muestras, usar más guardias de prueba con turno vigente.
+- **Crea datos** (asistencias y novedades "[KPI]"): usar un entorno de pruebas o guardias de prueba, no producción real.
+
+```bash
+cd backend && npm ci
+export KPI_API_URL=https://<api> KPI_LAT=<lat dentro de la geocerca> KPI_LON=<lon>
+export KPI_GUARDIAS='rut1:clave1,rut2:clave2' KPI_CENTRAL_RUT=<rut> KPI_CENTRAL_PASSWORD=<clave>
+node scripts/medicion-kpi.js --confirmo-datos-de-prueba --alertas 30
+```
+
+Contra el contenedor de Azure (0,5 vCPU, 0 a 1 réplicas) conviene correrlo dos veces: una en frío (réplica dormida) y otra en caliente, y reportar ambas por separado.

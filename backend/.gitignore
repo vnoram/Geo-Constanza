@@ -18,3 +18,4 @@ prisma/dev.db-journal
 
 # Database dumps
 *.dump
+resultados-kpi/
