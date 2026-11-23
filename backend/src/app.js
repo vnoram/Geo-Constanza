@@ -21,6 +21,7 @@ const novedadesRoutes = require('./routes/novedades.routes');
 const solicitudesRoutes = require('./routes/solicitudes.routes');
 const documentosRoutes = require('./routes/documentos.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
+const alertasRoutes = require('./routes/alertas.routes');
 const reportesRoutes = require('./routes/reportes.routes');
 const auditoriaRoutes = require('./routes/auditoria.routes');
 
@@ -110,6 +111,7 @@ app.use('/api/v1/novedades', novedadesRoutes);
 app.use('/api/v1/solicitudes', solicitudesRoutes);
 app.use('/api/v1/documentos', documentosRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/v1/alertas', alertasRoutes);
 app.use('/api/v1/reportes', reportesRoutes);
 app.use('/api/v1/auditoria', auditoriaRoutes);
 // Nivel de plataforma (solo SUPER_ADMIN): gestión de empresas
