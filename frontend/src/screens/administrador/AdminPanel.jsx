@@ -151,6 +151,12 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
 
   return (
     <div className="g9-mapa-layout" style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start", marginBottom: 20 }}>
+      {/* Ficha de la instalación elegida: en pantalla ancha ocupa el espacio libre a la izquierda de la leyenda */}
+      {sel && (
+        <div className="admin-map-ficha">
+          <FichaInstalacion inst={sel.inst} color={sel.col} token={token} onCerrar={() => setSel(null)} />
+        </div>
+      )}
       {/* Leyenda a la izquierda, ordenada por prioridad */}
       <div className="admin-map-legend" style={{
         flex: "0 0 150px", display: "flex", flexDirection: "column", gap: 7, fontSize: 12, color: T.textSec,
@@ -168,7 +174,6 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
         {cargando && (
           <div className="g9-mapa-carga"><Esqueleto filas={1} alto={240} /></div>
         )}
-        {sel && <FichaInstalacion flotante inst={sel.inst} color={sel.col} token={token} onCerrar={() => setSel(null)} />}
         <div ref={containerRef} className="central-map" role="region" aria-label="Mapa de instalaciones y guardias" aria-busy={cargando} style={{ borderRadius: 8, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }} />
       </div>
     </div>

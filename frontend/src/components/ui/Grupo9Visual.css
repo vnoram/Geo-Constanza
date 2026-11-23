@@ -61,7 +61,34 @@
   line-height: 1.6;
 }
 
+/* Ficha de la instalación seleccionada (fuera del mapa). Por defecto va antes de la leyenda; con pantalla
+   ancha usa el espacio libre a la izquierda de la leyenda, entre el menú y el contenido. */
+.g9-mapa-layout .admin-map-ficha {
+  flex: 0 0 240px;
+  max-height: 580px;
+  overflow-y: auto;
+}
+
+@media (min-width: 1800px) {
+  .g9-mapa-layout {
+    position: relative;
+  }
+
+  .g9-mapa-layout .admin-map-ficha {
+    position: absolute;
+    top: 0;
+    right: calc(100% + 12px);
+    width: 210px;
+    flex: none;
+  }
+}
+
 @media (max-width: 420px) {
+  .g9-mapa-layout .admin-map-ficha {
+    flex-basis: 100% !important;
+    max-height: none !important;
+  }
+
   .g9-mapa-layout .admin-map-legend {
     flex-basis: auto !important;
     width: 100%;
