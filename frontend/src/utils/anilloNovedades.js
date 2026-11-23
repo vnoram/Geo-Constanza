@@ -1,14 +1,15 @@
 import { COLOR_URGENCIA } from "./fichaInstalacion";
 
 // Marcador de instalación en el mapa (Leaflet): punto del color del tipo de recinto y, si la instalación
-// tiene novedades abiertas, un anillo del color de la urgencia más alta (rojo > amarillo > verde).
+// tiene novedades abiertas críticas o medias, un anillo del color de la urgencia más alta (rojo > amarillo).
+// Las de urgencia baja (verde) no llevan anillo.
 // Estilos: .gc-marcador / .gc-anillo en components/ui/Grupo9Visual.css.
 
 export const urgenciaMaxima = (fila) => {
-  if (!fila || !fila.total) return null;
+  if (!fila) return null;
   if (fila.rojo > 0) return "rojo";
   if (fila.amarillo > 0) return "amarillo";
-  return "verde";
+  return null;
 };
 
 export const iconoInstalacion = (L, color, urgencia = null) => L.divIcon({

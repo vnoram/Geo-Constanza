@@ -181,7 +181,6 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
         <span><span style={{ color: T.yellow }}>●</span> Tardío</span>
         <span><span style={{ color: COLORES_ANILLO.rojo }}>◯</span> Novedad crítica</span>
         <span><span style={{ color: COLORES_ANILLO.amarillo }}>◯</span> Media</span>
-        <span><span style={{ color: COLORES_ANILLO.verde }}>◯</span> Baja</span>
       </div>
     </div>
   );
