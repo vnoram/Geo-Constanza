@@ -363,18 +363,6 @@ export function AdminTurnos() {
         />
       )}
 
-      <div style={{
-        background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: T.radius,
-        padding: "12px 16px", marginTop: 18, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
-      }}>
-        <Icon name="download" size={22} />
-        <div style={{ flex: 1, minWidth: 180 }}>
-          <div style={{ fontWeight: 700, fontSize: 13 }}>Importar turnos</div>
-          <div style={{ fontSize: 11, color: T.textMut }}>CSV o Excel con los turnos programados (próximamente)</div>
-        </div>
-        <Btn variant="outline" disabled>Seleccionar archivo</Btn>
-      </div>
-
       <AnimatePresence>{modalAbierto && (
         <ModalPauta4x4
           onClose={() => setModalAbierto(false)}
