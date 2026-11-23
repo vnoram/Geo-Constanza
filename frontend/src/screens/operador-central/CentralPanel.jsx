@@ -17,7 +17,7 @@ import { useAuth } from "../../context/authCtx";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
-import { escaparHtml } from "../../utils/html";
+import { htmlCabeceraInstalacion, htmlFichaInstalacion } from "../../utils/fichaInstalacion";
 import { esRutina } from "../../utils/novedades";
 import { DetalleNovedadModal, ResolverModal } from "../supervisor/SupNovedades";
 import { NovedadesPorDia } from "../../components/ui/NovedadesPorDia";
@@ -104,14 +104,20 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
             html: `<div style="width:14px;height:14px;background:${C_COLOR};border:2.5px solid #0E1714;border-radius:50%;box-shadow:0 0 10px ${C_COLOR},0 0 20px ${C_COLOR}22;"></div>`,
             className: "", iconSize: [14, 14], iconAnchor: [7, 7],
           });
-          L.marker([inst.latitud, inst.longitud], { icon })
+          const marcador = L.marker([inst.latitud, inst.longitud], { icon })
             .addTo(map)
             .bindPopup(
-              `<b>${escaparHtml(inst.nombre)}</b><br>` +
-              `<span style="color:#A8B7AE;font-size:11px">${escaparHtml(inst.direccion || "—")}</span><br>` +
-              `<span style="color:${C_COLOR};font-size:11px">Radio: ${inst.radio_geofence_m ?? 100}m · ${escaparHtml(inst.nivel_criticidad ?? "Media")}</span>`,
-              { className: "gc-popup" },
+              `${htmlCabeceraInstalacion(inst, C_COLOR)}<div style="color:#7C8F85;font-size:11px;margin-top:8px">Cargando ficha…</div>`,
+              { className: "gc-popup", maxWidth: 280, minWidth: 220 },
             );
+          // Al abrir el popup se pide la ficha del día (guardias de turno, novedades abiertas, supervisión).
+          marcador.on("popupopen", () => {
+            fetch(`${API_BASE}/instalaciones/${encodeURIComponent(inst.id)}/resumen`, { headers: { Authorization: `Bearer ${token}` } })
+              .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+              .then(({ data }) => marcador.getPopup()?.setContent(htmlFichaInstalacion(inst, data, C_COLOR)))
+              .catch(() => marcador.getPopup()?.setContent(
+                `${htmlCabeceraInstalacion(inst, C_COLOR)}<div style="color:#F0A35E;font-size:11px;margin-top:8px">No se pudo cargar la ficha.</div>`));
+          });
           L.circle([inst.latitud, inst.longitud], {
             radius: inst.radio_geofence_m ?? 100, color: C_COLOR,
             fillColor: C_COLOR, fillOpacity: 0.06, weight: 1.5, dashArray: "4 4",

@@ -1,8 +1,9 @@
 const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
-const { resolverInstalacionesSupervisor } = require('./supervisor.helper');
+const { resolverInstalacionesSupervisor, exigirAlcanceInstalacion } = require('./supervisor.helper');
 const { TOLERANCIA_POR_DEFECTO_MINUTOS } = require('../constants/cobertura');
-const { ESTADO_TURNO } = require('../constants/estados');
+const { ESTADO_TURNO, ESTADO_NOVEDAD } = require('../constants/estados');
+const { turnosDeHoy, intervaloTurno } = require('../utils/fechaChile');
 
 const validarTolerancia = (valor) => {
   const numero = Number(valor);
@@ -44,6 +45,55 @@ const listar = async (query, user) => {
     },
     orderBy: { nombre: 'asc' },
   });
+};
+
+// Ficha de una instalación para el mapa: quién está de turno hoy, novedades abiertas y supervisores.
+// Solo lectura. `prisma` ya está limitado a la empresa del token; el supervisor además
+// queda limitado a sus instalaciones (exigirAlcanceInstalacion).
+const URGENCIAS_RESUMEN = ['rojo', 'amarillo', 'verde'];
+const resumen = async (id, user, ahora = new Date()) => {
+  await exigirAlcanceInstalacion(user, id);
+  const instalacion = await prisma.instalacion.findUniqueOrThrow({
+    where: { id },
+    select: {
+      id: true, nombre: true, direccion: true, comuna: true, tipo_recinto: true, estado: true,
+      nivel_criticidad: true, radio_geofence_m: true, tolerancia_atraso_minutos: true,
+      supervisores: { select: { supervisor: { select: { nombre: true } } } },
+    },
+  });
+  const ventana = turnosDeHoy(ahora);
+  const [turnos, abiertas] = await Promise.all([
+    prisma.turno.findMany({
+      where: { instalacion_id: id, estado: { not: ESTADO_TURNO.CANCELADO }, ...ventana.where },
+      select: {
+        id: true, fecha: true, hora_inicio: true, hora_fin: true, usuario: { select: { nombre: true } },
+        asistencias: { select: { estado: true, hora_entrada: true, hora_salida: true }, orderBy: { hora_entrada: 'desc' }, take: 1 },
+      },
+      orderBy: [{ fecha: 'asc' }, { hora_inicio: 'asc' }],
+    }),
+    prisma.novedad.findMany({
+      where: { instalacion_id: id, estado: { not: ESTADO_NOVEDAD.RESUELTA } },
+      select: { numero: true, tipo: true, urgencia: true, estado: true, created_at: true },
+      orderBy: { created_at: 'desc' },
+    }),
+  ]);
+
+  const turnos_hoy = turnos.filter(ventana.incluir).map((t) => {
+    const a = t.asistencias[0] ?? null;
+    let estado = ahora < intervaloTurno(t).inicio ? 'por_iniciar' : 'faltante';
+    if (a) estado = a.hora_salida ? 'finalizado' : (a.estado === 'tardio' ? 'tardio' : 'presente');
+    return { turno_id: t.id, guardia: t.usuario?.nombre ?? 'Sin asignar', hora_inicio: t.hora_inicio, hora_fin: t.hora_fin,
+      estado, hora_entrada: a?.hora_entrada ?? null };
+  });
+
+  const por_urgencia = Object.fromEntries(URGENCIAS_RESUMEN.map((u) => [u, abiertas.filter((n) => n.urgencia === u).length]));
+  const { supervisores, ...datos } = instalacion;
+  return {
+    instalacion: datos,
+    supervisores: supervisores.map((s) => s.supervisor.nombre),
+    turnos_hoy,
+    novedades_abiertas: { total: abiertas.length, ...por_urgencia, ultimas: abiertas.slice(0, 3) },
+  };
 };
 
 const crear = async (data) => {
@@ -160,4 +210,4 @@ const editar = async (id, data) => {
   });
 };
 
-module.exports = { listar, obtenerPorId, crear, editar };
+module.exports = { listar, obtenerPorId, resumen, crear, editar };

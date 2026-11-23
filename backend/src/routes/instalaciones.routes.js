@@ -185,6 +185,31 @@
  *           format: date-time
  */
 
+/**
+ * @swagger
+ * /api/v1/instalaciones/{id}/resumen:
+ *   get:
+ *     summary: Ficha de una instalación (mapa)
+ *     description: >
+ *       Guardias de turno hoy con su estado de asistencia, novedades abiertas por urgencia
+ *       y supervisores asignados. Un supervisor solo accede a sus instalaciones.
+ *     tags: [Instalaciones]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Resumen de la instalación
+ *       403:
+ *         description: Instalación fuera del alcance del supervisor
+ *       404:
+ *         description: Instalación no encontrada
+ */
 const { Router } = require('express');
 const instalacionesController = require('../controllers/instalaciones.controller');
 const { authenticate } = require('../middlewares/auth');
@@ -196,6 +221,7 @@ const router = Router();
 router.use(authenticate, exigirEmpresa);
 
 router.get('/', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), instalacionesController.listar);
+router.get('/:id/resumen', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), instalacionesController.resumen);
 router.post('/', authorize(ROLES.ADMINISTRADOR), instalacionesController.crear);
 router.put('/:id', authorize(ROLES.ADMINISTRADOR), instalacionesController.editar);
 
