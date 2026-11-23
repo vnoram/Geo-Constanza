@@ -215,7 +215,7 @@
   outline-offset: -3px;
 }
 
-/* Marcador de instalación con anillo según la urgencia de sus novedades abiertas (utils/anilloNovedades.js) */
+/* Marcador de instalación con anillo según novedades abiertas o guardias sin marcar (utils/anilloNovedades.js) */
 .gc-marcador {
   position: relative;
   width: 36px;
@@ -237,6 +237,7 @@
 
 .gc-anillo-rojo     { border-color: #E86A2A; animation: gc-pulso 1.8s ease-out infinite; }
 .gc-anillo-amarillo { border-color: #F0A35E; }
+.gc-anillo-sinmarcar { border-color: rgba(242, 220, 138, 0.75); border-style: dashed; }
 
 @keyframes gc-pulso {
   0%   { box-shadow: 0 0 0 0 rgba(232, 106, 42, 0.55); }

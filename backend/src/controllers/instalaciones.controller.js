@@ -18,9 +18,9 @@ const resumen = async (req, res, next) => {
   }
 };
 
-const estadoNovedades = async (req, res, next) => {
+const estadoMapa = async (req, res, next) => {
   try {
-    res.json({ data: await instalacionesService.estadoNovedades(req.user) });
+    res.json({ data: await instalacionesService.estadoMapa(req.user) });
   } catch (error) {
     next(error);
   }
@@ -67,4 +67,4 @@ const editar = async (req, res, next) => {
   }
 };
 
-module.exports = { listar, resumen, estadoNovedades, crear, editar };
+module.exports = { listar, resumen, estadoMapa, crear, editar };

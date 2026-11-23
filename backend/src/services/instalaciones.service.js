@@ -5,6 +5,7 @@ const { TOLERANCIA_POR_DEFECTO_MINUTOS } = require('../constants/cobertura');
 const { ESTADO_TURNO, ESTADO_NOVEDAD } = require('../constants/estados');
 const { turnosDeHoy, intervaloTurno } = require('../utils/fechaChile');
 const { SOLO_INCIDENCIAS } = require('./priorizacion.service');
+const { AUSENCIAS } = require('../constants/solicitudes');
 
 const validarTolerancia = (valor) => {
   const numero = Number(valor);
@@ -97,20 +98,45 @@ const resumen = async (id, user, ahora = new Date()) => {
   };
 };
 
-// Novedades abiertas (no resueltas, sin rutina) por instalación y urgencia, para el anillo de color del mapa.
-// Devuelve { [instalacion_id]: { total, rojo, amarillo, verde } } solo para instalaciones con pendientes.
-const estadoNovedades = async (user) => {
-  const where = { ...SOLO_INCIDENCIAS, estado: { not: ESTADO_NOVEDAD.RESUELTA } };
+// Estado de cada instalación para el anillo del mapa:
+//   novedades  -> abiertas (no resueltas, sin rutina) por urgencia
+//   sin_marcar -> turnos de hoy ya iniciados, con guardia asignado, sin entrada y sin ausencia aprobada
+// Devuelve { [instalacion_id]: { novedades: { total, rojo, amarillo, verde }, sin_marcar } } solo para
+// instalaciones con algo pendiente. El supervisor ve solo las suyas.
+const estadoMapa = async (user, ahora = new Date()) => {
+  const ventana = turnosDeHoy(ahora);
+  const whereNov = { ...SOLO_INCIDENCIAS, estado: { not: ESTADO_NOVEDAD.RESUELTA } };
+  const whereTurno = { estado: { not: ESTADO_TURNO.CANCELADO }, usuario_id: { not: null }, ...ventana.where };
   if (user && user.rol === ROLES.SUPERVISOR) {
-    where.instalacion_id = { in: await resolverInstalacionesSupervisor(user) };
+    const ids = { in: await resolverInstalacionesSupervisor(user) };
+    whereNov.instalacion_id = ids;
+    whereTurno.instalacion_id = ids;
   }
-  const grupos = await prisma.novedad.groupBy({ by: ['instalacion_id', 'urgencia'], where, _count: { _all: true } });
+  const [grupos, turnos] = await Promise.all([
+    prisma.novedad.groupBy({ by: ['instalacion_id', 'urgencia'], where: whereNov, _count: { _all: true } }),
+    prisma.turno.findMany({
+      where: whereTurno,
+      select: { fecha: true, hora_inicio: true, hora_fin: true, instalacion_id: true, usuario_id: true, asistencias: { select: { id: true }, take: 1 } },
+    }),
+  ]);
+
   const porInstalacion = {};
+  const fila = (id) => (porInstalacion[id] ??= { novedades: { total: 0, rojo: 0, amarillo: 0, verde: 0 }, sin_marcar: 0 });
   for (const g of grupos) {
-    const fila = porInstalacion[g.instalacion_id] ??= { total: 0, rojo: 0, amarillo: 0, verde: 0 };
-    if (g.urgencia in fila) fila[g.urgencia] += g._count._all;
-    fila.total += g._count._all;
+    const n = fila(g.instalacion_id).novedades;
+    if (g.urgencia in n) n[g.urgencia] += g._count._all;
+    n.total += g._count._all;
   }
+
+  const sinEntrada = turnos.filter(ventana.incluir).filter((t) => t.asistencias.length === 0 && ahora >= intervaloTurno(t).inicio);
+  const usuarios = [...new Set(sinEntrada.map((t) => t.usuario_id))];
+  const ausencias = usuarios.length === 0 ? [] : await prisma.solicitud.findMany({
+    where: { usuario_id: { in: usuarios }, tipo: { in: Object.keys(AUSENCIAS) }, estado: 'aprobada' },
+    select: { usuario_id: true, fecha_desde: true, fecha_hasta: true },
+  });
+  const dia = (d) => new Date(d).toISOString().slice(0, 10);
+  const ausente = (t) => ausencias.some((s) => s.usuario_id === t.usuario_id && dia(s.fecha_desde) <= dia(t.fecha) && dia(t.fecha) <= dia(s.fecha_hasta ?? s.fecha_desde));
+  for (const t of sinEntrada) if (!ausente(t)) fila(t.instalacion_id).sin_marcar += 1;
   return porInstalacion;
 };
 
@@ -228,4 +254,4 @@ const editar = async (id, data) => {
   });
 };
 
-module.exports = { listar, obtenerPorId, resumen, estadoNovedades, crear, editar };
+module.exports = { listar, obtenerPorId, resumen, estadoMapa, crear, editar };

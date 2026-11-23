@@ -212,12 +212,13 @@
  */
 /**
  * @swagger
- * /api/v1/instalaciones/estado-novedades:
+ * /api/v1/instalaciones/estado-mapa:
  *   get:
- *     summary: Novedades abiertas por instalación y urgencia (anillo del mapa)
+ *     summary: Estado de cada instalación para el mapa (anillo)
  *     description: >
- *       Mapa `{ instalacion_id: { total, rojo, amarillo, verde } }` con las novedades no resueltas
- *       (sin rutina). Solo incluye instalaciones con pendientes. Un supervisor ve solo las suyas.
+ *       Mapa `{ instalacion_id: { novedades: { total, rojo, amarillo, verde }, sin_marcar } }`: novedades no
+ *       resueltas (sin rutina) y turnos de hoy iniciados sin entrada. Solo incluye instalaciones con algo
+ *       pendiente. Un supervisor ve solo las suyas.
  *     tags: [Instalaciones]
  *     security:
  *       - bearerAuth: []
@@ -236,7 +237,7 @@ const router = Router();
 router.use(authenticate, exigirEmpresa);
 
 router.get('/', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), instalacionesController.listar);
-router.get('/estado-novedades', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), instalacionesController.estadoNovedades);
+router.get('/estado-mapa', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), instalacionesController.estadoMapa);
 router.get('/:id/resumen', authorize(ROLES.SUPERVISOR, ROLES.OPERADOR_CENTRAL, ROLES.ADMINISTRADOR), instalacionesController.resumen);
 router.post('/', authorize(ROLES.ADMINISTRADOR), instalacionesController.crear);
 router.put('/:id', authorize(ROLES.ADMINISTRADOR), instalacionesController.editar);

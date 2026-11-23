@@ -1,5 +1,5 @@
 jest.mock('../../config/database', () => ({ prisma: {
-  instalacion: { findUniqueOrThrow: jest.fn() }, turno: { findMany: jest.fn() }, novedad: { findMany: jest.fn(), groupBy: jest.fn() },
+  instalacion: { findUniqueOrThrow: jest.fn() }, turno: { findMany: jest.fn() }, solicitud: { findMany: jest.fn() }, novedad: { findMany: jest.fn(), groupBy: jest.fn() },
 } }));
 jest.mock('../supervisor.helper', () => ({ resolverInstalacionesSupervisor: jest.fn(), exigirAlcanceInstalacion: jest.fn() }));
 const { resolverInstalacionesSupervisor } = require('../supervisor.helper');
@@ -52,23 +52,39 @@ test('respeta el alcance del supervisor antes de consultar', async () => {
   expect(prisma.instalacion.findUniqueOrThrow).not.toHaveBeenCalled();
 });
 
-test('estado de novedades agrupa por instalación y urgencia, sin resueltas ni rutina', async () => {
+// ── estadoMapa ──
+const turnoHoy = (usuario_id, ini, fin, instalacion_id, asistencias = []) => ({ fecha, hora_inicio: ini, hora_fin: fin, instalacion_id, usuario_id, asistencias });
+
+test('estado del mapa: novedades por urgencia y guardias que no han marcado', async () => {
   prisma.novedad.groupBy.mockResolvedValue([
     { instalacion_id: 'i1', urgencia: 'rojo', _count: { _all: 2 } },
     { instalacion_id: 'i1', urgencia: 'verde', _count: { _all: 1 } },
     { instalacion_id: 'i2', urgencia: 'amarillo', _count: { _all: 3 } },
   ]);
-  const r = await service.estadoNovedades({ id: 'c1', rol: ROLES.OPERADOR_CENTRAL });
-  expect(r).toEqual({ i1: { total: 3, rojo: 2, amarillo: 0, verde: 1 }, i2: { total: 3, rojo: 0, amarillo: 3, verde: 0 } });
+  prisma.turno.findMany.mockResolvedValue([
+    turnoHoy('u1', '14:00', '22:00', 'i3'),                          // ya empezó (15:00) y no marcó
+    turnoHoy('u2', '07:00', '14:00', 'i3', [{ id: 'a1' }]),           // marcó
+    turnoHoy('u3', '19:00', '07:00', 'i3'),                          // aún no empieza
+    turnoHoy('u4', '14:00', '22:00', 'i4'),                          // ausencia aprobada
+  ]);
+  prisma.solicitud.findMany.mockResolvedValue([{ usuario_id: 'u4', fecha_desde: fecha, fecha_hasta: null }]);
+  const r = await service.estadoMapa({ id: 'c1', rol: ROLES.OPERADOR_CENTRAL }, ahora);
+  expect(r.i1).toEqual({ novedades: { total: 3, rojo: 2, amarillo: 0, verde: 1 }, sin_marcar: 0 });
+  expect(r.i2.novedades).toMatchObject({ total: 3, amarillo: 3 });
+  expect(r.i3).toEqual({ novedades: { total: 0, rojo: 0, amarillo: 0, verde: 0 }, sin_marcar: 1 });
+  expect(r.i4).toBeUndefined();
   const arg = prisma.novedad.groupBy.mock.calls[0][0];
   expect(arg.by).toEqual(['instalacion_id', 'urgencia']);
   expect(arg.where).toMatchObject({ estado: { not: 'resuelta' }, tipo: { notIn: expect.any(Array) } });
   expect(arg.where.instalacion_id).toBeUndefined();
+  expect(prisma.turno.findMany.mock.calls[0][0].where).toMatchObject({ estado: { not: 'cancelado' }, usuario_id: { not: null } });
 });
 
-test('el supervisor solo cuenta sus instalaciones', async () => {
+test('el supervisor solo ve sus instalaciones en el estado del mapa', async () => {
   resolverInstalacionesSupervisor.mockResolvedValue(['i1']);
   prisma.novedad.groupBy.mockResolvedValue([]);
-  await service.estadoNovedades({ id: 's1', rol: ROLES.SUPERVISOR });
+  prisma.turno.findMany.mockResolvedValue([]);
+  await service.estadoMapa({ id: 's1', rol: ROLES.SUPERVISOR }, ahora);
   expect(prisma.novedad.groupBy.mock.calls[0][0].where.instalacion_id).toEqual({ in: ['i1'] });
+  expect(prisma.turno.findMany.mock.calls[0][0].where.instalacion_id).toEqual({ in: ['i1'] });
 });
