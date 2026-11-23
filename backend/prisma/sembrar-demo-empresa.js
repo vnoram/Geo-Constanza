@@ -134,6 +134,6 @@ async function main() {
   }
 }
 
-module.exports = { fechasDeTrabajo, esBaseLocal, DIAS_PAUTA };
+module.exports = { fechasDeTrabajo, esBaseLocal, DIAS_PAUTA, DIAS_ATRAS, CICLO, PLANTILLA };
 
 if (require.main === module) main().catch((e) => { console.error('Error:', e.message); process.exit(1); });
