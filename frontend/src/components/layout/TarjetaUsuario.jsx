@@ -41,9 +41,6 @@ export function TarjetaUsuario({ user, etiquetaRol, iconoRol, onAbrirPerfil }) {
         }}>
           <Icon name={iconoRol} size={13} color={T.focusText} />{etiquetaRol}
         </span>
-        <span style={{ ...fila, width: "auto", padding: "3px 9px", borderRadius: 999, color: T.accent, background: T.accentGhost, border: `1px solid ${T.accent}` }}>
-          <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: T.accent }} />Sesión activa
-        </span>
       </div>
 
       {(user.empresa?.nombre || instalacion) && (
