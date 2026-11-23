@@ -111,7 +111,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
           <div className="admin-list-row__main">
             <div style={{ fontWeight: 800, fontSize: 17, color: T.text }}>Generar Pauta 4×4</div>
             <div style={{ fontSize: 12, color: T.textMut, marginTop: 2 }}>
-              32 días · 4 trabajo / 4 descanso
+              6 meses · 4 trabajo / 4 descanso
             </div>
           </div>
           <button className="touch-target gc-accion-btn gc-accion-btn--morado" aria-label="Cerrar" onClick={onClose} style={{
@@ -192,11 +192,11 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
 
             <div style={{ fontSize: 12, fontWeight: 500, color: T.textSec, marginBottom: 6 }}>Primer día de la pauta</div>
             <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>
-              Elige el primer día: se marcan solos los 16 turnos del ciclo (4 días de trabajo, 4 de descanso).
+              Elige el primer día: se marcan solos los 92 turnos de 6 meses (4 días de trabajo, 4 de descanso).
             </div>
             <div style={{ marginBottom: 14 }}>
               <CalendarioRango
-                marcados={form.fecha_inicio ? Array.from({ length: 32 }, (_, i) => i % 8 < 4 ? sumarDias(form.fecha_inicio, i) : null).filter(Boolean) : []}
+                marcados={form.fecha_inicio ? Array.from({ length: 184 }, (_, i) => i % 8 < 4 ? sumarDias(form.fecha_inicio, i) : null).filter(Boolean) : []}
                 destacados={form.fecha_inicio ? [form.fecha_inicio] : []}
                 onElegir={(iso) => set("fecha_inicio")(iso)}
               />
@@ -245,7 +245,7 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
                   Reemplazar pautas existentes en este rango
                 </div>
                 <div style={{ fontSize: 11, color: T.textMut }}>
-                  Elimina los turnos previos del guardia en los 32 días antes de crear los nuevos.
+                  Elimina los turnos previos del guardia en los 6 meses de la pauta antes de crear los nuevos.
                 </div>
               </div>
             </label>

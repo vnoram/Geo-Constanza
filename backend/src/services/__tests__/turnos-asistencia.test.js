@@ -84,8 +84,26 @@ test('lote detecta conflicto con el turno anterior del mismo lote', async () => 
 test('pauta 4x4 omite choque con nocturno de ayer', async () => {
   prisma.turno.findMany.mockImplementation(async ({ where }) => a.fecha >= where.fecha.gte && a.fecha <= where.fecha.lte ? [a] : []);
   const resultado = await turnos.crearPauta4x4({ usuario_id: 'u', instalacion_id: 'i', fecha_inicio: '2026-09-27', hora_inicio: '00:00', hora_fin: '14:00' }, 'admin');
-  expect(resultado).toMatchObject({ creados: 15, omitidos: 1 });
+  expect(resultado).toMatchObject({ creados: 91, omitidos: 1 });
   expect(resultado.detalles_omitidos[0].motivo).toContain('2026-09-26');
+});
+
+test('pauta 4x4 proyecta 6 meses: 92 turnos en 184 días', async () => {
+  prisma.turno.findMany.mockResolvedValue([]);
+  const resultado = await turnos.crearPauta4x4({ usuario_id: 'u', instalacion_id: 'i', fecha_inicio: '2026-09-27', hora_inicio: '19:00', hora_fin: '07:00' }, 'admin');
+  expect(resultado).toMatchObject({ creados: 92, omitidos: 0 });
+  const fechas = prisma.turno.create.mock.calls.map(([{ data }]) => data.fecha.toISOString().slice(0, 10));
+  expect(fechas[0]).toBe('2026-09-27');
+  expect(fechas[91]).toBe('2027-03-25'); // último día de trabajo del ciclo 23
+});
+
+test('pauta 4x4 con reemplazar borra el rango completo de 6 meses', async () => {
+  prisma.turno.deleteMany = jest.fn().mockResolvedValue({ count: 0 });
+  prisma.turno.findMany.mockResolvedValue([]);
+  await turnos.crearPauta4x4({ usuario_id: 'u', instalacion_id: 'i', fecha_inicio: '2026-09-27', hora_inicio: '19:00', hora_fin: '07:00', reemplazar: true }, 'admin');
+  const { fecha } = prisma.turno.deleteMany.mock.calls[0][0].where;
+  expect(fecha.gte.toISOString().slice(0, 10)).toBe('2026-09-27');
+  expect(fecha.lte.toISOString().slice(0, 10)).toBe('2027-03-29'); // 184 días desde el inicio
 });
 
 test('pauta 4x4 solo en la instalación asignada del guardia', async () => {

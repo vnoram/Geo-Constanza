@@ -226,6 +226,10 @@ const tienePautaVigente = async (usuarioId, db = prisma) => {
   return n > 0;
 };
 
+// La pauta se proyecta por 6 meses: 23 ciclos de 8 días (4 de trabajo y 4 de descanso) = 184 días y 92 turnos.
+const CICLOS_PAUTA = 23;
+const DIAS_PAUTA = CICLOS_PAUTA * 8;
+
 const crearPauta4x4 = async (data, creadoPor) => {
   const { usuario_id, instalacion_id, fecha_inicio, hora_inicio, hora_fin, reemplazar = false } = data;
 
@@ -240,11 +244,11 @@ const crearPauta4x4 = async (data, creadoPor) => {
   // Detectar si es turno nocturno (hora_fin < hora_inicio → termina al día siguiente)
   const esNocturno = hora_fin < hora_inicio;
 
-  // Calcular las fechas exactas de los 16 días de trabajo (4 bloques × 4 días)
+  // Fechas de trabajo: 4 días de trabajo por cada ciclo de 8 días
   const fechasTrabajo = [];
-  for (let i = 0; i < 32; i++) {
+  for (let i = 0; i < DIAS_PAUTA; i++) {
     const diaEnCiclo = (i % 8) + 1; // 1-8
-    if (diaEnCiclo > 4) continue;   // días 5-8 son descanso → exactamente 16 días de trabajo
+    if (diaEnCiclo > 4) continue;   // días 5-8 son descanso
     fechasTrabajo.push(new Date(Date.UTC(
       inicio.getUTCFullYear(),
       inicio.getUTCMonth(),
@@ -254,18 +258,18 @@ const crearPauta4x4 = async (data, creadoPor) => {
   }
 
   // Si reemplazar=true, eliminar todos los turnos existentes (no cancelados)
-  // del usuario en el rango completo de 32 días antes de crear los nuevos.
+  // del usuario en el rango completo de la pauta antes de crear los nuevos.
   if (reemplazar) {
-    const fechaFin32 = new Date(Date.UTC(
+    const fechaFinPauta = new Date(Date.UTC(
       inicio.getUTCFullYear(),
       inicio.getUTCMonth(),
-      inicio.getUTCDate() + 31,
+      inicio.getUTCDate() + DIAS_PAUTA - 1,
       23, 59, 59,
     ));
     await prisma.turno.deleteMany({
       where: {
         usuario_id,
-        fecha: { gte: inicio, lte: fechaFin32 },
+        fecha: { gte: inicio, lte: fechaFinPauta },
         estado: { not: 'cancelado' },
       },
     });
