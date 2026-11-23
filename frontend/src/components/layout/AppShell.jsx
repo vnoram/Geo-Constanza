@@ -3,6 +3,7 @@ import { api } from "../../services/api";
 import { T, FONT, ROLES, SECCIONES_GGSS_PERSONAL } from "../../theme/theme";
 import { Icon } from "../ui/Icon";
 import { TarjetaUsuario } from "./TarjetaUsuario";
+import { PerfilDialogo } from "./PerfilDialogo";
 import { Wordmark } from "../ui/Wordmark";
 import { ROLES as ROL } from "../../constants/roles";
 import { Placeholder } from "../ui/Placeholder";
@@ -156,6 +157,8 @@ export function AppShell({ user, onLogout }) {
   const activeSection = sections.some(s => s.id === seleccion) ? seleccion : sections[0].id;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cambiandoPassword, setCambiandoPassword] = useState(false);
+  const [perfilAbierto, setPerfilAbierto] = useState(false);
+  const puedeCambiarPassword = user.dispositivo !== "personal" || user.rol === ROL.SUPER_ADMIN;
 
   const duracionToken = user.rol === ROL.GGSS ? "30 min" : user.rol === ROL.SUPERVISOR ? "2 h" : user.rol === ROL.SUPER_ADMIN ? "1 h" : "4 h";
   const conSegundoFactor = user.segundoFactor === true;
@@ -235,7 +238,7 @@ export function AppShell({ user, onLogout }) {
           <aside className="app-shell__sidebar" style={{
             background: T.surface, borderRight: `1px solid ${T.border}`,
           }}>
-            <TarjetaUsuario user={user} etiquetaRol={etiquetaRol} iconoRol={role.icon} />
+            <TarjetaUsuario user={user} etiquetaRol={etiquetaRol} iconoRol={role.icon} onAbrirPerfil={() => setPerfilAbierto(true)} />
 
             <div style={{ fontSize: 11, color: T.textMut, marginBottom: 6, fontWeight: 500 }}>
               Navegación
@@ -267,28 +270,6 @@ export function AppShell({ user, onLogout }) {
             })}
 
             <div style={{ marginTop: "auto", paddingTop: 20 }}>
-              <div style={{
-                border: `1px solid ${T.border}`, borderRadius: T.radius,
-                padding: 12, marginBottom: 10, fontSize: 12, color: T.textSec,
-              }}>
-                <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8, fontWeight: 500 }}>Sesión</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <Icon name="clock" size={14} /> Token JWT · <span style={{ fontFamily: FONT.mono }}>{duracionToken}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <Icon name={conSegundoFactor ? "check" : "key-round"} size={14} color={conSegundoFactor ? T.accent : "currentColor"} />
-                  {conSegundoFactor ? "2FA verificado" : "Autenticación estándar"}
-                </div>
-              </div>
-              {user.dispositivo !== "personal" || user.rol === ROL.SUPER_ADMIN ? <button className="touch-target gc-menu-btn gc-menu-btn--verde" onClick={() => setCambiandoPassword(true)} style={{
-                width: "100%", minHeight: 40, padding: "0 14px", marginBottom: 8,
-                background: "transparent", border: `1px solid ${T.border}`,
-                borderRadius: T.radius, color: T.text, fontSize: 13, fontWeight: 500,
-                cursor: "pointer", fontFamily: FONT.ui,
-                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-              }}>
-                <Icon name="key-round" size={16} /> Cambiar contraseña
-              </button> : null}
               <button className="touch-target gc-menu-btn gc-menu-btn--rojo" onClick={onLogout} style={{
                 width: "100%", minHeight: 40, padding: "0 14px",
                 background: "transparent", border: `1px solid ${T.border}`,
@@ -311,7 +292,12 @@ export function AppShell({ user, onLogout }) {
           <RoleContent user={user} rol={user.rol} section={activeSection} />
         </main>
       </div>
-      {cambiandoPassword && (user.dispositivo !== 'personal' || user.rol === ROL.SUPER_ADMIN) && (
+      {perfilAbierto && (
+        <PerfilDialogo user={user} etiquetaRol={etiquetaRol} iconoRol={role.icon} duracionToken={duracionToken} conSegundoFactor={conSegundoFactor}
+          puedeCambiarPassword={puedeCambiarPassword} onCerrar={() => setPerfilAbierto(false)}
+          onCambiarPassword={() => { setPerfilAbierto(false); setCambiandoPassword(true); }} />
+      )}
+      {cambiandoPassword && puedeCambiarPassword && (
         <CambiarPasswordModal onClose={() => setCambiandoPassword(false)} onDone={onLogout} />
       )}
     </div>
