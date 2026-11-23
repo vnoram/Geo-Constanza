@@ -332,7 +332,7 @@ export function AdminUsuarios() {
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 3 }}>
                   <span style={{ fontWeight: 700, fontSize: 14, color: T.text }}>{u.nombre}</span>
                   <Badge color={ROL_BADGE[u.rol] ?? "accent"}>{ROL_LABEL[u.rol] ?? u.rol}</Badge>
-                  <Badge color={u.estado === "activo" ? "accent" : "red"}>{u.estado}</Badge>
+                  {u.estado !== "activo" && <Badge color="red">{u.estado}</Badge>}
                 </div>
                 <div className="admin-user-meta" style={{ fontSize: 11, color: T.textMut }}>
                   <span className="admin-user-meta__text admin-user-meta__email">{u.email}</span>
