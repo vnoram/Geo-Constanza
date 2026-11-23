@@ -168,12 +168,12 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
       {cargando && (
         <div className="g9-mapa-carga"><Esqueleto filas={1} alto={240} /></div>
       )}
+      {sel && <FichaInstalacion flotante inst={sel} color={C_COLOR} token={token} onCerrar={() => setSel(null)} />}
       <div
         className="central-map" role="region" aria-label="Mapa de instalaciones y guardias" aria-busy={cargando}
         ref={containerRef}
         style={{ borderRadius: T.radius, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }}
       />
-      {sel && <div style={{ marginTop: 10 }}><FichaInstalacion inst={sel} color={C_COLOR} token={token} onCerrar={() => setSel(null)} /></div>}
       <div className="g9-leyenda" style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: T.textMut }}>
         <span><span style={{ color: C_COLOR }}>●</span> Instalación</span>
         <span><span style={{ color: C_COLOR }}>●</span> A tiempo</span>

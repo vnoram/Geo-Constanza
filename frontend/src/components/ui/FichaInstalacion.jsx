@@ -5,9 +5,10 @@ import { ESTADO_TURNO, COLOR_URGENCIA, horaChile } from "../../utils/fichaInstal
 
 const titulo = { fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em", color: T.textMut, margin: "12px 0 4px" };
 
-// Ficha de la instalación seleccionada en el mapa: se muestra junto a la leyenda, no como popup.
+// Ficha de la instalación seleccionada en el mapa. `flotante`: panel sobre el borde derecho del mapa
+// (con scroll propio) para no alargar la página. Va dentro del contenedor del mapa, que debe ser `position: relative`.
 // Pide GET /instalaciones/:id/resumen cada vez que cambia la instalación.
-export function FichaInstalacion({ inst, color, token, onCerrar }) {
+export function FichaInstalacion({ inst, color, token, onCerrar, flotante = false }) {
   const [estado, setEstado] = useState({ id: null, data: null, error: false });
 
   useEffect(() => {
@@ -32,7 +33,10 @@ export function FichaInstalacion({ inst, color, token, onCerrar }) {
   return (
     <section aria-label={`Ficha de ${inst.nombre}`} style={{
       background: T.bgCard, border: `1px solid ${T.border}`, borderLeft: `3px solid ${color}`, borderRadius: 8,
-      padding: "10px 12px", fontSize: 12, color: T.textSec, width: "100%", boxSizing: "border-box",
+      padding: "10px 12px", fontSize: 12, color: T.textSec, boxSizing: "border-box",
+      ...(flotante
+        ? { position: "absolute", top: 10, right: 10, width: 230, maxWidth: "calc(100% - 20px)", maxHeight: "calc(100% - 20px)", overflowY: "auto", zIndex: 1000, boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }
+        : { width: "100%" }),
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
         <b style={{ fontSize: 13, color: T.text }}>{inst.nombre}</b>
