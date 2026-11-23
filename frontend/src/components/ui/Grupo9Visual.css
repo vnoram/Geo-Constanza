@@ -62,6 +62,11 @@
 }
 
 @media (max-width: 420px) {
+  .g9-mapa-layout .admin-map-lateral {
+    flex-basis: auto !important;
+    width: 100%;
+  }
+
   .g9-mapa-layout .admin-map-legend {
     flex-basis: auto !important;
     width: 100%;

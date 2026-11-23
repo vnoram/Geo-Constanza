@@ -17,7 +17,7 @@ import { useAuth } from "../../context/authCtx";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
-import { htmlCabeceraInstalacion, htmlFichaInstalacion } from "../../utils/fichaInstalacion";
+import { FichaInstalacion } from "../../components/ui/FichaInstalacion";
 import { esRutina } from "../../utils/novedades";
 import { DetalleNovedadModal, ResolverModal } from "../supervisor/SupNovedades";
 import { NovedadesPorDia } from "../../components/ui/NovedadesPorDia";
@@ -77,6 +77,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
   const guardiasInicialesRef = useRef(guardiasIniciales);
   const [mapReady,  setMapReady]  = useState(false);
   const [cargando,  setCargando]  = useState(true);
+  const [sel,       setSel]       = useState(null);
 
   useLeafletCDN(() => setMapReady(true));
 
@@ -104,20 +105,10 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
             html: `<div style="width:14px;height:14px;background:${C_COLOR};border:2.5px solid #0E1714;border-radius:50%;box-shadow:0 0 10px ${C_COLOR},0 0 20px ${C_COLOR}22;"></div>`,
             className: "", iconSize: [14, 14], iconAnchor: [7, 7],
           });
-          const marcador = L.marker([inst.latitud, inst.longitud], { icon })
+          // Al hacer clic se muestra la ficha bajo el mapa.
+          L.marker([inst.latitud, inst.longitud], { icon })
             .addTo(map)
-            .bindPopup(
-              `${htmlCabeceraInstalacion(inst, C_COLOR)}<div style="color:#7C8F85;font-size:11px;margin-top:8px">Cargando ficha…</div>`,
-              { className: "gc-popup", maxWidth: 280, minWidth: 220 },
-            );
-          // Al abrir el popup se pide la ficha del día (guardias de turno, novedades abiertas, supervisión).
-          marcador.on("popupopen", () => {
-            fetch(`${API_BASE}/instalaciones/${encodeURIComponent(inst.id)}/resumen`, { headers: { Authorization: `Bearer ${token}` } })
-              .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-              .then(({ data }) => marcador.getPopup()?.setContent(htmlFichaInstalacion(inst, data, C_COLOR)))
-              .catch(() => marcador.getPopup()?.setContent(
-                `${htmlCabeceraInstalacion(inst, C_COLOR)}<div style="color:#F0A35E;font-size:11px;margin-top:8px">No se pudo cargar la ficha.</div>`));
-          });
+            .on("click", () => setSel(inst));
           L.circle([inst.latitud, inst.longitud], {
             radius: inst.radio_geofence_m ?? 100, color: C_COLOR,
             fillColor: C_COLOR, fillOpacity: 0.06, weight: 1.5, dashArray: "4 4",
@@ -182,6 +173,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
         ref={containerRef}
         style={{ borderRadius: T.radius, overflow: "hidden", border: `1px solid ${T.border}`, background: "#0E1714" }}
       />
+      {sel && <div style={{ marginTop: 10 }}><FichaInstalacion inst={sel} color={C_COLOR} token={token} onCerrar={() => setSel(null)} /></div>}
       <div className="g9-leyenda" style={{ display: "flex", gap: 14, marginTop: 6, fontSize: 10, color: T.textMut }}>
         <span><span style={{ color: C_COLOR }}>●</span> Instalación</span>
         <span><span style={{ color: C_COLOR }}>●</span> A tiempo</span>

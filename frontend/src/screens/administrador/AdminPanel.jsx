@@ -14,7 +14,7 @@ import { useAuth } from "../../context/authCtx";
 import { cacheRead, cacheWrite, CACHE_KEYS } from "../../utils/cache";
 import { API_URL as API_BASE, SOCKET_URL } from "../../config/api";
 import { CARTO_TILE_URL, CARTO_TILE_OPTIONS } from "../../config/maps";
-import { htmlCabeceraInstalacion, htmlFichaInstalacion } from "../../utils/fichaInstalacion";
+import { FichaInstalacion } from "../../components/ui/FichaInstalacion";
 
 // ─── ESTILOS POPUP LEAFLET ───────────────────────────────────────
 const LEAFLET_STYLES = `
@@ -67,6 +67,7 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
   const guardiasInicialesRef = useRef(guardiasIniciales);
   const [mapReady,  setMapReady]  = useState(false);
   const [cargando,  setCargando]  = useState(true);
+  const [sel,       setSel]       = useState(null);
 
   useLeafletCDN(() => setMapReady(true));
 
@@ -95,20 +96,10 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
             html: `<div style="width:14px;height:14px;background:${col};border:2.5px solid #0E1714;border-radius:50%;box-shadow:0 0 10px ${col};"></div>`,
             className: "", iconSize: [14, 14], iconAnchor: [7, 7],
           });
-          const marcador = L.marker([inst.latitud, inst.longitud], { icon })
+          // Al hacer clic se muestra la ficha en el panel lateral (junto a la leyenda).
+          L.marker([inst.latitud, inst.longitud], { icon })
             .addTo(map)
-            .bindPopup(
-              `${htmlCabeceraInstalacion(inst, col)}<div style="color:#7C8F85;font-size:11px;margin-top:8px">Cargando ficha…</div>`,
-              { className: "gc-popup", maxWidth: 280, minWidth: 220 },
-            );
-          // Al abrir el popup se pide la ficha del día (guardias de turno, novedades abiertas, supervisión).
-          marcador.on("popupopen", () => {
-            fetch(`${API_BASE}/instalaciones/${encodeURIComponent(inst.id)}/resumen`, { headers: { Authorization: `Bearer ${token}` } })
-              .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-              .then(({ data }) => marcador.getPopup()?.setContent(htmlFichaInstalacion(inst, data, col)))
-              .catch(() => marcador.getPopup()?.setContent(
-                `${htmlCabeceraInstalacion(inst, col)}<div style="color:#F0A35E;font-size:11px;margin-top:8px">No se pudo cargar la ficha.</div>`));
-          });
+            .on("click", () => setSel({ inst, col }));
           L.circle([inst.latitud, inst.longitud], {
             radius: inst.radio_geofence_m ?? 100, color: col,
             fillColor: col, fillOpacity: 0.06, weight: 1.5, dashArray: "4 4",
@@ -160,9 +151,10 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
 
   return (
     <div className="g9-mapa-layout" style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start", marginBottom: 20 }}>
-      {/* Leyenda a la izquierda, ordenada por prioridad */}
+      {/* Lateral izquierdo: leyenda (por prioridad) y, al elegir una instalación, su ficha */}
+      <div className="admin-map-lateral" style={{ flex: "0 0 210px", display: "flex", flexDirection: "column", gap: 12 }}>
       <div className="admin-map-legend" style={{
-        flex: "0 0 150px", display: "flex", flexDirection: "column", gap: 7, fontSize: 12, color: T.textSec,
+        display: "flex", flexDirection: "column", gap: 7, fontSize: 12, color: T.textSec,
         background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px",
       }}>
         <div style={{ fontSize: 11, color: T.focusText, letterSpacing: 0.5, textTransform: "uppercase" }}>Instalaciones</div>
@@ -172,6 +164,8 @@ const MapaInstalaciones = memo(function MapaInstalaciones({ token, ultimaUbicaci
         <div style={{ fontSize: 11, color: T.focusText, letterSpacing: 0.5, textTransform: "uppercase", marginTop: 6 }}>Guardias</div>
         <span><span style={{ color: T.accent }}>●</span> A tiempo</span>
         <span><span style={{ color: T.yellow }}>●</span> Tardío</span>
+      </div>
+      {sel && <FichaInstalacion inst={sel.inst} color={sel.col} token={token} onCerrar={() => setSel(null)} />}
       </div>
       <div style={{ position: "relative", flex: "1 1 320px", minWidth: 0 }}>
         {cargando && (
