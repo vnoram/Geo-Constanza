@@ -2,6 +2,7 @@ const { habilitada } = require('../services/dispositivos.service');
 const asistenciaService = require('../services/asistencia.service');
 const { ROLES } = require('../constants/roles');
 const { prisma } = require('../config/database');
+const { exigirAlcanceInstalacion, resolverInstalacionesSupervisor } = require('../services/supervisor.helper');
 
 const noEncontrado = () => Object.assign(new Error('Registro no encontrado.'), { statusCode: 404 });
 
@@ -54,8 +55,13 @@ const registrarSalida = async (req, res, next) => {
 const obtenerHoy = async (req, res, next) => {
   try {
     const { instalacionId } = req.params;
-    // Una instalación que no existe en la empresa del token (o es de otra) responde 404, no una lista vacía.
-    if (!await prisma.instalacion.findUnique({ where: { id: instalacionId }, select: { id: true } })) throw noEncontrado();
+    if (req.user.rol === ROLES.SUPERVISOR) {
+      // El supervisor solo ve las instalaciones que cubre: 404 si no existe en su empresa, 403 si no es suya.
+      await exigirAlcanceInstalacion(req.user, instalacionId);
+    } else if (!await prisma.instalacion.findUnique({ where: { id: instalacionId }, select: { id: true } })) {
+      // Una instalación que no existe en la empresa del token (o es de otra) responde 404, no una lista vacía.
+      throw noEncontrado();
+    }
     const result = await asistenciaService.obtenerHoy(instalacionId);
     res.json(result);
   } catch (error) {
@@ -72,7 +78,11 @@ const obtenerHistorial = async (req, res, next) => {
     if ([ROLES.GGSS].includes(req.user.rol) && usuarioId !== req.user.id) {
       return res.status(403).json({ error: 'No tienes permiso para ver el historial de otro usuario.' });
     }
-    const result = await asistenciaService.obtenerHistorial(usuarioId, req.query);
+    // El supervisor solo ve las asistencias registradas en las instalaciones que cubre.
+    const alcance = req.user.rol === ROLES.SUPERVISOR
+      ? { instalacionIds: await resolverInstalacionesSupervisor(req.user) }
+      : {};
+    const result = await asistenciaService.obtenerHistorial(usuarioId, req.query, alcance);
     res.json(result);
   } catch (error) {
     next(error);

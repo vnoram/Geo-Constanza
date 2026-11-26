@@ -354,9 +354,11 @@ const obtenerHoy = async (instalacionId) => {
   });
 };
 
-const obtenerHistorial = async (usuarioId, query) => {
+const obtenerHistorial = async (usuarioId, query, { instalacionIds } = {}) => {
   const { fecha_inicio, fecha_fin, page = 1, limit = 20 } = query;
   const where = { usuario_id: usuarioId };
+  // Alcance del supervisor: solo asistencias en sus instalaciones (lista vacía = nada).
+  if (Array.isArray(instalacionIds)) where.instalacion_id = { in: instalacionIds };
 
   if (fecha_inicio || fecha_fin) {
     where.created_at = {};
