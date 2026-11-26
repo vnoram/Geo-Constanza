@@ -106,6 +106,28 @@ test('pauta 4x4 con reemplazar borra el rango completo de 6 meses', async () => 
   expect(fecha.lte.toISOString().slice(0, 10)).toBe('2027-03-29'); // 184 días desde el inicio
 });
 
+test('pauta 4x4 con reemplazar: borrado y creación van en la misma transacción', async () => {
+  const borrado = { op: 'deleteMany' };
+  prisma.turno.deleteMany = jest.fn().mockReturnValue(borrado);
+  prisma.turno.create.mockImplementation(({ data }) => ({ op: 'create', data }));
+  prisma.$transaction.mockImplementation(async (ops) => ops.map((o) => (o === borrado ? { count: 3 } : { id: 'nuevo' })));
+  const resultado = await turnos.crearPauta4x4({ usuario_id: 'u', instalacion_id: 'i', fecha_inicio: '2026-09-27', hora_inicio: '19:00', hora_fin: '07:00', reemplazar: true }, 'admin');
+  const ops = prisma.$transaction.mock.calls[0][0];
+  expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  expect(ops[0]).toBe(borrado); // el borrado es la primera operación de la transacción
+  expect(ops).toHaveLength(93);
+  expect(resultado.creados).toBe(92); // el resultado del borrado no cuenta como turno creado
+});
+
+test('pauta 4x4: si la transacción falla, el borrado no queda aplicado fuera de ella', async () => {
+  prisma.turno.deleteMany = jest.fn().mockReturnValue({ op: 'deleteMany' });
+  prisma.$transaction.mockRejectedValue(new Error('falla al insertar'));
+  await expect(turnos.crearPauta4x4({ usuario_id: 'u', instalacion_id: 'i', fecha_inicio: '2026-09-27', hora_inicio: '19:00', hora_fin: '07:00', reemplazar: true }, 'admin'))
+    .rejects.toThrow('falla al insertar');
+  // deleteMany solo se construye y se entrega a $transaction; nunca se espera por separado
+  expect(prisma.$transaction.mock.calls[0][0][0]).toEqual({ op: 'deleteMany' });
+});
+
 test('pauta 4x4 solo en la instalación asignada del guardia', async () => {
   prisma.usuario.findUnique.mockResolvedValue({ instalacion_asignada_id: 'otra' });
   await expect(turnos.crearPauta4x4({ usuario_id: 'u', instalacion_id: 'i', fecha_inicio: '2026-09-27', hora_inicio: '19:00', hora_fin: '07:00' }, 'admin'))

@@ -259,6 +259,7 @@ const crearPauta4x4 = async (data, creadoPor) => {
 
   // Si reemplazar=true, eliminar todos los turnos existentes (no cancelados)
   // del usuario en el rango completo de la pauta antes de crear los nuevos.
+  let borrarAnteriores = null;
   if (reemplazar) {
     const fechaFinPauta = new Date(Date.UTC(
       inicio.getUTCFullYear(),
@@ -266,7 +267,9 @@ const crearPauta4x4 = async (data, creadoPor) => {
       inicio.getUTCDate() + DIAS_PAUTA - 1,
       23, 59, 59,
     ));
-    await prisma.turno.deleteMany({
+    // El borrado va en la misma transacción que la creación (más abajo):
+    // si la inserción falla, los turnos anteriores no se pierden.
+    borrarAnteriores = prisma.turno.deleteMany({
       where: {
         usuario_id,
         fecha: { gte: inicio, lte: fechaFinPauta },
@@ -313,10 +316,12 @@ const crearPauta4x4 = async (data, creadoPor) => {
     };
   }
 
-  // Insertar en una única transacción atómica
-  const creados = await prisma.$transaction(
-    turnosACrear.map((turno) => prisma.turno.create({ data: turno })),
+  // Borrado (si se reemplaza) e inserción en una única transacción atómica
+  const operaciones = turnosACrear.map((turno) => prisma.turno.create({ data: turno }));
+  const resultado = await prisma.$transaction(
+    borrarAnteriores ? [borrarAnteriores, ...operaciones] : operaciones,
   );
+  const creados = borrarAnteriores ? resultado.slice(1) : resultado;
 
   try { getSocketIO().to([salaAdmin(empresaActual()), salaCentral(empresaActual())]).emit('admin:dashboard_update', { entity: 'turno' }); } catch (_) {}
 
