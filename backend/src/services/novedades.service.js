@@ -197,6 +197,16 @@ const crear = async (data, file, user) => {
       throw Object.assign(new Error('No tienes un turno activo para reportar novedades'), { statusCode: 400 });
     }
 
+    // Solo se reporta con la entrada marcada en ese turno (y sin salida): así cada novedad
+    // queda ligada a una jornada registrada.
+    const entradaAbierta = await prisma.asistencia.findFirst({
+      where: { usuario_id: user.id, turno_id: turno.id, hora_salida: null },
+      select: { id: true },
+    });
+    if (!entradaAbierta) {
+      throw Object.assign(new Error('Marca tu entrada en Mi Turno antes de reportar novedades.'), { statusCode: 400 });
+    }
+
     // ── Validación geográfica ─────────────────────────────────────
     let gps_dentro_rango = null;
     const lat = parseFloat(latitud);

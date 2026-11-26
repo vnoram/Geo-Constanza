@@ -2,7 +2,7 @@ jest.mock('../../config/database', () => ({ prisma: {
   $transaction: jest.fn(),
   novedad: { create: jest.fn(), update: jest.fn(), findUnique: jest.fn(), findUniqueOrThrow: jest.fn() },
   novedadHistorial: { create: jest.fn(), findMany: jest.fn() },
-  usuario: { findUnique: jest.fn() }, turno: { findMany: jest.fn() },
+  usuario: { findUnique: jest.fn() }, turno: { findMany: jest.fn() }, asistencia: { findFirst: jest.fn() },
   empresa: { update: jest.fn() },
 } }));
 // Estas pruebas simulan la base: el contexto de empresa se fija aquí (en producción lo abre authenticate).
@@ -31,6 +31,7 @@ beforeEach(() => {
   prisma.novedad.findUnique.mockResolvedValue(novedad);
   prisma.novedad.findUniqueOrThrow.mockResolvedValue(novedad);
   prisma.turno.findMany.mockResolvedValue([{ id: 't1', instalacion_id: 'i1', instalacion: {} }]);
+  prisma.asistencia.findFirst.mockResolvedValue({ id: 'a1' }); // entrada marcada en el turno
   prisma.usuario.findUnique.mockResolvedValue({ id: 's1', rol: ROLES.SUPERVISOR, estado: ESTADO_USUARIO.ACTIVO });
   resolverInstalacionesSupervisor.mockResolvedValue(['i1']);
 });
