@@ -41,13 +41,33 @@ afterEach(() => {
   if (politica === undefined) delete process.env.DEVICE_POLICY; else process.env.DEVICE_POLICY = politica;
 });
 
-test('con la política activa, un marcaje fuera de la geocerca queda pendiente del supervisor', async () => {
+test('con la política activa, un marcaje fuera de la geocerca pero cerca (≤ 300 m) queda pendiente del supervisor', async () => {
   process.env.DEVICE_POLICY = 'on';
-  const res = await marcar();
+  const res = await marcar({ latitud: 0.002 }); // ~222 m
   expect(res).toMatchObject({ verificacion_gps: 'por_revisar' });
-  expect(res.distancia_entrada_m).toBeGreaterThan(1000);
+  expect(res.distancia_entrada_m).toBeGreaterThan(100);
   expect(prisma.asistencia.create).toHaveBeenCalledTimes(1);
   expect(emit).toHaveBeenCalledWith('guardia:marcaje_por_revisar', expect.objectContaining({ verificacion: 'por_revisar' }));
+});
+
+test('con la política activa, un marcaje lejos (> 300 m) se rechaza con 400', async () => {
+  process.env.DEVICE_POLICY = 'on';
+  await expect(marcar()).rejects.toMatchObject({ statusCode: 400 }); // ~1,1 km
+  expect(prisma.asistencia.create).not.toHaveBeenCalled();
+});
+
+test('el límite de 300 m descuenta la precisión de la lectura', async () => {
+  process.env.DEVICE_POLICY = 'on';
+  // ~450 m con ±187 m de error: podría estar a ~263 m, entonces va a revisión.
+  const res = await marcar({ latitud: 0.00405, precision_m: 187 });
+  expect(res).toMatchObject({ verificacion_gps: 'por_revisar' });
+});
+
+test('si la geocerca es más grande que 300 m, manda su radio: dentro se verifica, fuera se rechaza', async () => {
+  process.env.DEVICE_POLICY = 'on';
+  prisma.turno.findMany.mockResolvedValue([{ ...turno, instalacion: { ...inst, radio_geofence_m: 500 } }]);
+  await expect(marcar({ latitud: 0.0036 })).resolves.toMatchObject({ verificacion_gps: 'verificado' }); // ~400 m
+  await expect(marcar({ latitud: 0.0050 })).rejects.toMatchObject({ statusCode: 400 }); // ~556 m
 });
 
 test('sin la política, un marcaje fuera de la geocerca se sigue rechazando con 400', async () => {

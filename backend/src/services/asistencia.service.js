@@ -10,6 +10,10 @@ const { toleranciaInstalacion } = require('../constants/cobertura');
 
 const { ahoraChile, sumarDias, aFechaDB, inicioDiaChile, finDiaChile, intervaloTurno, turnoVigente, instanteChile } = require('../utils/fechaChile');
 
+// Distancia máxima (m) a la que un marcaje fuera de la geocerca todavía pasa a revisión del supervisor.
+// Más lejos se rechaza. Si la geocerca de la instalación es más grande, manda su radio.
+const DISTANCIA_MAX_REVISION_M = 300;
+
 
 // La misma selección alimenta el marcaje y la pantalla del guardia.
 const ordenarTurnos = (a, b) => intervaloTurno(a).inicio - intervaloTurno(b).inicio
@@ -175,6 +179,12 @@ const registrarEntrada = async (data, user, esFallbackOverride = null) => {
         // Con la política de dispositivos activa existe la revisión del supervisor: el marcaje fuera de
         // rango queda registrado como pendiente de autorización (flujo del informe). Sin ella se rechaza.
         if (!habilitada()) throw Object.assign(new Error(gps.mensaje), { statusCode: 400 });
+        // Solo pasa a revisión si está cerca: lejos de la instalación (aun descontando el error de la
+        // lectura) se rechaza, porque no es un GPS impreciso sino alguien que no está en el lugar.
+        const limite = Math.max(DISTANCIA_MAX_REVISION_M, turno.instalacion.radio_geofence_m || 0);
+        if (gps.distanciaMetros - (gps.precisionMetros ?? 0) > limite) {
+          throw Object.assign(new Error(gps.mensaje), { statusCode: 400 });
+        }
         gps = {
           ...gps,
           resultado: 'por_revisar',
