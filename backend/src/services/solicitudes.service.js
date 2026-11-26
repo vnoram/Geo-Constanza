@@ -4,8 +4,8 @@ const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
 const { enviarNotificacion } = require('./notificacion.service');
 const { exigirAlcanceInstalacion, resolverInstalacionesSupervisor } = require('./supervisor.helper');
-const { TIPOS_COBERTURA } = require('../constants/solicitudes');
-const { ahoraChile, aFechaDB } = require('../utils/fechaChile');
+const { TIPOS_COBERTURA, VACACIONES_ANTICIPACION_DIAS } = require('../constants/solicitudes');
+const { ahoraChile, aFechaDB, sumarDias } = require('../utils/fechaChile');
 const { uploadAdjuntoToAzure, generarUrlLectura } = require('../utils/azureStorage');
 
 // El contenedor es privado: el cliente recibe un link temporal, nunca la URL guardada.
@@ -115,6 +115,17 @@ const crear = async (body, userId, archivo) => {
       new Error(`Tipo inválido. Valores permitidos: ${TIPOS_VALIDOS.join(', ')}`),
       { statusCode: 400 },
     );
+  }
+
+  // Vacaciones: no se piden de un día para otro, sino con anticipación mínima.
+  if (tipo === 'vacaciones') {
+    const minimo = sumarDias(ahoraChile().fecha, VACACIONES_ANTICIPACION_DIAS);
+    if (String(fecha_desde).slice(0, 10) < minimo) {
+      throw Object.assign(
+        new Error(`Las vacaciones se piden con al menos ${VACACIONES_ANTICIPACION_DIAS} días de anticipación: el primer día posible es ${minimo.split('-').reverse().join('-')}.`),
+        { statusCode: 400 },
+      );
+    }
   }
 
   let adjunto_url = null;

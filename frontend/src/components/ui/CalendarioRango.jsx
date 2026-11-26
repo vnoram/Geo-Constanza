@@ -13,9 +13,10 @@ const hoyIso = () => new Date().toLocaleDateString("en-CA", { timeZone: "America
 /**
  * Calendario mensual. Los días de `enPauta` se ven en verde y no se pueden elegir. No decide nada: pinta `marcados` en morado suave, `destacados` en morado
  * fuerte y avisa con `onElegir(iso)` qué día se tocó. Cada tipo de solicitud interpreta el clic.
+ * `desde` (YYYY-MM-DD, opcional): primer día elegible; antes de él los días se ven apagados. Por defecto, hoy.
  */
-export function CalendarioRango({ marcados = [], destacados = [], enPauta = [], onElegir }) {
-  const hoy = hoyIso();
+export function CalendarioRango({ marcados = [], destacados = [], enPauta = [], onElegir, desde }) {
+  const hoy = desde && desde > hoyIso() ? desde : hoyIso();
   const suaves = new Set(marcados);
   const fuertes = new Set(destacados);
   const ocupados = new Set(enPauta);

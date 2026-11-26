@@ -21,8 +21,11 @@ const MAX_ADJUNTO_MB = 5;
 //  vacaciones → un clic autocompleta 3 semanas · ausentarse → un día, o dos toques y se completa el rango ·
 //  turno extra → días sueltos (marcar/desmarcar) · traslado → una sola fecha.
 const VACACIONES_DIAS = 21;
+// Las vacaciones se piden con al menos un mes de anticipación (el backend valida lo mismo).
+const VACACIONES_ANTICIPACION_DIAS = 30;
+const hoyChile = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Santiago" });
 const AYUDA = {
-  vacaciones: "Elige el primer día: se marcan las semanas siguientes automáticamente.",
+  vacaciones: `Elige el primer día (al menos ${VACACIONES_ANTICIPACION_DIAS} días desde hoy): se marcan las semanas siguientes automáticamente.`,
   dias_libres: "Toca el día en que te ausentarás. Si son varios, toca el último y se marcan los de en medio.",
   turno_extra: "Marca cada día en que quieres un turno extra; vuelve a tocar para quitarlo.",
   traslado: "Elige la fecha del traslado.",
@@ -131,7 +134,7 @@ export function SolicitudesPersonales() {
           {tipo === "vacaciones" ? "Primer día de vacaciones" : tipo === "traslado" ? "Fecha del traslado" : "Fechas"}
         </div>
         <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>{AYUDA[tipo]}</div>
-        <div className="libre-calendario"><CalendarioRango marcados={fechas} destacados={destacados} onElegir={elegir} /></div>
+        <div className="libre-calendario"><CalendarioRango key={tipo} marcados={fechas} destacados={destacados} onElegir={elegir} desde={tipo === "vacaciones" ? sumarDias(hoyChile(), VACACIONES_ANTICIPACION_DIAS) : undefined} /></div>
         <div style={{ fontSize: 12, color: fechas.length ? T.focusText : T.textMut, margin: "12px 0 16px" }}>
           {resumen}
         </div>
