@@ -228,7 +228,10 @@ export function SupGuardias() {
       const listaGuardias = Array.isArray(resGuardias) ? resGuardias : (resGuardias.data || []);
       const listaInst  = Array.isArray(resInstalaciones) ? resInstalaciones : (resInstalaciones.data || []);
 
-      setGuardias(listaGuardias);
+      // Solo los guardias de sus instalaciones (/instalaciones ya viene filtrado por su cobertura),
+      // más los que no tienen instalación asignada (disponibles para turnos extra).
+      const idsPropias = new Set(listaInst.map((i) => i.id));
+      setGuardias(listaGuardias.filter((g) => !g.instalacion_asignada_id || idsPropias.has(g.instalacion_asignada_id)));
       setInstalaciones(listaInst);
 
       // Si solo hay una instalación disponible, preseleccionarla automáticamente
@@ -442,7 +445,7 @@ export function SupGuardias() {
         <Esqueleto filas={3} alto={64} />
       ) : guardias.length === 0 ? (
         <div className="g9-vacio" style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: 20 }}>
-          No hay guardias registrados.
+          No hay guardias en tus instalaciones.
         </div>
       ) : (
         <div className="sup-supervision__grid">{guardias.map((g, i) => (
@@ -458,10 +461,10 @@ export function SupGuardias() {
             <div className="responsive-list-row__main">
               <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{g.nombre}</div>
               <div className="g9-dato-personal" style={{ fontSize: 11, color: T.textMut }}>
-                GGSS {g.rut ? `· ${formatearRut(g.rut)}` : ""}
+                GGSS {g.rut ? `· ${formatearRut(g.rut)}` : ""}{g.instalacion_asignada?.nombre ? ` · ${g.instalacion_asignada.nombre}` : " · sin instalación"}
               </div>
             </div>
-            <Badge color={g.estado === "activo" ? "accent" : "red"}>{g.estado}</Badge>
+            {g.estado !== "activo" && <Badge color="red">{g.estado}</Badge>}
           </Aparecer>
         ))}</div>
       )}
