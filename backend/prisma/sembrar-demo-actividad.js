@@ -9,7 +9,9 @@
  *
  * Requiere haber corrido antes sembrar-demo-empresa.js.
  * Uso:  docker compose exec api node prisma/sembrar-demo-actividad.js
- * Opciones:  --empresa "Seguridad Alfa Ltda."   --dias 30   --forzar
+ * Opciones:  --empresa "Seguridad Alfa Ltda."   --dias 30   --sin-hoy   --forzar
+ * Además de los días pasados, los turnos de HOY ya iniciados quedan con entrada abierta (o sin marcar);
+ * --sin-hoy lo omite. Conviene correrlo el mismo día de la demo, después de que empiece el turno de día.
  */
 const { esBaseLocal, DIAS_ATRAS, CICLO, PLANTILLA } = require('./sembrar-demo-empresa');
 
@@ -163,7 +165,28 @@ async function main() {
     if (!guardias.length) throw new Error('No hay guardias @alfa.demo. Corre antes prisma/sembrar-demo-empresa.js.');
     const supervisores = await prisma.usuario.findMany({ where: { empresa_id: empresa.id, email: { endsWith: '@alfa.demo' }, rol: 'supervisor' } });
     const hoyISO = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
-    const res = { turnos: 0, ausencias: 0, asistencias: 0, novedades: 0 };
+    const res = { turnos: 0, ausencias: 0, asistencias: 0, novedades: 0, entradasHoy: 0, sinMarcarHoy: 0 };
+
+    /** Crea las novedades de un turno (con folio, historial y estado según su antigüedad). */
+    const crearNovedades = async ({ r, g, inst, sup, turno, novedades, entrada, minutosMax, diasAtras }) => {
+      for (const nov of novedades) {
+        const creada = new Date(entrada.getTime() + enteroEntre(r, 30, Math.max(31, Math.floor(minutosMax))) * 60000);
+        const estado = estadoNovedad(r, nov.urgencia, diasAtras);
+        const atendida = estado !== 'abierta';
+        const { ultimo_folio: numero } = await prisma.empresa.update({ where: { id: empresa.id }, data: { ultimo_folio: { increment: 1 } }, select: { ultimo_folio: true } });
+        const novedad = await prisma.novedad.create({ data: {
+          empresa_id: empresa.id, numero, usuario_id: g.id, instalacion_id: inst.id, turno_id: turno.id, tipo: nov.tipo, descripcion: nov.descripcion,
+          urgencia: nov.urgencia, estado, latitud: inst.latitud, longitud: inst.longitud, gps_dentro_rango: true, created_at: creada,
+          ...(atendida ? { asignada_a: sup.id, atendida_por: estado === 'resuelta' ? sup.id : null, fecha_atencion: new Date(creada.getTime() + enteroEntre(r, 10, 90) * 60000) } : {}),
+          ...(estado === 'resuelta' ? { comentario_cierre: elegir(r, COMENTARIOS_CIERRE) } : {}),
+        } });
+        const historial = [{ usuario_id: g.id, accion: 'crear', estado_anterior: null, estado_nuevo: 'abierta', comentario: null, created_at: creada }];
+        if (atendida) historial.push({ usuario_id: sup.id, accion: estado === 'escalada' ? 'escalar' : 'asignar', estado_anterior: 'abierta', estado_nuevo: estado === 'escalada' ? 'escalada' : 'en_atencion', comentario: null, created_at: novedad.fecha_atencion });
+        if (estado === 'resuelta') historial.push({ usuario_id: sup.id, accion: 'resolver', estado_anterior: 'en_atencion', estado_nuevo: 'resuelta', comentario: novedad.comentario_cierre, created_at: new Date(novedad.fecha_atencion.getTime() + 20 * 60000) });
+        await prisma.novedadHistorial.createMany({ data: historial.map((h) => ({ ...h, empresa_id: empresa.id, novedad_id: novedad.id })) });
+        res.novedades += 1;
+      }
+    };
 
     for (const g of guardias) {
       const n = Number(g.email.match(/guardia(\d+)@/)?.[1] || 1);
@@ -209,22 +232,34 @@ async function main() {
         res.asistencias += 1;
 
         const diasAtras = Math.round((new Date(`${hoyISO}T00:00:00Z`) - fechaDb) / 86400000);
-        for (const nov of novedades) {
-          const creada = new Date(entrada.getTime() + enteroEntre(r, 30, Math.max(31, Math.floor(marca.horasTrabajadas * 60 - 30))) * 60000);
-          const estado = estadoNovedad(r, nov.urgencia, diasAtras);
-          const atendida = estado !== 'abierta';
-          const { ultimo_folio: numero } = await prisma.empresa.update({ where: { id: empresa.id }, data: { ultimo_folio: { increment: 1 } }, select: { ultimo_folio: true } });
-          const novedad = await prisma.novedad.create({ data: {
-            empresa_id: empresa.id, numero, usuario_id: g.id, instalacion_id: inst.id, turno_id: turno.id, tipo: nov.tipo, descripcion: nov.descripcion,
-            urgencia: nov.urgencia, estado, latitud: inst.latitud, longitud: inst.longitud, gps_dentro_rango: true, created_at: creada,
-            ...(atendida ? { asignada_a: sup.id, atendida_por: estado === 'resuelta' ? sup.id : null, fecha_atencion: new Date(creada.getTime() + enteroEntre(r, 10, 90) * 60000) } : {}),
-            ...(estado === 'resuelta' ? { comentario_cierre: elegir(r, COMENTARIOS_CIERRE) } : {}),
-          } });
-          const historial = [{ usuario_id: g.id, accion: 'crear', estado_anterior: null, estado_nuevo: 'abierta', comentario: null, created_at: creada }];
-          if (atendida) historial.push({ usuario_id: sup.id, accion: estado === 'escalada' ? 'escalar' : 'asignar', estado_anterior: 'abierta', estado_nuevo: estado === 'escalada' ? 'escalada' : 'en_atencion', comentario: null, created_at: novedad.fecha_atencion });
-          if (estado === 'resuelta') historial.push({ usuario_id: sup.id, accion: 'resolver', estado_anterior: 'en_atencion', estado_nuevo: 'resuelta', comentario: novedad.comentario_cierre, created_at: new Date(novedad.fecha_atencion.getTime() + 20 * 60000) });
-          await prisma.novedadHistorial.createMany({ data: historial.map((h) => ({ ...h, empresa_id: empresa.id, novedad_id: novedad.id })) });
-          res.novedades += 1;
+        await crearNovedades({ r, g, inst, sup, turno, novedades, entrada, minutosMax: marca.horasTrabajadas * 60 - 30, diasAtras });
+      }
+
+      // Hoy: si su turno ya empezó y no tiene marcaje, queda con entrada abierta (sin salida, está trabajando),
+      // o sin marcar según su perfil. Así el mapa y los Indicadores de "hoy" no salen vacíos.
+      if (!args.includes('--sin-hoy')) {
+        const fechaDb = new Date(`${hoyISO}T00:00:00Z`);
+        const turno = await prisma.turno.findFirst({ where: { empresa_id: empresa.id, usuario_id: g.id, fecha: fechaDb, estado: { not: 'cancelado' } }, include: { asistencias: { select: { id: true } } } });
+        const inicio = turno ? instanteLocal(hoyISO, turno.hora_inicio) : null;
+        const ahora = new Date();
+        if (turno && !turno.asistencias.length && inicio <= ahora) {
+          const marca = generarMarcaje(r, perfil);
+          if (marca.tipo === 'ausente') {
+            res.sinMarcarHoy += 1;
+          } else {
+            const entrada = new Date(Math.min(ahora.getTime() - 60000, inicio.getTime() + marca.retraso * 60000 + enteroEntre(r, -8, 3) * 60000));
+            const grados = (marca.distancia / 111320) * (r() < 0.5 ? 1 : -1);
+            await prisma.asistencia.create({ data: {
+              empresa_id: empresa.id, usuario_id: g.id, turno_id: turno.id, instalacion_id: inst.id, hora_entrada: entrada,
+              metodo_entrada: 'fallback_telefono', estado: marca.tipo === 'tardio' ? 'tardio' : 'normal', minutos_retraso: marca.retraso,
+              latitud_entrada: inst.latitud + grados, longitud_entrada: inst.longitud, dispositivo_usado: 'mobil_empresa',
+              // Un marcaje "por revisar" de hoy queda pendiente: el supervisor lo puede aprobar en vivo.
+              verificacion_gps: marca.tipo === 'por_revisar' ? 'por_revisar' : 'verificado', distancia_entrada_m: marca.distancia, precision_entrada_m: marca.precision,
+            } });
+            res.entradasHoy += 1;
+            const minutosMax = (ahora.getTime() - entrada.getTime()) / 60000 - 5;
+            if (minutosMax > 31) await crearNovedades({ r, g, inst, sup, turno, novedades: generarNovedades(r, 0.5), entrada, minutosMax, diasAtras: 0 });
+          }
         }
       }
     }
