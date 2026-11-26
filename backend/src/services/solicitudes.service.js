@@ -4,7 +4,7 @@ const { prisma } = require('../config/database');
 const { ROLES } = require('../constants/roles');
 const { enviarNotificacion } = require('./notificacion.service');
 const { exigirAlcanceInstalacion, resolverInstalacionesSupervisor } = require('./supervisor.helper');
-const { TIPOS_COBERTURA, VACACIONES_ANTICIPACION_DIAS } = require('../constants/solicitudes');
+const { TIPOS_COBERTURA, ANTICIPACION_DIAS } = require('../constants/solicitudes');
 const { ahoraChile, aFechaDB, sumarDias } = require('../utils/fechaChile');
 const { uploadAdjuntoToAzure, generarUrlLectura } = require('../utils/azureStorage');
 
@@ -117,12 +117,14 @@ const crear = async (body, userId, archivo) => {
     );
   }
 
-  // Vacaciones: no se piden de un día para otro, sino con anticipación mínima.
-  if (tipo === 'vacaciones') {
-    const minimo = sumarDias(ahoraChile().fecha, VACACIONES_ANTICIPACION_DIAS);
+  // Vacaciones y traslados no se piden de un día para otro: tienen anticipación mínima.
+  const anticipacion = ANTICIPACION_DIAS[tipo];
+  if (anticipacion) {
+    const minimo = sumarDias(ahoraChile().fecha, anticipacion);
     if (String(fecha_desde).slice(0, 10) < minimo) {
+      const nombre = tipo === 'vacaciones' ? 'Las vacaciones' : 'Los traslados';
       throw Object.assign(
-        new Error(`Las vacaciones se piden con al menos ${VACACIONES_ANTICIPACION_DIAS} días de anticipación: el primer día posible es ${minimo.split('-').reverse().join('-')}.`),
+        new Error(`${nombre} se piden con al menos ${anticipacion} días de anticipación: el primer día posible es ${minimo.split('-').reverse().join('-')}.`),
         { statusCode: 400 },
       );
     }

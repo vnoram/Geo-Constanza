@@ -1,4 +1,4 @@
-// Vacaciones: se piden con al menos 30 días de anticipación.
+// Anticipación mínima: vacaciones 30 días, traslado 7 días.
 jest.mock('../../config/database', () => ({ prisma: { solicitud: { create: jest.fn() } } }));
 jest.mock('../notificacion.service', () => ({ enviarNotificacion: jest.fn() }));
 jest.mock('../supervisor.helper', () => ({ exigirAlcanceInstalacion: jest.fn(), resolverInstalacionesSupervisor: jest.fn() }));
@@ -25,6 +25,12 @@ test('vacaciones a 29 días se rechazan; a 30 días se aceptan', async () => {
   await expect(crear({ tipo: 'vacaciones', fecha_desde: '2026-12-25' }, 'u')).rejects.toMatchObject({ statusCode: 400 });
   await expect(crear({ tipo: 'vacaciones', fecha_desde: '2026-12-26', fecha_hasta: '2027-01-15' }, 'u'))
     .resolves.toMatchObject({ tipo: 'vacaciones', estado: 'pendiente' });
+});
+
+test('traslado a 6 días se rechaza; a 7 días se acepta', async () => {
+  await expect(crear({ tipo: 'traslado', fecha_desde: '2026-12-02' }, 'u'))
+    .rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('Los traslados') });
+  await expect(crear({ tipo: 'traslado', fecha_desde: '2026-12-03' }, 'u')).resolves.toMatchObject({ tipo: 'traslado' });
 });
 
 test('otros tipos (ausentarse) no tienen anticipación mínima', async () => {
