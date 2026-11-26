@@ -52,13 +52,23 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
   const [error, setError] = useState("");
 
   const set = (key) => (val) => setForm((f) => ({ ...f, [key]: val }));
-  // Al elegir guardia, se fija su instalación asignada (si tiene)
-  const elegirGuardia = (id) => {
-    const g = guardias.find((x) => x.id === id);
-    setForm((f) => ({ ...f, usuario_id: id, instalacion_id: g?.instalacion_asignada_id || "" }));
-  };
+  // Primero se elige la instalación; la lista de guardias se filtra por ella:
+  // los asignados a esa instalación y, al final, los que no tienen instalación asignada.
+  const guardiasDeInstalacion = form.instalacion_id
+    ? [
+        ...guardias.filter((g) => g.instalacion_asignada_id === form.instalacion_id),
+        ...guardias.filter((g) => !g.instalacion_asignada_id),
+      ]
+    : [];
   const guardiaSel = guardias.find((x) => x.id === form.usuario_id);
-  const asignadaId = guardiaSel?.instalacion_asignada_id || null;
+  const elegirInstalacion = (id) => {
+    setForm((f) => {
+      const g = guardias.find((x) => x.id === f.usuario_id);
+      // Si el guardia elegido es de otra instalación, se limpia.
+      const sigue = g && (!g.instalacion_asignada_id || g.instalacion_asignada_id === id);
+      return { ...f, instalacion_id: id, usuario_id: sigue ? f.usuario_id : "" };
+    });
+  };
 
   // Detectar turno nocturno para mostrar aviso informativo
   const esNocturno = form.hora_fin < form.hora_inicio;
@@ -170,31 +180,26 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
         ) : (
           <>
             <Select
-              label="Guardia (GGSS)"
-              value={form.usuario_id}
-              onChange={elegirGuardia}
-              placeholder="Seleccionar guardia..."
-              options={guardias.map((g) => ({
-                value: g.id,
-                label: `${g.nombre} · ${formatearRut(g.rut)}`,
-              }))}
-            />
-
-            <Select
               label="Instalación"
               value={form.instalacion_id}
-              onChange={set("instalacion_id")}
+              onChange={elegirInstalacion}
               placeholder="Seleccionar instalación..."
-              options={(asignadaId ? instalaciones.filter((i) => i.id === asignadaId) : instalaciones).map((i) => ({
+              options={instalaciones.map((i) => ({
                 value: i.id,
                 label: i.nombre,
               }))}
             />
-            {asignadaId && (
-              <div style={{ fontSize: 11, color: T.textMut, margin: "-10px 0 14px" }}>
-                Este guardia está asignado a esta instalación. Para otra, cambia su asignación en Usuarios.
-              </div>
-            )}
+
+            <Select
+              label="Guardia (GGSS)"
+              value={form.usuario_id}
+              onChange={set("usuario_id")}
+              placeholder={form.instalacion_id ? "Seleccionar guardia..." : "Primero elige la instalación"}
+              options={guardiasDeInstalacion.map((g) => ({
+                value: g.id,
+                label: `${g.nombre} · ${formatearRut(g.rut)}${g.instalacion_asignada_id ? "" : " · sin instalación"}`,
+              }))}
+            />
 
             <div style={{ fontSize: 12, fontWeight: 500, color: T.textSec, marginBottom: 6 }}>Primer día de la pauta</div>
             <div style={{ fontSize: 11, color: T.textMut, marginBottom: 8 }}>
