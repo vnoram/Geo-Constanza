@@ -8,7 +8,6 @@ import { Icon } from "../../components/ui/Icon";
 import { useEffect, useState } from "react";
 import { FONT, T } from "../../theme/theme";
 import { Btn } from "../../components/ui/Btn";
-import { Input } from "../../components/ui/Input";
 import { CalendarioRango } from "../../components/ui/CalendarioRango";
 import { SubHeader } from "../../components/ui/SubHeader";
 import { SectionHeader } from "../../components/ui/SectionHeader";
@@ -38,6 +37,9 @@ function Select({ label, value, onChange, options, placeholder }) {
 }
 
 // ─── MODAL PAUTA 4x4 ─────────────────────────────────────────────
+// Turnos de 12 horas habilitados por ahora: entrada 07, 08, 19 o 20 h.
+const HORARIOS_PAUTA = [["07:00", "19:00"], ["08:00", "20:00"], ["19:00", "07:00"], ["20:00", "08:00"]];
+
 function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
   const [form, setForm] = useState({
     usuario_id: "",
@@ -213,20 +215,13 @@ function ModalPauta4x4({ onClose, onSuccess, guardias, instalaciones }) {
               />
             </div>
 
-            <div className="admin-form-grid" style={{ display: "grid", gap: 12 }}>
-              <Input
-                label="Hora Entrada"
-                type="time"
-                value={form.hora_inicio}
-                onChange={set("hora_inicio")}
-              />
-              <Input
-                label="Hora Salida"
-                type="time"
-                value={form.hora_fin}
-                onChange={set("hora_fin")}
-              />
-            </div>
+            <Select
+              label="Horario"
+              value={`${form.hora_inicio}-${form.hora_fin}`}
+              onChange={(v) => { const [hora_inicio, hora_fin] = v.split("-"); setForm((f) => ({ ...f, hora_inicio, hora_fin })); }}
+              placeholder="Seleccionar horario..."
+              options={HORARIOS_PAUTA.map(([ini, fin]) => ({ value: `${ini}-${fin}`, label: `${ini} a ${fin}` }))}
+            />
 
             {/* Aviso turno nocturno */}
             {esNocturno && (
