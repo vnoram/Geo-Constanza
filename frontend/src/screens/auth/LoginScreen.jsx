@@ -94,7 +94,7 @@ export function LoginScreen({ onLogin, onForgot, invitacion, onCancelarInvitacio
           </div>
 
           {step === "login" && (
-            <div>
+            <div className="login__fields">
               {enrolando && <PasosEnrolamiento />}
               <Input label="RUT" icon="id-card" mono value={rut} onChange={formatRut} placeholder="12345678-9" maxLength={12} />
               <Input label="Contraseña" type="password" icon="key-round" value={pass} onChange={setPass} placeholder="••••••••" />

@@ -238,29 +238,19 @@ export function AppShell({ user, onLogout }) {
         {/* ─── MENÚ LATERAL: cajón en celular, fijo en escritorio ─── */}
         <div className={`app-shell__sidebar-layer${sidebarOpen ? " is-open" : ""}`}>
           <div className="app-shell__sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
-          <aside className="app-shell__sidebar" style={{
-            background: T.surface, borderRight: `1px solid ${T.border}`,
-          }}>
+          <aside className="app-shell__sidebar">
             <TarjetaUsuario user={user} etiquetaRol={etiquetaRol} iconoRol={role.icon} onAbrirPerfil={() => setPerfilAbierto(true)} />
 
-            <div style={{ fontSize: 11, color: T.textMut, marginBottom: 6, fontWeight: 500 }}>
+            <div className="app-shell__sidebar-label">
               Navegación
             </div>
-            {sections.map(s => {
+            {sections.map((s, indice) => {
               const activa = activeSection === s.id;
               return (
                 <button className="touch-target gc-nav-btn" key={s.id}
                   onClick={() => { setActiveSection(s.id); setSidebarOpen(false); }}
-                  aria-current={activa ? "page" : undefined} style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "0 12px", minHeight: 40, borderRadius: T.radius,
-                  border: "none", borderLeft: `2px solid ${activa ? T.focus : "transparent"}`,
-                  background: activa ? T.focusGhost : "transparent",
-                  color: activa ? T.text : T.textSec,
-                  fontSize: 14, fontWeight: activa ? 600 : 500,
-                  cursor: "pointer", width: "100%", textAlign: "left",
-                  fontFamily: FONT.ui, marginBottom: 2,
-                }}>
+                  aria-current={activa ? "page" : undefined}
+                  style={{ "--gc-nav-delay": `${indice * 30}ms` }}>
                   <Icon name={s.icon} size={18} color={activa ? T.focusText : T.textMut} />
                   {s.label}
                   {s.badge && <span style={{
@@ -272,14 +262,8 @@ export function AppShell({ user, onLogout }) {
               );
             })}
 
-            <div style={{ marginTop: "auto", paddingTop: 20 }}>
-              <button className="touch-target gc-menu-btn gc-menu-btn--rojo" onClick={onLogout} style={{
-                width: "100%", minHeight: 40, padding: "0 14px",
-                background: "transparent", border: `1px solid ${T.border}`,
-                borderRadius: T.radius, color: T.text, fontSize: 13, fontWeight: 500,
-                cursor: "pointer", fontFamily: FONT.ui,
-                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
-              }}>
+            <div className="app-shell__sidebar-footer">
+              <button className="touch-target app-shell__logout" onClick={onLogout}>
                 <Icon name="log-out" size={16} /> Cerrar sesión
               </button>
             </div>
